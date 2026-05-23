@@ -52,6 +52,7 @@ System-defined, seeded at startup. Users cannot create or modify labels.
 | type | financial |
 | type | raghav |
 | type | trip |
+| type | medical |
 
 ---
 
