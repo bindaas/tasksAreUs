@@ -170,4 +170,5 @@ LABEL_SEED = [
     ("type", "financial"),
     ("type", "raghav"),
     ("type", "trip"),
+    ("type", "medical"),
 ]
