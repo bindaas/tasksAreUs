@@ -97,12 +97,15 @@ def main():
     r = client.get("/labels", headers=H)
     assert_eq("GET /labels → 200", r.status_code, 200)
     labels = r.json()["labels"]
-    assert_true("at least 13 labels seeded", len(labels) >= 13)
+    assert_true("at least 14 labels seeded", len(labels) >= 14)
 
     # Pick specific labels for use in tests
     freq_labels = {l["value"]: l["id"] for l in labels if l["category"] == "frequency"}
     mode_labels = {l["value"]: l["id"] for l in labels if l["category"] == "mode"}
     type_labels = {l["value"]: l["id"] for l in labels if l["category"] == "type"}
+
+    # Verify the medical label added in PR #1 is seeded
+    assert_in("medical label seeded", "medical", type_labels)
 
     r = client.get("/labels?category=frequency", headers=H)
     freq_only = r.json()["labels"]
@@ -140,6 +143,26 @@ def main():
     assert_eq("GET /tasks?state=pending → 200", r.status_code, 200)
     task_ids = [t["id"] for t in r.json()["tasks"]]
     assert_in("task in list", task_id, task_ids)
+
+    # Verify the medical label (added in PR #1) can be assigned to a task
+    r = client.post("/tasks", headers=H, json={
+        "title": "Book doctor appointment",
+        "label_ids": [type_labels["medical"]],
+    })
+    assert_eq("POST /tasks with medical label → 201", r.status_code, 201)
+    medical_task = r.json()
+    medical_task_id = medical_task["id"]
+    medical_label_values = [l["value"] for l in medical_task["labels"]]
+    assert_in("medical label on task", "medical", medical_label_values)
+
+    # Filter tasks by medical label to verify label_ids query param works
+    r = client.get("/tasks", headers=H, params={"label_ids": type_labels["medical"]})
+    assert_eq("GET /tasks?label_ids=medical → 200", r.status_code, 200)
+    filtered_ids = [t["id"] for t in r.json()["tasks"]]
+    assert_in("medical task in filtered list", medical_task_id, filtered_ids)
+
+    # Soft-delete the medical task so it doesn't pollute other assertions
+    client.delete(f"/tasks/{medical_task_id}", headers=H)
 
     # ── Task completion (one-time) ─────────────────────────────────────────────
     print("\n── Tasks: Complete (one-time) ──────────────────────────")
