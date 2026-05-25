@@ -155,6 +155,56 @@ def main():
     assert_eq("PUT /tasks/:id target_date update → 200", r.status_code, 200)
     assert_eq("target_date updated via PUT", r.json()["target_date"], next_week)
 
+    # ── Date-clearing via PUT (PR #3 fix) ─────────────────────────────────────
+    # Create a task that has both dates set so we can verify clearing them.
+    print("\n── Tasks: Clear dates via PUT (null vs omit) ───────────")
+    r = client.post("/tasks", headers=H, json={
+        "title": "Date clearing test task",
+        "must_do_by": next_week,
+        "target_date": tomorrow,
+        "label_ids": [],
+    })
+    assert_eq("POST date-clear task → 201", r.status_code, 201)
+    dc_task = r.json()
+    dc_task_id = dc_task["id"]
+    assert_eq("date-clear task has must_do_by", dc_task["must_do_by"], next_week)
+    assert_eq("date-clear task has target_date", dc_task["target_date"], tomorrow)
+
+    # Explicitly send null for must_do_by — should clear it.
+    r = client.put(f"/tasks/{dc_task_id}", headers=H, json={"must_do_by": None})
+    assert_eq("PUT with must_do_by=null → 200", r.status_code, 200)
+    assert_eq("must_do_by cleared to null", r.json()["must_do_by"], None)
+    # target_date was not sent in body, so must be untouched.
+    assert_eq("target_date untouched after must_do_by clear", r.json()["target_date"], tomorrow)
+
+    # Explicitly send null for target_date — should clear it.
+    r = client.put(f"/tasks/{dc_task_id}", headers=H, json={"target_date": None})
+    assert_eq("PUT with target_date=null → 200", r.status_code, 200)
+    assert_eq("target_date cleared to null", r.json()["target_date"], None)
+
+    # Omitting both date fields from the body must NOT alter them.
+    # Restore dates first, then verify omission is a no-op.
+    r = client.put(f"/tasks/{dc_task_id}", headers=H, json={
+        "must_do_by": next_week,
+        "target_date": tomorrow,
+    })
+    assert_eq("Restore dates before omit test → 200", r.status_code, 200)
+    r = client.put(f"/tasks/{dc_task_id}", headers=H, json={"title": "Date clearing test task (renamed)"})
+    assert_eq("PUT omitting date fields → 200", r.status_code, 200)
+    omit_result = r.json()
+    assert_eq("must_do_by not cleared when omitted from body", omit_result["must_do_by"], next_week)
+    assert_eq("target_date not cleared when omitted from body", omit_result["target_date"], tomorrow)
+
+    # Clear both dates in a single request.
+    r = client.put(f"/tasks/{dc_task_id}", headers=H, json={"must_do_by": None, "target_date": None})
+    assert_eq("PUT clearing both dates → 200", r.status_code, 200)
+    both_result = r.json()
+    assert_eq("must_do_by cleared (both)", both_result["must_do_by"], None)
+    assert_eq("target_date cleared (both)", both_result["target_date"], None)
+
+    # Clean up the helper task.
+    client.delete(f"/tasks/{dc_task_id}", headers=H)
+
     r = client.get("/tasks", headers=H, params={"state": "pending"})
     assert_eq("GET /tasks?state=pending → 200", r.status_code, 200)
     task_ids = [t["id"] for t in r.json()["tasks"]]

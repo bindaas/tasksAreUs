@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Task, Label } from '../api/tasks';
 import { completeTask, deleteTask, updateTask } from '../api/tasks';
@@ -28,11 +28,14 @@ export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = fal
     (a, b) => (LABEL_CATEGORY_ORDER[a.category] ?? 3) - (LABEL_CATEGORY_ORDER[b.category] ?? 3)
   );
 
-  const labelsByCategory = labels.reduce<Record<string, Label[]>>((acc, label) => {
-    if (!acc[label.category]) acc[label.category] = [];
-    acc[label.category].push(label);
-    return acc;
-  }, {});
+  const labelsByCategory = useMemo(
+    () => labels.reduce<Record<string, Label[]>>((acc, label) => {
+      if (!acc[label.category]) acc[label.category] = [];
+      acc[label.category].push(label);
+      return acc;
+    }, {}),
+    [labels]
+  );
 
   function startEdit(e: React.MouseEvent) {
     e.stopPropagation();

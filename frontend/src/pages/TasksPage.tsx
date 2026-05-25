@@ -48,13 +48,14 @@ export function TasksPage() {
 
   const { tasks, loading, error, refetch } = useTasks(showDone ? 'done' : 'pending');
   const { labels, labelsByCategory } = useLabels();
+  const [dropError, setDropError] = useState<string | null>(null);
 
-  const today = dateOnly(new Date());
-  const tomorrow = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return dateOnly(d);
-  })();
+  const { today, tomorrow } = useMemo(() => {
+    const now = new Date();
+    const tom = new Date(now);
+    tom.setDate(tom.getDate() + 1);
+    return { today: dateOnly(now), tomorrow: dateOnly(tom) };
+  }, []);
 
   const filteredTasks = useMemo(() => {
     if (selectedLabelIds.size === 0) return tasks;
@@ -86,14 +87,18 @@ export function TasksPage() {
     const newDate = getDropDate(columnKey);
     const field = getEffectiveDateField(task);
 
-    if (columnKey === 'nodate') {
-      await updateTask(taskId, { must_do_by: null, target_date: null });
-    } else if (field === 'target_date') {
-      await updateTask(taskId, { target_date: newDate });
-    } else {
-      await updateTask(taskId, { must_do_by: newDate });
+    try {
+      if (columnKey === 'nodate') {
+        await updateTask(taskId, { must_do_by: null, target_date: null });
+      } else if (field === 'target_date') {
+        await updateTask(taskId, { target_date: newDate });
+      } else {
+        await updateTask(taskId, { must_do_by: newDate });
+      }
+      refetch();
+    } catch (err) {
+      setDropError(err instanceof Error ? err.message : 'Failed to move task');
     }
-    refetch();
   }
 
   return (
@@ -157,9 +162,9 @@ export function TasksPage() {
         </div>
       )}
 
-      {error && (
+      {(error || dropError) && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-          {error}
+          {error ?? dropError}
         </div>
       )}
 
@@ -175,6 +180,8 @@ export function TasksPage() {
               ))
             )}
           </div>
+        ) : filteredTasks.length === 0 ? (
+          <EmptyState msg={selectedLabelIds.size > 0 ? 'No tasks match this filter' : 'No pending tasks'} />
         ) : (
           /* Pending tasks: 4-column kanban board */
           <div className="overflow-x-auto -mx-4 px-4 pb-4">
