@@ -6,6 +6,14 @@ import { TaskCard } from '../components/TaskCard';
 import { updateTask } from '../api/tasks';
 import { useFilter } from '../context/FilterContext';
 import type { Label, Task } from '../api/tasks';
+import {
+  type ColumnKey,
+  dateOnly,
+  getEffectiveDate,
+  getColumn,
+  getDropDate,
+  getEffectiveDateField,
+} from '../utils/taskDateUtils';
 
 type LabelCategory = 'frequency' | 'mode' | 'type';
 const CATEGORIES: LabelCategory[] = ['mode', 'type', 'frequency'];
@@ -25,59 +33,12 @@ const CATEGORY_COLORS: Record<LabelCategory, { active: string; inactive: string 
   },
 };
 
-type ColumnKey = 'today' | 'tomorrow' | 'upcoming' | 'nodate';
-
 const COLUMNS: { key: ColumnKey; title: string }[] = [
   { key: 'today', title: 'Today' },
   { key: 'tomorrow', title: 'Tomorrow' },
   { key: 'upcoming', title: 'Upcoming' },
   { key: 'nodate', title: 'No Date' },
 ];
-
-function dateOnly(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function getEffectiveDate(task: Task): string | null {
-  if (task.must_do_by && task.target_date) {
-    return task.must_do_by <= task.target_date ? task.must_do_by : task.target_date;
-  }
-  return task.must_do_by || task.target_date || null;
-}
-
-function getColumn(task: Task, today: string, tomorrow: string): ColumnKey {
-  const effective = getEffectiveDate(task);
-  if (!effective) return 'nodate';
-  if (effective <= today) return 'today'; // overdue also lands in Today
-  if (effective === tomorrow) return 'tomorrow';
-  return 'upcoming';
-}
-
-function getDropDate(columnKey: ColumnKey): string | null {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  if (columnKey === 'nodate') return null;
-  if (columnKey === 'today') return dateOnly(now);
-  if (columnKey === 'tomorrow') {
-    const tom = new Date(now);
-    tom.setDate(tom.getDate() + 1);
-    return dateOnly(tom);
-  }
-  const week = new Date(now);
-  week.setDate(week.getDate() + 7);
-  return dateOnly(week);
-}
-
-function getEffectiveDateField(task: Task): 'must_do_by' | 'target_date' {
-  if (task.must_do_by && task.target_date) {
-    return task.must_do_by <= task.target_date ? 'must_do_by' : 'target_date';
-  }
-  if (task.target_date && !task.must_do_by) return 'target_date';
-  return 'must_do_by';
-}
 
 export function TasksPage() {
   const navigate = useNavigate();
@@ -86,7 +47,7 @@ export function TasksPage() {
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
 
   const { tasks, loading, error, refetch } = useTasks(showDone ? 'done' : 'pending');
-  const { labelsByCategory } = useLabels();
+  const { labels, labelsByCategory } = useLabels();
 
   const today = dateOnly(new Date());
   const tomorrow = (() => {
@@ -210,7 +171,7 @@ export function TasksPage() {
               <EmptyState msg="No completed tasks yet" />
             ) : (
               filteredTasks.map((task) => (
-                <TaskCard key={task.id} task={task} onRefresh={refetch} />
+                <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} />
               ))
             )}
           </div>
@@ -261,6 +222,7 @@ export function TasksPage() {
                           <TaskCard
                             key={task.id}
                             task={task}
+                            labels={labels}
                             onRefresh={refetch}
                             draggable
                           />

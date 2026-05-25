@@ -32,7 +32,9 @@
 ## TEST OWNERSHIP
 
 - **Never modify `backend/tests/test_api.py`** — that file is owned exclusively by the `/test-review` skill. Do not add, edit, or delete anything in it, even when implementing a feature that clearly needs API test coverage.
-- **Unit tests are your responsibility** — when adding or changing business logic, write or update unit tests alongside the implementation.
+- **Unit tests for frontend and backend are always required** — when adding or changing business logic, write or update unit tests alongside the implementation. No exceptions.
+  - Backend unit tests: `backend/tests/unit/` using pytest (no DB required — mock SQLAlchemy sessions with `unittest.mock.MagicMock`)
+  - Frontend unit tests: `frontend/src/__tests__/` using Vitest; pure utility functions in `frontend/src/utils/` are the primary target
 
 ---
 
