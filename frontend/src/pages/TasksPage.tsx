@@ -110,7 +110,14 @@ export function TasksPage() {
     if (dueFilter) {
       result = result.filter((task) => matchesDueFilter(task, dueFilter));
     }
-    return result;
+    return [...result].sort((a, b) => {
+      const aDate = [a.must_do_by, a.target_date].filter(Boolean).sort()[0] ?? null;
+      const bDate = [b.must_do_by, b.target_date].filter(Boolean).sort()[0] ?? null;
+      if (aDate === bDate) return 0;
+      if (!aDate) return 1;
+      if (!bDate) return -1;
+      return aDate < bDate ? -1 : 1;
+    });
   }, [tasks, selectedLabelIds, dueFilter]);
 
   return (
