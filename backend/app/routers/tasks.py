@@ -97,6 +97,8 @@ def update_task(
         must_do_by=body.must_do_by,
         target_date=body.target_date,
         label_ids=body.label_ids,
+        clear_must_do_by='must_do_by' in body.model_fields_set and body.must_do_by is None,
+        clear_target_date='target_date' in body.model_fields_set and body.target_date is None,
     )
     return TaskOut.model_validate(task)
 

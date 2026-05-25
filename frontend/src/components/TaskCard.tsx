@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Task } from '../api/tasks';
 import { completeTask, deleteTask } from '../api/tasks';
@@ -6,7 +7,10 @@ import { LabelBadge } from './LabelBadge';
 interface TaskCardProps {
   task: Task;
   onRefresh: () => void;
+  draggable?: boolean;
 }
+
+const LABEL_CATEGORY_ORDER: Record<string, number> = { mode: 0, type: 1, frequency: 2 };
 
 function today0(): Date {
   const d = new Date();
@@ -24,9 +28,14 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function TaskCard({ task, onRefresh }: TaskCardProps) {
+export function TaskCard({ task, onRefresh, draggable: isDraggable = false }: TaskCardProps) {
   const navigate = useNavigate();
   const mustOverdue = isOverdue(task.must_do_by);
+  const [dragging, setDragging] = useState(false);
+
+  const sortedLabels = [...task.labels].sort(
+    (a, b) => (LABEL_CATEGORY_ORDER[a.category] ?? 3) - (LABEL_CATEGORY_ORDER[b.category] ?? 3)
+  );
 
   async function handleComplete(e: React.MouseEvent) {
     e.stopPropagation();
@@ -51,12 +60,19 @@ export function TaskCard({ task, onRefresh }: TaskCardProps) {
 
   return (
     <div
-      className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
+      className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow select-none ${dragging ? 'opacity-40' : ''}`}
+      draggable={isDraggable && task.state === 'pending'}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', task.id);
+        e.dataTransfer.effectAllowed = 'move';
+        setDragging(true);
+      }}
+      onDragEnd={() => setDragging(false)}
       onClick={() => navigate(`/tasks/${task.id}`)}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <h3 className="text-gray-900 font-medium text-sm truncate">{task.title}</h3>
+          <h3 className="text-gray-900 font-medium text-sm leading-snug">{task.title}</h3>
           {task.must_do_by && (
             <p className={`text-xs mt-1 ${mustOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
               {mustOverdue ? 'Overdue · Must do: ' : 'Must do: '}
@@ -68,9 +84,9 @@ export function TaskCard({ task, onRefresh }: TaskCardProps) {
               Target: {formatDate(task.target_date)}
             </p>
           )}
-          {task.labels.length > 0 && (
+          {sortedLabels.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
-              {task.labels.map((label) => (
+              {sortedLabels.map((label) => (
                 <LabelBadge key={label.id} label={label} small />
               ))}
             </div>

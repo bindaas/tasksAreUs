@@ -32,8 +32,8 @@ export interface CreateTaskBody {
 export interface UpdateTaskBody {
   title?: string;
   notes?: string;
-  must_do_by?: string;
-  target_date?: string;
+  must_do_by?: string | null;
+  target_date?: string | null;
   label_ids?: string[];
 }
 
