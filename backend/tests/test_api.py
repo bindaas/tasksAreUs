@@ -114,10 +114,12 @@ def main():
     # ── Task CRUD ──────────────────────────────────────────────────────────────
     print("\n── Tasks: CRUD ─────────────────────────────────────────")
     tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    next_week = (date.today() + timedelta(days=7)).isoformat()
     r = client.post("/tasks", headers=H, json={
         "title": "Return library books",
         "notes": "Row 4, shelf B",
-        "must_do_by": tomorrow,
+        "must_do_by": next_week,
+        "target_date": tomorrow,
         "label_ids": [mode_labels["outdoor"], type_labels["raghav"]],
     })
     assert_eq("POST /tasks → 201", r.status_code, 201)
@@ -126,10 +128,17 @@ def main():
     assert_eq("task title", task["title"], "Return library books")
     assert_eq("task state", task["state"], "pending")
     assert_eq("task label count", len(task["labels"]), 2)
+    # target_date and must_do_by must both be present in the task response
+    assert_in("task has target_date field", "target_date", task)
+    assert_in("task has must_do_by field", "must_do_by", task)
+    assert_eq("task target_date round-trips", task["target_date"], tomorrow)
+    assert_eq("task must_do_by round-trips", task["must_do_by"], next_week)
 
     r = client.get(f"/tasks/{task_id}", headers=H)
     assert_eq("GET /tasks/:id → 200", r.status_code, 200)
-    assert_eq("fetched task id", r.json()["id"], task_id)
+    fetched = r.json()
+    assert_eq("fetched task id", fetched["id"], task_id)
+    assert_eq("GET /tasks/:id target_date preserved", fetched["target_date"], tomorrow)
 
     r = client.put(f"/tasks/{task_id}", headers=H, json={
         "title": "Return library books (updated)",
@@ -139,10 +148,48 @@ def main():
     assert_eq("updated title", r.json()["title"], "Return library books (updated)")
     assert_eq("label replaced", len(r.json()["labels"]), 1)
 
+    # PUT can update target_date independently
+    r = client.put(f"/tasks/{task_id}", headers=H, json={
+        "target_date": next_week,
+    })
+    assert_eq("PUT /tasks/:id target_date update → 200", r.status_code, 200)
+    assert_eq("target_date updated via PUT", r.json()["target_date"], next_week)
+
     r = client.get("/tasks", headers=H, params={"state": "pending"})
     assert_eq("GET /tasks?state=pending → 200", r.status_code, 200)
     task_ids = [t["id"] for t in r.json()["tasks"]]
     assert_in("task in list", task_id, task_ids)
+
+    # ── Due-date filter params ─────────────────────────────────────────────────
+    print("\n── Tasks: Due-date filter params ───────────────────────")
+    # Create a task due far in the future to use as a control
+    far_future = (date.today() + timedelta(days=60)).isoformat()
+    r = client.post("/tasks", headers=H, json={
+        "title": "Far future task",
+        "must_do_by": far_future,
+        "label_ids": [],
+    })
+    assert_eq("POST /tasks far-future → 201", r.status_code, 201)
+    far_task_id = r.json()["id"]
+
+    # due_before should include tasks with must_do_by on or before the cutoff
+    r = client.get("/tasks", headers=H, params={"due_before": next_week, "state": "pending"})
+    assert_eq("GET /tasks?due_before → 200", r.status_code, 200)
+    due_before_ids = [t["id"] for t in r.json()["tasks"]]
+    assert_in("task within due_before window is returned", task_id, due_before_ids)
+    assert_true("far-future task excluded by due_before",
+                far_task_id not in due_before_ids)
+
+    # due_after should include tasks with must_do_by on or after the cutoff
+    r = client.get("/tasks", headers=H, params={"due_after": far_future, "state": "pending"})
+    assert_eq("GET /tasks?due_after → 200", r.status_code, 200)
+    due_after_ids = [t["id"] for t in r.json()["tasks"]]
+    assert_in("far-future task included by due_after", far_task_id, due_after_ids)
+    assert_true("near-term task excluded by due_after",
+                task_id not in due_after_ids)
+
+    # Soft-delete the far-future task so it doesn't pollute other sections
+    client.delete(f"/tasks/{far_task_id}", headers=H)
 
     # Verify the medical label (added in PR #1) can be assigned to a task
     r = client.post("/tasks", headers=H, json={
