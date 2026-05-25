@@ -52,6 +52,19 @@ class TestFormatTaskLine:
         line = _format_task_line(t)
         assert "[labels: weekly]" in line
 
+    def test_notes_included(self):
+        t = _make_task("Call doctor", must_do_by=date(2026, 6, 1))
+        t.notes = "Call Dr Smith at 555-1234"
+        line = _format_task_line(t)
+        assert "(notes: Call Dr Smith at 555-1234)" in line
+
+    def test_long_notes_truncated_at_120_chars(self):
+        t = _make_task("Long task")
+        t.notes = "x" * 130
+        line = _format_task_line(t)
+        assert "(notes: " + "x" * 120 + "…)" in line
+        assert "x" * 121 not in line
+
     def test_both_dates_and_labels(self):
         label = MagicMock()
         label.value = "financial"

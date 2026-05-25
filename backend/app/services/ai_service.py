@@ -196,6 +196,9 @@ def _format_task_line(task: Task) -> str:
         parts.append(f"(must-do: {task.must_do_by})")
     if task.target_date:
         parts.append(f"(target: {task.target_date})")
+    if task.notes:
+        truncated = task.notes[:120] + "…" if len(task.notes) > 120 else task.notes
+        parts.append(f"(notes: {truncated})")
     if task.labels:
         parts.append(f"[labels: {', '.join(l.value for l in task.labels)}]")
     return " ".join(parts)
