@@ -91,14 +91,20 @@ def update_task(
     must_do_by: Optional[date],
     target_date: Optional[date],
     label_ids: Optional[List[str]],
+    clear_must_do_by: bool = False,
+    clear_target_date: bool = False,
 ) -> Task:
     if title is not None:
         task.title = title
     if notes is not None:
         task.notes = notes
-    if must_do_by is not None:
+    if clear_must_do_by:
+        task.must_do_by = None
+    elif must_do_by is not None:
         task.must_do_by = must_do_by
-    if target_date is not None:
+    if clear_target_date:
+        task.target_date = None
+    elif target_date is not None:
         task.target_date = target_date
 
     if label_ids is not None:

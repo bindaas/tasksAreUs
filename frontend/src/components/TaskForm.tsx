@@ -14,7 +14,7 @@ interface TaskFormProps {
 
 type LabelCategory = 'frequency' | 'mode' | 'type';
 
-const CATEGORY_ORDER: LabelCategory[] = ['frequency', 'mode', 'type'];
+const CATEGORY_ORDER: LabelCategory[] = ['mode', 'type', 'frequency'];
 
 export function TaskForm({
   initialValues,

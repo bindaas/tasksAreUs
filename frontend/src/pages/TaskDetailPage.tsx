@@ -4,6 +4,7 @@ import { getTask, updateTask, deleteTask, completeTask, createTask } from '../ap
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
 import { useLabels } from '../hooks/useLabels';
 import { TaskForm } from '../components/TaskForm';
+import { useFilter } from '../context/FilterContext';
 
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,7 @@ export function TaskDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   const { labels, loading: labelsLoading } = useLabels();
+  const { selectedLabelIds } = useFilter();
 
   useEffect(() => {
     if (isNew) return;
@@ -112,7 +114,11 @@ export function TaskDetailPage() {
       {!pageLoading && (isNew || task) && (
         <>
           <TaskForm
-            initialValues={task ?? undefined}
+            initialValues={
+              isNew
+                ? { labels: labels.filter((l) => selectedLabelIds.has(l.id)) }
+                : task ?? undefined
+            }
             labels={labels}
             onSubmit={handleSubmit}
             onCancel={() => navigate(-1)}
