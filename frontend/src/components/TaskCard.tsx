@@ -8,12 +8,15 @@ interface TaskCardProps {
   onRefresh: () => void;
 }
 
+function today0(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 function isOverdue(dateStr: string | null): boolean {
   if (!dateStr) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(dateStr + 'T00:00:00');
-  return due < today;
+  return new Date(dateStr + 'T00:00:00') < today0();
 }
 
 function formatDate(dateStr: string): string {
@@ -23,7 +26,7 @@ function formatDate(dateStr: string): string {
 
 export function TaskCard({ task, onRefresh }: TaskCardProps) {
   const navigate = useNavigate();
-  const overdue = isOverdue(task.must_do_by);
+  const mustOverdue = isOverdue(task.must_do_by);
 
   async function handleComplete(e: React.MouseEvent) {
     e.stopPropagation();
@@ -55,9 +58,14 @@ export function TaskCard({ task, onRefresh }: TaskCardProps) {
         <div className="flex-1 min-w-0">
           <h3 className="text-gray-900 font-medium text-sm truncate">{task.title}</h3>
           {task.must_do_by && (
-            <p className={`text-xs mt-1 ${overdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-              {overdue ? 'Overdue: ' : 'Due: '}
+            <p className={`text-xs mt-1 ${mustOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+              {mustOverdue ? 'Overdue · Must do: ' : 'Must do: '}
               {formatDate(task.must_do_by)}
+            </p>
+          )}
+          {task.target_date && task.target_date !== task.must_do_by && (
+            <p className="text-xs mt-0.5 text-gray-400">
+              Target: {formatDate(task.target_date)}
             </p>
           )}
           {task.labels.length > 0 && (

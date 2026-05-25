@@ -3,10 +3,64 @@ import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { useLabels } from '../hooks/useLabels';
 import { TaskCard } from '../components/TaskCard';
-import type { Label } from '../api/tasks';
+import type { Label, Task } from '../api/tasks';
 
 type LabelCategory = 'frequency' | 'mode' | 'type';
 const CATEGORIES: LabelCategory[] = ['frequency', 'mode', 'type'];
+
+type DueFilter = 'today' | 'tomorrow' | 'next3' | 'thisweek' | 'nodate' | null;
+
+const DUE_FILTER_LABELS: { key: DueFilter; label: string }[] = [
+  { key: 'today', label: 'Today' },
+  { key: 'tomorrow', label: 'Tomorrow' },
+  { key: 'next3', label: 'Next 3 days' },
+  { key: 'thisweek', label: 'This week' },
+  { key: 'nodate', label: 'No date' },
+];
+
+function dateOnly(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function matchesDueFilter(task: Task, filter: DueFilter): boolean {
+  if (!filter) return true;
+  const mdb = task.must_do_by;
+  const td = task.target_date;
+  if (filter === 'nodate') return !mdb && !td;
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  if (filter === 'today') {
+    const t = dateOnly(now);
+    return mdb === t || td === t;
+  }
+  if (filter === 'tomorrow') {
+    const tom = new Date(now);
+    tom.setDate(tom.getDate() + 1);
+    const t = dateOnly(tom);
+    return mdb === t || td === t;
+  }
+  if (filter === 'next3') {
+    const end = new Date(now);
+    end.setDate(end.getDate() + 2);
+    const s = dateOnly(now);
+    const e = dateOnly(end);
+    return (!!mdb && mdb >= s && mdb <= e) || (!!td && td >= s && td <= e);
+  }
+  if (filter === 'thisweek') {
+    const day = now.getDay(); // 0=Sun
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + mondayOffset);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const s = dateOnly(monday);
+    const e = dateOnly(sunday);
+    return (!!mdb && mdb >= s && mdb <= e) || (!!td && td >= s && td <= e);
+  }
+  return true;
+}
 
 const CATEGORY_COLORS: Record<LabelCategory, { active: string; inactive: string }> = {
   frequency: {
@@ -27,6 +81,7 @@ export function TasksPage() {
   const navigate = useNavigate();
   const [showDone, setShowDone] = useState(false);
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
+  const [dueFilter, setDueFilter] = useState<DueFilter>(null);
 
   const { tasks, loading, error, refetch } = useTasks(showDone ? 'done' : 'pending');
   const { labelsByCategory } = useLabels();
@@ -43,12 +98,20 @@ export function TasksPage() {
     });
   }
 
+  function toggleDueFilter(key: DueFilter) {
+    setDueFilter((prev) => (prev === key ? null : key));
+  }
+
   const filteredTasks = useMemo(() => {
-    if (selectedLabelIds.size === 0) return tasks;
-    return tasks.filter((task) =>
-      task.labels.some((l) => selectedLabelIds.has(l.id))
-    );
-  }, [tasks, selectedLabelIds]);
+    let result = tasks;
+    if (selectedLabelIds.size > 0) {
+      result = result.filter((task) => task.labels.some((l) => selectedLabelIds.has(l.id)));
+    }
+    if (dueFilter) {
+      result = result.filter((task) => matchesDueFilter(task, dueFilter));
+    }
+    return result;
+  }, [tasks, selectedLabelIds, dueFilter]);
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
@@ -67,7 +130,25 @@ export function TasksPage() {
         </div>
       </div>
 
-      {/* Filter chips */}
+      {/* Due date filter */}
+      <div className="mb-3 flex flex-wrap gap-1.5 items-center">
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-16 shrink-0">Due</span>
+        {DUE_FILTER_LABELS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => toggleDueFilter(key)}
+            className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors ${
+              dueFilter === key
+                ? 'bg-orange-600 text-white border-orange-600'
+                : 'bg-white text-orange-700 border-orange-300 hover:bg-orange-50'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Label filter chips */}
       <div className="mb-4 space-y-2">
         {CATEGORIES.map((cat) => {
           const catLabels = (labelsByCategory[cat] ?? []) as Label[];
@@ -95,12 +176,12 @@ export function TasksPage() {
             </div>
           );
         })}
-        {selectedLabelIds.size > 0 && (
+        {(selectedLabelIds.size > 0 || dueFilter) && (
           <button
-            onClick={() => setSelectedLabelIds(new Set())}
+            onClick={() => { setSelectedLabelIds(new Set()); setDueFilter(null); }}
             className="text-xs text-gray-500 hover:text-gray-700 underline"
           >
-            Clear filters
+            Clear all filters
           </button>
         )}
       </div>
@@ -124,7 +205,7 @@ export function TasksPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
           <p className="text-sm">
-            {selectedLabelIds.size > 0
+            {selectedLabelIds.size > 0 || dueFilter
               ? 'No tasks match the selected filters'
               : showDone
               ? 'No completed tasks yet'
