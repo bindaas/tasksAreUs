@@ -190,6 +190,17 @@ _CONV_TOOLS = [
 ]
 
 
+def _format_task_line(task: Task) -> str:
+    parts = [f"  - [{task.id}] {task.title}"]
+    if task.must_do_by:
+        parts.append(f"(must-do: {task.must_do_by})")
+    if task.target_date:
+        parts.append(f"(target: {task.target_date})")
+    if task.labels:
+        parts.append(f"[labels: {', '.join(l.value for l in task.labels)}]")
+    return " ".join(parts)
+
+
 def handle_conversation_message(
     db: Session,
     conversation: Conversation,
@@ -206,10 +217,7 @@ def handle_conversation_message(
     ).limit(100).all()
 
     tasks_context = "\n".join([
-        f"  - [{t.id}] {t.title}"
-        + (f" (due {t.must_do_by})" if t.must_do_by else "")
-        + (f" [labels: {', '.join(l.value for l in t.labels)}]" if t.labels else "")
-        for t in pending_tasks
+        _format_task_line(t) for t in pending_tasks
     ]) or "  (no pending tasks)"
 
     all_labels = db.query(Label).all()
