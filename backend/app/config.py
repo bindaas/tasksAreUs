@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     CLAUDE_INPUT_COST_PER_M: float = 3.0
     CLAUDE_OUTPUT_COST_PER_M: float = 15.0
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
 
 settings = Settings()
