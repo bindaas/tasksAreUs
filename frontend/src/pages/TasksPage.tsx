@@ -6,6 +6,7 @@ import { TaskCard } from '../components/TaskCard';
 import { updateTask } from '../api/tasks';
 import { useFilter } from '../context/FilterContext';
 import type { Label, Task } from '../api/tasks';
+import { filterTasks } from '../utils/taskFilters';
 import {
   type ColumnKey,
   dateOnly,
@@ -58,21 +59,10 @@ export function TasksPage() {
     return { today: dateOnly(now), tomorrow: dateOnly(tom) };
   }, []);
 
-  const filteredTasks = useMemo(() => {
-    let result = tasks;
-    if (selectedLabelIds.size > 0) {
-      result = result.filter((task) => task.labels.some((l) => selectedLabelIds.has(l.id)));
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      result = result.filter(
-        (task) =>
-          task.title.toLowerCase().includes(q) ||
-          (task.notes?.toLowerCase().includes(q) ?? false),
-      );
-    }
-    return result;
-  }, [tasks, selectedLabelIds, searchQuery]);
+  const filteredTasks = useMemo(
+    () => filterTasks(tasks, selectedLabelIds, searchQuery),
+    [tasks, selectedLabelIds, searchQuery],
+  );
 
   const columnTasks = useMemo(() => {
     const map: Record<ColumnKey, Task[]> = { today: [], tomorrow: [], upcoming: [], nodate: [] };
@@ -199,7 +189,7 @@ export function TasksPage() {
           /* Done tasks: flat list */
           <div className="space-y-2 max-w-2xl mx-auto">
             {filteredTasks.length === 0 ? (
-              <EmptyState msg="No completed tasks yet" />
+              <EmptyState msg={searchQuery.trim() || selectedLabelIds.size > 0 ? 'No completed tasks match this filter' : 'No completed tasks yet'} />
             ) : (
               filteredTasks.map((task) => (
                 <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} />
@@ -207,7 +197,7 @@ export function TasksPage() {
             )}
           </div>
         ) : filteredTasks.length === 0 ? (
-          <EmptyState msg={selectedLabelIds.size > 0 ? 'No tasks match this filter' : 'No pending tasks'} />
+          <EmptyState msg={selectedLabelIds.size > 0 || searchQuery.trim() ? 'No tasks match this filter' : 'No pending tasks'} />
         ) : (
           /* Pending tasks: 4-column kanban board */
           <div className="overflow-x-auto -mx-4 px-4 pb-4">
