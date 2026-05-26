@@ -89,8 +89,10 @@ export function TasksPage() {
     if (!task) return;
 
     if (priority === 'high' && isHighPriorityEligible(columnKey)) {
-      const { high: highForColumn } = splitByPriority(columnTasks[columnKey]);
-      if (!canAddHighPriority(highForColumn, task)) {
+      const allHighForColumn = tasks.filter(
+        (t) => t.is_high_priority && getColumn(t, today, tomorrow) === columnKey,
+      );
+      if (!canAddHighPriority(allHighForColumn, task)) {
         setDropError(`High priority is limited to ${HIGH_PRIORITY_DAILY_LIMIT} tasks per day.`);
         return;
       }

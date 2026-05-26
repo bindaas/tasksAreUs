@@ -160,15 +160,16 @@ def update_task(
         task.is_high_priority = False
 
     # Enforce per-day high-priority limit only when priority is being explicitly set to True
-    if is_high_priority is True and task.is_high_priority:
+    if is_high_priority is True:
         effective = _effective_date(task.must_do_by, task.target_date)
-        count = _count_high_priority_for_date(db, task.user_id, effective, exclude_task_id=task.id)
-        if count >= HIGH_PRIORITY_DAILY_LIMIT:
-            raise HTTPException(
-                status_code=422,
-                detail=f"High-priority tasks are limited to {HIGH_PRIORITY_DAILY_LIMIT} per day. "
-                       "Remove one before adding another.",
-            )
+        if _is_today_or_tomorrow(effective):
+            count = _count_high_priority_for_date(db, task.user_id, effective, exclude_task_id=task.id)
+            if count >= HIGH_PRIORITY_DAILY_LIMIT:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"High-priority tasks are limited to {HIGH_PRIORITY_DAILY_LIMIT} per day. "
+                           "Remove one before adding another.",
+                )
 
     if label_ids is not None:
         db.query(TaskLabel).filter(TaskLabel.task_id == task.id).delete()
