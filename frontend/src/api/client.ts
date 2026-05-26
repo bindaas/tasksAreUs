@@ -25,7 +25,14 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     const text = await response.text().catch(() => response.statusText);
-    throw new Error(`API error ${response.status}: ${text}`);
+    let message = `API error ${response.status}: ${text}`;
+    try {
+      const json = JSON.parse(text);
+      if (typeof json.detail === 'string') message = json.detail;
+    } catch {
+      // keep raw message
+    }
+    throw new Error(message);
   }
 
   if (response.status === 204) {

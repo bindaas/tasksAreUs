@@ -1,6 +1,8 @@
 import type { Task } from '../api/tasks';
 import type { ColumnKey } from './taskDateUtils';
 
+export const HIGH_PRIORITY_DAILY_LIMIT = 3;
+
 export function isHighPriorityEligible(columnKey: ColumnKey): boolean {
   return columnKey === 'today' || columnKey === 'tomorrow';
 }
@@ -16,4 +18,10 @@ export function splitByPriority(tasks: Task[]): { high: Task[]; normal: Task[] }
     }
   }
   return { high, normal };
+}
+
+/** Returns true if droppedTask can be added to the high-priority zone for this column. */
+export function canAddHighPriority(highTasks: Task[], droppedTask: Task): boolean {
+  if (highTasks.some((t) => t.id === droppedTask.id)) return true;
+  return highTasks.length < HIGH_PRIORITY_DAILY_LIMIT;
 }
