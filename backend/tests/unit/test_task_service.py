@@ -5,7 +5,11 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
+from fastapi import HTTPException
+
 from app.services.task_service import (
+    HIGH_PRIORITY_DAILY_LIMIT,
+    _count_high_priority_for_date,
     _effective_date,
     _get_frequency_label,
     _is_today_or_tomorrow,
@@ -254,3 +258,104 @@ class TestUpdateTaskHighPriority:
         update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
                     target_date=None, label_ids=None, is_high_priority=True)
         assert task.is_high_priority is False
+
+
+# ── high-priority daily limit ──────────────────────────────────────────────────
+
+class TestHighPriorityDailyLimit:
+    def _make_task(self, task_id="task-1", must_do_by=None, is_high_priority=False):
+        task = MagicMock()
+        task.id = task_id
+        task.user_id = "user-1"
+        task.must_do_by = must_do_by
+        task.target_date = None
+        task.is_high_priority = is_high_priority
+        task.labels = []
+        return task
+
+    def _make_db(self):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.delete.return_value = None
+        db.commit.return_value = None
+        db.refresh.side_effect = lambda t: None
+        return db
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT)
+    def test_update_raises_422_when_daily_limit_reached(self, _mock):
+        today = date.today()
+        task = self._make_task(must_do_by=today, is_high_priority=False)
+        with pytest.raises(HTTPException) as exc:
+            update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                        target_date=None, label_ids=None, is_high_priority=True)
+        assert exc.value.status_code == 422
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT - 1)
+    def test_update_succeeds_when_below_limit(self, _mock):
+        today = date.today()
+        task = self._make_task(must_do_by=today, is_high_priority=False)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=True)
+        assert task.is_high_priority is True
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT)
+    def test_update_no_check_when_priority_not_explicitly_set(self, mock_count):
+        today = date.today()
+        task = self._make_task(must_do_by=today, is_high_priority=True)
+        # is_high_priority=None means caller is not changing it — no limit check
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=None)
+        mock_count.assert_not_called()
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT)
+    def test_update_no_check_when_priority_explicitly_false(self, mock_count):
+        today = date.today()
+        task = self._make_task(must_do_by=today, is_high_priority=True)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=False)
+        mock_count.assert_not_called()
+        assert task.is_high_priority is False
+
+
+# ── _count_high_priority_for_date ─────────────────────────────────────────────
+
+class TestCountHighPriorityForDate:
+    def _make_hp_task(self, task_id, must_do_by):
+        t = MagicMock()
+        t.id = task_id
+        t.must_do_by = must_do_by
+        t.target_date = None
+        return t
+
+    def _make_db(self, tasks):
+        db = MagicMock()
+        q = MagicMock()
+        q.filter.return_value = q
+        q.all.return_value = tasks
+        db.query.return_value = q
+        return db
+
+    def test_counts_tasks_for_matching_date(self):
+        today = date.today()
+        tasks = [
+            self._make_hp_task("t1", today),
+            self._make_hp_task("t2", today),
+        ]
+        db = self._make_db(tasks)
+        count = _count_high_priority_for_date(db, "user-1", today)
+        assert count == 2
+
+    def test_excludes_task_id(self):
+        today = date.today()
+        tasks = [
+            self._make_hp_task("t1", today),
+            self._make_hp_task("t2", today),
+        ]
+        db = self._make_db(tasks)
+        count = _count_high_priority_for_date(db, "user-1", today, exclude_task_id="t1")
+        assert count == 1
+
+    def test_returns_zero_for_none_date(self):
+        db = MagicMock()
+        count = _count_high_priority_for_date(db, "user-1", None)
+        assert count == 0
+        db.query.assert_not_called()

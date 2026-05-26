@@ -381,6 +381,79 @@ def main():
                 hp_nodate_task_id, hp_target_today_task_id, hp_default_task_id]:
         client.delete(f"/tasks/{tid}", headers=H)
 
+    # ── High-priority daily limit (PR #7) ─────────────────────────────────────
+    print("\n── Tasks: High Priority Daily Limit ────────────────────")
+    # Create exactly 3 high-priority tasks for today — all should succeed
+    hp_limit_ids = []
+    for i in range(3):
+        r = client.post("/tasks", headers=H, json={
+            "title": f"HP limit task {i + 1}",
+            "must_do_by": today_str,
+            "label_ids": [],
+            "is_high_priority": True,
+        })
+        assert_eq(f"POST hp limit task {i + 1}/3 → 201", r.status_code, 201)
+        assert_eq(f"hp limit task {i + 1} is_high_priority=true", r.json()["is_high_priority"], True)
+        hp_limit_ids.append(r.json()["id"])
+
+    # 4th high-priority task for today must be rejected with 422
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP limit task 4 (should fail)",
+        "must_do_by": today_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST 4th high-priority task for today → 422", r.status_code, 422)
+    assert_true("422 detail mentions limit", "limited" in r.json().get("detail", "").lower())
+
+    # The rejected task must NOT have been created (GET /tasks shouldn't include it)
+    r = client.get("/tasks", headers=H, params={"state": "pending"})
+    pending_titles = [t["title"] for t in r.json()["tasks"]]
+    assert_true("rejected HP task not created", "HP limit task 4 (should fail)" not in pending_titles)
+
+    # PUT an existing non-HP task to is_high_priority=True when limit is already reached → 422
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP limit PUT test task",
+        "must_do_by": today_str,
+        "label_ids": [],
+        "is_high_priority": False,
+    })
+    assert_eq("POST normal task for PUT limit test → 201", r.status_code, 201)
+    hp_limit_put_task_id = r.json()["id"]
+
+    r = client.put(f"/tasks/{hp_limit_put_task_id}", headers=H, json={"is_high_priority": True})
+    assert_eq("PUT is_high_priority=true when limit reached → 422", r.status_code, 422)
+    assert_true("PUT 422 detail mentions limit", "limited" in r.json().get("detail", "").lower())
+
+    # Verify that today and tomorrow limits are independent: a 4th HP task for
+    # tomorrow must succeed even though today's limit is full
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP limit task tomorrow",
+        "must_do_by": tomorrow_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST 4th high-priority task for tomorrow (different day) → 201", r.status_code, 201)
+    hp_limit_tomorrow_id = r.json()["id"]
+    assert_eq("tomorrow HP task is_high_priority=true", r.json()["is_high_priority"], True)
+
+    # Removing one task from today's limit allows the 4th to be added again
+    client.delete(f"/tasks/{hp_limit_ids[0]}", headers=H)
+    hp_limit_ids.pop(0)
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP limit task after removal",
+        "must_do_by": today_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST HP task after removing one from limit → 201", r.status_code, 201)
+    hp_limit_ids.append(r.json()["id"])
+    assert_eq("new HP task is_high_priority=true after slot freed", r.json()["is_high_priority"], True)
+
+    # Clean up all high-priority limit test tasks
+    for tid in hp_limit_ids + [hp_limit_put_task_id, hp_limit_tomorrow_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
+
     # ── Task completion (one-time) ─────────────────────────────────────────────
     print("\n── Tasks: Complete (one-time) ──────────────────────────")
     r = client.post(f"/tasks/{task_id}/complete", headers=H, json={"notes": "All returned"})

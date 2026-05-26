@@ -12,6 +12,7 @@ from ..models import Label, StateEnum, Task, TaskLabel
 
 
 FREQUENCY_VALUES = {"daily", "weekly", "monthly", "annual"}
+HIGH_PRIORITY_DAILY_LIMIT = 3
 
 
 def _effective_date(must_do_by: Optional[date], target_date: Optional[date]) -> Optional[date]:
@@ -44,6 +45,24 @@ def _next_due_date(base: date, frequency: str) -> date:
     if frequency == "annual":
         return base + relativedelta(years=1)
     return base
+
+
+def _count_high_priority_for_date(
+    db: Session, user_id: str, d: Optional[date], exclude_task_id: Optional[str] = None
+) -> int:
+    if d is None:
+        return 0
+    q = db.query(Task).filter(
+        Task.user_id == user_id,
+        Task.is_high_priority == True,
+        Task.is_deleted == False,
+        Task.state == StateEnum.pending,
+    )
+    return sum(
+        1 for t in q.all()
+        if _effective_date(t.must_do_by, t.target_date) == d
+        and (exclude_task_id is None or t.id != exclude_task_id)
+    )
 
 
 def get_task_or_404(db: Session, task_id: str, user_id: str) -> Task:
@@ -82,6 +101,14 @@ def create_task(
     labels = _resolve_labels(db, label_ids)
     effective = _effective_date(must_do_by, target_date)
     final_priority = is_high_priority and _is_today_or_tomorrow(effective)
+    if final_priority:
+        count = _count_high_priority_for_date(db, user_id, effective)
+        if count >= HIGH_PRIORITY_DAILY_LIMIT:
+            raise HTTPException(
+                status_code=422,
+                detail=f"High-priority tasks are limited to {HIGH_PRIORITY_DAILY_LIMIT} per day. "
+                       "Remove one before adding another.",
+            )
     task = Task(
         user_id=user_id,
         title=title,
@@ -131,6 +158,18 @@ def update_task(
     # Auto-reset: high priority is only valid for today/tomorrow
     if not _is_today_or_tomorrow(_effective_date(task.must_do_by, task.target_date)):
         task.is_high_priority = False
+
+    # Enforce per-day high-priority limit only when priority is being explicitly set to True
+    if is_high_priority is True:
+        effective = _effective_date(task.must_do_by, task.target_date)
+        if _is_today_or_tomorrow(effective):
+            count = _count_high_priority_for_date(db, task.user_id, effective, exclude_task_id=task.id)
+            if count >= HIGH_PRIORITY_DAILY_LIMIT:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"High-priority tasks are limited to {HIGH_PRIORITY_DAILY_LIMIT} per day. "
+                           "Remove one before adding another.",
+                )
 
     if label_ids is not None:
         db.query(TaskLabel).filter(TaskLabel.task_id == task.id).delete()

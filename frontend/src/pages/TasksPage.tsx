@@ -15,7 +15,7 @@ import {
   getDropDate,
   getEffectiveDateField,
 } from '../utils/taskDateUtils';
-import { isHighPriorityEligible, splitByPriority } from '../utils/taskPriority';
+import { isHighPriorityEligible, splitByPriority, canAddHighPriority, HIGH_PRIORITY_DAILY_LIMIT } from '../utils/taskPriority';
 
 type LabelCategory = 'frequency' | 'mode' | 'type';
 const CATEGORIES: LabelCategory[] = ['mode', 'type', 'frequency'];
@@ -87,6 +87,16 @@ export function TasksPage() {
   async function handleDrop(taskId: string, columnKey: ColumnKey, priority: 'high' | 'normal' = 'normal') {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
+
+    if (priority === 'high' && isHighPriorityEligible(columnKey)) {
+      const allHighForColumn = tasks.filter(
+        (t) => t.is_high_priority && getColumn(t, today, tomorrow) === columnKey,
+      );
+      if (!canAddHighPriority(allHighForColumn, task)) {
+        setDropError(`High priority is limited to ${HIGH_PRIORITY_DAILY_LIMIT} tasks per day.`);
+        return;
+      }
+    }
 
     const newDate = getDropDate(columnKey);
     const field = getEffectiveDateField(task);
@@ -226,10 +236,21 @@ export function TasksPage() {
                       className={`w-52 sm:w-60 flex-shrink-0 rounded-xl border-2 transition-colors ${
                         isOver ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50'
                       }`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOverColumn(col.key);
+                      }}
                       onDragLeave={(e) => {
                         if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                           clearDragState();
                         }
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const taskId = e.dataTransfer.getData('text/plain');
+                        const priority = dragOverPriority ?? 'normal';
+                        clearDragState();
+                        if (taskId) handleDrop(taskId, col.key, priority);
                       }}
                     >
                       <div className="px-3 py-2.5 border-b border-gray-200 flex items-center gap-2">
@@ -239,7 +260,7 @@ export function TasksPage() {
                         </span>
                       </div>
 
-                      {/* High-priority zone */}
+                      {/* High-priority zone — onDragOver sets priority intent; onDrop is on the outer div */}
                       <div
                         className={`p-2 space-y-2 min-h-[60px] transition-colors rounded-t-lg ${
                           isHighZoneOver ? 'bg-orange-50' : ''
@@ -248,12 +269,6 @@ export function TasksPage() {
                           e.preventDefault();
                           setDragOverColumn(col.key);
                           setDragOverPriority('high');
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          clearDragState();
-                          const taskId = e.dataTransfer.getData('text/plain');
-                          if (taskId) handleDrop(taskId, col.key, 'high');
                         }}
                       >
                         {highTasks.length === 0 ? (
@@ -278,7 +293,7 @@ export function TasksPage() {
                         <div className="flex-1 h-px bg-gray-200" />
                       </div>
 
-                      {/* Normal-priority zone */}
+                      {/* Normal-priority zone — onDragOver sets priority intent; onDrop is on the outer div */}
                       <div
                         className={`p-2 space-y-2 min-h-[60px] transition-colors rounded-b-lg ${
                           isNormalZoneOver ? 'bg-indigo-50' : ''
@@ -287,12 +302,6 @@ export function TasksPage() {
                           e.preventDefault();
                           setDragOverColumn(col.key);
                           setDragOverPriority('normal');
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          clearDragState();
-                          const taskId = e.dataTransfer.getData('text/plain');
-                          if (taskId) handleDrop(taskId, col.key, 'normal');
                         }}
                       >
                         {normalTasks.length === 0 ? (
