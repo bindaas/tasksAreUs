@@ -170,7 +170,14 @@ export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = fal
       ) : (
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <h3 className="text-gray-900 font-medium text-sm leading-snug">{task.title}</h3>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {task.is_high_priority && (
+                <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 shrink-0">
+                  High
+                </span>
+              )}
+              <h3 className="text-gray-900 font-medium text-sm leading-snug">{task.title}</h3>
+            </div>
             {task.must_do_by && (
               <p className={`text-xs mt-1 ${mustOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
                 {mustOverdue ? 'Overdue · Must do: ' : 'Must do: '}

@@ -15,6 +15,7 @@ import {
   getDropDate,
   getEffectiveDateField,
 } from '../utils/taskDateUtils';
+import { isHighPriorityEligible, splitByPriority } from '../utils/taskPriority';
 
 type LabelCategory = 'frequency' | 'mode' | 'type';
 const CATEGORIES: LabelCategory[] = ['mode', 'type', 'frequency'];
@@ -47,6 +48,7 @@ export function TasksPage() {
   const [showDone, setShowDone] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
+  const [dragOverPriority, setDragOverPriority] = useState<'high' | 'normal' | null>(null);
 
   const { tasks, loading, error, refetch } = useTasks(showDone ? 'done' : 'pending');
   const { labels, labelsByCategory } = useLabels();
@@ -82,25 +84,31 @@ export function TasksPage() {
     return map;
   }, [filteredTasks, today, tomorrow]);
 
-  async function handleDrop(taskId: string, columnKey: ColumnKey) {
+  async function handleDrop(taskId: string, columnKey: ColumnKey, priority: 'high' | 'normal' = 'normal') {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
     const newDate = getDropDate(columnKey);
     const field = getEffectiveDateField(task);
+    const isHighPriority = isHighPriorityEligible(columnKey) && priority === 'high';
 
     try {
       if (columnKey === 'nodate') {
-        await updateTask(taskId, { must_do_by: null, target_date: null });
+        await updateTask(taskId, { must_do_by: null, target_date: null, is_high_priority: false });
       } else if (field === 'target_date') {
-        await updateTask(taskId, { target_date: newDate });
+        await updateTask(taskId, { target_date: newDate, is_high_priority: isHighPriority });
       } else {
-        await updateTask(taskId, { must_do_by: newDate });
+        await updateTask(taskId, { must_do_by: newDate, is_high_priority: isHighPriority });
       }
       refetch();
     } catch (err) {
       setDropError(err instanceof Error ? err.message : 'Failed to move task');
     }
+  }
+
+  function clearDragState() {
+    setDragOverColumn(null);
+    setDragOverPriority(null);
   }
 
   return (
@@ -205,28 +213,126 @@ export function TasksPage() {
               {COLUMNS.map((col) => {
                 const colTasks = columnTasks[col.key];
                 const isOver = dragOverColumn === col.key;
+                const isPriorityColumn = isHighPriorityEligible(col.key);
+
+                if (isPriorityColumn) {
+                  const { high: highTasks, normal: normalTasks } = splitByPriority(colTasks);
+                  const isHighZoneOver = isOver && dragOverPriority === 'high';
+                  const isNormalZoneOver = isOver && dragOverPriority === 'normal';
+
+                  return (
+                    <div
+                      key={col.key}
+                      className={`w-52 sm:w-60 flex-shrink-0 rounded-xl border-2 transition-colors ${
+                        isOver ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50'
+                      }`}
+                      onDragLeave={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                          clearDragState();
+                        }
+                      }}
+                    >
+                      <div className="px-3 py-2.5 border-b border-gray-200 flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">{col.title}</span>
+                        <span className="text-xs text-gray-400 font-medium bg-gray-200 rounded-full px-1.5 py-0.5">
+                          {colTasks.length}
+                        </span>
+                      </div>
+
+                      {/* High-priority zone */}
+                      <div
+                        className={`p-2 space-y-2 min-h-[60px] transition-colors rounded-t-lg ${
+                          isHighZoneOver ? 'bg-orange-50' : ''
+                        }`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragOverColumn(col.key);
+                          setDragOverPriority('high');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          clearDragState();
+                          const taskId = e.dataTransfer.getData('text/plain');
+                          if (taskId) handleDrop(taskId, col.key, 'high');
+                        }}
+                      >
+                        {highTasks.length === 0 ? (
+                          <div className={`text-center py-4 text-xs select-none transition-colors ${
+                            isHighZoneOver ? 'text-orange-400' : 'text-gray-300'
+                          }`}>
+                            Drop for high priority ↑
+                          </div>
+                        ) : (
+                          highTasks.map((task) => (
+                            <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable />
+                          ))
+                        )}
+                      </div>
+
+                      {/* Divider */}
+                      <div className="flex items-center gap-1 px-2 py-0.5 select-none">
+                        <div className="flex-1 h-px bg-orange-200" />
+                        <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wide whitespace-nowrap">
+                          high · normal
+                        </span>
+                        <div className="flex-1 h-px bg-gray-200" />
+                      </div>
+
+                      {/* Normal-priority zone */}
+                      <div
+                        className={`p-2 space-y-2 min-h-[60px] transition-colors rounded-b-lg ${
+                          isNormalZoneOver ? 'bg-indigo-50' : ''
+                        }`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragOverColumn(col.key);
+                          setDragOverPriority('normal');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          clearDragState();
+                          const taskId = e.dataTransfer.getData('text/plain');
+                          if (taskId) handleDrop(taskId, col.key, 'normal');
+                        }}
+                      >
+                        {normalTasks.length === 0 ? (
+                          <div className={`text-center py-4 text-xs select-none transition-colors ${
+                            isNormalZoneOver ? 'text-indigo-400' : 'text-gray-300'
+                          }`}>
+                            Drop here
+                          </div>
+                        ) : (
+                          normalTasks.map((task) => (
+                            <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable />
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Upcoming / No Date columns — no priority split
                 return (
                   <div
                     key={col.key}
                     className={`w-52 sm:w-60 flex-shrink-0 rounded-xl border-2 transition-colors ${
-                      isOver
-                        ? 'border-indigo-400 bg-indigo-50'
-                        : 'border-gray-200 bg-gray-50'
+                      isOver ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50'
                     }`}
                     onDragOver={(e) => {
                       e.preventDefault();
                       setDragOverColumn(col.key);
+                      setDragOverPriority(null);
                     }}
                     onDragLeave={(e) => {
                       if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                        setDragOverColumn(null);
+                        clearDragState();
                       }
                     }}
                     onDrop={(e) => {
                       e.preventDefault();
-                      setDragOverColumn(null);
+                      clearDragState();
                       const taskId = e.dataTransfer.getData('text/plain');
-                      if (taskId) handleDrop(taskId, col.key);
+                      if (taskId) handleDrop(taskId, col.key, 'normal');
                     }}
                   >
                     <div className="px-3 py-2.5 border-b border-gray-200 flex items-center gap-2">
@@ -242,13 +348,7 @@ export function TasksPage() {
                         </div>
                       ) : (
                         colTasks.map((task) => (
-                          <TaskCard
-                            key={task.id}
-                            task={task}
-                            labels={labels}
-                            onRefresh={refetch}
-                            draggable
-                          />
+                          <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable />
                         ))
                       )}
                     </div>

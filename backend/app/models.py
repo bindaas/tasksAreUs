@@ -90,6 +90,7 @@ class Task(Base):
     target_date = Column(Date, nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     recurrence_group_id = Column(String, nullable=True, index=True)
+    is_high_priority = Column(Boolean, default=False, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)

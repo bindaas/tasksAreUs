@@ -20,6 +20,13 @@ def _seed_labels(db: Session) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        conn.execute(text(
+            "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS "
+            "is_high_priority BOOLEAN NOT NULL DEFAULT false"
+        ))
+        conn.commit()
     db = SessionLocal()
     try:
         _seed_labels(db)

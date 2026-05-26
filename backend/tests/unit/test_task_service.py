@@ -1,12 +1,14 @@
 """Unit tests for task_service.py — no database required."""
 
-from datetime import date
+from datetime import date, timedelta
 from unittest.mock import MagicMock, call, patch
 
 import pytest
 
 from app.services.task_service import (
+    _effective_date,
     _get_frequency_label,
+    _is_today_or_tomorrow,
     _next_due_date,
     update_task,
 )
@@ -144,3 +146,111 @@ class TestUpdateTaskDateClearing:
         update_task(db, task, title=None, notes=None, must_do_by=None,
                     target_date=None, label_ids=None)
         assert task.title == "Original"
+
+
+# ── _effective_date ───────────────────────────────────────────────────────────
+
+class TestEffectiveDate:
+    def test_both_set_returns_earlier(self):
+        assert _effective_date(date(2026, 6, 1), date(2026, 6, 5)) == date(2026, 6, 1)
+
+    def test_both_set_target_is_earlier(self):
+        assert _effective_date(date(2026, 6, 5), date(2026, 6, 1)) == date(2026, 6, 1)
+
+    def test_only_must_do_by(self):
+        assert _effective_date(date(2026, 6, 1), None) == date(2026, 6, 1)
+
+    def test_only_target_date(self):
+        assert _effective_date(None, date(2026, 6, 1)) == date(2026, 6, 1)
+
+    def test_both_none(self):
+        assert _effective_date(None, None) is None
+
+
+# ── _is_today_or_tomorrow ─────────────────────────────────────────────────────
+
+class TestIsTodayOrTomorrow:
+    def test_today(self):
+        assert _is_today_or_tomorrow(date.today()) is True
+
+    def test_tomorrow(self):
+        assert _is_today_or_tomorrow(date.today() + timedelta(days=1)) is True
+
+    def test_yesterday(self):
+        assert _is_today_or_tomorrow(date.today() - timedelta(days=1)) is False
+
+    def test_two_days_ahead(self):
+        assert _is_today_or_tomorrow(date.today() + timedelta(days=2)) is False
+
+    def test_none(self):
+        assert _is_today_or_tomorrow(None) is False
+
+
+# ── update_task high-priority auto-reset ──────────────────────────────────────
+
+class TestUpdateTaskHighPriority:
+    def _make_task(self, must_do_by=None, target_date=None, is_high_priority=False):
+        task = MagicMock()
+        task.id = "task-1"
+        task.must_do_by = must_do_by
+        task.target_date = target_date
+        task.is_high_priority = is_high_priority
+        task.labels = []
+        return task
+
+    def _make_db(self):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.delete.return_value = None
+        db.commit.return_value = None
+        db.refresh.side_effect = lambda t: None
+        return db
+
+    def test_set_high_priority_for_today(self):
+        today = date.today()
+        task = self._make_task(must_do_by=today)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=True)
+        assert task.is_high_priority is True
+
+    def test_set_high_priority_for_tomorrow(self):
+        tomorrow = date.today() + timedelta(days=1)
+        task = self._make_task(target_date=tomorrow)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=True)
+        assert task.is_high_priority is True
+
+    def test_auto_reset_when_date_moves_to_upcoming(self):
+        today = date.today()
+        future = today + timedelta(days=7)
+        task = self._make_task(must_do_by=today, is_high_priority=True)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=future,
+                    target_date=None, label_ids=None)
+        assert task.is_high_priority is False
+
+    def test_auto_reset_when_date_cleared(self):
+        today = date.today()
+        task = self._make_task(must_do_by=today, is_high_priority=True)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, clear_must_do_by=True)
+        assert task.is_high_priority is False
+
+    def test_explicit_false_clears_priority(self):
+        today = date.today()
+        task = self._make_task(must_do_by=today, is_high_priority=True)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=False)
+        assert task.is_high_priority is False
+
+    def test_none_is_high_priority_preserves_existing_for_today(self):
+        today = date.today()
+        task = self._make_task(must_do_by=today, is_high_priority=True)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=None)
+        assert task.is_high_priority is True
+
+    def test_cannot_set_high_priority_for_upcoming(self):
+        future = date.today() + timedelta(days=5)
+        task = self._make_task(must_do_by=future)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=True)
+        assert task.is_high_priority is False

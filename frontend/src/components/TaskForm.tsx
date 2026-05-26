@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
 import type { Label } from '../api/tasks';
 import { LabelBadge } from './LabelBadge';
+import { dateOnly } from '../utils/taskDateUtils';
 
 interface TaskFormProps {
   initialValues?: Partial<Task>;
@@ -28,10 +29,17 @@ export function TaskForm({
   const [notes, setNotes] = useState(initialValues?.notes ?? '');
   const [mustDoBy, setMustDoBy] = useState(initialValues?.must_do_by ?? '');
   const [targetDate, setTargetDate] = useState(initialValues?.target_date ?? '');
+  const [isHighPriority, setIsHighPriority] = useState(initialValues?.is_high_priority ?? false);
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(
     new Set(initialValues?.labels?.map((l) => l.id) ?? [])
   );
   const [error, setError] = useState<string | null>(null);
+
+  const todayStr = dateOnly(new Date());
+  const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return dateOnly(d); })();
+  const highPriorityEligible =
+    (mustDoBy !== '' && (mustDoBy === todayStr || mustDoBy === tomorrowStr)) ||
+    (targetDate !== '' && (targetDate === todayStr || targetDate === tomorrowStr));
 
   const labelsByCategory = labels.reduce<Record<LabelCategory, Label[]>>(
     (acc, label) => {
@@ -66,6 +74,7 @@ export function TaskForm({
     const data: CreateTaskBody = {
       title: title.trim(),
       label_ids: Array.from(selectedLabelIds),
+      is_high_priority: highPriorityEligible && isHighPriority,
     };
     if (notes.trim()) data.notes = notes.trim();
     if (mustDoBy) data.must_do_by = mustDoBy;
@@ -127,6 +136,23 @@ export function TaskForm({
           />
         </div>
       </div>
+
+      {highPriorityEligible && (
+        <div className="flex items-center gap-3 py-1">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isHighPriority}
+              onChange={(e) => setIsHighPriority(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400 cursor-pointer"
+            />
+            <span className="text-sm font-medium text-gray-700">High priority</span>
+          </label>
+          <span className="text-xs text-orange-500 font-medium">
+            ↑ shown above the line in Today / Tomorrow
+          </span>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">Labels</label>
