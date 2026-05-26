@@ -330,6 +330,27 @@ def main():
     else:
         print("  (skipping belief AI tests — ANTHROPIC_API_KEY not set)")
 
+    # ── target_date-only task (PR #4 fix: chat context must include target_date) ─
+    print("\n── Tasks: target_date-only (chat context fix) ──────────")
+    target_only_date = (date.today() + timedelta(days=3)).isoformat()
+    r = client.post("/tasks", headers=H, json={
+        "title": "Chat target-date test task",
+        "must_do_by": None,
+        "target_date": target_only_date,
+        "label_ids": [],
+    })
+    assert_eq("POST task with target_date only → 201", r.status_code, 201)
+    target_only_task = r.json()
+    target_only_task_id = target_only_task["id"]
+    assert_eq("target_date-only task has no must_do_by", target_only_task["must_do_by"], None)
+    assert_eq("target_date-only task has target_date", target_only_task["target_date"], target_only_date)
+
+    # Verify the task is returned in a normal GET /tasks listing (state=pending)
+    r = client.get("/tasks", headers=H, params={"state": "pending"})
+    assert_eq("GET /tasks pending includes target_date-only task → 200", r.status_code, 200)
+    pending_ids = [t["id"] for t in r.json()["tasks"]]
+    assert_in("target_date-only task in pending list", target_only_task_id, pending_ids)
+
     # ── Conversations ──────────────────────────────────────────────────────────
     print("\n── Conversations ───────────────────────────────────────")
     r = client.post("/conversations", headers=H)
@@ -349,8 +370,26 @@ def main():
         r = client.get(f"/conversations/{conv_id}/messages", headers=H)
         assert_eq("GET conversation messages → 200", r.status_code, 200)
         assert_true("2 messages (user + assistant)", len(r.json()["messages"]) == 2)
+
+        # PR #4 fix: the AI should see tasks that have only target_date set.
+        # Ask specifically about the target-date-only task we just created.
+        r2 = client.post("/conversations", headers=H)
+        assert_eq("POST /conversations for target_date test → 201", r2.status_code, 201)
+        conv2_id = r2.json()["id"]
+        r = client.post(f"/conversations/{conv2_id}/messages", headers=H, json={
+            "content": "Tell me about the task called 'Chat target-date test task'."
+        })
+        assert_eq("conversation msg about target_date-only task → 200", r.status_code, 200)
+        msg2 = r.json()["message"]
+        assert_true(
+            "AI response references target_date-only task",
+            "target" in msg2["content"].lower() or "chat target-date test task" in msg2["content"].lower(),
+        )
     else:
         print("  (skipping conversation AI tests — ANTHROPIC_API_KEY not set)")
+
+    # Clean up the target-date-only task after conversation tests
+    client.delete(f"/tasks/{target_only_task_id}", headers=H)
 
     # ── Reports ────────────────────────────────────────────────────────────────
     print("\n── Reports ─────────────────────────────────────────────")
