@@ -36,7 +36,9 @@ export function TaskForm({
   const [error, setError] = useState<string | null>(null);
 
   const todayStr = dateOnly(new Date());
-  const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return dateOnly(d); })();
+  const _tom = new Date();
+  _tom.setDate(_tom.getDate() + 1);
+  const tomorrowStr = dateOnly(_tom);
   const highPriorityEligible =
     (mustDoBy !== '' && (mustDoBy === todayStr || mustDoBy === tomorrowStr)) ||
     (targetDate !== '' && (targetDate === todayStr || targetDate === tomorrowStr));
