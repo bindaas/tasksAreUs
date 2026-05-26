@@ -44,6 +44,7 @@ export function TasksPage() {
   const navigate = useNavigate();
   const { selectedLabelIds, toggleLabel, clearLabels } = useFilter();
   const [showDone, setShowDone] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
 
   const { tasks, loading, error, refetch } = useTasks(showDone ? 'done' : 'pending');
@@ -58,9 +59,20 @@ export function TasksPage() {
   }, []);
 
   const filteredTasks = useMemo(() => {
-    if (selectedLabelIds.size === 0) return tasks;
-    return tasks.filter((task) => task.labels.some((l) => selectedLabelIds.has(l.id)));
-  }, [tasks, selectedLabelIds]);
+    let result = tasks;
+    if (selectedLabelIds.size > 0) {
+      result = result.filter((task) => task.labels.some((l) => selectedLabelIds.has(l.id)));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(
+        (task) =>
+          task.title.toLowerCase().includes(q) ||
+          (task.notes?.toLowerCase().includes(q) ?? false),
+      );
+    }
+    return result;
+  }, [tasks, selectedLabelIds, searchQuery]);
 
   const columnTasks = useMemo(() => {
     const map: Record<ColumnKey, Task[]> = { today: [], tomorrow: [], upcoming: [], nodate: [] };
@@ -108,12 +120,26 @@ export function TasksPage() {
         <h2 className="text-xl font-bold text-gray-900">
           {showDone ? 'Completed Tasks' : 'My Tasks'}
         </h2>
-        <button
-          onClick={() => setShowDone((v) => !v)}
-          className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-        >
-          {showDone ? 'Show pending' : 'Show done'}
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+            </svg>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tasks…"
+              className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
+            />
+          </div>
+          <button
+            onClick={() => setShowDone((v) => !v)}
+            className="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap"
+          >
+            {showDone ? 'Show pending' : 'Show done'}
+          </button>
+        </div>
       </div>
 
       {/* Label filter chips — only shown for pending (kanban) view */}
