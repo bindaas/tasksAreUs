@@ -14,6 +14,19 @@ from ..models import Label, StateEnum, Task, TaskLabel
 FREQUENCY_VALUES = {"daily", "weekly", "monthly", "annual"}
 
 
+def _effective_date(must_do_by: Optional[date], target_date: Optional[date]) -> Optional[date]:
+    if must_do_by and target_date:
+        return must_do_by if must_do_by <= target_date else target_date
+    return must_do_by or target_date
+
+
+def _is_today_or_tomorrow(d: Optional[date]) -> bool:
+    if d is None:
+        return False
+    today = date.today()
+    return d == today or d == today + relativedelta(days=1)
+
+
 def _get_frequency_label(task: Task) -> Optional[str]:
     for label in task.labels:
         if label.category == "frequency" and label.value in FREQUENCY_VALUES:
@@ -64,8 +77,11 @@ def create_task(
     target_date: Optional[date],
     label_ids: List[str],
     recurrence_group_id: Optional[str] = None,
+    is_high_priority: bool = False,
 ) -> Task:
     labels = _resolve_labels(db, label_ids)
+    effective = _effective_date(must_do_by, target_date)
+    final_priority = is_high_priority and _is_today_or_tomorrow(effective)
     task = Task(
         user_id=user_id,
         title=title,
@@ -73,6 +89,7 @@ def create_task(
         must_do_by=must_do_by,
         target_date=target_date,
         recurrence_group_id=recurrence_group_id,
+        is_high_priority=final_priority,
     )
     db.add(task)
     db.flush()
@@ -93,6 +110,7 @@ def update_task(
     label_ids: Optional[List[str]],
     clear_must_do_by: bool = False,
     clear_target_date: bool = False,
+    is_high_priority: Optional[bool] = None,
 ) -> Task:
     if title is not None:
         task.title = title
@@ -106,6 +124,13 @@ def update_task(
         task.target_date = None
     elif target_date is not None:
         task.target_date = target_date
+
+    if is_high_priority is not None:
+        task.is_high_priority = is_high_priority
+
+    # Auto-reset: high priority is only valid for today/tomorrow
+    if not _is_today_or_tomorrow(_effective_date(task.must_do_by, task.target_date)):
+        task.is_high_priority = False
 
     if label_ids is not None:
         db.query(TaskLabel).filter(TaskLabel.task_id == task.id).delete()

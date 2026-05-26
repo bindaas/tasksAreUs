@@ -36,6 +36,7 @@ class TaskCreate(BaseModel):
     must_do_by: Optional[date] = None
     target_date: Optional[date] = None
     label_ids: List[str] = []
+    is_high_priority: bool = False
 
 
 class TaskUpdate(BaseModel):
@@ -44,6 +45,7 @@ class TaskUpdate(BaseModel):
     must_do_by: Optional[date] = None
     target_date: Optional[date] = None
     label_ids: Optional[List[str]] = None
+    is_high_priority: Optional[bool] = None
 
 
 class TaskOut(BaseModel):
@@ -57,6 +59,7 @@ class TaskOut(BaseModel):
     completed_at: Optional[datetime] = None
     recurrence_group_id: Optional[str] = None
     labels: List[LabelOut] = []
+    is_high_priority: bool = False
     is_deleted: bool
     created_at: datetime
     updated_at: datetime

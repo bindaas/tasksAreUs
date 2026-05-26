@@ -16,6 +16,7 @@ export interface Task {
   completed_at: string | null;
   recurrence_group_id: string | null;
   labels: Label[];
+  is_high_priority: boolean;
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
@@ -27,6 +28,7 @@ export interface CreateTaskBody {
   must_do_by?: string;
   target_date?: string;
   label_ids: string[];
+  is_high_priority?: boolean;
 }
 
 export interface UpdateTaskBody {
@@ -35,6 +37,7 @@ export interface UpdateTaskBody {
   must_do_by?: string | null;
   target_date?: string | null;
   label_ids?: string[];
+  is_high_priority?: boolean;
 }
 
 export interface CompleteTaskBody {

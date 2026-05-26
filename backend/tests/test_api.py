@@ -261,6 +261,126 @@ def main():
     # Soft-delete the medical task so it doesn't pollute other assertions
     client.delete(f"/tasks/{medical_task_id}", headers=H)
 
+    # ── High-priority field ────────────────────────────────────────────────────
+    print("\n── Tasks: High Priority ────────────────────────────────")
+    today_str = date.today().isoformat()
+    tomorrow_str = (date.today() + timedelta(days=1)).isoformat()
+    future_str = (date.today() + timedelta(days=10)).isoformat()
+
+    # Creating a task with is_high_priority=true and today's date keeps it true
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP task due today",
+        "must_do_by": today_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST high-priority task with today's date → 201", r.status_code, 201)
+    hp_today_task = r.json()
+    hp_today_task_id = hp_today_task["id"]
+    assert_eq("is_high_priority stays true for today", hp_today_task["is_high_priority"], True)
+
+    # Creating a task with is_high_priority=true and tomorrow's date keeps it true
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP task due tomorrow",
+        "must_do_by": tomorrow_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST high-priority task with tomorrow's date → 201", r.status_code, 201)
+    hp_tomorrow_task = r.json()
+    hp_tomorrow_task_id = hp_tomorrow_task["id"]
+    assert_eq("is_high_priority stays true for tomorrow", hp_tomorrow_task["is_high_priority"], True)
+
+    # Creating a task with is_high_priority=true but a far-future date auto-resets to false
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP task due in far future",
+        "must_do_by": future_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST high-priority task with future date → 201", r.status_code, 201)
+    hp_future_task = r.json()
+    hp_future_task_id = hp_future_task["id"]
+    assert_eq("is_high_priority auto-reset for future date", hp_future_task["is_high_priority"], False)
+
+    # Creating a task with is_high_priority=true and no date auto-resets to false
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP task with no date",
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST high-priority task with no date → 201", r.status_code, 201)
+    hp_nodate_task = r.json()
+    hp_nodate_task_id = hp_nodate_task["id"]
+    assert_eq("is_high_priority auto-reset when no date", hp_nodate_task["is_high_priority"], False)
+
+    # Creating a task with is_high_priority=true and target_date=today keeps it true
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP task target_date today",
+        "target_date": today_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST high-priority task with target_date=today → 201", r.status_code, 201)
+    hp_target_today_task = r.json()
+    hp_target_today_task_id = hp_target_today_task["id"]
+    assert_eq("is_high_priority true via target_date=today", hp_target_today_task["is_high_priority"], True)
+
+    # GET /tasks response includes is_high_priority field
+    r = client.get("/tasks", headers=H, params={"state": "pending"})
+    assert_eq("GET /tasks includes is_high_priority field → 200", r.status_code, 200)
+    all_pending = r.json()["tasks"]
+    hp_found = next((t for t in all_pending if t["id"] == hp_today_task_id), None)
+    assert_true("hp task present in pending list", hp_found is not None)
+    assert_true("is_high_priority field present in GET /tasks response",
+                "is_high_priority" in (hp_found or {}))
+    assert_eq("GET /tasks preserves is_high_priority=true", (hp_found or {}).get("is_high_priority"), True)
+
+    # GET /tasks/:id returns is_high_priority
+    r = client.get(f"/tasks/{hp_today_task_id}", headers=H)
+    assert_eq("GET /tasks/:id preserves is_high_priority=true → 200", r.status_code, 200)
+    assert_eq("GET /tasks/:id is_high_priority value", r.json()["is_high_priority"], True)
+
+    # PUT with is_high_priority=true on a today-dated task keeps it true
+    r = client.put(f"/tasks/{hp_today_task_id}", headers=H, json={"is_high_priority": True})
+    assert_eq("PUT is_high_priority=true for today-task → 200", r.status_code, 200)
+    assert_eq("PUT preserves is_high_priority=true for today", r.json()["is_high_priority"], True)
+
+    # PUT with is_high_priority=false explicitly clears it
+    r = client.put(f"/tasks/{hp_today_task_id}", headers=H, json={"is_high_priority": False})
+    assert_eq("PUT is_high_priority=false → 200", r.status_code, 200)
+    assert_eq("PUT clears is_high_priority", r.json()["is_high_priority"], False)
+
+    # PUT date to future auto-resets is_high_priority regardless of current value
+    # First re-enable high priority for the today task
+    r = client.put(f"/tasks/{hp_today_task_id}", headers=H, json={"is_high_priority": True})
+    assert_eq("Re-enable hp before date-move test → 200", r.status_code, 200)
+    # Now move its date to far future — priority should auto-reset
+    r = client.put(f"/tasks/{hp_today_task_id}", headers=H, json={"must_do_by": future_str})
+    assert_eq("PUT date to future auto-resets is_high_priority → 200", r.status_code, 200)
+    assert_eq("is_high_priority auto-reset after date moved to future", r.json()["is_high_priority"], False)
+
+    # PUT clearing date auto-resets is_high_priority
+    r = client.put(f"/tasks/{hp_tomorrow_task_id}", headers=H, json={"must_do_by": None})
+    assert_eq("PUT clearing date auto-resets is_high_priority → 200", r.status_code, 200)
+    assert_eq("is_high_priority auto-reset after date cleared", r.json()["is_high_priority"], False)
+
+    # New tasks default to is_high_priority=false when field is omitted
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP default test task",
+        "must_do_by": today_str,
+        "label_ids": [],
+    })
+    assert_eq("POST task without is_high_priority field → 201", r.status_code, 201)
+    hp_default_task = r.json()
+    hp_default_task_id = hp_default_task["id"]
+    assert_eq("is_high_priority defaults to false when omitted", hp_default_task["is_high_priority"], False)
+
+    # Clean up high-priority test tasks
+    for tid in [hp_today_task_id, hp_tomorrow_task_id, hp_future_task_id,
+                hp_nodate_task_id, hp_target_today_task_id, hp_default_task_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
+
     # ── Task completion (one-time) ─────────────────────────────────────────────
     print("\n── Tasks: Complete (one-time) ──────────────────────────")
     r = client.post(f"/tasks/{task_id}/complete", headers=H, json={"notes": "All returned"})
@@ -330,6 +450,27 @@ def main():
     else:
         print("  (skipping belief AI tests — ANTHROPIC_API_KEY not set)")
 
+    # ── target_date-only task (PR #4 fix: chat context must include target_date) ─
+    print("\n── Tasks: target_date-only (chat context fix) ──────────")
+    target_only_date = (date.today() + timedelta(days=3)).isoformat()
+    r = client.post("/tasks", headers=H, json={
+        "title": "Chat target-date test task",
+        "must_do_by": None,
+        "target_date": target_only_date,
+        "label_ids": [],
+    })
+    assert_eq("POST task with target_date only → 201", r.status_code, 201)
+    target_only_task = r.json()
+    target_only_task_id = target_only_task["id"]
+    assert_eq("target_date-only task has no must_do_by", target_only_task["must_do_by"], None)
+    assert_eq("target_date-only task has target_date", target_only_task["target_date"], target_only_date)
+
+    # Verify the task is returned in a normal GET /tasks listing (state=pending)
+    r = client.get("/tasks", headers=H, params={"state": "pending"})
+    assert_eq("GET /tasks pending includes target_date-only task → 200", r.status_code, 200)
+    pending_ids = [t["id"] for t in r.json()["tasks"]]
+    assert_in("target_date-only task in pending list", target_only_task_id, pending_ids)
+
     # ── Conversations ──────────────────────────────────────────────────────────
     print("\n── Conversations ───────────────────────────────────────")
     r = client.post("/conversations", headers=H)
@@ -349,8 +490,26 @@ def main():
         r = client.get(f"/conversations/{conv_id}/messages", headers=H)
         assert_eq("GET conversation messages → 200", r.status_code, 200)
         assert_true("2 messages (user + assistant)", len(r.json()["messages"]) == 2)
+
+        # PR #4 fix: the AI should see tasks that have only target_date set.
+        # Ask specifically about the target-date-only task we just created.
+        r2 = client.post("/conversations", headers=H)
+        assert_eq("POST /conversations for target_date test → 201", r2.status_code, 201)
+        conv2_id = r2.json()["id"]
+        r = client.post(f"/conversations/{conv2_id}/messages", headers=H, json={
+            "content": "Tell me about the task called 'Chat target-date test task'."
+        })
+        assert_eq("conversation msg about target_date-only task → 200", r.status_code, 200)
+        msg2 = r.json()["message"]
+        assert_true(
+            "AI response references target_date-only task",
+            "target" in msg2["content"].lower() or "chat target-date test task" in msg2["content"].lower(),
+        )
     else:
         print("  (skipping conversation AI tests — ANTHROPIC_API_KEY not set)")
+
+    # Clean up the target-date-only task after conversation tests
+    client.delete(f"/tasks/{target_only_task_id}", headers=H)
 
     # ── Reports ────────────────────────────────────────────────────────────────
     print("\n── Reports ─────────────────────────────────────────────")
@@ -387,6 +546,43 @@ def main():
     assert_in("sync has changes", "changes", sync_result)
     assert_true("sync returns tasks", isinstance(sync_result["changes"]["tasks"], list))
     assert_true("completed tasks in sync response", len(sync_result["changes"]["tasks"]) >= 2)
+    # Verify is_high_priority field is included in sync task objects (PR #6)
+    if sync_result["changes"]["tasks"]:
+        first_sync_task = sync_result["changes"]["tasks"][0]
+        assert_in("sync task object includes is_high_priority field", "is_high_priority", first_sync_task)
+
+    # Verify sync push: sending a task with is_high_priority=true round-trips correctly
+    hp_sync_task_id = str(uuid.uuid4())
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": hp_sync_task_id,
+                "user_id": test_user_id,
+                "title": "Sync HP test task",
+                "state": "pending",
+                "must_do_by": today_str,
+                "target_date": None,
+                "notes": None,
+                "is_high_priority": True,
+                "is_deleted": False,
+                "recurrence_group_id": None,
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+            "beliefs": [],
+            "settings": None,
+        },
+    })
+    assert_eq("POST /sync with is_high_priority task → 200", r.status_code, 200)
+    # Read it back to confirm the field was stored
+    r = client.get(f"/tasks/{hp_sync_task_id}", headers=H)
+    assert_eq("GET synced HP task → 200", r.status_code, 200)
+    assert_eq("synced task is_high_priority persisted", r.json()["is_high_priority"], True)
+    # Clean up the sync test task
+    client.delete(f"/tasks/{hp_sync_task_id}", headers=H)
 
     # ── Summary ────────────────────────────────────────────────────────────────
     print(f"\n── Results ─────────────────────────────────────────────")
