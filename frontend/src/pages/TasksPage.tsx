@@ -6,6 +6,7 @@ import { TaskCard } from '../components/TaskCard';
 import { updateTask } from '../api/tasks';
 import { useFilter } from '../context/FilterContext';
 import type { Label, Task } from '../api/tasks';
+import { filterTasks } from '../utils/taskFilters';
 import {
   type ColumnKey,
   dateOnly,
@@ -44,6 +45,7 @@ export function TasksPage() {
   const navigate = useNavigate();
   const { selectedLabelIds, toggleLabel, clearLabels } = useFilter();
   const [showDone, setShowDone] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
 
   const { tasks, loading, error, refetch } = useTasks(showDone ? 'done' : 'pending');
@@ -57,10 +59,10 @@ export function TasksPage() {
     return { today: dateOnly(now), tomorrow: dateOnly(tom) };
   }, []);
 
-  const filteredTasks = useMemo(() => {
-    if (selectedLabelIds.size === 0) return tasks;
-    return tasks.filter((task) => task.labels.some((l) => selectedLabelIds.has(l.id)));
-  }, [tasks, selectedLabelIds]);
+  const filteredTasks = useMemo(
+    () => filterTasks(tasks, selectedLabelIds, searchQuery),
+    [tasks, selectedLabelIds, searchQuery],
+  );
 
   const columnTasks = useMemo(() => {
     const map: Record<ColumnKey, Task[]> = { today: [], tomorrow: [], upcoming: [], nodate: [] };
@@ -108,12 +110,26 @@ export function TasksPage() {
         <h2 className="text-xl font-bold text-gray-900">
           {showDone ? 'Completed Tasks' : 'My Tasks'}
         </h2>
-        <button
-          onClick={() => setShowDone((v) => !v)}
-          className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-        >
-          {showDone ? 'Show pending' : 'Show done'}
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+            </svg>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tasks…"
+              className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
+            />
+          </div>
+          <button
+            onClick={() => setShowDone((v) => !v)}
+            className="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap"
+          >
+            {showDone ? 'Show pending' : 'Show done'}
+          </button>
+        </div>
       </div>
 
       {/* Label filter chips — only shown for pending (kanban) view */}
@@ -173,7 +189,7 @@ export function TasksPage() {
           /* Done tasks: flat list */
           <div className="space-y-2 max-w-2xl mx-auto">
             {filteredTasks.length === 0 ? (
-              <EmptyState msg="No completed tasks yet" />
+              <EmptyState msg={searchQuery.trim() || selectedLabelIds.size > 0 ? 'No completed tasks match this filter' : 'No completed tasks yet'} />
             ) : (
               filteredTasks.map((task) => (
                 <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} />
@@ -181,7 +197,7 @@ export function TasksPage() {
             )}
           </div>
         ) : filteredTasks.length === 0 ? (
-          <EmptyState msg={selectedLabelIds.size > 0 ? 'No tasks match this filter' : 'No pending tasks'} />
+          <EmptyState msg={selectedLabelIds.size > 0 || searchQuery.trim() ? 'No tasks match this filter' : 'No pending tasks'} />
         ) : (
           /* Pending tasks: 4-column kanban board */
           <div className="overflow-x-auto -mx-4 px-4 pb-4">
