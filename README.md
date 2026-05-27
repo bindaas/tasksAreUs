@@ -1,7 +1,7 @@
 # tasksAreUs
 
 ## Prerequisites
-
+- dcb45f1b-5dfe-4028-b2e4-4405d3ff5719
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ## Setup
@@ -31,5 +31,5 @@ cd backend && docker-compose down
 | Service  | URL                        |
 |----------|----------------------------|
 | Frontend | http://localhost:5173      |
-| Backend  | http://localhost:8000      |
+| Backend  | http://localhost:8000/docs      |
 | pgAdmin  | http://localhost:5050      |

@@ -8,6 +8,7 @@ Usage:
     pip install httpx psycopg2-binary
     DATABASE_URL=postgresql://... BASE_URL=http://localhost:8000 python tests/test_api.py
 """
+import atexit
 import os
 import sys
 import uuid
@@ -18,6 +19,8 @@ import psycopg2
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000/api/v1")
 DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/tasksareus")
+
+SYSTEM_USER_DEVICE_UUID = "00000000-0000-0000-0000-000000000000"
 
 PASS = "\033[92m✓\033[0m"
 FAIL = "\033[91m✗\033[0m"
@@ -60,7 +63,9 @@ def cleanup(user_id: str):
     )
     for table in ["ai_cost_log", "messages", "conversations", "beliefs", "tasks", "user_settings"]:
         cur.execute(f"DELETE FROM {table} WHERE user_id = %s", (user_id,))
-    cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+    # System user is permanent — only delete data, not the user row itself
+    if user_id != SYSTEM_USER_DEVICE_UUID:
+        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
     conn.commit()
     cur.close()
     conn.close()
@@ -69,7 +74,6 @@ def cleanup(user_id: str):
 
 def main():
     client = httpx.Client(base_url=BASE_URL, timeout=30)
-    test_device_uuid = str(uuid.uuid4())
     test_user_id = None
 
     # ── Health ─────────────────────────────────────────────────────────────────
@@ -80,13 +84,16 @@ def main():
 
     # ── Users ──────────────────────────────────────────────────────────────────
     print("\n── Users ──────────────────────────────────────────────")
-    r = client.post("/users", json={"device_uuid": test_device_uuid})
+    r = client.post("/users", json={"device_uuid": SYSTEM_USER_DEVICE_UUID})
     assert_eq("POST /users → 201", r.status_code, 201)
     test_user_id = r.json()["id"]
+    # Clean up any leftover data from a previous run before starting
+    cleanup(test_user_id)
+    atexit.register(cleanup, test_user_id)
     assert_true("user has id", bool(test_user_id))
 
     # Idempotency
-    r2 = client.post("/users", json={"device_uuid": test_device_uuid})
+    r2 = client.post("/users", json={"device_uuid": SYSTEM_USER_DEVICE_UUID})
     assert_eq("POST /users idempotent → 201", r2.status_code, 201)
     assert_eq("same user returned", r2.json()["id"], test_user_id)
 
@@ -665,8 +672,6 @@ def main():
             print(f"    - {f}")
     else:
         print(f"  {PASS} All tests passed")
-
-    cleanup(test_user_id)
 
     if _failures:
         sys.exit(1)
