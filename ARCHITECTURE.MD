@@ -15,24 +15,39 @@ On first load the frontend generates a UUID stored in `localStorage` as `device_
 ```
 backend/
   app/
-    main.py          # FastAPI + lifespan (create_all, seed labels)
-    config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, cost rates)
+    main.py          # FastAPI + lifespan (create_all, ALTER TABLE for is_high_priority, seed labels)
+    config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates)
     database.py      # engine, SessionLocal, get_db()
     models.py        # ORM models + LABEL_SEED
     schemas.py       # Pydantic v2 schemas
     dependencies.py  # get_current_user_id() — reads X-User-ID header
     routers/         # one file per resource, mounted at /api/v1
+      users.py       # POST /users
+      labels.py      # GET /labels
+      tasks.py       # CRUD + complete endpoint
+      beliefs.py     # beliefs generate/list/update
+      conversations.py  # conversations + messages
+      reports.py     # GET /reports/completions
+      settings.py    # GET/PUT /settings
+      sync.py        # POST /sync
     services/
-      task_service.py  # complete_task(), recurring logic
-      ai_service.py    # Claude calls (beliefs + conversations)
-  tests/test_api.py    # standalone: creates data, tests all endpoints, cleans up
+      task_service.py  # create_task(), update_task(), complete_task(), recurring logic, high-priority limit
+      ai_service.py    # Claude calls (beliefs + conversations); _format_task_line() helper
+  tests/
+    test_api.py      # standalone integration test: creates data, tests all endpoints, cleans up
+    unit/
+      test_task_service.py  # pytest unit tests for task_service (no DB — mocked)
+      test_ai_service.py    # pytest unit tests for ai_service helpers
+  scripts/
+    purge_test_data.py  # DB maintenance: remove test-generated rows
+    recover_data.py     # DB maintenance: recover soft-deleted records
 
 frontend/
   src/
     api/
-      client.ts        # base fetch wrapper — attaches X-User-ID to every request
+      client.ts        # base fetch wrapper — attaches X-User-ID to every request; parses FastAPI error detail
       users.ts         # POST /users (no auth header)
-      tasks.ts
+      tasks.ts         # CRUD, complete; Task interface includes is_high_priority
       labels.ts
       conversations.ts
       settings.ts
@@ -40,21 +55,31 @@ frontend/
     components/
       Layout.tsx        # nav shell: sidebar on desktop, bottom bar on mobile
       LabelBadge.tsx    # colored chip by category (frequency/mode/type)
-      TaskCard.tsx      # task row with inline complete/delete
-      TaskForm.tsx      # create/edit form with label picker
+      TaskCard.tsx      # task card with inline complete/delete; shows "High" badge when is_high_priority
+      TaskForm.tsx      # create/edit form with label picker and high-priority checkbox
+    context/
+      FilterContext.tsx  # React context holding selected label IDs; persists across navigation
     hooks/
       useUser.ts        # device UUID + user_id bootstrap from localStorage
       useTasks.ts
       useLabels.ts
     pages/
-      TasksPage.tsx     # task list with pending/done toggle and label filters
+      TasksPage.tsx     # 4-column kanban (Today/Tomorrow/Upcoming/No Date) with drag-drop, search, label filters
       TaskDetailPage.tsx  # create (/tasks/new) and edit (/tasks/:id)
       ChatPage.tsx      # AI conversation with suggested-question chips
       ReportsPage.tsx   # completions by date range
       SettingsPage.tsx  # starter questions editor
+    utils/
+      taskDateUtils.ts  # date helpers: getColumn(), getDropDate(), getEffectiveDate(), formatDate()
+      taskFilters.ts    # filterTasks() — applies label and text search filters
+      taskPriority.ts   # isHighPriorityEligible(), splitByPriority(), canAddHighPriority()
+    __tests__/
+      taskDateUtils.test.ts
+      taskFilters.test.ts
+      taskPriority.test.ts
     App.tsx
     main.tsx
-  vite.config.ts        # proxies /api → http://localhost:8000 in dev
+  vite.config.ts        # proxies /api → http://localhost:8000 in dev; VITE_API_TARGET for Docker
 ```
 
 ## Key Implementation Patterns
@@ -63,24 +88,45 @@ frontend/
 
 **API proxy**: Vite dev server proxies `/api` to `http://localhost:8000`, so the frontend makes same-origin requests and CORS is not an issue in development.
 
-**AI conversations** (`handle_conversation_message`): builds a system prompt with the user's pending tasks and all labels, then runs a Claude tool-use loop (max 8 turns) with tools `create_task`, `complete_task`, and `respond_to_user`. Loop exits when Claude calls `respond_to_user`, which also carries `suggested_questions`.
+**AI conversations** (`handle_conversation_message`): builds a system prompt with the user's pending tasks (up to 100) and all labels, then runs a Claude tool-use loop (max 8 turns) with tools `create_task`, `complete_task`, and `respond_to_user`. Loop exits when Claude calls `respond_to_user`, which also carries `suggested_questions`. Task context is formatted by `_format_task_line()`, which includes both `must_do_by` and `target_date` when set.
 
 **AI beliefs** (`generate_beliefs`): single JSON-mode Claude call; response parsed for `label_suggestions` (label_id + rationale) and `time_estimate_minutes`.
+
+**High-priority tasks**: `is_high_priority` is only valid when the task's effective date (earliest of `must_do_by` / `target_date`) is today or tomorrow. Auto-reset to `false` on any update that moves the date outside that window. Hard limit of 3 high-priority tasks per calendar day, enforced in both `create_task` and `update_task`; raises HTTP 422 when exceeded.
+
+**Null-clearing on update**: `PUT /tasks/{task_id}` uses Pydantic `model_fields_set` to distinguish "field not provided" from "field explicitly set to null". `clear_must_do_by` and `clear_target_date` flags are passed to `update_task` to allow clearing date fields to null.
 
 For auth, soft deletes, recurring task rules, beliefs storage, sync protocol, and cost tracking see `DATA_MODEL_AND_API.MD`.
 
 ## Dev
 
 ```bash
-# Backend
+# Full stack (Docker): db + api + frontend + pgAdmin
 cd backend && docker-compose up -d
-# or without Docker:
+# API at http://localhost:8000, frontend at http://localhost:5173, pgAdmin at http://localhost:5050
+
+# Backend only (no Docker):
 cd backend && uvicorn app.main:app --reload
 
-# Frontend
+# Frontend only (no Docker):
 cd frontend && npm run dev   # http://localhost:5173
 ```
 
+Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`. pgAdmin credentials are also configured in `.env`.
+
 ## Testing
 
-**API test script** (`tests/test_api.py`): standalone Python script; creates its own test data, exercises all endpoints (CRUD, label assignment, state transitions, recurring logic, conversational endpoints), deletes all created data at the end.
+**API integration tests** (`tests/test_api.py`): standalone Python script; creates its own test data, exercises all endpoints (CRUD, label assignment, state transitions, recurring logic, high-priority limit, conversational endpoints), deletes all created data at the end. Run with:
+```bash
+cd backend && DATABASE_URL=... python3 tests/test_api.py
+```
+
+**Backend unit tests** (`tests/unit/`): pytest-based, no DB required (mock SQLAlchemy sessions). Cover `task_service` (create, update, complete, recurring, high-priority limit) and `ai_service` helpers (`_format_task_line`). Run with:
+```bash
+cd backend && python3 -m pytest tests/unit/ -v
+```
+
+**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils`, `taskFilters`, and `taskPriority` utilities. Run with:
+```bash
+cd frontend && npx vitest run
+```

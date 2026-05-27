@@ -70,6 +70,7 @@ Core entity. One-time and recurring task instances are both stored here.
 | `target_date` | DATE | Nullable. Aspirational completion date |
 | `completed_at` | TIMESTAMP | Nullable. Set when state → done |
 | `recurrence_group_id` | UUID | Nullable. All instances of a recurring task share this ID |
+| `is_high_priority` | BOOLEAN | Default false. Only meaningful when effective date is today or tomorrow |
 | `is_deleted` | BOOLEAN | Default false. Soft delete |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | Used for last-write-wins conflict resolution |
@@ -80,6 +81,12 @@ Core entity. One-time and recurring task instances are both stored here.
 - At most **one** task per `recurrence_group_id` may be in `pending` state at any time
 - When a recurring task is marked `done`, the API creates a new `pending` instance with the same `recurrence_group_id` and labels, with `must_do_by` set to the next due date based on frequency
 - If a recurring task is overdue and still `pending`, no additional instance is created until it is completed
+
+**High-priority rules (enforced by the API):**
+- `is_high_priority = true` is only meaningful when the task's effective date (earliest of `must_do_by` / `target_date`) is today or tomorrow
+- The API auto-resets `is_high_priority` to `false` on any create or update if the effective date is outside today/tomorrow
+- A maximum of **3** high-priority tasks per calendar day (per user) is enforced; attempting to add a 4th raises HTTP 422
+- The daily limit is checked against the effective date of the task, not `must_do_by` alone
 
 ---
 
@@ -264,6 +271,7 @@ List tasks for the current user.
         { "id": "uuid", "category": "mode", "value": "outdoor" },
         { "id": "uuid", "category": "type", "value": "raghav" }
       ],
+      "is_high_priority": false,
       "is_deleted": false,
       "created_at": "2026-05-06T10:00:00Z",
       "updated_at": "2026-05-06T10:00:00Z"
@@ -284,7 +292,8 @@ Create a new task.
   "notes": null,
   "must_do_by": "2026-05-11",
   "target_date": "2026-05-09",
-  "label_ids": ["uuid-outdoor", "uuid-raghav"]
+  "label_ids": ["uuid-outdoor", "uuid-raghav"],
+  "is_high_priority": false
 }
 ```
 
@@ -309,9 +318,12 @@ Update a task's fields or labels.
   "notes": "Don't forget the DVDs too",
   "must_do_by": "2026-05-11",
   "target_date": "2026-05-09",
-  "label_ids": ["uuid-outdoor", "uuid-raghav", "uuid-email"]
+  "label_ids": ["uuid-outdoor", "uuid-raghav", "uuid-email"],
+  "is_high_priority": false
 }
 ```
+
+To clear a date field to null, include the field explicitly as `null` in the JSON body. Omitting the field leaves the existing value unchanged.
 
 **Response**: updated task object
 
