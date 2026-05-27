@@ -105,6 +105,9 @@ gh pr comment $PR --body "$(cat <<'EOF'
 
 ### Coverage gaps
 <anything the PR ships that the PRD still does not adequately describe, with brief justification for deferring>
+
+---
+*— Bashful*
 EOF
 )"
 ```

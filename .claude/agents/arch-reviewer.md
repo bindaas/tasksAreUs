@@ -159,6 +159,9 @@ gh pr comment $PR --body "$(cat <<'EOF'
 
 ### Not documented (deferred)
 <anything this PR introduces that the docs still do not cover, with a brief reason for deferring, or "none">
+
+---
+*— Doc*
 EOF
 )"
 ```

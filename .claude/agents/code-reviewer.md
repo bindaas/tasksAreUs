@@ -80,6 +80,8 @@ Compose the review body with these sections (omit any section that has no items)
 
 **Questions** — anything ambiguous that the author should clarify before merge.
 
+End the review body with a horizontal rule and signature: `— *Dopey*`
+
 Be direct and specific. Do not pad the review with praise.
 
 Post directly to the PR using the GitHub CLI:

@@ -17,3 +17,15 @@ Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`.
 See `ARCHITECTURE.MD` for code structure, implementation patterns, and dev/prod config.
 See `DATA_MODEL_AND_API.MD` for data model, API contracts, auth, soft deletes, recurring task rules, beliefs, sync, and cost tracking.
 See `PRODUCT_REQUIREMENTS_DOCUMENT.MD` for product requirements and out-of-scope features.
+
+## Agent Roster
+
+Every agent signs its PR comment so you can tell at a glance who said what. All comments are posted under your GitHub account — the signature is the only way to distinguish them.
+
+| Name | Role |
+|------|------|
+| **Grumpy** | Main assistant (Claude) — implements features, creates PRs |
+| **Dopey** | `code-reviewer` agent — code correctness, architecture fit, security |
+| **Sleepy** | `test-reviewer` agent — owns `test_api.py`, runs tests, posts QE verdict |
+| **Bashful** | `requirements-reviewer` agent — keeps `PRODUCT_REQUIREMENTS_DOCUMENT.MD` current |
+| **Doc** | `arch-reviewer` agent — keeps `ARCHITECTURE.MD` and `DATA_MODEL_AND_API.MD` current |

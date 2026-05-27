@@ -82,6 +82,9 @@ gh pr comment $PR --body "$(cat <<'EOF'
 
 ### Test run result
 <PASSED / FAILED — summary; if failed, which assertions and whether pre-existing>
+
+---
+*— Sleepy*
 EOF
 )"
 ```
