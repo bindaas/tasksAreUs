@@ -18,8 +18,13 @@ _SYSTEM_UUID = "00000000-0000-0000-0000-000000000000"
 
 
 def _seed_system_user(db: Session) -> None:
-    if not db.query(User).filter(User.id == _SYSTEM_UUID).first():
+    existing = db.query(User).filter(User.device_uuid == _SYSTEM_UUID).first()
+    if existing is None:
         db.add(User(id=_SYSTEM_UUID, device_uuid=_SYSTEM_UUID))
+        db.commit()
+    elif existing.id != _SYSTEM_UUID:
+        db.execute(text("DELETE FROM users WHERE id = :id"), {"id": existing.id})
+        db.execute(text("INSERT INTO users (id, device_uuid) VALUES (:id, :id)"), {"id": _SYSTEM_UUID})
         db.commit()
 
 
