@@ -1,9 +1,12 @@
+import os
+import subprocess
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal, engine
@@ -23,7 +26,6 @@ def _seed_labels(db: Session) -> None:
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
-        from sqlalchemy import text
         conn.execute(text(
             "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS "
             "is_high_priority BOOLEAN NOT NULL DEFAULT false"
@@ -51,9 +53,39 @@ app.include_router(settings.router, prefix=PREFIX)
 app.include_router(sync.router, prefix=PREFIX)
 
 
+def _git_hash() -> str:
+    v = os.getenv("RAILWAY_GIT_COMMIT_SHA")
+    if v:
+        return v[:7]
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL
+        ).decode().strip()
+    except Exception:
+        return "unknown"
+
+
 @app.get("/api/v1/health")
 def health():
-    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+    db_status = "ok"
+    db_error = None
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as e:
+        db_status = "error"
+        db_error = str(e)
+
+    overall = "ok" if db_status == "ok" else "degraded"
+    check = {"status": db_status}
+    if db_error:
+        check["error"] = db_error
+    return {
+        "status": overall,
+        "version": _git_hash(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "checks": {"database": check},
+    }
 
 
 # Serve frontend SPA in prod (static/ dir is present in the Docker image)
