@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal, engine
@@ -52,3 +54,9 @@ app.include_router(sync.router, prefix=PREFIX)
 @app.get("/api/v1/health")
 def health():
     return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+# Serve frontend SPA in prod (static/ dir is present in the Docker image)
+_STATIC_DIR = Path(__file__).parent.parent / "static"
+if _STATIC_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(_STATIC_DIR), html=True), name="static")

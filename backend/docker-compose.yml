@@ -45,10 +45,14 @@ services:
     image: dpage/pgadmin4
     env_file:
       - .env
+    environment:
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
     ports:
       - "5050:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin_servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin_pgpass:/pgpass:ro
     depends_on:
       - db
 
