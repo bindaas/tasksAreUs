@@ -10,8 +10,17 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal, engine
-from .models import Base, CategoryEnum, Label, LABEL_SEED
+from .models import Base, CategoryEnum, Label, LABEL_SEED, User
 from .routers import beliefs, conversations, labels, reports, settings, sync, tasks, users
+
+
+_SYSTEM_UUID = "00000000-0000-0000-0000-000000000000"
+
+
+def _seed_system_user(db: Session) -> None:
+    if not db.query(User).filter(User.id == _SYSTEM_UUID).first():
+        db.add(User(id=_SYSTEM_UUID, device_uuid=_SYSTEM_UUID))
+        db.commit()
 
 
 def _seed_labels(db: Session) -> None:
@@ -33,6 +42,7 @@ async def lifespan(app: FastAPI):
         conn.commit()
     db = SessionLocal()
     try:
+        _seed_system_user(db)
         _seed_labels(db)
     finally:
         db.close()
