@@ -13,6 +13,7 @@ function makeTask(overrides: Partial<Task>): Task {
     completed_at: null,
     recurrence_group_id: null,
     labels: [],
+    is_high_priority: false,
     is_deleted: false,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
