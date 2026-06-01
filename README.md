@@ -3,6 +3,11 @@
 ## Prerequisites
 - dcb45f1b-5dfe-4028-b2e4-4405d3ff5719
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- https://tasksareus-production.up.railway.app/api/v1/health
+
+- DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tasksareus python3 tests/test_api.py
+
+- BASE_URL=https://tasksareus-production.up.railway.app/api/v1 DATABASE_URL=postgresql://postgres:vutcOZXtrMlhjmIPbbNGvamdnLdGwwNJ@interchange.proxy.rlwy.net:38123/railway python3 tests/test_api.py
 
 ## Setup
 

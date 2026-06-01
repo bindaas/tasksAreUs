@@ -9,6 +9,7 @@
 
 - **Before any code:** restate the requirement, flag risks/gaps/alternatives, recommend a direction with key tradeoffs, and wait for confirmation. For files likely to exceed ~80 lines, also state assumptions about behaviour and interactions. Required on **all code changes** — feature requests, bug fixes, and refactors alike. No exceptions for "obvious" or "trivial" fixes.
 - **Mandatory stop before any code change:** After presenting the pre-implementation checklist, end the message with "Shall I proceed?" and make no further tool calls — no `Edit`, `Write`, or code-producing `Bash` commands — until the user explicitly approves. A user asking a clarifying question is not approval. "Yes", "go ahead", "do it", or equivalent affirmative phrasing is required.
+- **Default assumption is planning, not implementation:** Treat every request as a planning request unless explicit approval to implement has been given in the current conversation. Do not attempt to classify the user's intent from phrasing — the burden of triggering implementation is on an explicit approval, not on correctly reading the request.
 - **Edge cases:** surface them proactively. Ask only if genuinely ambiguous.
 - **Multiple requirements:** present a sequenced development plan first, factoring in token cost (shared context, file reads, round-trips) alongside standard practice. State the reasoning.
 - **Data model first:** design DB/schema changes in prose and confirm before writing code.
