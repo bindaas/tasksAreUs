@@ -23,6 +23,7 @@ cp backend/.env.example backend/.env
 
 ```bash
 cd backend && docker-compose up -d
+ cd backend && docker-compose up -d --build
 ```
 
 Open **http://localhost:5173**
