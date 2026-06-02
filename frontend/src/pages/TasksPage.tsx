@@ -223,7 +223,7 @@ export function TasksPage() {
         ) : filteredTasks.length === 0 ? (
           <EmptyState msg={selectedLabelIds.size > 0 || searchQuery.trim() ? 'No tasks match this filter' : 'No pending tasks'} />
         ) : (
-          /* Pending tasks: 4-column kanban board */
+          /* Pending tasks: 6-column kanban board */
           <div className="overflow-x-auto -mx-4 px-4 pb-4">
             <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
               {COLUMNS.map((col) => {

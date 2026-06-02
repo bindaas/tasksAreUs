@@ -130,7 +130,8 @@ describe('getColumn', () => {
     expect(getColumn({ must_do_by: '2026-05-27', target_date: null }, today, tomorrow)).toBe('day_after_tomorrow');
   });
 
-  it('assigns to upcoming when effective date is after tomorrow', () => {
+  it('assigns to upcoming when effective date is three or more days from now', () => {
+    expect(getColumn({ must_do_by: '2026-05-28', target_date: null }, today, tomorrow)).toBe('upcoming');
     expect(getColumn({ must_do_by: '2026-06-01', target_date: null }, today, tomorrow)).toBe('upcoming');
   });
 
