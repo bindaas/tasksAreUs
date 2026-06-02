@@ -72,7 +72,7 @@ The primary interaction mode. Supported input styles:
 
 ### Pages / Tabs
 
-1. **Task List** (default `/`) — kanban board of pending tasks across four columns (Today, Tomorrow, Upcoming, No Date). Completed tasks shown as a flat list via "Show done" toggle.
+1. **Task List** (default `/`) — kanban board of pending tasks across five columns (Overdue, Today, Tomorrow, Upcoming, No Date). Completed tasks shown as a flat list via "Show done" toggle.
 2. **Chat** (`/chat`) — conversational AI interface for task creation, completion, and task-related questions
 3. **Reports** (`/reports`) — completed tasks for a user-chosen date range
 4. **Settings** (`/settings`) — define up to 5 starter questions saved to the user's profile
@@ -80,8 +80,8 @@ The primary interaction mode. Supported input styles:
 
 ### Task List / Kanban Board
 
-- Pending tasks are shown in a **4-column kanban board**: Today | Tomorrow | Upcoming | No Date. Overdue tasks appear in Today.
-- **Today** and **Tomorrow** columns each split into two drag-drop zones separated by a labeled divider: a high-priority zone (above the line) and a normal-priority zone (below the line).
+- Pending tasks are shown in a **5-column kanban board**: Overdue | Today | Tomorrow | Upcoming | No Date. Tasks whose effective date is in the past appear in the leftmost **Overdue** column (red accent), not in Today.
+- **Overdue**, **Today**, and **Tomorrow** columns each split into two zones separated by a labeled divider: a high-priority zone (above the line) and a normal-priority zone (below the line). The 3-task high-priority cap does not apply within Overdue — tasks carry their existing priority; the cap re-engages when a task is dragged to Today or Tomorrow. Dropping a task *into* the Overdue column is blocked.
 - **Drag-and-drop** between columns updates the task's effective date via `PUT /tasks/:id`. Dragging to Upcoming defaults to 7 days from today; dragging to No Date clears both date fields. Dragging into the high zone sets `is_high_priority = true`; into the normal zone or Upcoming/No Date, it resets to `false`. The frontend enforces the 3-per-day high-priority limit before making the API call; the backend enforces it independently.
 - **Label filter chips** are shown above the board (Mode / Type / Frequency categories). Filter state persists across navigation via React context.
 - **Text search** filters tasks by title and notes simultaneously (case-insensitive). Search and label filters compose with AND semantics.
@@ -92,6 +92,7 @@ The primary interaction mode. Supported input styles:
 
 - Fields: Title (required), Notes, Must do by (date), Target date (date), High priority checkbox (visible only when at least one date field is set to today or tomorrow), Labels.
 - High priority checkbox disappears and submits as `false` for all other dates.
+- Both date fields show an **× clear button** when a date is set, allowing one-click removal. In edit mode, clearing a date sends an explicit `null` to the backend so the field is actually cleared (not silently omitted).
 
 ### Chat Page
 
