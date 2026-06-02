@@ -13,7 +13,6 @@ import {
   getEffectiveDate,
   getColumn,
   getDropDate,
-  getEffectiveDateField,
 } from '../utils/taskDateUtils';
 import { isHighPriorityEligible, splitByPriority, canAddHighPriority } from '../utils/taskPriority';
 import { useSettings } from '../hooks/useSettings';
@@ -105,16 +104,13 @@ export function TasksPage() {
     }
 
     const newDate = getDropDate(columnKey);
-    const field = getEffectiveDateField(task);
     const isHighPriority = isHighPriorityEligible(columnKey) && priority === 'high';
 
     try {
       if (columnKey === 'nodate') {
-        await updateTask(taskId, { must_do_by: null, target_date: null, is_high_priority: false });
-      } else if (field === 'target_date') {
-        await updateTask(taskId, { target_date: newDate, is_high_priority: isHighPriority });
+        await updateTask(taskId, { target_date: null, is_high_priority: false });
       } else {
-        await updateTask(taskId, { must_do_by: newDate, is_high_priority: isHighPriority });
+        await updateTask(taskId, { target_date: newDate, is_high_priority: isHighPriority });
       }
       refetch();
     } catch (err) {
