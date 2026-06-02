@@ -4,7 +4,7 @@ import type { ColumnKey } from './taskDateUtils';
 export const HIGH_PRIORITY_DAILY_LIMIT = 3;
 
 export function isHighPriorityEligible(columnKey: ColumnKey): boolean {
-  return columnKey === 'today' || columnKey === 'tomorrow';
+  return columnKey === 'today' || columnKey === 'tomorrow' || columnKey === 'overdue';
 }
 
 export function splitByPriority(tasks: Task[]): { high: Task[]; normal: Task[] } {

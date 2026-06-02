@@ -73,14 +73,26 @@ export function TaskForm({
     }
     setError(null);
 
-    const data: CreateTaskBody = {
+    const isEditMode = !!initialValues;
+
+    const data: CreateTaskBody | UpdateTaskBody = {
       title: title.trim(),
       label_ids: Array.from(selectedLabelIds),
       is_high_priority: highPriorityEligible && isHighPriority,
     };
     if (notes.trim()) data.notes = notes.trim();
-    if (mustDoBy) data.must_do_by = mustDoBy;
-    if (targetDate) data.target_date = targetDate;
+
+    if (mustDoBy !== '') {
+      data.must_do_by = mustDoBy;
+    } else if (isEditMode && initialValues?.must_do_by) {
+      (data as UpdateTaskBody).must_do_by = null;
+    }
+
+    if (targetDate !== '') {
+      data.target_date = targetDate;
+    } else if (isEditMode && initialValues?.target_date) {
+      (data as UpdateTaskBody).target_date = null;
+    }
 
     await onSubmit(data);
   }
@@ -121,21 +133,45 @@ export function TaskForm({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Must do by</label>
-          <input
-            type="date"
-            value={mustDoBy}
-            onChange={(e) => setMustDoBy(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          />
+          <div className="relative">
+            <input
+              type="date"
+              value={mustDoBy}
+              onChange={(e) => setMustDoBy(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 pr-8"
+            />
+            {mustDoBy !== '' && (
+              <button
+                type="button"
+                onClick={() => setMustDoBy('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 leading-none"
+                aria-label="Clear must do by date"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Target date</label>
-          <input
-            type="date"
-            value={targetDate}
-            onChange={(e) => setTargetDate(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          />
+          <div className="relative">
+            <input
+              type="date"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 pr-8"
+            />
+            {targetDate !== '' && (
+              <button
+                type="button"
+                onClick={() => setTargetDate('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 leading-none"
+                aria-label="Clear target date"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

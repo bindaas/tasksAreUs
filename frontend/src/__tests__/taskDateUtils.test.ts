@@ -118,8 +118,12 @@ describe('getColumn', () => {
     expect(getColumn({ must_do_by: today, target_date: null }, today, tomorrow)).toBe('today');
   });
 
-  it('assigns overdue tasks to today', () => {
-    expect(getColumn({ must_do_by: '2026-05-20', target_date: null }, today, tomorrow)).toBe('today');
+  it('assigns overdue tasks to overdue', () => {
+    expect(getColumn({ must_do_by: '2026-05-20', target_date: null }, today, tomorrow)).toBe('overdue');
+  });
+
+  it('assigns effective date exactly equal to today to today (not overdue)', () => {
+    expect(getColumn({ must_do_by: today, target_date: null }, today, tomorrow)).toBe('today');
   });
 
   it('assigns to tomorrow when effective date equals tomorrow', () => {
@@ -143,6 +147,10 @@ describe('getDropDate', () => {
 
   it('returns null for nodate column', () => {
     expect(getDropDate('nodate')).toBeNull();
+  });
+
+  it('returns null for overdue column', () => {
+    expect(getDropDate('overdue')).toBeNull();
   });
 
   it('returns today for today column', () => {

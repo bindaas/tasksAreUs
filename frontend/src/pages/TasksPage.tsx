@@ -36,6 +36,7 @@ const CATEGORY_COLORS: Record<LabelCategory, { active: string; inactive: string 
 };
 
 const COLUMNS: { key: ColumnKey; title: string }[] = [
+  { key: 'overdue', title: 'Overdue' },
   { key: 'today', title: 'Today' },
   { key: 'tomorrow', title: 'Tomorrow' },
   { key: 'upcoming', title: 'Upcoming' },
@@ -67,7 +68,7 @@ export function TasksPage() {
   );
 
   const columnTasks = useMemo(() => {
-    const map: Record<ColumnKey, Task[]> = { today: [], tomorrow: [], upcoming: [], nodate: [] };
+    const map: Record<ColumnKey, Task[]> = { overdue: [], today: [], tomorrow: [], upcoming: [], nodate: [] };
     for (const task of filteredTasks) {
       map[getColumn(task, today, tomorrow)].push(task);
     }
@@ -85,10 +86,12 @@ export function TasksPage() {
   }, [filteredTasks, today, tomorrow]);
 
   async function handleDrop(taskId: string, columnKey: ColumnKey, priority: 'high' | 'normal' = 'normal') {
+    if (columnKey === 'overdue') return;
+
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    if (priority === 'high' && isHighPriorityEligible(columnKey)) {
+    if (priority === 'high' && isHighPriorityEligible(columnKey) && columnKey !== 'overdue') {
       const allHighForColumn = tasks.filter(
         (t) => t.is_high_priority && getColumn(t, today, tomorrow) === columnKey,
       );
@@ -229,12 +232,17 @@ export function TasksPage() {
                   const { high: highTasks, normal: normalTasks } = splitByPriority(colTasks);
                   const isHighZoneOver = isOver && dragOverPriority === 'high';
                   const isNormalZoneOver = isOver && dragOverPriority === 'normal';
+                  const isOverdueCol = col.key === 'overdue';
 
                   return (
                     <div
                       key={col.key}
                       className={`w-52 sm:w-60 flex-shrink-0 rounded-xl border-2 transition-colors ${
-                        isOver ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50'
+                        isOver
+                          ? 'border-indigo-400 bg-indigo-50'
+                          : isOverdueCol
+                          ? 'border-red-200 bg-red-50'
+                          : 'border-gray-200 bg-gray-50'
                       }`}
                       onDragOver={(e) => {
                         e.preventDefault();
@@ -254,7 +262,7 @@ export function TasksPage() {
                       }}
                     >
                       <div className="px-3 py-2.5 border-b border-gray-200 flex items-center gap-2">
-                        <span className="text-sm font-semibold text-gray-700">{col.title}</span>
+                        <span className={`text-sm font-semibold ${isOverdueCol ? 'text-red-700' : 'text-gray-700'}`}>{col.title}</span>
                         <span className="text-xs text-gray-400 font-medium bg-gray-200 rounded-full px-1.5 py-0.5">
                           {colTasks.length}
                         </span>
@@ -275,7 +283,7 @@ export function TasksPage() {
                           <div className={`text-center py-4 text-xs select-none transition-colors ${
                             isHighZoneOver ? 'text-orange-400' : 'text-gray-300'
                           }`}>
-                            Drop for high priority ↑
+                            {isOverdueCol ? 'High priority' : 'Drop for high priority ↑'}
                           </div>
                         ) : (
                           highTasks.map((task) => (
@@ -308,7 +316,7 @@ export function TasksPage() {
                           <div className={`text-center py-4 text-xs select-none transition-colors ${
                             isNormalZoneOver ? 'text-indigo-400' : 'text-gray-300'
                           }`}>
-                            Drop here
+                            {isOverdueCol ? 'Normal priority' : 'Drop here'}
                           </div>
                         ) : (
                           normalTasks.map((task) => (
