@@ -40,6 +40,10 @@ describe('isHighPriorityEligible', () => {
   it('returns false for overdue', () => {
     expect(isHighPriorityEligible('overdue')).toBe(false);
   });
+
+  it('returns false for day_after_tomorrow', () => {
+    expect(isHighPriorityEligible('day_after_tomorrow')).toBe(false);
+  });
 });
 
 describe('splitByPriority', () => {

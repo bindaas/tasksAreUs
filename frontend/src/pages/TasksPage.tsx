@@ -40,6 +40,7 @@ const COLUMNS: { key: ColumnKey; title: string }[] = [
   { key: 'overdue', title: 'Overdue' },
   { key: 'today', title: 'Today' },
   { key: 'tomorrow', title: 'Tomorrow' },
+  { key: 'day_after_tomorrow', title: 'Day After Tomorrow' },
   { key: 'upcoming', title: 'Upcoming' },
   { key: 'nodate', title: 'No Date' },
 ];
@@ -70,7 +71,7 @@ export function TasksPage() {
   );
 
   const columnTasks = useMemo(() => {
-    const map: Record<ColumnKey, Task[]> = { overdue: [], today: [], tomorrow: [], upcoming: [], nodate: [] };
+    const map: Record<ColumnKey, Task[]> = { overdue: [], today: [], tomorrow: [], day_after_tomorrow: [], upcoming: [], nodate: [] };
     for (const task of filteredTasks) {
       map[getColumn(task, today, tomorrow)].push(task);
     }
@@ -222,11 +223,12 @@ export function TasksPage() {
         ) : filteredTasks.length === 0 ? (
           <EmptyState msg={selectedLabelIds.size > 0 || searchQuery.trim() ? 'No tasks match this filter' : 'No pending tasks'} />
         ) : (
-          /* Pending tasks: 4-column kanban board */
+          /* Pending tasks: 6-column kanban board */
           <div className="overflow-x-auto -mx-4 px-4 pb-4">
             <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
               {COLUMNS.map((col) => {
                 const colTasks = columnTasks[col.key];
+                if (col.key === 'overdue' && colTasks.length === 0) return null;
                 const isOver = dragOverColumn === col.key;
                 const isOverdueCol = col.key === 'overdue';
                 const isPriorityColumn = isHighPriorityEligible(col.key) || isOverdueCol;
