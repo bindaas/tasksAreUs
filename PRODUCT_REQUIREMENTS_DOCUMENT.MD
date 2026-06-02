@@ -14,7 +14,7 @@ tasksAreUs is a task management web app (React 19 + Vite, runs in the browser) w
 - **Must-do-by date**: hard deadline
 - **Target date**: aspirational completion date (e.g. "I want to return library books by Friday, but they're due Sunday")
 - **State**: Pending or Done
-- **High priority**: boolean flag. High priority is only meaningful for tasks whose effective date (earliest of `must_do_by` and `target_date`) falls on today or tomorrow. The backend auto-resets it to `false` whenever the effective date falls outside that window. At most **3 high-priority tasks** are allowed per day; the API returns 422 when a fourth would be added.
+- **High priority**: boolean flag. High priority is only meaningful for tasks whose effective date (earliest of `must_do_by` and `target_date`) falls on today or tomorrow. The backend auto-resets it to `false` whenever the effective date falls outside that window. At most **N high-priority tasks** are allowed per day (where N is the user-configured **High Priority Daily Limit**, defaulting to 3, minimum 1); the API returns 422 when the limit would be exceeded.
 
 ### Labels
 A task can have zero or more labels in fixed system-defined categories. A task may have **multiple labels within the same category** (e.g. both `online` and `email` under Mode).
@@ -81,8 +81,8 @@ The primary interaction mode. Supported input styles:
 ### Task List / Kanban Board
 
 - Pending tasks are shown in a **5-column kanban board**: Overdue | Today | Tomorrow | Upcoming | No Date. Tasks whose effective date is in the past appear in the leftmost **Overdue** column (red accent), not in Today.
-- **Overdue**, **Today**, and **Tomorrow** columns each split into two zones separated by a labeled divider: a high-priority zone (above the line) and a normal-priority zone (below the line). The 3-task high-priority cap does not apply within Overdue — tasks carry their existing priority; the cap re-engages when a task is dragged to Today or Tomorrow. Dropping a task *into* the Overdue column is blocked.
-- **Drag-and-drop** between columns updates the task's effective date via `PUT /tasks/:id`. Dragging to Upcoming defaults to 7 days from today; dragging to No Date clears both date fields. Dragging into the high zone sets `is_high_priority = true`; into the normal zone or Upcoming/No Date, it resets to `false`. The frontend enforces the 3-per-day high-priority limit before making the API call; the backend enforces it independently.
+- **Overdue**, **Today**, and **Tomorrow** columns each split into two zones separated by a labeled divider: a high-priority zone (above the line) and a normal-priority zone (below the line). The high-priority cap does not apply within Overdue — tasks carry their existing priority; the cap re-engages when a task is dragged to Today or Tomorrow. Dropping a task *into* the Overdue column is blocked. When a column has more high-priority tasks than the configured limit, the column header shows a ⚠ N/M warning in amber.
+- **Drag-and-drop** between columns updates the task's effective date via `PUT /tasks/:id`. Dragging to Upcoming defaults to 7 days from today; dragging to No Date clears both date fields. Dragging into the high zone sets `is_high_priority = true`; into the normal zone or Upcoming/No Date, it resets to `false`. The frontend enforces the user-configured high-priority limit before making the API call; the backend enforces it independently.
 - **Label filter chips** are shown above the board (Mode / Type / Frequency categories). Filter state persists across navigation via React context.
 - **Text search** filters tasks by title and notes simultaneously (case-insensitive). Search and label filters compose with AND semantics.
 - When navigating to New Task while a label filter is active, those labels are pre-checked in the form.
@@ -100,6 +100,7 @@ The primary interaction mode. Supported input styles:
 
 ### Settings Page
 
+- **High Priority Daily Limit**: numeric input (min 1) that sets the per-day cap for high-priority tasks in Today and Tomorrow columns. Defaults to 3 when unset. Reducing the limit below the current count is allowed — a warning is shown but no retroactive removal occurs. Persisted server-side via `user_settings.high_priority_daily_limit`.
 - Configure up to 5 starter questions saved server-side. Questions can be added, removed, and reordered.
 - Note: backend connectivity testing from the Settings screen is **not currently implemented**.
 

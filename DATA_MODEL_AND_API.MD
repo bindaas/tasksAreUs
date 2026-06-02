@@ -85,9 +85,10 @@ Core entity. One-time and recurring task instances are both stored here.
 **High-priority rules (enforced by the API):**
 - `is_high_priority = true` is only meaningful when the task's effective date (earliest of `must_do_by` / `target_date`) is today, tomorrow, or in the past (overdue)
 - The API auto-resets `is_high_priority` to `false` on any create or update if the effective date is outside today/tomorrow/overdue range
-- A maximum of **3** high-priority tasks per calendar day (per user) is enforced; attempting to add a 4th raises HTTP 422
+- The daily cap is user-configurable via `user_settings.high_priority_daily_limit` (default 3, min 1). The API reads this setting dynamically on each create/update check; falls back to 3 if no row or null
+- Attempting to set a task high-priority when the cap is reached raises HTTP 422. The error message includes the live limit value
 - The daily limit is checked against the effective date of the task, not `must_do_by` alone
-- Overdue tasks retain their existing priority; the 3-task cap re-engages only when the task is moved to a current or future date
+- Overdue tasks retain their existing priority; the cap re-engages only when the task is moved to a current or future date
 
 ---
 
@@ -158,6 +159,7 @@ Per-user configuration. One row per user.
 | `id` | UUID | PK |
 | `user_id` | UUID | FK → users. Unique |
 | `starter_questions` | JSONB | Array of up to 5 strings for the Conversational UI |
+| `high_priority_daily_limit` | INTEGER | Nullable. Configurable cap on high-priority tasks per calendar day. Defaults to 3 when null. Min 1. |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | |
 
@@ -509,9 +511,11 @@ Get the current user's settings.
     "What did I complete this week?",
     "What tasks are due this weekend?",
     "What household tasks are pending?"
-  ]
+  ],
+  "high_priority_daily_limit": 3
 }
 ```
+`high_priority_daily_limit` defaults to 3 when no setting has been saved.
 
 ---
 
@@ -527,9 +531,11 @@ Update user settings.
     "What did I complete this week?",
     "What tasks are due this weekend?",
     "What household tasks are pending?"
-  ]
+  ],
+  "high_priority_daily_limit": 3
 }
 ```
+`high_priority_daily_limit` is clamped to a minimum of 1 server-side. Reducing below the current count is allowed (no retroactive enforcement — warnings are shown but no tasks are auto-demoted).
 
 **Response**: updated settings object
 
