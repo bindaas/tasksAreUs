@@ -8,11 +8,18 @@ from dateutil.relativedelta import relativedelta
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from ..models import Label, StateEnum, Task, TaskLabel
+from ..models import Label, StateEnum, Task, TaskLabel, UserSettings
 
 
 FREQUENCY_VALUES = {"daily", "weekly", "monthly", "annual"}
-HIGH_PRIORITY_DAILY_LIMIT = 3
+HIGH_PRIORITY_DAILY_LIMIT = 3  # fallback when user has no setting
+
+
+def _get_high_priority_limit(db: Session, user_id: str) -> int:
+    s = db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
+    if s and s.high_priority_daily_limit is not None:
+        return s.high_priority_daily_limit
+    return HIGH_PRIORITY_DAILY_LIMIT
 
 
 def _effective_date(must_do_by: Optional[date], target_date: Optional[date]) -> Optional[date]:
@@ -102,11 +109,12 @@ def create_task(
     effective = _effective_date(must_do_by, target_date)
     final_priority = is_high_priority and _is_today_or_tomorrow(effective)
     if final_priority:
+        limit = _get_high_priority_limit(db, user_id)
         count = _count_high_priority_for_date(db, user_id, effective)
-        if count >= HIGH_PRIORITY_DAILY_LIMIT:
+        if count >= limit:
             raise HTTPException(
                 status_code=422,
-                detail=f"High-priority tasks are limited to {HIGH_PRIORITY_DAILY_LIMIT} per day. "
+                detail=f"High-priority tasks are limited to {limit} per day. "
                        "Remove one before adding another.",
             )
     task = Task(
@@ -163,11 +171,12 @@ def update_task(
     if is_high_priority is True:
         effective = _effective_date(task.must_do_by, task.target_date)
         if _is_today_or_tomorrow(effective):
+            limit = _get_high_priority_limit(db, task.user_id)
             count = _count_high_priority_for_date(db, task.user_id, effective, exclude_task_id=task.id)
-            if count >= HIGH_PRIORITY_DAILY_LIMIT:
+            if count >= limit:
                 raise HTTPException(
                     status_code=422,
-                    detail=f"High-priority tasks are limited to {HIGH_PRIORITY_DAILY_LIMIT} per day. "
+                    detail=f"High-priority tasks are limited to {limit} per day. "
                            "Remove one before adding another.",
                 )
 
