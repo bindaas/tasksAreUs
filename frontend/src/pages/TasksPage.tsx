@@ -268,7 +268,7 @@ export function TasksPage() {
                         <span className="text-xs text-gray-400 font-medium bg-gray-200 rounded-full px-1.5 py-0.5">
                           {colTasks.length}
                         </span>
-                        {highTasks.length > highPriorityDailyLimit && (
+                        {highTasks.length >= highPriorityDailyLimit && (
                           <span className="ml-auto text-xs text-amber-600 font-medium flex items-center gap-1" title="High-priority limit exceeded">
                             ⚠ {highTasks.length}/{highPriorityDailyLimit} high
                           </span>

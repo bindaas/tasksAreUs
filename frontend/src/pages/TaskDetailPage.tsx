@@ -32,10 +32,11 @@ export function TaskDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const [t, { tasks: pending }] = await Promise.all([getTask(id!), listTasks('pending')]);
-        if (!cancelled) {
-          setTask(t);
-          setAllPendingTasks(pending);
+        const t = await getTask(id!);
+        if (!cancelled) setTask(t);
+        if (!cancelled && t.is_high_priority) {
+          const { tasks: pending } = await listTasks('pending');
+          if (!cancelled) setAllPendingTasks(pending);
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load task');
@@ -59,7 +60,7 @@ export function TaskDetailPage() {
     const highInCol = allPendingTasks.filter(
       (t) => t.is_high_priority && getColumn(t, todayStr, tomorrowStr) === col
     );
-    if (highInCol.length > highPriorityDailyLimit) {
+    if (highInCol.length >= highPriorityDailyLimit) {
       return `${highInCol.length} of ${highPriorityDailyLimit} high-priority tasks for ${col === 'overdue' ? 'overdue' : col} — limit exceeded.`;
     }
     return null;

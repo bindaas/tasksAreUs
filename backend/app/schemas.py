@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ── Labels ────────────────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ class SettingsOut(BaseModel):
 
 class SettingsUpdate(BaseModel):
     starter_questions: List[str]
-    high_priority_daily_limit: int = 3
+    high_priority_daily_limit: int = Field(default=3, ge=1)
 
 
 # ── Sync ──────────────────────────────────────────────────────────────────────

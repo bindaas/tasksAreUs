@@ -210,22 +210,22 @@ class TestUpdateTaskHighPriority:
         db.refresh.side_effect = lambda t: None
         return db
 
-    @patch("app.services.task_service._get_high_priority_limit", return_value=HIGH_PRIORITY_DAILY_LIMIT)
     @patch("app.services.task_service._count_high_priority_for_date", return_value=0)
-    def test_set_high_priority_for_today(self, _count, _limit):
+    def test_set_high_priority_for_today(self, _count):
         today = date.today()
         task = self._make_task(must_do_by=today)
         update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
-                    target_date=None, label_ids=None, is_high_priority=True)
+                    target_date=None, label_ids=None, is_high_priority=True,
+                    high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
         assert task.is_high_priority is True
 
-    @patch("app.services.task_service._get_high_priority_limit", return_value=HIGH_PRIORITY_DAILY_LIMIT)
     @patch("app.services.task_service._count_high_priority_for_date", return_value=0)
-    def test_set_high_priority_for_tomorrow(self, _count, _limit):
+    def test_set_high_priority_for_tomorrow(self, _count):
         tomorrow = date.today() + timedelta(days=1)
         task = self._make_task(target_date=tomorrow)
         update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
-                    target_date=None, label_ids=None, is_high_priority=True)
+                    target_date=None, label_ids=None, is_high_priority=True,
+                    high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
         assert task.is_high_priority is True
 
     def test_auto_reset_when_date_moves_to_upcoming(self):
@@ -285,32 +285,32 @@ class TestHighPriorityDailyLimit:
         db.refresh.side_effect = lambda t: None
         return db
 
-    @patch("app.services.task_service._get_high_priority_limit", return_value=HIGH_PRIORITY_DAILY_LIMIT)
     @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT)
-    def test_update_raises_422_when_daily_limit_reached(self, _count, _limit):
+    def test_update_raises_422_when_daily_limit_reached(self, _count):
         today = date.today()
         task = self._make_task(must_do_by=today, is_high_priority=False)
         with pytest.raises(HTTPException) as exc:
             update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
-                        target_date=None, label_ids=None, is_high_priority=True)
+                        target_date=None, label_ids=None, is_high_priority=True,
+                        high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
         assert exc.value.status_code == 422
 
-    @patch("app.services.task_service._get_high_priority_limit", return_value=HIGH_PRIORITY_DAILY_LIMIT)
     @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT - 1)
-    def test_update_succeeds_when_below_limit(self, _count, _limit):
+    def test_update_succeeds_when_below_limit(self, _count):
         today = date.today()
         task = self._make_task(must_do_by=today, is_high_priority=False)
         update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
-                    target_date=None, label_ids=None, is_high_priority=True)
+                    target_date=None, label_ids=None, is_high_priority=True,
+                    high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
         assert task.is_high_priority is True
 
     @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT)
     def test_update_no_check_when_priority_not_explicitly_set(self, mock_count):
         today = date.today()
         task = self._make_task(must_do_by=today, is_high_priority=True)
-        # is_high_priority=None means caller is not changing it — no limit check
         update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
-                    target_date=None, label_ids=None, is_high_priority=None)
+                    target_date=None, label_ids=None, is_high_priority=None,
+                    high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
         mock_count.assert_not_called()
 
     @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT)
@@ -318,29 +318,28 @@ class TestHighPriorityDailyLimit:
         today = date.today()
         task = self._make_task(must_do_by=today, is_high_priority=True)
         update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
-                    target_date=None, label_ids=None, is_high_priority=False)
+                    target_date=None, label_ids=None, is_high_priority=False,
+                    high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
         mock_count.assert_not_called()
         assert task.is_high_priority is False
 
-    @patch("app.services.task_service._get_high_priority_limit", return_value=5)
     @patch("app.services.task_service._count_high_priority_for_date", return_value=4)
-    def test_update_respects_custom_limit(self, _count, _limit):
+    def test_update_respects_custom_limit(self, _count):
         today = date.today()
         task = self._make_task(must_do_by=today, is_high_priority=False)
-        # count=4 < limit=5 → should succeed
         update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
-                    target_date=None, label_ids=None, is_high_priority=True)
+                    target_date=None, label_ids=None, is_high_priority=True,
+                    high_priority_limit=5)
         assert task.is_high_priority is True
 
-    @patch("app.services.task_service._get_high_priority_limit", return_value=5)
     @patch("app.services.task_service._count_high_priority_for_date", return_value=5)
-    def test_update_raises_422_when_custom_limit_reached(self, _count, _limit):
+    def test_update_raises_422_when_custom_limit_reached(self, _count):
         today = date.today()
         task = self._make_task(must_do_by=today, is_high_priority=False)
-        # count=5 >= limit=5 → should raise
         with pytest.raises(HTTPException) as exc:
             update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
-                        target_date=None, label_ids=None, is_high_priority=True)
+                        target_date=None, label_ids=None, is_high_priority=True,
+                        high_priority_limit=5)
         assert exc.value.status_code == 422
 
 

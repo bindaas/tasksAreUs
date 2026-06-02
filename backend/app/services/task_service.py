@@ -104,17 +104,17 @@ def create_task(
     label_ids: List[str],
     recurrence_group_id: Optional[str] = None,
     is_high_priority: bool = False,
+    high_priority_limit: int = HIGH_PRIORITY_DAILY_LIMIT,
 ) -> Task:
     labels = _resolve_labels(db, label_ids)
     effective = _effective_date(must_do_by, target_date)
     final_priority = is_high_priority and _is_today_or_tomorrow(effective)
     if final_priority:
-        limit = _get_high_priority_limit(db, user_id)
         count = _count_high_priority_for_date(db, user_id, effective)
-        if count >= limit:
+        if count >= high_priority_limit:
             raise HTTPException(
                 status_code=422,
-                detail=f"High-priority tasks are limited to {limit} per day. "
+                detail=f"High-priority tasks are limited to {high_priority_limit} per day. "
                        "Remove one before adding another.",
             )
     task = Task(
@@ -146,6 +146,7 @@ def update_task(
     clear_must_do_by: bool = False,
     clear_target_date: bool = False,
     is_high_priority: Optional[bool] = None,
+    high_priority_limit: int = HIGH_PRIORITY_DAILY_LIMIT,
 ) -> Task:
     if title is not None:
         task.title = title
@@ -171,12 +172,11 @@ def update_task(
     if is_high_priority is True:
         effective = _effective_date(task.must_do_by, task.target_date)
         if _is_today_or_tomorrow(effective):
-            limit = _get_high_priority_limit(db, task.user_id)
             count = _count_high_priority_for_date(db, task.user_id, effective, exclude_task_id=task.id)
-            if count >= limit:
+            if count >= high_priority_limit:
                 raise HTTPException(
                     status_code=422,
-                    detail=f"High-priority tasks are limited to {limit} per day. "
+                    detail=f"High-priority tasks are limited to {high_priority_limit} per day. "
                            "Remove one before adding another.",
                 )
 
