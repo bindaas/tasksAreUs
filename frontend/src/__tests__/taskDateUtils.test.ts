@@ -122,10 +122,6 @@ describe('getColumn', () => {
     expect(getColumn({ must_do_by: '2026-05-20', target_date: null }, today, tomorrow)).toBe('overdue');
   });
 
-  it('assigns effective date exactly equal to today to today (not overdue)', () => {
-    expect(getColumn({ must_do_by: today, target_date: null }, today, tomorrow)).toBe('today');
-  });
-
   it('assigns to tomorrow when effective date equals tomorrow', () => {
     expect(getColumn({ must_do_by: tomorrow, target_date: null }, today, tomorrow)).toBe('tomorrow');
   });

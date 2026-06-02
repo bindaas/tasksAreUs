@@ -91,7 +91,7 @@ export function TasksPage() {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    if (priority === 'high' && isHighPriorityEligible(columnKey) && columnKey !== 'overdue') {
+    if (priority === 'high' && isHighPriorityEligible(columnKey)) {
       const allHighForColumn = tasks.filter(
         (t) => t.is_high_priority && getColumn(t, today, tomorrow) === columnKey,
       );
@@ -226,13 +226,13 @@ export function TasksPage() {
               {COLUMNS.map((col) => {
                 const colTasks = columnTasks[col.key];
                 const isOver = dragOverColumn === col.key;
-                const isPriorityColumn = isHighPriorityEligible(col.key);
+                const isOverdueCol = col.key === 'overdue';
+                const isPriorityColumn = isHighPriorityEligible(col.key) || isOverdueCol;
 
                 if (isPriorityColumn) {
                   const { high: highTasks, normal: normalTasks } = splitByPriority(colTasks);
                   const isHighZoneOver = isOver && dragOverPriority === 'high';
                   const isNormalZoneOver = isOver && dragOverPriority === 'normal';
-                  const isOverdueCol = col.key === 'overdue';
 
                   return (
                     <div
