@@ -2,6 +2,7 @@ import { apiFetch } from './client';
 
 export interface Settings {
   starter_questions: string[];
+  high_priority_daily_limit: number;
 }
 
 export async function getSettings(): Promise<Settings> {

@@ -15,7 +15,7 @@ On first load the frontend generates a UUID stored in `localStorage` as `device_
 ```
 backend/
   app/
-    main.py          # FastAPI + lifespan (create_all, ALTER TABLE for is_high_priority, seed labels)
+    main.py          # FastAPI + lifespan (create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit, seed labels)
     config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates)
     database.py      # engine, SessionLocal, get_db()
     models.py        # ORM models + LABEL_SEED
@@ -31,7 +31,7 @@ backend/
       settings.py    # GET/PUT /settings
       sync.py        # POST /sync
     services/
-      task_service.py  # create_task(), update_task(), complete_task(), recurring logic, high-priority limit
+      task_service.py  # create_task(), update_task(), complete_task(), recurring logic, high-priority limit; _get_high_priority_limit() reads user settings
       ai_service.py    # Claude calls (beliefs + conversations); _format_task_line() helper
   tests/
     test_api.py      # standalone integration test: creates data, tests all endpoints, cleans up
@@ -63,16 +63,17 @@ frontend/
       useUser.ts        # device UUID + user_id bootstrap from localStorage
       useTasks.ts
       useLabels.ts
+      useSettings.ts    # fetches GET /settings; exposes highPriorityDailyLimit (default 3)
     pages/
       TasksPage.tsx     # 5-column kanban (Overdue/Today/Tomorrow/Upcoming/No Date) with drag-drop, search, label filters
       TaskDetailPage.tsx  # create (/tasks/new) and edit (/tasks/:id)
       ChatPage.tsx      # AI conversation with suggested-question chips
       ReportsPage.tsx   # completions by date range
-      SettingsPage.tsx  # starter questions editor
+      SettingsPage.tsx  # starter questions editor + High Priority Daily Limit numeric input
     utils/
       taskDateUtils.ts  # date helpers: getColumn(), getDropDate(), getEffectiveDate(), formatDate()
       taskFilters.ts    # filterTasks() — applies label and text search filters
-      taskPriority.ts   # isHighPriorityEligible(), splitByPriority(), canAddHighPriority()
+      taskPriority.ts   # isHighPriorityEligible(), splitByPriority(), canAddHighPriority(highTasks, droppedTask, limit)
     __tests__/
       taskDateUtils.test.ts
       taskFilters.test.ts
@@ -92,7 +93,7 @@ frontend/
 
 **AI beliefs** (`generate_beliefs`): single JSON-mode Claude call; response parsed for `label_suggestions` (label_id + rationale) and `time_estimate_minutes`.
 
-**High-priority tasks**: `is_high_priority` is only valid when the task's effective date (earliest of `must_do_by` / `target_date`) is today, tomorrow, or in the past (overdue). Auto-reset to `false` on any update that moves the date outside that window. Hard limit of 3 high-priority tasks per calendar day, enforced in both `create_task` and `update_task`; raises HTTP 422 when exceeded. The 3-task cap does not apply within the Overdue column — tasks retain their existing priority there, but the cap re-engages when a task is dragged to Today or Tomorrow.
+**High-priority tasks**: `is_high_priority` is only valid when the task's effective date (earliest of `must_do_by` / `target_date`) is today, tomorrow, or in the past (overdue). Auto-reset to `false` on any update that moves the date outside that window. The daily cap is user-configurable via `user_settings.high_priority_daily_limit` (default 3, min 1); `_get_high_priority_limit()` in `task_service.py` reads it on each create/update, falling back to 3. HTTP 422 is raised when the cap is exceeded. The cap does not apply within the Overdue column — tasks retain their existing priority there, but the cap re-engages when a task is dragged to Today or Tomorrow. When a column exceeds the limit, the column header shows an amber ⚠ N/M high badge (warning only — no retroactive enforcement).
 
 **Null-clearing on update**: `PUT /tasks/{task_id}` uses Pydantic `model_fields_set` to distinguish "field not provided" from "field explicitly set to null". `clear_must_do_by` and `clear_target_date` flags are passed to `update_task` to allow clearing date fields to null. The `TaskForm` component sends an explicit `null` when a previously-set date is cleared via the × button, ensuring the backend actually clears the field.
 
@@ -128,7 +129,7 @@ cd backend && DATABASE_URL=... python3 tests/test_api.py
 cd backend && python3 -m pytest tests/unit/ -v
 ```
 
-**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils` (including overdue column logic), `taskFilters`, and `taskPriority` utilities (53 tests). Run with:
+**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils` (including overdue column logic), `taskFilters`, and `taskPriority` utilities (54 tests). Run with:
 ```bash
 cd frontend && npx vitest run
 ```

@@ -21,7 +21,7 @@ export function splitByPriority(tasks: Task[]): { high: Task[]; normal: Task[] }
 }
 
 /** Returns true if droppedTask can be added to the high-priority zone for this column. */
-export function canAddHighPriority(highTasks: Task[], droppedTask: Task): boolean {
+export function canAddHighPriority(highTasks: Task[], droppedTask: Task, limit: number = HIGH_PRIORITY_DAILY_LIMIT): boolean {
   if (highTasks.some((t) => t.id === droppedTask.id)) return true;
-  return highTasks.length < HIGH_PRIORITY_DAILY_LIMIT;
+  return highTasks.length < limit;
 }
