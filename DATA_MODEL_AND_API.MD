@@ -83,10 +83,11 @@ Core entity. One-time and recurring task instances are both stored here.
 - If a recurring task is overdue and still `pending`, no additional instance is created until it is completed
 
 **High-priority rules (enforced by the API):**
-- `is_high_priority = true` is only meaningful when the task's effective date (earliest of `must_do_by` / `target_date`) is today or tomorrow
-- The API auto-resets `is_high_priority` to `false` on any create or update if the effective date is outside today/tomorrow
+- `is_high_priority = true` is only meaningful when the task's effective date (earliest of `must_do_by` / `target_date`) is today, tomorrow, or in the past (overdue)
+- The API auto-resets `is_high_priority` to `false` on any create or update if the effective date is outside today/tomorrow/overdue range
 - A maximum of **3** high-priority tasks per calendar day (per user) is enforced; attempting to add a 4th raises HTTP 422
 - The daily limit is checked against the effective date of the task, not `must_do_by` alone
+- Overdue tasks retain their existing priority; the 3-task cap re-engages only when the task is moved to a current or future date
 
 ---
 
@@ -323,7 +324,7 @@ Update a task's fields or labels.
 }
 ```
 
-To clear a date field to null, include the field explicitly as `null` in the JSON body. Omitting the field leaves the existing value unchanged.
+To clear a date field to null, include the field explicitly as `null` in the JSON body. Omitting the field leaves the existing value unchanged. The frontend `TaskForm` × button clears the local state and sends `null` for any date that was previously set but is now empty, ensuring the backend receives an explicit clear signal.
 
 **Response**: updated task object
 

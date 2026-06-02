@@ -64,7 +64,7 @@ frontend/
       useTasks.ts
       useLabels.ts
     pages/
-      TasksPage.tsx     # 4-column kanban (Today/Tomorrow/Upcoming/No Date) with drag-drop, search, label filters
+      TasksPage.tsx     # 5-column kanban (Overdue/Today/Tomorrow/Upcoming/No Date) with drag-drop, search, label filters
       TaskDetailPage.tsx  # create (/tasks/new) and edit (/tasks/:id)
       ChatPage.tsx      # AI conversation with suggested-question chips
       ReportsPage.tsx   # completions by date range
@@ -92,9 +92,11 @@ frontend/
 
 **AI beliefs** (`generate_beliefs`): single JSON-mode Claude call; response parsed for `label_suggestions` (label_id + rationale) and `time_estimate_minutes`.
 
-**High-priority tasks**: `is_high_priority` is only valid when the task's effective date (earliest of `must_do_by` / `target_date`) is today or tomorrow. Auto-reset to `false` on any update that moves the date outside that window. Hard limit of 3 high-priority tasks per calendar day, enforced in both `create_task` and `update_task`; raises HTTP 422 when exceeded.
+**High-priority tasks**: `is_high_priority` is only valid when the task's effective date (earliest of `must_do_by` / `target_date`) is today, tomorrow, or in the past (overdue). Auto-reset to `false` on any update that moves the date outside that window. Hard limit of 3 high-priority tasks per calendar day, enforced in both `create_task` and `update_task`; raises HTTP 422 when exceeded. The 3-task cap does not apply within the Overdue column — tasks retain their existing priority there, but the cap re-engages when a task is dragged to Today or Tomorrow.
 
-**Null-clearing on update**: `PUT /tasks/{task_id}` uses Pydantic `model_fields_set` to distinguish "field not provided" from "field explicitly set to null". `clear_must_do_by` and `clear_target_date` flags are passed to `update_task` to allow clearing date fields to null.
+**Null-clearing on update**: `PUT /tasks/{task_id}` uses Pydantic `model_fields_set` to distinguish "field not provided" from "field explicitly set to null". `clear_must_do_by` and `clear_target_date` flags are passed to `update_task` to allow clearing date fields to null. The `TaskForm` component sends an explicit `null` when a previously-set date is cleared via the × button, ensuring the backend actually clears the field.
+
+**Overdue column**: Tasks whose effective date is strictly in the past are assigned to the `overdue` column bucket (`ColumnKey = 'overdue' | 'today' | 'tomorrow' | 'upcoming' | 'nodate'`). The Overdue column uses a red accent style. Dropping tasks *into* the Overdue column is blocked; tasks can only drag *out* to other columns. `getDropDate('overdue')` returns `null` (same as `nodate`). `isHighPriorityEligible` returns `true` for `overdue` so existing high-priority flags are preserved.
 
 For auth, soft deletes, recurring task rules, beliefs storage, sync protocol, and cost tracking see `DATA_MODEL_AND_API.MD`.
 
@@ -126,7 +128,7 @@ cd backend && DATABASE_URL=... python3 tests/test_api.py
 cd backend && python3 -m pytest tests/unit/ -v
 ```
 
-**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils`, `taskFilters`, and `taskPriority` utilities. Run with:
+**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils` (including overdue column logic), `taskFilters`, and `taskPriority` utilities (53 tests). Run with:
 ```bash
 cd frontend && npx vitest run
 ```

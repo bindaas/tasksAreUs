@@ -1,6 +1,6 @@
 import type { Task } from '../api/tasks';
 
-export type ColumnKey = 'today' | 'tomorrow' | 'upcoming' | 'nodate';
+export type ColumnKey = 'overdue' | 'today' | 'tomorrow' | 'upcoming' | 'nodate';
 
 export function dateOnly(d: Date): string {
   const y = d.getFullYear();
@@ -39,7 +39,8 @@ export function getColumn(
 ): ColumnKey {
   const effective = getEffectiveDate(task);
   if (!effective) return 'nodate';
-  if (effective <= today) return 'today';
+  if (effective < today) return 'overdue';
+  if (effective === today) return 'today';
   if (effective === tomorrow) return 'tomorrow';
   return 'upcoming';
 }
@@ -47,6 +48,7 @@ export function getColumn(
 export function getDropDate(columnKey: ColumnKey): string | null {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
+  if (columnKey === 'overdue') return null;
   if (columnKey === 'nodate') return null;
   if (columnKey === 'today') return dateOnly(now);
   if (columnKey === 'tomorrow') {

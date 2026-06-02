@@ -36,6 +36,10 @@ describe('isHighPriorityEligible', () => {
   it('returns false for nodate', () => {
     expect(isHighPriorityEligible('nodate')).toBe(false);
   });
+
+  it('returns false for overdue', () => {
+    expect(isHighPriorityEligible('overdue')).toBe(false);
+  });
 });
 
 describe('splitByPriority', () => {
