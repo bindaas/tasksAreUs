@@ -44,6 +44,10 @@ async def lifespan(app: FastAPI):
             "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS "
             "is_high_priority BOOLEAN NOT NULL DEFAULT false"
         ))
+        conn.execute(text(
+            "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS "
+            "high_priority_daily_limit INTEGER"
+        ))
         conn.commit()
     db = SessionLocal()
     try:

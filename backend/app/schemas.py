@@ -140,10 +140,12 @@ class CompletionsReport(BaseModel):
 
 class SettingsOut(BaseModel):
     starter_questions: List[str] = []
+    high_priority_daily_limit: int = 3
 
 
 class SettingsUpdate(BaseModel):
     starter_questions: List[str]
+    high_priority_daily_limit: int = 3
 
 
 # ── Sync ──────────────────────────────────────────────────────────────────────

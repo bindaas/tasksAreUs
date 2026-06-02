@@ -27,7 +27,10 @@ def get_settings(
     user_id: str = Depends(get_current_user_id),
 ):
     s = _get_or_create_settings(db, user_id)
-    return SettingsOut(starter_questions=s.starter_questions or [])
+    return SettingsOut(
+        starter_questions=s.starter_questions or [],
+        high_priority_daily_limit=s.high_priority_daily_limit if s.high_priority_daily_limit is not None else 3,
+    )
 
 
 @router.put("", response_model=SettingsOut)
@@ -38,7 +41,11 @@ def update_settings(
 ):
     s = _get_or_create_settings(db, user_id)
     s.starter_questions = body.starter_questions[:5]
+    s.high_priority_daily_limit = max(1, body.high_priority_daily_limit)
     s.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(s)
-    return SettingsOut(starter_questions=s.starter_questions or [])
+    return SettingsOut(
+        starter_questions=s.starter_questions or [],
+        high_priority_daily_limit=s.high_priority_daily_limit,
+    )

@@ -5,6 +5,7 @@ const MAX_QUESTIONS = 5;
 
 export function SettingsPage() {
   const [questions, setQuestions] = useState<string[]>([]);
+  const [highPriorityLimit, setHighPriorityLimit] = useState(3);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +18,7 @@ export function SettingsPage() {
       try {
         const s = await getSettings();
         setQuestions(s.starter_questions ?? []);
+        setHighPriorityLimit(s.high_priority_daily_limit ?? 3);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load settings');
       } finally {
@@ -66,7 +68,7 @@ export function SettingsPage() {
     setError(null);
     setSuccess(false);
     try {
-      await updateSettings({ starter_questions: questions.filter((q) => q.trim()) });
+      await updateSettings({ starter_questions: questions.filter((q) => q.trim()), high_priority_daily_limit: Math.max(1, highPriorityLimit) });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
@@ -99,6 +101,22 @@ export function SettingsPage() {
         </div>
       ) : (
         <>
+          {/* High-priority limit */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">High Priority Daily Limit</h3>
+            <p className="text-xs text-gray-500 mb-2">
+              Max high-priority tasks allowed per day in Today and Tomorrow. A warning is shown when this is exceeded.
+            </p>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={highPriorityLimit}
+              onChange={(e) => setHighPriorityLimit(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
           <div className="mb-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-700">

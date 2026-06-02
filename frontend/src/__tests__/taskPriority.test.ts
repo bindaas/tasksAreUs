@@ -79,24 +79,30 @@ describe('splitByPriority', () => {
 describe('canAddHighPriority', () => {
   it('returns true when fewer than limit high-priority tasks exist', () => {
     const high = [makeTask('a', true), makeTask('b', true)];
-    expect(canAddHighPriority(high, makeTask('c', false))).toBe(true);
+    expect(canAddHighPriority(high, makeTask('c', false), 3)).toBe(true);
   });
 
   it('returns false when limit is reached and dropped task is not high', () => {
     const high = Array.from({ length: HIGH_PRIORITY_DAILY_LIMIT }, (_, i) =>
       makeTask(String(i), true),
     );
-    expect(canAddHighPriority(high, makeTask('new', false))).toBe(false);
+    expect(canAddHighPriority(high, makeTask('new', false), HIGH_PRIORITY_DAILY_LIMIT)).toBe(false);
   });
 
   it('returns true when limit is reached but dropped task is already in the high list', () => {
     const high = Array.from({ length: HIGH_PRIORITY_DAILY_LIMIT }, (_, i) =>
       makeTask(String(i), true),
     );
-    expect(canAddHighPriority(high, makeTask('0', true))).toBe(true);
+    expect(canAddHighPriority(high, makeTask('0', true), HIGH_PRIORITY_DAILY_LIMIT)).toBe(true);
   });
 
   it('returns true when high list is empty', () => {
-    expect(canAddHighPriority([], makeTask('a', false))).toBe(true);
+    expect(canAddHighPriority([], makeTask('a', false), 3)).toBe(true);
+  });
+
+  it('respects a custom limit', () => {
+    const high = [makeTask('a', true)];
+    expect(canAddHighPriority(high, makeTask('b', false), 1)).toBe(false);
+    expect(canAddHighPriority(high, makeTask('b', false), 2)).toBe(true);
   });
 });

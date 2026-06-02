@@ -15,7 +15,8 @@ import {
   getDropDate,
   getEffectiveDateField,
 } from '../utils/taskDateUtils';
-import { isHighPriorityEligible, splitByPriority, canAddHighPriority, HIGH_PRIORITY_DAILY_LIMIT } from '../utils/taskPriority';
+import { isHighPriorityEligible, splitByPriority, canAddHighPriority } from '../utils/taskPriority';
+import { useSettings } from '../hooks/useSettings';
 
 type LabelCategory = 'frequency' | 'mode' | 'type';
 const CATEGORIES: LabelCategory[] = ['mode', 'type', 'frequency'];
@@ -53,6 +54,7 @@ export function TasksPage() {
 
   const { tasks, loading, error, refetch } = useTasks(showDone ? 'done' : 'pending');
   const { labels, labelsByCategory } = useLabels();
+  const { highPriorityDailyLimit } = useSettings();
   const [dropError, setDropError] = useState<string | null>(null);
 
   const { today, tomorrow } = useMemo(() => {
@@ -95,8 +97,8 @@ export function TasksPage() {
       const allHighForColumn = tasks.filter(
         (t) => t.is_high_priority && getColumn(t, today, tomorrow) === columnKey,
       );
-      if (!canAddHighPriority(allHighForColumn, task)) {
-        setDropError(`High priority is limited to ${HIGH_PRIORITY_DAILY_LIMIT} tasks per day.`);
+      if (!canAddHighPriority(allHighForColumn, task, highPriorityDailyLimit)) {
+        setDropError(`High priority is limited to ${highPriorityDailyLimit} tasks per day.`);
         return;
       }
     }
@@ -266,6 +268,11 @@ export function TasksPage() {
                         <span className="text-xs text-gray-400 font-medium bg-gray-200 rounded-full px-1.5 py-0.5">
                           {colTasks.length}
                         </span>
+                        {highTasks.length > highPriorityDailyLimit && (
+                          <span className="ml-auto text-xs text-amber-600 font-medium flex items-center gap-1" title="High-priority limit exceeded">
+                            ⚠ {highTasks.length}/{highPriorityDailyLimit} high
+                          </span>
+                        )}
                       </div>
 
                       {/* High-priority zone — onDragOver sets priority intent; onDrop is on the outer div */}

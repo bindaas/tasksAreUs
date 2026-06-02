@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getTask, updateTask, deleteTask, completeTask, createTask } from '../api/tasks';
+import { getTask, updateTask, deleteTask, completeTask, createTask, listTasks } from '../api/tasks';
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
 import { useLabels } from '../hooks/useLabels';
+import { useSettings } from '../hooks/useSettings';
 import { TaskForm } from '../components/TaskForm';
 import { useFilter } from '../context/FilterContext';
+import { dateOnly, getColumn, getEffectiveDate } from '../utils/taskDateUtils';
+import { isHighPriorityEligible } from '../utils/taskPriority';
 
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +21,8 @@ export function TaskDetailPage() {
 
   const { labels, loading: labelsLoading } = useLabels();
   const { selectedLabelIds } = useFilter();
+  const { highPriorityDailyLimit } = useSettings();
+  const [allPendingTasks, setAllPendingTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     if (isNew) return;
@@ -27,8 +32,11 @@ export function TaskDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const t = await getTask(id!);
-        if (!cancelled) setTask(t);
+        const [t, { tasks: pending }] = await Promise.all([getTask(id!), listTasks('pending')]);
+        if (!cancelled) {
+          setTask(t);
+          setAllPendingTasks(pending);
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load task');
       } finally {
@@ -38,6 +46,24 @@ export function TaskDetailPage() {
     fetch();
     return () => { cancelled = true; };
   }, [id, isNew]);
+
+  const highPriorityWarning = useMemo(() => {
+    if (!task?.is_high_priority) return null;
+    const now = new Date();
+    const tom = new Date(now);
+    tom.setDate(tom.getDate() + 1);
+    const todayStr = dateOnly(now);
+    const tomorrowStr = dateOnly(tom);
+    const col = getColumn(task, todayStr, tomorrowStr);
+    if (!isHighPriorityEligible(col) && col !== 'overdue') return null;
+    const highInCol = allPendingTasks.filter(
+      (t) => t.is_high_priority && getColumn(t, todayStr, tomorrowStr) === col
+    );
+    if (highInCol.length > highPriorityDailyLimit) {
+      return `${highInCol.length} of ${highPriorityDailyLimit} high-priority tasks for ${col === 'overdue' ? 'overdue' : col} — limit exceeded.`;
+    }
+    return null;
+  }, [task, allPendingTasks, highPriorityDailyLimit]);
 
   async function handleSubmit(data: CreateTaskBody | UpdateTaskBody) {
     setSaving(true);
@@ -102,6 +128,13 @@ export function TaskDetailPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">
           {error}
+        </div>
+      )}
+
+      {highPriorityWarning && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-4 py-3 text-sm mb-4 flex items-start gap-2">
+          <span className="mt-0.5">⚠</span>
+          <span>{highPriorityWarning}</span>
         </div>
       )}
 
