@@ -72,7 +72,7 @@ The primary interaction mode. Supported input styles:
 
 ### Pages / Tabs
 
-1. **Task List** (default `/`) — kanban board of pending tasks across five columns (Overdue, Today, Tomorrow, Upcoming, No Date). Completed tasks shown as a flat list via "Show done" toggle.
+1. **Task List** (default `/`) — kanban board of pending tasks across six columns (Overdue, Today, Tomorrow, Day After Tomorrow, Upcoming, No Date). The Overdue column is hidden when empty. Completed tasks shown as a flat list via "Show done" toggle.
 2. **Chat** (`/chat`) — conversational AI interface for task creation, completion, and task-related questions
 3. **Reports** (`/reports`) — completed tasks for a user-chosen date range
 4. **Settings** (`/settings`) — define up to 5 starter questions saved to the user's profile
@@ -80,9 +80,9 @@ The primary interaction mode. Supported input styles:
 
 ### Task List / Kanban Board
 
-- Pending tasks are shown in a **5-column kanban board**: Overdue | Today | Tomorrow | Upcoming | No Date. Tasks whose effective date is in the past appear in the leftmost **Overdue** column (red accent), not in Today.
-- **Overdue**, **Today**, and **Tomorrow** columns each split into two zones separated by a labeled divider: a high-priority zone (above the line) and a normal-priority zone (below the line). The high-priority cap does not apply within Overdue — tasks carry their existing priority; the cap re-engages when a task is dragged to Today or Tomorrow. Dropping a task *into* the Overdue column is blocked. When a column has more high-priority tasks than the configured limit, the column header shows a ⚠ N/M warning in amber.
-- **Drag-and-drop** between columns updates the task's effective date via `PUT /tasks/:id`. Dragging to Upcoming defaults to 7 days from today; dragging to No Date clears both date fields. Dragging into the high zone sets `is_high_priority = true`; into the normal zone or Upcoming/No Date, it resets to `false`. The frontend enforces the user-configured high-priority limit before making the API call; the backend enforces it independently.
+- Pending tasks are shown in a **6-column kanban board**: Overdue | Today | Tomorrow | Day After Tomorrow | Upcoming | No Date. Tasks whose effective date is in the past appear in the leftmost **Overdue** column (red accent), not in Today. The **Overdue** column is hidden entirely when it contains no tasks.
+- **Overdue**, **Today**, and **Tomorrow** columns each split into two zones separated by a labeled divider: a high-priority zone (above the line) and a normal-priority zone (below the line). The high-priority cap does not apply within Overdue — tasks carry their existing priority; the cap re-engages when a task is dragged to Today or Tomorrow. Dropping a task *into* the Overdue column is blocked. When a column has more high-priority tasks than the configured limit, the column header shows a ⚠ N/M warning in amber. The **Day After Tomorrow** column has no high-priority zone split — it renders as a simple column (like Upcoming and No Date).
+- **Drag-and-drop** between columns updates the task's effective date via `PUT /tasks/:id`. Dragging to Day After Tomorrow sets the date to today+2; dragging to Upcoming defaults to 7 days from today; dragging to No Date clears both date fields. Dragging into the high zone sets `is_high_priority = true`; into the normal zone or Day After Tomorrow/Upcoming/No Date, it resets to `false`. The frontend enforces the user-configured high-priority limit before making the API call; the backend enforces it independently.
 - **Label filter chips** are shown above the board (Mode / Type / Frequency categories). Filter state persists across navigation via React context.
 - **Text search** filters tasks by title and notes simultaneously (case-insensitive). Search and label filters compose with AND semantics.
 - When navigating to New Task while a label filter is active, those labels are pre-checked in the form.
