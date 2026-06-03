@@ -6,7 +6,6 @@ import {
   getEffectiveDate,
   getColumn,
   getDropDate,
-  getEffectiveDateField,
 } from '../utils/taskDateUtils';
 
 function mockNow(isoDate: string) {
@@ -91,15 +90,12 @@ describe('getEffectiveDate', () => {
     expect(getEffectiveDate({ must_do_by: null, target_date: '2026-06-01' })).toBe('2026-06-01');
   });
 
-  it('returns the earlier date when both are set', () => {
+  it('returns target_date when both are set', () => {
     expect(getEffectiveDate({ must_do_by: '2026-06-10', target_date: '2026-06-01' })).toBe('2026-06-01');
+    expect(getEffectiveDate({ must_do_by: '2026-06-01', target_date: '2026-06-10' })).toBe('2026-06-10');
   });
 
-  it('returns must_do_by when it is earlier', () => {
-    expect(getEffectiveDate({ must_do_by: '2026-06-01', target_date: '2026-06-10' })).toBe('2026-06-01');
-  });
-
-  it('returns must_do_by when both dates are equal', () => {
+  it('returns target_date when both dates are equal', () => {
     expect(getEffectiveDate({ must_do_by: '2026-06-01', target_date: '2026-06-01' })).toBe('2026-06-01');
   });
 });
@@ -135,9 +131,10 @@ describe('getColumn', () => {
     expect(getColumn({ must_do_by: '2026-06-01', target_date: null }, today, tomorrow)).toBe('upcoming');
   });
 
-  it('uses the earlier of two dates for column assignment', () => {
-    // target is earlier → should use target date
+  it('uses target_date for column assignment when both are set', () => {
     expect(getColumn({ must_do_by: '2026-06-01', target_date: today }, today, tomorrow)).toBe('today');
+    // must_do_by is earlier but target_date governs — task lands in upcoming, not today
+    expect(getColumn({ must_do_by: today, target_date: '2026-06-01' }, today, tomorrow)).toBe('upcoming');
   });
 });
 
@@ -171,26 +168,3 @@ describe('getDropDate', () => {
   });
 });
 
-// ── getEffectiveDateField ─────────────────────────────────────────────────────
-
-describe('getEffectiveDateField', () => {
-  it('returns must_do_by when only must_do_by is set', () => {
-    expect(getEffectiveDateField({ must_do_by: '2026-06-01', target_date: null })).toBe('must_do_by');
-  });
-
-  it('returns target_date when only target_date is set', () => {
-    expect(getEffectiveDateField({ must_do_by: null, target_date: '2026-06-01' })).toBe('target_date');
-  });
-
-  it('returns must_do_by when it is earlier than target_date', () => {
-    expect(getEffectiveDateField({ must_do_by: '2026-06-01', target_date: '2026-06-10' })).toBe('must_do_by');
-  });
-
-  it('returns target_date when it is earlier than must_do_by', () => {
-    expect(getEffectiveDateField({ must_do_by: '2026-06-10', target_date: '2026-06-01' })).toBe('target_date');
-  });
-
-  it('defaults to must_do_by when neither is set', () => {
-    expect(getEffectiveDateField({ must_do_by: null, target_date: null })).toBe('must_do_by');
-  });
-});

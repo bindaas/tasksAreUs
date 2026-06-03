@@ -108,7 +108,7 @@ export function TasksPage() {
 
     try {
       if (columnKey === 'nodate') {
-        await updateTask(taskId, { target_date: null, is_high_priority: false });
+        await updateTask(taskId, { must_do_by: null, target_date: null, is_high_priority: false });
       } else {
         await updateTask(taskId, { target_date: newDate, is_high_priority: isHighPriority });
       }
