@@ -26,10 +26,7 @@ export function isOverdue(dateStr: string | null): boolean {
 }
 
 export function getEffectiveDate(task: Pick<Task, 'must_do_by' | 'target_date'>): string | null {
-  if (task.must_do_by && task.target_date) {
-    return task.must_do_by <= task.target_date ? task.must_do_by : task.target_date;
-  }
-  return task.must_do_by || task.target_date || null;
+  return task.target_date || task.must_do_by || null;
 }
 
 export function getColumn(
@@ -69,12 +66,3 @@ export function getDropDate(columnKey: ColumnKey): string | null {
   return dateOnly(week);
 }
 
-export function getEffectiveDateField(
-  task: Pick<Task, 'must_do_by' | 'target_date'>
-): 'must_do_by' | 'target_date' {
-  if (task.must_do_by && task.target_date) {
-    return task.must_do_by <= task.target_date ? 'must_do_by' : 'target_date';
-  }
-  if (task.target_date && !task.must_do_by) return 'target_date';
-  return 'must_do_by';
-}
