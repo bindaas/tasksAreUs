@@ -71,7 +71,7 @@ frontend/
       ReportsPage.tsx   # completions by date range
       SettingsPage.tsx  # starter questions editor + High Priority Daily Limit numeric input
     utils/
-      taskDateUtils.ts  # date helpers: getColumn(), getDropDate(), getEffectiveDate(), formatDate(); ColumnKey covers 'overdue'|'today'|'tomorrow'|'day_after_tomorrow'|'upcoming'|'nodate'
+      taskDateUtils.ts  # date helpers: getColumn(), getDropDate(), getEffectiveDate(), getEffectiveDateField(), formatDate(); ColumnKey covers 'overdue'|'today'|'tomorrow'|'day_after_tomorrow'|'upcoming'|'nodate'
       taskFilters.ts    # filterTasks() — applies label and text search filters
       taskPriority.ts   # isHighPriorityEligible(), splitByPriority(), canAddHighPriority(highTasks, droppedTask, limit)
     __tests__/
@@ -100,6 +100,8 @@ frontend/
 **Overdue column**: Tasks whose effective date is strictly in the past are assigned to the `overdue` column bucket (`ColumnKey = 'overdue' | 'today' | 'tomorrow' | 'day_after_tomorrow' | 'upcoming' | 'nodate'`). The Overdue column uses a red accent style and is **hidden entirely when it contains no tasks**. Dropping tasks *into* the Overdue column is blocked; tasks can only drag *out* to other columns. `getDropDate('overdue')` returns `null` (same as `nodate`). `isHighPriorityEligible` returns `true` for `overdue` so existing high-priority flags are preserved.
 
 **Day After Tomorrow column**: `getColumn()` detects tasks whose effective date falls on today+2 and assigns them to the `day_after_tomorrow` bucket. `getDropDate('day_after_tomorrow')` returns today+2. `isHighPriorityEligible` returns `false` for `day_after_tomorrow` — the HP split is intentionally limited to today and tomorrow only.
+
+**Drag-and-drop date semantics**: When a task is dragged to a dated column, `TasksPage` always updates `target_date` only — `must_do_by` is never modified by drag-and-drop. This preserves any hard deadline the user set explicitly. When dragging to the `nodate` column, only `target_date` is cleared (set to `null`); `must_do_by` is left untouched. `getEffectiveDateField()` exists in `taskDateUtils.ts` but is not used in the drag-drop path.
 
 For auth, soft deletes, recurring task rules, beliefs storage, sync protocol, and cost tracking see `DATA_MODEL_AND_API.MD`.
 

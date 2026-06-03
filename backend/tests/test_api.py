@@ -212,6 +212,52 @@ def main():
     # Clean up the helper task.
     client.delete(f"/tasks/{dc_task_id}", headers=H)
 
+    # ── Drag-drop target_date-only updates (PR #11) ────────────────────────────
+    # The frontend now always writes target_date on column drops, never must_do_by.
+    # These tests verify the backend contract that supports this behaviour.
+    print("\n── Tasks: Drag-drop target_date-only contract (PR #11) ─")
+    # Create a task with only must_do_by set (no target_date).
+    dd_task_r = client.post("/tasks", headers=H, json={
+        "title": "Drag-drop contract task (must_do_by only)",
+        "must_do_by": next_week,
+        "label_ids": [],
+    })
+    assert_eq("POST drag-drop task (must_do_by only) → 201", dd_task_r.status_code, 201)
+    dd_task = dd_task_r.json()
+    dd_task_id = dd_task["id"]
+    assert_eq("dd task has must_do_by", dd_task["must_do_by"], next_week)
+    assert_eq("dd task has no target_date initially", dd_task["target_date"], None)
+
+    # Simulate dropping to a column: PUT only target_date — must_do_by must survive.
+    r = client.put(f"/tasks/{dd_task_id}", headers=H, json={"target_date": tomorrow})
+    assert_eq("PUT target_date only on must_do_by-only task → 200", r.status_code, 200)
+    dd_result = r.json()
+    assert_eq("target_date set by drop", dd_result["target_date"], tomorrow)
+    assert_eq("must_do_by unchanged after target_date-only PUT", dd_result["must_do_by"], next_week)
+
+    # Simulate dropping to 'No Date': PUT target_date=null — must_do_by must survive.
+    r = client.put(f"/tasks/{dd_task_id}", headers=H, json={"target_date": None, "is_high_priority": False})
+    assert_eq("PUT target_date=null (No Date drop) → 200", r.status_code, 200)
+    nodate_result = r.json()
+    assert_eq("target_date cleared by No Date drop", nodate_result["target_date"], None)
+    assert_eq("must_do_by preserved after No Date drop", nodate_result["must_do_by"], next_week)
+
+    # Simulate a second column drop on a task that already has both dates:
+    # only target_date should change.
+    r = client.put(f"/tasks/{dd_task_id}", headers=H, json={
+        "must_do_by": next_week,
+        "target_date": tomorrow,
+    })
+    assert_eq("Restore both dates for second-drop test → 200", r.status_code, 200)
+    r = client.put(f"/tasks/{dd_task_id}", headers=H, json={"target_date": tomorrow, "is_high_priority": False})
+    assert_eq("PUT target_date only on both-dates task → 200", r.status_code, 200)
+    both_drop_result = r.json()
+    assert_eq("target_date updated by second drop", both_drop_result["target_date"], tomorrow)
+    assert_eq("must_do_by unchanged by second drop", both_drop_result["must_do_by"], next_week)
+
+    # Clean up drag-drop test task.
+    client.delete(f"/tasks/{dd_task_id}", headers=H)
+
     r = client.get("/tasks", headers=H, params={"state": "pending"})
     assert_eq("GET /tasks?state=pending → 200", r.status_code, 200)
     task_ids = [t["id"] for t in r.json()["tasks"]]
