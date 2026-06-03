@@ -6,7 +6,7 @@ import { useLabels } from '../hooks/useLabels';
 import { useSettings } from '../hooks/useSettings';
 import { TaskForm } from '../components/TaskForm';
 import { useFilter } from '../context/FilterContext';
-import { dateOnly, getColumn, getEffectiveDate } from '../utils/taskDateUtils';
+import { dateOnly, getColumn } from '../utils/taskDateUtils';
 import { isHighPriorityEligible } from '../utils/taskPriority';
 
 export function TaskDetailPage() {
