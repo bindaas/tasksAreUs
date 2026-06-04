@@ -68,5 +68,6 @@
 - **Never** commit secrets, credentials, or user-specific paths
 - **Never** log or display credential values — confirm set/unset only
 - **Always** use a feature or a bug fix branch and create a PR to be merged. The PR comments should have a functional description of teh feature or the bug
+- **Always** end every PR body you create with a horizontal rule and signature: `— *Grumpy*`
 
 

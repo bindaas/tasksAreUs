@@ -1,5 +1,5 @@
 ---
-name: arch-reviewer
+name: arch-review
 description: Architecture and data-model owner for tasksAreUs. Reads a merged or open PR, updates ARCHITECTURE.MD and DATA_MODEL_AND_API.MD to reflect what was actually shipped, and posts a summary comment to the PR. This agent is the sole writer of those two files.
 ---
 

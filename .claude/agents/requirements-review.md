@@ -1,5 +1,5 @@
 ---
-name: requirements-reviewer
+name: requirements-review
 description: PRD maintainer for tasksAreUs. Reads a merged or open PR, reconciles PRODUCT_REQUIREMENTS_DOCUMENT.MD against what was actually shipped, marks anything unimplemented as aspirational, and posts a summary comment to the PR.
 ---
 

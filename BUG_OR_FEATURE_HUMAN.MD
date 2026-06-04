@@ -7,7 +7,6 @@ port to golbal repo
 
 *****
 
-Authentication - gmail,iphone , anonymous (Device id)
 
 iphone app
 

@@ -1,5 +1,5 @@
 ---
-name: test-reviewer
+name: test-review
 description: QE agent for tasksAreUs. Owns backend/tests/test_api.py — reviews a PR, updates the test file to ensure quality, runs the tests, and posts a summary comment to the PR.
 ---
 

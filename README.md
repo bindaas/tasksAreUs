@@ -23,6 +23,7 @@
 
 - cd backend && docker-compose up -d
 - cd backend && docker-compose up -d --build
+- git commit -m "your message [skip deploy]"
 
 
 ## Local-Stop

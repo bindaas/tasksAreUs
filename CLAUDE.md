@@ -20,12 +20,12 @@ See `PRODUCT_REQUIREMENTS_DOCUMENT.MD` for product requirements and out-of-scope
 
 ## Agent Roster
 
-Every agent signs its PR comment so you can tell at a glance who said what. All comments are posted under your GitHub account — the signature is the only way to distinguish them.
+Every agent (including Grumpy) signs its PR body or comment so you can tell at a glance who said what. All posts are made under your GitHub account — the signature is the only way to distinguish them. Every PR body must end with `— *Grumpy*`; every agent comment must end with its own signature.
 
 | Name | Role |
 |------|------|
 | **Grumpy** | Main assistant (Claude) — implements features, creates PRs |
-| **Dopey** | `code-reviewer` agent — code correctness, architecture fit, security |
-| **Sleepy** | `test-reviewer` agent — owns `test_api.py`, runs tests, posts QE verdict |
-| **Bashful** | `requirements-reviewer` agent — keeps `PRODUCT_REQUIREMENTS_DOCUMENT.MD` current |
-| **Doc** | `arch-reviewer` agent — keeps `ARCHITECTURE.MD` and `DATA_MODEL_AND_API.MD` current |
+| **Dopey** | `code-review` agent — code correctness, architecture fit, security |
+| **Sleepy** | `test-review` agent — owns `test_api.py`, runs tests, posts QE verdict |
+| **Bashful** | `requirements-review` agent — keeps `PRODUCT_REQUIREMENTS_DOCUMENT.MD` current |
+| **Doc** | `arch-review` agent — keeps `ARCHITECTURE.MD` and `DATA_MODEL_AND_API.MD` current |

@@ -1,5 +1,5 @@
 ---
-name: code-reviewer
+name: code-review
 description: Independent code reviewer for tasksAreUs PRs. Reviews against architecture, product requirements, data model, and engineering standards. Posts the review directly to the PR.
 ---
 
