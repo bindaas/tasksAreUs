@@ -6,7 +6,7 @@ const MAX_QUESTIONS = 5;
 
 export function SettingsPage() {
   const { user, signInWithGoogle, sendMagicLink, signOut } = useAuth();
-  const isAnonymous = user?.isAnonymous ?? true;
+  const isAnonymous = user?.isAnonymous === true;
 
   const [questions, setQuestions] = useState<string[]>([]);
   const [highPriorityLimit, setHighPriorityLimit] = useState(3);
