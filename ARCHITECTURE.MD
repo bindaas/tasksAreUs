@@ -8,9 +8,9 @@
 
 ## Identity
 
-**Phase 1 (current):** Firebase Auth is the primary identity mechanism. On startup, `main.py` initializes the Firebase Admin SDK using `FIREBASE_SERVICE_ACCOUNT_JSON` (fail-fast if missing). Authenticated requests send `Authorization: Bearer <firebase_id_token>`; `get_current_user()` in `dependencies.py` verifies the token, looks up the user by `firebase_uid`, and auto-creates a new user row on first sign-in.
+**Phase 2 (current):** Firebase Auth is the primary identity mechanism end-to-end. The backend initializes the Firebase Admin SDK using `FIREBASE_SERVICE_ACCOUNT_JSON` (fail-fast if missing). The frontend uses the Firebase JS SDK (`@firebase/app` + `@firebase/auth`) initialised from `VITE_FIREBASE_*` env vars. On first load, `AuthContext` silently calls `signInAnonymously()` — zero-friction UX identical to Phase 1. Named sign-in (Google or magic link) is offered in Settings → Account. Authenticated requests from `client.ts` send `Authorization: Bearer <firebase_id_token>` obtained via `auth.currentUser?.getIdToken()`.
 
-**Legacy / transition window:** The legacy `X-User-ID` header path is still supported as a fallback so the existing frontend continues to work without changes. Bearer token takes precedence when both headers are present. The legacy path is labelled "Phase 3 removal" in the code.
+**Backend auth:** `get_current_user()` in `dependencies.py` verifies the Bearer token with the Firebase Admin SDK, looks up the user by `firebase_uid`, and auto-creates a new user row on first sign-in. The legacy `X-User-ID` header path remains as a fallback (labelled "Phase 3 removal").
 
 **Migration path:** Existing device-UUID users call `POST /users/migrate` (authenticated with a Firebase Bearer token) to stitch their Firebase UID onto their existing row. Idempotent; 404 on unknown `device_uuid`; 409 on UID conflict.
 
@@ -49,8 +49,9 @@ backend/
 
 frontend/
   src/
+    firebase.ts          # Firebase app + auth initialisation from VITE_FIREBASE_* env vars
     api/
-      client.ts        # base fetch wrapper — attaches X-User-ID to every request (legacy path; Phase 1 frontend unchanged); parses FastAPI error detail
+      client.ts        # base fetch wrapper — attaches Authorization: Bearer <firebase_id_token> via auth.currentUser?.getIdToken(); parses FastAPI error detail
       users.ts         # POST /users (no auth header)
       tasks.ts         # CRUD, complete; Task interface includes is_high_priority
       labels.ts
@@ -64,8 +65,10 @@ frontend/
       TaskForm.tsx      # create/edit form with label picker and high-priority checkbox
     context/
       FilterContext.tsx  # React context holding selected label IDs; persists across navigation
+      AuthContext.tsx   # Firebase auth state via onAuthStateChanged; auto-signs in anonymously on first load; handles magic-link callbacks (same-device and cross-device); exposes signInWithGoogle, sendMagicLink, signOut, confirmEmailSignIn
     hooks/
-      useUser.ts        # device UUID + user_id bootstrap from localStorage
+      useAuth.ts        # thin re-export of useAuthContext — primary auth hook for all components
+      useUser.ts        # compatibility shim (returns { loading, error: null }); remove in Phase 3
       useTasks.ts
       useLabels.ts
       useSettings.ts    # fetches GET /settings; exposes highPriorityDailyLimit (default 3)
@@ -74,7 +77,8 @@ frontend/
       TaskDetailPage.tsx  # create (/tasks/new) and edit (/tasks/:id)
       ChatPage.tsx      # AI conversation with suggested-question chips
       ReportsPage.tsx   # completions by date range
-      SettingsPage.tsx  # starter questions editor + High Priority Daily Limit numeric input
+      SettingsPage.tsx  # starter questions editor + High Priority Daily Limit numeric input + Account section (anonymous: Google/email upgrade; named: display name/email + Sign out)
+      LoginPage.tsx     # shown only after deliberate sign-out; Google + magic-link sign-in options
     utils/
       taskDateUtils.ts  # date helpers: getColumn(), getDropDate(), getEffectiveDate(), getEffectiveDateField(), formatDate(); ColumnKey covers 'overdue'|'today'|'tomorrow'|'day_after_tomorrow'|'upcoming'|'nodate'
       taskFilters.ts    # filterTasks() — applies label and text search filters
@@ -83,8 +87,10 @@ frontend/
       taskDateUtils.test.ts
       taskFilters.test.ts
       taskPriority.test.ts
-    App.tsx
+      client.test.ts    # 6 unit tests for apiFetch: Bearer header presence/absence, Content-Type, URL construction, error handling, 204 No Content
+    App.tsx             # wraps AppRoutes in AuthProvider; AppRoutes renders EmailConfirmationPage (cross-device magic link), LoginPage (post-sign-out), or the main Layout
     main.tsx
+  .env.example          # VITE_FIREBASE_* env var template
   vite.config.ts        # proxies /api → http://localhost:8000 in dev; VITE_API_TARGET for Docker
 ```
 
@@ -108,6 +114,8 @@ frontend/
 
 **Drag-and-drop date semantics**: When a task is dragged to a dated column, `TasksPage` always updates `target_date` only — `must_do_by` is never modified by drag-and-drop. This preserves any hard deadline the user set explicitly. When dragging to the `nodate` column, only `target_date` is cleared (set to `null`); `must_do_by` is left untouched. `getEffectiveDateField()` exists in `taskDateUtils.ts` but is not used in the drag-drop path.
 
+**Firebase Auth flow (Phase 2 frontend):** `AuthContext` mounts a single `onAuthStateChanged` listener. When `firebaseUser === null` and no deliberate sign-out is recorded in `sessionStorage` (`auth_signed_out`), it calls `signInAnonymously()` automatically — the user never sees a login screen. Deliberate sign-out sets `sessionStorage.auth_signed_out = '1'`, which prevents the auto-sign-in on the next listener fire; `LoginPage` is shown instead. Magic-link callbacks are handled on page load: if `localStorage.emailForSignIn` is present (same device), sign-in completes immediately; otherwise `EmailConfirmationPage` (an inline component in `App.tsx`) prompts the user for their email before completing the cross-device sign-in.
+
 For auth, soft deletes, recurring task rules, beliefs storage, sync protocol, and cost tracking see `DATA_MODEL_AND_API.MD`.
 
 ## Dev
@@ -126,6 +134,8 @@ cd frontend && npm run dev   # http://localhost:5173
 
 Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON` (full JSON string of the Firebase service account key), and `FIREBASE_PROJECT_ID`. The app will refuse to start without `FIREBASE_SERVICE_ACCOUNT_JSON`. pgAdmin credentials are also configured in `.env`.
 
+Copy `frontend/.env.example` → `frontend/.env`; set all `VITE_FIREBASE_*` env vars (API key, auth domain, project ID, storage bucket, messaging sender ID, app ID). The frontend build requires these to initialise Firebase Auth — anonymous sign-in on first load will fail silently without them. In production (Railway), set these as frontend service env vars.
+
 ## Testing
 
 **API integration tests** (`tests/test_api.py`): standalone Python script; creates its own test data, exercises all endpoints (CRUD, label assignment, state transitions, recurring logic, high-priority limit, conversational endpoints), deletes all created data at the end. Run with:
@@ -138,7 +148,7 @@ cd backend && DATABASE_URL=... python3 tests/test_api.py
 cd backend && python3 -m pytest tests/unit/ -v
 ```
 
-**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils` (including overdue and day_after_tomorrow column logic), `taskFilters`, and `taskPriority` utilities (56 tests). Run with:
+**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils` (including overdue and day_after_tomorrow column logic), `taskFilters`, `taskPriority` utilities, and `client.ts` auth header behaviour (57 tests total). Run with:
 ```bash
 cd frontend && npx vitest run
 ```

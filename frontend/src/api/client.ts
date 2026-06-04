@@ -1,21 +1,19 @@
-const BASE_URL = '/api/v1';
+import { auth } from '../firebase';
 
-function getUserId(): string {
-  return localStorage.getItem('user_id') || '';
-}
+const BASE_URL = '/api/v1';
 
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const userId = getUserId();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
 
-  if (userId) {
-    headers['X-User-ID'] = userId;
+  const token = await auth.currentUser?.getIdToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
   const response = await fetch(`${BASE_URL}${path}`, {
