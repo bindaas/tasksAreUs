@@ -1,14 +1,13 @@
 
-Drag and drop of tasks should change the Target date only and leave the Must-do date alone.
+full-review
+Always do all the feedback from code-review
+agent name vs command name
+port to golbal repo
+
 
 *****
 
+Authentication - gmail,iphone , anonymous (Device id)
 
-move to Railway
-
-
-
-UUID - permeannet ?
-
-Iphone ?
+iphone app
 
