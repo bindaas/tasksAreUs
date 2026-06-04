@@ -8,21 +8,25 @@
 
 ## Identity
 
-On first load the frontend generates a UUID stored in `localStorage` as `device_uuid`, then calls `POST /users` to obtain a `user_id` (also stored in `localStorage`). No login screen. The data model and API are designed to accommodate Apple/Gmail sign-in later without breaking changes.
+**Phase 1 (current):** Firebase Auth is the primary identity mechanism. On startup, `main.py` initializes the Firebase Admin SDK using `FIREBASE_SERVICE_ACCOUNT_JSON` (fail-fast if missing). Authenticated requests send `Authorization: Bearer <firebase_id_token>`; `get_current_user()` in `dependencies.py` verifies the token, looks up the user by `firebase_uid`, and auto-creates a new user row on first sign-in.
+
+**Legacy / transition window:** The legacy `X-User-ID` header path is still supported as a fallback so the existing frontend continues to work without changes. Bearer token takes precedence when both headers are present. The legacy path is labelled "Phase 3 removal" in the code.
+
+**Migration path:** Existing device-UUID users call `POST /users/migrate` (authenticated with a Firebase Bearer token) to stitch their Firebase UID onto their existing row. Idempotent; 404 on unknown `device_uuid`; 409 on UID conflict.
 
 ## Code Structure
 
 ```
 backend/
   app/
-    main.py          # FastAPI + lifespan (create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit, seed labels)
-    config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates)
+    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name, seed labels)
+    config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates, FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID)
     database.py      # engine, SessionLocal, get_db()
     models.py        # ORM models + LABEL_SEED
     schemas.py       # Pydantic v2 schemas
-    dependencies.py  # get_current_user_id() — reads X-User-ID header
+    dependencies.py  # get_current_user() — Bearer token (Firebase) with X-User-ID fallback; get_firebase_claims() — token-only, no DB
     routers/         # one file per resource, mounted at /api/v1
-      users.py       # POST /users
+      users.py       # POST /users, POST /users/migrate
       labels.py      # GET /labels
       tasks.py       # CRUD + complete endpoint
       beliefs.py     # beliefs generate/list/update
@@ -36,8 +40,9 @@ backend/
   tests/
     test_api.py      # standalone integration test: creates data, tests all endpoints, cleans up
     unit/
-      test_task_service.py  # pytest unit tests for task_service (no DB — mocked)
-      test_ai_service.py    # pytest unit tests for ai_service helpers
+      test_task_service.py   # pytest unit tests for task_service (no DB — mocked)
+      test_ai_service.py     # pytest unit tests for ai_service helpers
+      test_dependencies.py   # pytest unit tests for auth dependencies (Firebase + legacy paths, migrate edge cases)
   scripts/
     purge_test_data.py  # DB maintenance: remove test-generated rows
     recover_data.py     # DB maintenance: recover soft-deleted records
@@ -45,7 +50,7 @@ backend/
 frontend/
   src/
     api/
-      client.ts        # base fetch wrapper — attaches X-User-ID to every request; parses FastAPI error detail
+      client.ts        # base fetch wrapper — attaches X-User-ID to every request (legacy path; Phase 1 frontend unchanged); parses FastAPI error detail
       users.ts         # POST /users (no auth header)
       tasks.ts         # CRUD, complete; Task interface includes is_high_priority
       labels.ts
@@ -119,7 +124,7 @@ cd backend && uvicorn app.main:app --reload
 cd frontend && npm run dev   # http://localhost:5173
 ```
 
-Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`. pgAdmin credentials are also configured in `.env`.
+Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON` (full JSON string of the Firebase service account key), and `FIREBASE_PROJECT_ID`. The app will refuse to start without `FIREBASE_SERVICE_ACCOUNT_JSON`. pgAdmin credentials are also configured in `.env`.
 
 ## Testing
 
@@ -128,7 +133,7 @@ Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`. pgAdmin
 cd backend && DATABASE_URL=... python3 tests/test_api.py
 ```
 
-**Backend unit tests** (`tests/unit/`): pytest-based, no DB required (mock SQLAlchemy sessions). Cover `task_service` (create, update, complete, recurring, high-priority limit) and `ai_service` helpers (`_format_task_line`). Run with:
+**Backend unit tests** (`tests/unit/`): pytest-based, no DB required (mock SQLAlchemy sessions). Cover `task_service` (create, update, complete, recurring, high-priority limit), `ai_service` helpers (`_format_task_line`), and `dependencies` (Firebase Bearer auth, legacy X-User-ID fallback, token expiry/invalidity, migrate edge cases — 15 tests). Run with:
 ```bash
 cd backend && python3 -m pytest tests/unit/ -v
 ```

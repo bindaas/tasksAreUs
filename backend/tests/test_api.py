@@ -99,6 +99,42 @@ def main():
 
     H = {"X-User-ID": test_user_id}
 
+    # ── Auth (PR #12 — Firebase Phase 1) ──────────────────────────────────────
+    # The new get_current_user dependency accepts Bearer token OR legacy X-User-ID.
+    # Integration tests can only exercise the legacy path (no real Firebase token),
+    # but we verify the auth contract for the new /users/migrate endpoint and the
+    # 401 path on protected endpoints.
+    print("\n── Auth (Firebase Phase 1 — PR #12) ───────────────────")
+
+    # Protected endpoint with no auth at all must return 401
+    r = client.get("/labels")
+    assert_eq("GET /labels with no auth → 401", r.status_code, 401)
+
+    # Protected endpoint with X-User-ID (legacy path) still returns 200
+    r = client.get("/labels", headers=H)
+    assert_eq("GET /labels with X-User-ID (legacy path) → 200", r.status_code, 200)
+
+    # POST /users/migrate without any Authorization header → 401
+    r = client.post("/users/migrate", json={"device_uuid": SYSTEM_USER_DEVICE_UUID})
+    assert_eq("POST /users/migrate with no Bearer token → 401", r.status_code, 401)
+
+    # POST /users/migrate with a non-Bearer Authorization header → 401
+    r = client.post(
+        "/users/migrate",
+        headers={"Authorization": "Basic dXNlcjpwYXNz"},
+        json={"device_uuid": SYSTEM_USER_DEVICE_UUID},
+    )
+    assert_eq("POST /users/migrate with Basic auth (not Bearer) → 401", r.status_code, 401)
+
+    # POST /users/migrate with a malformed Bearer token → 401
+    # The server will attempt to verify the token with Firebase and reject it.
+    r = client.post(
+        "/users/migrate",
+        headers={"Authorization": "Bearer not_a_real_firebase_token"},
+        json={"device_uuid": SYSTEM_USER_DEVICE_UUID},
+    )
+    assert_eq("POST /users/migrate with invalid Bearer token → 401", r.status_code, 401)
+
     # ── Labels ─────────────────────────────────────────────────────────────────
     print("\n── Labels ─────────────────────────────────────────────")
     r = client.get("/labels", headers=H)
@@ -670,10 +706,11 @@ def main():
     assert_eq("GET /settings after update → 200", r.status_code, 200)
     assert_eq("GET /settings persisted custom limit", r.json()["high_priority_daily_limit"], 5)
 
-    # Floor of 1: sending 0 must be stored as 1
+    # Floor of 1: sending 0 is rejected by schema validation (ge=1 on SettingsUpdate)
+    # The PRD says minimum 1; the schema enforces this at the Pydantic layer (422),
+    # rather than silently clamping. 422 is correct behaviour here.
     r = client.put("/settings", headers=H, json={"starter_questions": questions, "high_priority_daily_limit": 0})
-    assert_eq("PUT /settings with limit=0 → 200", r.status_code, 200)
-    assert_eq("limit=0 clamped to 1", r.json()["high_priority_daily_limit"], 1)
+    assert_eq("PUT /settings with limit=0 → 422 (schema min=1 rejects it)", r.status_code, 422)
 
     # Omitting high_priority_daily_limit in PUT body uses schema default of 3
     r = client.put("/settings", headers=H, json={"starter_questions": questions})
