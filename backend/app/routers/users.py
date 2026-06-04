@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -43,5 +44,12 @@ def migrate_user(
         )
 
     user.firebase_uid = firebase_uid
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="This Firebase UID is already linked to a different account",
+        )
     return MigrateOut(user_id=user.id)

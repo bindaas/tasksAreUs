@@ -35,9 +35,12 @@ def _init_firebase() -> None:
         sa_dict = json.loads(json_str)
     except json.JSONDecodeError as e:
         raise RuntimeError(f"FIREBASE_SERVICE_ACCOUNT_JSON is not valid JSON: {e}")
-    cred = credentials.Certificate(sa_dict)
-    firebase_admin.initialize_app(cred)
-    logger.info("Firebase Admin SDK initialized (project: %s)", sa_dict.get("project_id", "unknown"))
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(sa_dict)
+        firebase_admin.initialize_app(cred)
+        logger.info("Firebase Admin SDK initialized (project: %s)", sa_dict.get("project_id", "unknown"))
+    else:
+        logger.info("Firebase Admin SDK already initialized — skipping")
 
 
 def _seed_system_user(db: Session) -> None:
