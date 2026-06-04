@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..dependencies import get_current_user_id
+from ..dependencies import get_current_user
 from ..models import Label, StateEnum, Task
 from ..schemas import (
     CompleteTaskRequest, CompleteTaskResponse,
@@ -27,7 +27,7 @@ def list_tasks(
     include_deleted: bool = Query(False),
     updated_after: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     q = db.query(Task).filter(Task.user_id == user_id)
 
@@ -58,7 +58,7 @@ def list_tasks(
 def create_task(
     body: TaskCreate,
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     task = svc.create_task(
         db=db,
@@ -78,7 +78,7 @@ def create_task(
 def get_task(
     task_id: str,
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     task = svc.get_task_or_404(db, task_id, user_id)
     return TaskOut.model_validate(task)
@@ -89,7 +89,7 @@ def update_task(
     task_id: str,
     body: TaskUpdate,
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     task = svc.get_task_or_404(db, task_id, user_id)
     task = svc.update_task(
@@ -112,7 +112,7 @@ def update_task(
 def delete_task(
     task_id: str,
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     from datetime import datetime, timezone
     task = svc.get_task_or_404(db, task_id, user_id)
@@ -126,7 +126,7 @@ def complete_task(
     task_id: str,
     body: CompleteTaskRequest = CompleteTaskRequest(),
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     task = svc.get_task_or_404(db, task_id, user_id)
     completed, next_task = svc.complete_task(db, task, body.notes)

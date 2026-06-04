@@ -28,6 +28,14 @@ class UserOut(BaseModel):
     created_at: datetime
 
 
+class MigrateRequest(BaseModel):
+    device_uuid: str
+
+
+class MigrateOut(BaseModel):
+    user_id: str
+
+
 # ── Tasks ─────────────────────────────────────────────────────────────────────
 
 class TaskCreate(BaseModel):

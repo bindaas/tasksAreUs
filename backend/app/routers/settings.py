@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..dependencies import get_current_user_id
+from ..dependencies import get_current_user
 from ..models import UserSettings
 from ..schemas import SettingsOut, SettingsUpdate
 
@@ -24,7 +24,7 @@ def _get_or_create_settings(db: Session, user_id: str) -> UserSettings:
 @router.get("", response_model=SettingsOut)
 def get_settings(
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     s = _get_or_create_settings(db, user_id)
     return SettingsOut(
@@ -37,7 +37,7 @@ def get_settings(
 def update_settings(
     body: SettingsUpdate,
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     s = _get_or_create_settings(db, user_id)
     s.starter_questions = body.starter_questions[:5]

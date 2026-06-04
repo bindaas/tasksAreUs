@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..dependencies import get_current_user_id
+from ..dependencies import get_current_user
 from ..models import Belief, Task, TaskLabel, UserSettings
 from ..schemas import SyncChanges, SyncRequest, SyncResponse, TaskLabelSync
 
@@ -27,7 +27,7 @@ def _parse_dt(value: Any) -> datetime | None:
 def sync(
     body: SyncRequest,
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     last_synced_at = body.last_synced_at
     now = datetime.now(timezone.utc)

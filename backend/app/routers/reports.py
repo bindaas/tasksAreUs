@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..dependencies import get_current_user_id
+from ..dependencies import get_current_user
 from ..models import Label, StateEnum, Task, TaskLabel
 from ..schemas import CompletionItem, CompletionsReport, LabelOut
 
@@ -18,7 +18,7 @@ def get_completions(
     to_date: date = Query(..., alias="to"),
     label_ids: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     q = db.query(Task).filter(
         Task.user_id == user_id,
