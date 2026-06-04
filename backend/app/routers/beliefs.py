@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..dependencies import get_current_user_id
+from ..dependencies import get_current_user
 from ..models import Belief
 from ..schemas import BeliefOut, BeliefUpdate
 from ..services import ai_service, task_service as svc
@@ -16,7 +16,7 @@ router = APIRouter(tags=["beliefs"])
 def generate_beliefs(
     task_id: str,
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     task = svc.get_task_or_404(db, task_id, user_id)
     beliefs = ai_service.generate_beliefs(db, task, user_id)
@@ -28,7 +28,7 @@ def get_task_beliefs(
     task_id: str,
     status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     svc.get_task_or_404(db, task_id, user_id)
     q = db.query(Belief).filter(Belief.task_id == task_id, Belief.user_id == user_id)
@@ -43,7 +43,7 @@ def update_belief(
     belief_id: str,
     body: BeliefUpdate,
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     from datetime import datetime, timezone
     if body.status not in ("accepted", "rejected"):

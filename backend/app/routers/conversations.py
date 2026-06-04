@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..dependencies import get_current_user_id
+from ..dependencies import get_current_user
 from ..models import Conversation, Message
 from ..schemas import (
     ConversationOut, MessageActions, MessageOut,
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/conversations", tags=["conversations"])
 @router.post("", response_model=ConversationOut, status_code=201)
 def start_conversation(
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     conv = Conversation(user_id=user_id)
     db.add(conv)
@@ -30,7 +30,7 @@ def send_message(
     conversation_id: str,
     body: MessageRequest,
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     from fastapi import HTTPException
     conv = db.query(Conversation).filter(
@@ -59,7 +59,7 @@ def send_message(
 def get_messages(
     conversation_id: str,
     db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user),
 ):
     from fastapi import HTTPException
     conv = db.query(Conversation).filter(

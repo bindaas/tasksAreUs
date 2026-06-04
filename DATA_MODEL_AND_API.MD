@@ -13,16 +13,21 @@
 ---
 
 ### Table: `users`
-Represents a tenant. Initially created from a device UUID; designed to accommodate real auth later.
+Represents a tenant. Supports both legacy device-UUID users and Firebase-authenticated users.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
-| `device_uuid` | VARCHAR | Unique. The identity token for unauthenticated mode |
-| `auth_provider` | VARCHAR | Nullable. Future: `apple`, `gmail` |
+| `device_uuid` | VARCHAR | Unique. The identity token for legacy / unauthenticated mode. Firebase-native users store their `firebase_uid` here as well. |
+| `auth_provider` | VARCHAR | Nullable. e.g. `google.com`, `apple.com`, `anonymous` |
 | `auth_provider_id` | VARCHAR | Nullable. Provider-specific user ID |
+| `firebase_uid` | VARCHAR | Nullable. Unique, indexed. Firebase user UID. Set on first Firebase sign-in or after `POST /users/migrate`. |
+| `email` | VARCHAR | Nullable. Populated from Firebase claims on sign-in. |
+| `display_name` | VARCHAR | Nullable. Populated from Firebase claims (`name` claim) on sign-in. |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | |
+
+The three new columns (`firebase_uid`, `email`, `display_name`) are added via `ALTER TABLE IF NOT EXISTS` at startup — no manual migration SQL required.
 
 ---
 
@@ -187,7 +192,11 @@ Tracks every Claude API call for cost monitoring.
 
 **Base URL**: `/api/v1`
 
-All endpoints (except `/health` and `POST /users`) require a `X-User-ID` header containing the user's UUID. This header will be replaced by a standard auth token once authentication is implemented.
+**Authentication (Phase 1):** All endpoints (except `/health` and `POST /users`) require one of:
+- `Authorization: Bearer <firebase_id_token>` — preferred. `get_current_user()` verifies the token with the Firebase Admin SDK, then resolves or auto-creates the internal `user_id`.
+- `X-User-ID: <uuid>` — legacy fallback for the existing browser frontend during the Phase 1→3 transition window. Bearer takes precedence when both headers are present.
+
+The legacy `X-User-ID` path will be removed in Phase 3.
 
 ---
 
@@ -221,6 +230,27 @@ Register a device UUID and get a `user_id` back. Idempotent — calling again wi
   "created_at": "2026-05-06T10:00:00Z"
 }
 ```
+
+---
+
+#### `POST /users/migrate`
+One-time migration: stitch a Firebase UID onto an existing `device_uuid` row. Required header: `Authorization: Bearer <firebase_id_token>`.
+
+Idempotent — calling again with the same Firebase UID and `device_uuid` returns the existing `user_id` unchanged.
+
+**Request**
+```json
+{ "device_uuid": "550e8400-e29b-41d4-a716-446655440000" }
+```
+
+**Response**
+```json
+{ "user_id": "uuid" }
+```
+
+**Error cases**
+- `404` — `device_uuid` not found
+- `409` — `device_uuid` already linked to a different Firebase account, or the Firebase UID is already linked to a different account
 
 ---
 

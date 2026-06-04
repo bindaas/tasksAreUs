@@ -2,7 +2,7 @@
 
 ## Overview
 
-tasksAreUs is a task management web app (React 19 + Vite, runs in the browser) with a Python/FastAPI/PostgreSQL backend. Users manage tasks through a kanban board and a conversational AI interface. The app is multi-tenant from day one, with identity bootstrapped from a device UUID stored in localStorage — no login required.
+tasksAreUs is a task management web app (React 19 + Vite, runs in the browser) with a Python/FastAPI/PostgreSQL backend. Users manage tasks through a kanban board and a conversational AI interface. The app is multi-tenant from day one, with identity bootstrapped from a device UUID stored in localStorage — no login required initially. Firebase Authentication is being introduced incrementally (Phase 1: backend only; frontend login UI is a future phase).
 
 ---
 
@@ -114,9 +114,21 @@ Users can view a history of completed tasks over a user-selected date range. The
 
 ---
 
+## Authentication
+
+Firebase Authentication is being introduced in phases:
+
+- **Phase 1 (shipped — PR #12)**: Backend only. The backend accepts `Authorization: Bearer <firebase_id_token>` on all endpoints. A legacy `X-User-ID` header is still accepted during the transition window (removed in Phase 3). Three new columns added to `users`: `firebase_uid` (unique, indexed), `email`, `display_name`. The `auth_provider` column is now populated with the Firebase sign-in provider string.
+- **Migration endpoint**: `POST /users/migrate` — one-time stitch of an existing `device_uuid` row onto a Firebase UID; idempotent; returns 404 for unknown device_uuid, 409 on UID conflict.
+- **Phase 2** (future): Frontend login UI using Firebase SDK; browser sends `Authorization: Bearer` instead of `X-User-ID`.
+- **Phase 3** (future): Remove legacy `X-User-ID` fallback path.
+
+Apple and Gmail sign-in providers may be supported via Firebase (not yet configured).
+
+---
+
 ## Out of Scope (initial build)
 
-- Authentication (Apple, Gmail) — data model placeholder only (`auth_provider`, `auth_provider_id` columns exist but are unused); no login required initially
 - Custom label categories or values
 - Trip as a separate entity (trip is a Type label value)
 - Admin dashboard for cost tracking (note: per-call AI cost logging to the `ai_cost_log` table is implemented in the backend; only the admin-facing dashboard surface is out of scope)

@@ -1,20 +1,46 @@
+import json
+import logging
 import os
 import subprocess
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
+import firebase_admin
+from firebase_admin import credentials
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from .config import settings as app_settings
 from .database import SessionLocal, engine
 from .models import Base, CategoryEnum, Label, LABEL_SEED, User
 from .routers import beliefs, conversations, labels, reports, settings, sync, tasks, users
 
+logger = logging.getLogger(__name__)
+
 
 _SYSTEM_UUID = "00000000-0000-0000-0000-000000000000"
+
+
+def _init_firebase() -> None:
+    json_str = app_settings.FIREBASE_SERVICE_ACCOUNT_JSON
+    if not json_str:
+        raise RuntimeError(
+            "FIREBASE_SERVICE_ACCOUNT_JSON env var is required but not set. "
+            "Set it to the full JSON string of your Firebase service account key."
+        )
+    try:
+        sa_dict = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"FIREBASE_SERVICE_ACCOUNT_JSON is not valid JSON: {e}")
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(sa_dict)
+        firebase_admin.initialize_app(cred)
+        logger.info("Firebase Admin SDK initialized (project: %s)", sa_dict.get("project_id", "unknown"))
+    else:
+        logger.info("Firebase Admin SDK already initialized — skipping")
 
 
 def _seed_system_user(db: Session) -> None:
@@ -38,6 +64,7 @@ def _seed_labels(db: Session) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _init_firebase()
     Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
         conn.execute(text(
@@ -47,6 +74,15 @@ async def lifespan(app: FastAPI):
         conn.execute(text(
             "ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS "
             "high_priority_daily_limit INTEGER"
+        ))
+        conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS firebase_uid VARCHAR UNIQUE"
+        ))
+        conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR"
+        ))
+        conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR"
         ))
         conn.commit()
     db = SessionLocal()
