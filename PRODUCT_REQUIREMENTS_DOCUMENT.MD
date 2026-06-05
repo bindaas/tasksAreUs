@@ -118,12 +118,17 @@ Users can view a history of completed tasks over a user-selected date range. The
 
 Firebase Authentication is being introduced in phases:
 
-- **Phase 1 (shipped — PR #12)**: Backend only. The backend accepts `Authorization: Bearer <firebase_id_token>` on all endpoints. A legacy `X-User-ID` header is still accepted during the transition window (removed in Phase 3). Three new columns added to `users`: `firebase_uid` (unique, indexed), `email`, `display_name`. The `auth_provider` column is now populated with the Firebase sign-in provider string.
+- **Phase 1 (shipped — PR #12)**: Backend only. The backend accepts `Authorization: Bearer <firebase_id_token>` on all endpoints. Three new columns added to `users`: `firebase_uid` (unique, indexed), `email`, `display_name`. The `auth_provider` column is now populated with the Firebase sign-in provider string.
 - **Migration endpoint**: `POST /users/migrate` — one-time stitch of an existing `device_uuid` row onto a Firebase UID; idempotent; returns 404 for unknown device_uuid, 409 on UID conflict.
-- **Phase 2** (future): Frontend login UI using Firebase SDK; browser sends `Authorization: Bearer` instead of `X-User-ID`.
-- **Phase 3** (future): Remove legacy `X-User-ID` fallback path.
+- **Phase 2 (shipped — PR #13)**: Frontend login UI using Firebase JS SDK. The browser sends `Authorization: Bearer <firebase_id_token>`. Key behaviours:
+  - **Anonymous sign-in**: On first load the app calls `signInAnonymously()` automatically — zero friction, same UX as before.
+  - **Named sign-in**: Users can upgrade from anonymous to a named account via Google (OAuth popup) or email magic link. Named sign-in is only exposed when the user explicitly signs out; anonymous is never a user-facing choice.
+  - **LoginPage**: Shown only after an explicit sign-out; offers Google and magic-link options.
+  - **Settings → Account section**: Anonymous users see upgrade options (Google / email); named users see their display name / email and a Sign out button.
+  - **`client.ts`**: Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer` header on every request.
+- **Phase 3 (shipped)**: Removed legacy `X-User-ID` fallback path from the backend; removed `useUser.ts` shim. Bearer token is now the only accepted auth path.
 
-Apple and Gmail sign-in providers may be supported via Firebase (not yet configured).
+Sign-in providers supported: Google (OAuth popup) and email magic link. Apple sign-in may be added via Firebase in a future phase (not yet configured).
 
 ---
 

@@ -10,7 +10,7 @@
 
 **Phase 2 (current):** Firebase Auth is the primary identity mechanism end-to-end. The backend initializes the Firebase Admin SDK using `FIREBASE_SERVICE_ACCOUNT_JSON` (fail-fast if missing). The frontend uses the Firebase JS SDK (`@firebase/app` + `@firebase/auth`) initialised from `VITE_FIREBASE_*` env vars. On first load, `AuthContext` silently calls `signInAnonymously()` — zero-friction UX identical to Phase 1. Named sign-in (Google or magic link) is offered in Settings → Account. Authenticated requests from `client.ts` send `Authorization: Bearer <firebase_id_token>` obtained via `auth.currentUser?.getIdToken()`.
 
-**Backend auth:** `get_current_user()` in `dependencies.py` verifies the Bearer token with the Firebase Admin SDK, looks up the user by `firebase_uid`, and auto-creates a new user row on first sign-in. The legacy `X-User-ID` header path remains as a fallback (labelled "Phase 3 removal").
+**Backend auth:** `get_current_user()` in `dependencies.py` verifies the Bearer token with the Firebase Admin SDK, looks up the user by `firebase_uid`, and auto-creates a new user row on first sign-in. Bearer token is the only accepted auth path.
 
 **Migration path:** Existing device-UUID users call `POST /users/migrate` (authenticated with a Firebase Bearer token) to stitch their Firebase UID onto their existing row. Idempotent; 404 on unknown `device_uuid`; 409 on UID conflict.
 
@@ -24,7 +24,7 @@ backend/
     database.py      # engine, SessionLocal, get_db()
     models.py        # ORM models + LABEL_SEED
     schemas.py       # Pydantic v2 schemas
-    dependencies.py  # get_current_user() — Bearer token (Firebase) with X-User-ID fallback; get_firebase_claims() — token-only, no DB
+    dependencies.py  # get_current_user() — Bearer token (Firebase); get_firebase_claims() — token-only, no DB
     routers/         # one file per resource, mounted at /api/v1
       users.py       # POST /users, POST /users/migrate
       labels.py      # GET /labels
@@ -42,7 +42,7 @@ backend/
     unit/
       test_task_service.py   # pytest unit tests for task_service (no DB — mocked)
       test_ai_service.py     # pytest unit tests for ai_service helpers
-      test_dependencies.py   # pytest unit tests for auth dependencies (Firebase + legacy paths, migrate edge cases)
+      test_dependencies.py   # pytest unit tests for auth dependencies (Firebase Bearer auth, migrate edge cases)
   scripts/
     purge_test_data.py  # DB maintenance: remove test-generated rows
     recover_data.py     # DB maintenance: recover soft-deleted records
@@ -68,7 +68,6 @@ frontend/
       AuthContext.tsx   # Firebase auth state via onAuthStateChanged; auto-signs in anonymously on first load; handles magic-link callbacks (same-device and cross-device); exposes signInWithGoogle, sendMagicLink, signOut, confirmEmailSignIn
     hooks/
       useAuth.ts        # thin re-export of useAuthContext — primary auth hook for all components
-      useUser.ts        # compatibility shim (returns { loading, error: null }); remove in Phase 3
       useTasks.ts
       useLabels.ts
       useSettings.ts    # fetches GET /settings; exposes highPriorityDailyLimit (default 3)
@@ -143,7 +142,7 @@ Copy `frontend/.env.example` → `frontend/.env`; set all `VITE_FIREBASE_*` env 
 cd backend && DATABASE_URL=... python3 tests/test_api.py
 ```
 
-**Backend unit tests** (`tests/unit/`): pytest-based, no DB required (mock SQLAlchemy sessions). Cover `task_service` (create, update, complete, recurring, high-priority limit), `ai_service` helpers (`_format_task_line`), and `dependencies` (Firebase Bearer auth, legacy X-User-ID fallback, token expiry/invalidity, migrate edge cases — 15 tests). Run with:
+**Backend unit tests** (`tests/unit/`): pytest-based, no DB required (mock SQLAlchemy sessions). Cover `task_service` (create, update, complete, recurring, high-priority limit), `ai_service` helpers (`_format_task_line`), and `dependencies` (Firebase Bearer auth, token expiry/invalidity, migrate edge cases — 15 tests). Run with:
 ```bash
 cd backend && python3 -m pytest tests/unit/ -v
 ```

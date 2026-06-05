@@ -192,11 +192,8 @@ Tracks every Claude API call for cost monitoring.
 
 **Base URL**: `/api/v1`
 
-**Authentication (Phase 1):** All endpoints (except `/health` and `POST /users`) require one of:
-- `Authorization: Bearer <firebase_id_token>` — preferred. `get_current_user()` verifies the token with the Firebase Admin SDK, then resolves or auto-creates the internal `user_id`.
-- `X-User-ID: <uuid>` — legacy fallback for the existing browser frontend during the Phase 1→3 transition window. Bearer takes precedence when both headers are present.
-
-The legacy `X-User-ID` path will be removed in Phase 3.
+**Authentication:** All endpoints (except `/health` and `POST /users`) require:
+- `Authorization: Bearer <firebase_id_token>` — `get_current_user()` verifies the token with the Firebase Admin SDK, then resolves or auto-creates the internal `user_id`.
 
 ---
 

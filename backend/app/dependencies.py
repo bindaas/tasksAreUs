@@ -35,43 +35,35 @@ def get_firebase_claims(
 
 def get_current_user(
     authorization: Optional[str] = Header(None, alias="Authorization"),
-    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
     db: Session = Depends(get_db),
 ) -> str:
-    """Resolve caller to an internal user_id UUID.
-    Bearer token takes precedence; falls back to legacy X-User-ID header."""
-    if authorization and authorization.startswith("Bearer "):
-        claims = _verify_firebase_token(authorization[7:])
-        firebase_uid = claims["uid"]
+    """Resolve caller to an internal user_id UUID via Firebase Bearer token."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
 
+    claims = _verify_firebase_token(authorization[7:])
+    firebase_uid = claims["uid"]
+
+    user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
+    if user is not None:
+        return user.id
+
+    provider = claims.get("firebase", {}).get("sign_in_provider", "anonymous")
+    new_user = User(
+        firebase_uid=firebase_uid,
+        device_uuid=firebase_uid,
+        email=claims.get("email"),
+        display_name=claims.get("name"),
+        auth_provider=provider,
+    )
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except IntegrityError:
+        db.rollback()
         user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
-        if user is not None:
-            return user.id
-
-        provider = claims.get("firebase", {}).get("sign_in_provider", "anonymous")
-        new_user = User(
-            firebase_uid=firebase_uid,
-            # firebase_uid doubles as device_uuid for Firebase-native users
-            device_uuid=firebase_uid,
-            email=claims.get("email"),
-            display_name=claims.get("name"),
-            auth_provider=provider,
-        )
-        try:
-            db.add(new_user)
-            db.commit()
-            db.refresh(new_user)
-        except IntegrityError:
-            # Lost a race — another request created the same user concurrently
-            db.rollback()
-            user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
-            if user is None:
-                raise HTTPException(status_code=500, detail="User creation failed")
-            return user.id
-        return new_user.id
-
-    # Legacy path — transition window only (removed in Phase 3)
-    if x_user_id:
-        return x_user_id
-
-    raise HTTPException(status_code=401, detail="Authentication required")
+        if user is None:
+            raise HTTPException(status_code=500, detail="User creation failed")
+        return user.id
+    return new_user.id
