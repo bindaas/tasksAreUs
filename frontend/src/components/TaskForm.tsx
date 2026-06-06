@@ -40,8 +40,8 @@ export function TaskForm({
   _tom.setDate(_tom.getDate() + 1);
   const tomorrowStr = dateOnly(_tom);
   const highPriorityEligible =
-    (mustDoBy !== '' && (mustDoBy === todayStr || mustDoBy === tomorrowStr)) ||
-    (targetDate !== '' && (targetDate === todayStr || targetDate === tomorrowStr));
+    (mustDoBy !== '' && mustDoBy <= tomorrowStr) ||
+    (targetDate !== '' && targetDate <= tomorrowStr);
 
   const labelsByCategory = labels.reduce<Record<LabelCategory, Label[]>>(
     (acc, label) => {
