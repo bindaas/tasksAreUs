@@ -28,11 +28,11 @@ def _effective_date(must_do_by: Optional[date], target_date: Optional[date]) -> 
     return must_do_by or target_date
 
 
-def _is_today_or_tomorrow(d: Optional[date]) -> bool:
+def _is_hp_eligible_date(d: Optional[date]) -> bool:
+    """HP is valid for overdue, today, and tomorrow — anything with an effective date <= tomorrow."""
     if d is None:
         return False
-    today = date.today()
-    return d == today or d == today + relativedelta(days=1)
+    return d <= date.today() + relativedelta(days=1)
 
 
 def _get_frequency_label(task: Task) -> Optional[str]:
@@ -108,7 +108,7 @@ def create_task(
 ) -> Task:
     labels = _resolve_labels(db, label_ids)
     effective = _effective_date(must_do_by, target_date)
-    final_priority = is_high_priority and _is_today_or_tomorrow(effective)
+    final_priority = is_high_priority and _is_hp_eligible_date(effective)
     if final_priority:
         count = _count_high_priority_for_date(db, user_id, effective)
         if count >= high_priority_limit:
@@ -164,14 +164,14 @@ def update_task(
     if is_high_priority is not None:
         task.is_high_priority = is_high_priority
 
-    # Auto-reset: high priority is only valid for today/tomorrow
-    if not _is_today_or_tomorrow(_effective_date(task.must_do_by, task.target_date)):
+    # Auto-reset: high priority is only valid for overdue, today, and tomorrow
+    if not _is_hp_eligible_date(_effective_date(task.must_do_by, task.target_date)):
         task.is_high_priority = False
 
     # Enforce per-day high-priority limit only when priority is being explicitly set to True
     if is_high_priority is True:
         effective = _effective_date(task.must_do_by, task.target_date)
-        if _is_today_or_tomorrow(effective):
+        if _is_hp_eligible_date(effective):
             count = _count_high_priority_for_date(db, task.user_id, effective, exclude_task_id=task.id)
             if count >= high_priority_limit:
                 raise HTTPException(
