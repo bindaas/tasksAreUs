@@ -13,7 +13,7 @@ from app.services.task_service import (
     _effective_date,
     _get_frequency_label,
     _get_high_priority_limit,
-    _is_today_or_tomorrow,
+    _is_hp_eligible_date,
     _next_due_date,
     update_task,
 )
@@ -172,23 +172,26 @@ class TestEffectiveDate:
         assert _effective_date(None, None) is None
 
 
-# ── _is_today_or_tomorrow ─────────────────────────────────────────────────────
+# ── _is_hp_eligible_date ──────────────────────────────────────────────────────
 
-class TestIsTodayOrTomorrow:
+class TestIsHpEligibleDate:
     def test_today(self):
-        assert _is_today_or_tomorrow(date.today()) is True
+        assert _is_hp_eligible_date(date.today()) is True
 
     def test_tomorrow(self):
-        assert _is_today_or_tomorrow(date.today() + timedelta(days=1)) is True
+        assert _is_hp_eligible_date(date.today() + timedelta(days=1)) is True
 
-    def test_yesterday(self):
-        assert _is_today_or_tomorrow(date.today() - timedelta(days=1)) is False
+    def test_yesterday_is_eligible(self):
+        assert _is_hp_eligible_date(date.today() - timedelta(days=1)) is True
 
-    def test_two_days_ahead(self):
-        assert _is_today_or_tomorrow(date.today() + timedelta(days=2)) is False
+    def test_far_past_is_eligible(self):
+        assert _is_hp_eligible_date(date.today() - timedelta(days=30)) is True
+
+    def test_two_days_ahead_ineligible(self):
+        assert _is_hp_eligible_date(date.today() + timedelta(days=2)) is False
 
     def test_none(self):
-        assert _is_today_or_tomorrow(None) is False
+        assert _is_hp_eligible_date(None) is False
 
 
 # ── update_task high-priority auto-reset ──────────────────────────────────────
@@ -263,6 +266,22 @@ class TestUpdateTaskHighPriority:
         update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
                     target_date=None, label_ids=None, is_high_priority=True)
         assert task.is_high_priority is False
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=0)
+    def test_set_high_priority_for_overdue(self, _count):
+        yesterday = date.today() - timedelta(days=1)
+        task = self._make_task(must_do_by=yesterday)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=True,
+                    high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
+        assert task.is_high_priority is True
+
+    def test_preserves_high_priority_for_overdue(self):
+        yesterday = date.today() - timedelta(days=1)
+        task = self._make_task(must_do_by=yesterday, is_high_priority=True)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=None)
+        assert task.is_high_priority is True
 
 
 # ── high-priority daily limit ──────────────────────────────────────────────────

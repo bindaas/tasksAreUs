@@ -75,7 +75,7 @@ Core entity. One-time and recurring task instances are both stored here.
 | `target_date` | DATE | Nullable. Aspirational completion date |
 | `completed_at` | TIMESTAMP | Nullable. Set when state → done |
 | `recurrence_group_id` | UUID | Nullable. All instances of a recurring task share this ID |
-| `is_high_priority` | BOOLEAN | Default false. Only meaningful when effective date is today or tomorrow |
+| `is_high_priority` | BOOLEAN | Default false. Only meaningful when effective date is overdue, today, or tomorrow |
 | `is_deleted` | BOOLEAN | Default false. Soft delete |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | Used for last-write-wins conflict resolution |

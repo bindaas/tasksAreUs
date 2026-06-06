@@ -87,6 +87,29 @@ export function TasksPage() {
     return map;
   }, [filteredTasks, today, tomorrow]);
 
+  async function handleTogglePriority(taskId: string, columnKey: ColumnKey) {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    if (!task.is_high_priority) {
+      const allHighForColumn = tasks.filter(
+        (t) => t.is_high_priority && getColumn(t, today, tomorrow) === columnKey,
+      );
+      if (!canAddHighPriority(allHighForColumn, task, highPriorityDailyLimit)) {
+        setDropError(`High priority is limited to ${highPriorityDailyLimit} tasks per day.`);
+        return;
+      }
+    }
+
+    try {
+      await updateTask(taskId, { is_high_priority: !task.is_high_priority });
+      setDropError(null);
+      refetch();
+    } catch (err) {
+      setDropError(err instanceof Error ? err.message : 'Failed to update priority');
+    }
+  }
+
   async function handleDrop(taskId: string, columnKey: ColumnKey, priority: 'high' | 'normal' = 'normal') {
     if (columnKey === 'overdue') return;
 
@@ -292,7 +315,9 @@ export function TasksPage() {
                           </div>
                         ) : (
                           highTasks.map((task) => (
-                            <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable />
+                            <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
+                              onTogglePriority={isHighPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
+                            />
                           ))
                         )}
                       </div>
@@ -325,7 +350,9 @@ export function TasksPage() {
                           </div>
                         ) : (
                           normalTasks.map((task) => (
-                            <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable />
+                            <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
+                              onTogglePriority={isHighPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
+                            />
                           ))
                         )}
                       </div>

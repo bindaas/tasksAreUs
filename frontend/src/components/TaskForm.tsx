@@ -3,6 +3,7 @@ import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
 import type { Label } from '../api/tasks';
 import { LabelBadge } from './LabelBadge';
 import { dateOnly } from '../utils/taskDateUtils';
+import { isFormHighPriorityEligible } from '../utils/taskPriority';
 
 interface TaskFormProps {
   initialValues?: Partial<Task>;
@@ -39,9 +40,7 @@ export function TaskForm({
   const _tom = new Date();
   _tom.setDate(_tom.getDate() + 1);
   const tomorrowStr = dateOnly(_tom);
-  const highPriorityEligible =
-    (mustDoBy !== '' && (mustDoBy === todayStr || mustDoBy === tomorrowStr)) ||
-    (targetDate !== '' && (targetDate === todayStr || targetDate === tomorrowStr));
+  const highPriorityEligible = isFormHighPriorityEligible(mustDoBy, targetDate, tomorrowStr);
 
   const labelsByCategory = labels.reduce<Record<LabelCategory, Label[]>>(
     (acc, label) => {
@@ -187,7 +186,7 @@ export function TaskForm({
             <span className="text-sm font-medium text-gray-700">High priority</span>
           </label>
           <span className="text-xs text-orange-500 font-medium">
-            ↑ shown above the line in Today / Tomorrow
+            ↑ shown above the line in Overdue / Today / Tomorrow
           </span>
         </div>
       )}
