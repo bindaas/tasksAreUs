@@ -36,7 +36,6 @@ export function TaskForm({
   );
   const [error, setError] = useState<string | null>(null);
 
-  const todayStr = dateOnly(new Date());
   const _tom = new Date();
   _tom.setDate(_tom.getDate() + 1);
   const tomorrowStr = dateOnly(_tom);
