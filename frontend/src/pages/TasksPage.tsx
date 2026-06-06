@@ -103,6 +103,7 @@ export function TasksPage() {
 
     try {
       await updateTask(taskId, { is_high_priority: !task.is_high_priority });
+      setDropError(null);
       refetch();
     } catch (err) {
       setDropError(err instanceof Error ? err.message : 'Failed to update priority');

@@ -1,6 +1,12 @@
 import type { Task } from '../api/tasks';
 import type { ColumnKey } from './taskDateUtils';
 
+/** Returns true if the form should offer the High priority checkbox given the current date fields. */
+export function isFormHighPriorityEligible(mustDoBy: string, targetDate: string, tomorrowStr: string): boolean {
+  return (mustDoBy !== '' && mustDoBy <= tomorrowStr) ||
+    (targetDate !== '' && targetDate <= tomorrowStr);
+}
+
 export const HIGH_PRIORITY_DAILY_LIMIT = 3;
 
 export function isHighPriorityEligible(columnKey: ColumnKey): boolean {
