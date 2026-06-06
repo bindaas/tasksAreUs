@@ -32,15 +32,22 @@ The three new columns (`firebase_uid`, `email`, `display_name`) are added via `A
 ---
 
 ### Table: `labels`
-System-defined, seeded at startup. Users cannot create or modify labels.
+Frequency labels are global and system-defined (seeded at startup, `user_id = NULL`). Mode and Type labels are per-user: on a user's first `GET /labels` access the global defaults are auto-copied into personal rows. Users can add, rename, and delete their own mode/type labels; frequency labels are immutable.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
+| `user_id` | VARCHAR | Nullable. FK → users (CASCADE). NULL for global/frequency labels; set to `user_id` for per-user mode/type labels. Indexed. |
 | `category` | ENUM | `frequency`, `mode`, `type` |
 | `value` | VARCHAR | e.g. `daily`, `online`, `household` |
 
-**Seed data:**
+**Uniqueness constraints (partial indices):**
+- `uq_global_label`: unique on `(category, value)` WHERE `user_id IS NULL`
+- `uq_user_label`: unique on `(user_id, category, value)` WHERE `user_id IS NOT NULL`
+
+The former `uq_label_category_value` single unique constraint was dropped in this migration.
+
+**Global seed data** (`user_id = NULL`):
 
 | category | value |
 |---|---|
@@ -55,9 +62,11 @@ System-defined, seeded at startup. Users cannot create or modify labels.
 | mode | email |
 | type | household |
 | type | financial |
-| type | raghav |
+| type | child |
 | type | trip |
 | type | medical |
+
+Note: the `raghav` type seed value was renamed to `child` via a startup `UPDATE` migration.
 
 ---
 
@@ -254,7 +263,10 @@ Idempotent — calling again with the same Firebase UID and `device_uuid` return
 ### Labels
 
 #### `GET /labels`
-Returns all system-defined labels. Optionally filter by category.
+Returns labels for the current user. Optionally filter by category.
+
+- **Frequency** labels are global (shared across all users) and returned as-is.
+- **Mode / Type** labels are per-user. On first access the global defaults are auto-copied into personal rows for the requesting user (idempotent — a concurrent-request race is swallowed via `IntegrityError` rollback).
 
 **Query params**: `?category=frequency|mode|type`
 
@@ -267,6 +279,58 @@ Returns all system-defined labels. Optionally filter by category.
   ]
 }
 ```
+
+**Error cases**
+- `400` — unknown category value
+
+---
+
+#### `POST /labels`
+Create a new mode or type label for the current user. Frequency labels cannot be created via the API.
+
+**Request**
+```json
+{ "category": "mode", "value": "in-person" }
+```
+
+**Response** `201 Created` — the created label object
+```json
+{ "id": "uuid", "category": "mode", "value": "in-person" }
+```
+
+**Error cases**
+- `400` — unknown category, category is `frequency`, or value is empty/whitespace
+- `409` — label with that value already exists for this user in this category
+
+---
+
+#### `PUT /labels/{label_id}`
+Rename a mode or type label. The caller must own the label.
+
+**Request**
+```json
+{ "value": "new-name" }
+```
+
+**Response** — the updated label object
+
+**Error cases**
+- `400` — label category is `frequency` (not editable), or new value is empty/whitespace
+- `403` — caller does not own the label
+- `404` — label not found
+- `409` — another label with the new value already exists for this user in this category
+
+---
+
+#### `DELETE /labels/{label_id}`
+Delete a mode or type label. The caller must own the label. Deleting a label removes it from any tasks that reference it (CASCADE via `task_labels`).
+
+**Response** `204 No Content`
+
+**Error cases**
+- `400` — label category is `frequency` (not deletable)
+- `403` — caller does not own the label
+- `404` — label not found
 
 ---
 
@@ -299,7 +363,7 @@ List tasks for the current user.
       "recurrence_group_id": null,
       "labels": [
         { "id": "uuid", "category": "mode", "value": "outdoor" },
-        { "id": "uuid", "category": "type", "value": "raghav" }
+        { "id": "uuid", "category": "type", "value": "child" }
       ],
       "is_high_priority": false,
       "is_deleted": false,

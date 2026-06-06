@@ -19,7 +19,7 @@
 ```
 backend/
   app/
-    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name, seed labels)
+    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name + labels.user_id, drop uq_label_category_value, add uq_global_label + uq_user_label partial indices, rename raghav→child seed value, seed labels)
     config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates, FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID)
     database.py      # engine, SessionLocal, get_db()
     models.py        # ORM models + LABEL_SEED
@@ -27,7 +27,7 @@ backend/
     dependencies.py  # get_current_user() — Bearer token (Firebase); get_firebase_claims() — token-only, no DB
     routers/         # one file per resource, mounted at /api/v1
       users.py       # POST /users, POST /users/migrate
-      labels.py      # GET /labels
+      labels.py      # GET /labels; POST /labels (create mode/type label); PUT /labels/{id} (rename, owner only); DELETE /labels/{id} (delete, owner only)
       tasks.py       # CRUD + complete endpoint
       beliefs.py     # beliefs generate/list/update
       conversations.py  # conversations + messages
@@ -35,14 +35,15 @@ backend/
       settings.py    # GET/PUT /settings
       sync.py        # POST /sync
     services/
-      task_service.py  # create_task(), update_task(), complete_task(), recurring logic, high-priority limit; _get_high_priority_limit() reads user settings
-      ai_service.py    # Claude calls (beliefs + conversations); _format_task_line() helper
+      task_service.py  # create_task(), update_task(), complete_task(), recurring logic, high-priority limit; _get_high_priority_limit() reads user settings; _resolve_labels() scoped to user (own + global)
+      ai_service.py    # Claude calls (beliefs + conversations); _format_task_line() helper; label queries scoped to user (own + global)
   tests/
     test_api.py      # standalone integration test: creates data, tests all endpoints, cleans up
     unit/
       test_task_service.py   # pytest unit tests for task_service (no DB — mocked)
       test_ai_service.py     # pytest unit tests for ai_service helpers
       test_dependencies.py   # pytest unit tests for auth dependencies (Firebase Bearer auth, migrate edge cases)
+      test_labels_router.py  # pytest unit tests for labels router (no DB — mocked): seed, create, update, delete
   scripts/
     purge_test_data.py  # DB maintenance: remove test-generated rows
     recover_data.py     # DB maintenance: recover soft-deleted records
@@ -54,7 +55,7 @@ frontend/
       client.ts        # base fetch wrapper — attaches Authorization: Bearer <firebase_id_token> via auth.currentUser?.getIdToken(); parses FastAPI error detail
       users.ts         # POST /users (no auth header)
       tasks.ts         # CRUD, complete; Task interface includes is_high_priority
-      labels.ts
+      labels.ts        # listLabels(); createLabel(), updateLabel(), deleteLabel() for configurable mode/type labels
       conversations.ts
       settings.ts
       reports.ts
@@ -76,7 +77,7 @@ frontend/
       TaskDetailPage.tsx  # create (/tasks/new) and edit (/tasks/:id)
       ChatPage.tsx      # AI conversation with suggested-question chips
       ReportsPage.tsx   # completions by date range
-      SettingsPage.tsx  # starter questions editor + High Priority Daily Limit numeric input + Account section (anonymous: Google/email upgrade; named: display name/email + Sign out)
+      SettingsPage.tsx  # Labels section (LabelEditor component for mode/type, add/rename/delete) + High Priority Daily Limit numeric input + starter questions editor + Account section (anonymous: Google/email upgrade; named: display name/email + Sign out)
       LoginPage.tsx     # shown only after deliberate sign-out; Google + magic-link sign-in options
     utils/
       taskDateUtils.ts  # date helpers: getColumn(), getDropDate(), getEffectiveDate(), getEffectiveDateField(), formatDate(); ColumnKey covers 'overdue'|'today'|'tomorrow'|'day_after_tomorrow'|'upcoming'|'nodate'
@@ -142,7 +143,7 @@ Copy `frontend/.env.example` → `frontend/.env`; set all `VITE_FIREBASE_*` env 
 cd backend && DATABASE_URL=... python3 tests/test_api.py
 ```
 
-**Backend unit tests** (`tests/unit/`): pytest-based, no DB required (mock SQLAlchemy sessions). Cover `task_service` (create, update, complete, recurring, high-priority limit), `ai_service` helpers (`_format_task_line`), and `dependencies` (Firebase Bearer auth, token expiry/invalidity, migrate edge cases — 15 tests). Run with:
+**Backend unit tests** (`tests/unit/`): pytest-based, no DB required (mock SQLAlchemy sessions). Cover `task_service` (create, update, complete, recurring, high-priority limit), `ai_service` helpers (`_format_task_line`), `dependencies` (Firebase Bearer auth, token expiry/invalidity, migrate edge cases), and `labels` router (seed, create, update, delete — ownership + category guards). Run with:
 ```bash
 cd backend && python3 -m pytest tests/unit/ -v
 ```

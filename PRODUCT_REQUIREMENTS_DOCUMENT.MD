@@ -19,13 +19,22 @@ tasksAreUs is a task management web app (React 19 + Vite, runs in the browser) w
 ### Labels
 A task can have zero or more labels in fixed system-defined categories. A task may have **multiple labels within the same category** (e.g. both `online` and `email` under Mode).
 
-| Category | Values |
-|---|---|
-| Frequency | one-time, daily, weekly, monthly, annual |
-| Mode | online, phone, outdoor, email |
-| Type | household, financial, raghav, trip, medical |
+| Category | Values | Editable? |
+|---|---|---|
+| Frequency | one-time, daily, weekly, monthly, annual | No — global and fixed for all users |
+| Mode | online, phone, outdoor, email (defaults) | Yes — per-user; users can add, rename, and delete |
+| Type | household, financial, child, trip, medical (defaults) | Yes — per-user; users can add, rename, and delete |
 
-Users cannot create or modify label categories or values.
+**Label ownership rules (shipped — PR #15):**
+- **Frequency** labels are global (`user_id = NULL` in the DB) and cannot be edited or deleted by anyone.
+- **Mode** and **Type** labels are per-user. On first access the backend auto-seeds each user's personal copies from the global defaults. Each user then has an independent set they can freely rename or delete, and can add new values.
+- Users cannot create or modify label *categories* — the three categories (Frequency, Mode, Type) are fixed.
+- The default Type value was renamed from `raghav` to `child` (applied via startup migration).
+
+**New label management API endpoints (shipped — PR #15):**
+- `POST /api/v1/labels` — create a new Mode or Type label for the current user (400 if Frequency, 409 if duplicate, strips whitespace)
+- `PUT /api/v1/labels/{id}` — rename a Mode or Type label owned by the current user (403 if wrong owner, 400 if Frequency, 409 if duplicate name)
+- `DELETE /api/v1/labels/{id}` — delete a Mode or Type label owned by the current user (403 if wrong owner, 400 if Frequency)
 
 ### Task Lifecycle
 
@@ -75,7 +84,7 @@ The primary interaction mode. Supported input styles:
 1. **Task List** (default `/`) — kanban board of pending tasks across six columns (Overdue, Today, Tomorrow, Day After Tomorrow, Upcoming, No Date). The Overdue column is hidden when empty. Completed tasks shown as a flat list via "Show done" toggle.
 2. **Chat** (`/chat`) — conversational AI interface for task creation, completion, and task-related questions
 3. **Reports** (`/reports`) — completed tasks for a user-chosen date range
-4. **Settings** (`/settings`) — define up to 5 starter questions saved to the user's profile
+4. **Settings** (`/settings`) — manage per-user labels (Mode and Type), configure the High Priority Daily Limit, define up to 5 starter questions, and manage the account (sign in / sign out)
 5. **Task Detail** (`/tasks/:id`, `/tasks/new`) — create or edit a task with full field and label editing
 
 ### Task List / Kanban Board
@@ -100,6 +109,7 @@ The primary interaction mode. Supported input styles:
 
 ### Settings Page
 
+- **Labels section (shipped — PR #15)**: Appears at the top of Settings, above High Priority Limit and Starter Questions. Shows **Mode** and **Type** subsections with the user's personal label set. Each label has Edit and Delete buttons; each subsection has an Add button to create new values. Frequency labels are not shown here (they are not editable). Changes take effect immediately in TaskForm label pickers and on task cards.
 - **High Priority Daily Limit**: numeric input (min 1) that sets the per-day cap for high-priority tasks in Today and Tomorrow columns. Defaults to 3 when unset. Reducing the limit below the current count is allowed — a warning is shown but no retroactive removal occurs. Persisted server-side via `user_settings.high_priority_daily_limit`.
 - Configure up to 5 starter questions saved server-side. Questions can be added, removed, and reordered.
 - Note: backend connectivity testing from the Settings screen is **not currently implemented**.
@@ -134,7 +144,8 @@ Sign-in providers supported: Google (OAuth popup) and email magic link. Apple si
 
 ## Out of Scope (initial build)
 
-- Custom label categories or values
+- Custom label *categories* (the three categories — Frequency, Mode, Type — are fixed for all users)
+- Editing or deleting Frequency label values (one-time, daily, weekly, monthly, annual are fixed globally)
 - Trip as a separate entity (trip is a Type label value)
 - Admin dashboard for cost tracking (note: per-call AI cost logging to the `ai_cost_log` table is implemented in the backend; only the admin-facing dashboard surface is out of scope)
 - Native mobile app (iOS/Android) — the current frontend is a web app
