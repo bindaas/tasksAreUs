@@ -8,6 +8,8 @@ from dateutil.relativedelta import relativedelta
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from sqlalchemy import or_
+
 from ..models import Label, StateEnum, Task, TaskLabel, UserSettings
 
 
@@ -83,10 +85,13 @@ def get_task_or_404(db: Session, task_id: str, user_id: str) -> Task:
     return task
 
 
-def _resolve_labels(db: Session, label_ids: List[str]) -> List[Label]:
+def _resolve_labels(db: Session, label_ids: List[str], user_id: str) -> List[Label]:
     if not label_ids:
         return []
-    labels = db.query(Label).filter(Label.id.in_(label_ids)).all()
+    labels = db.query(Label).filter(
+        Label.id.in_(label_ids),
+        or_(Label.user_id == user_id, Label.user_id.is_(None)),
+    ).all()
     found_ids = {l.id for l in labels}
     missing = set(label_ids) - found_ids
     if missing:
@@ -106,7 +111,7 @@ def create_task(
     is_high_priority: bool = False,
     high_priority_limit: int = HIGH_PRIORITY_DAILY_LIMIT,
 ) -> Task:
-    labels = _resolve_labels(db, label_ids)
+    labels = _resolve_labels(db, label_ids, user_id)
     effective = _effective_date(must_do_by, target_date)
     final_priority = is_high_priority and _is_hp_eligible_date(effective)
     if final_priority:
@@ -182,7 +187,7 @@ def update_task(
 
     if label_ids is not None:
         db.query(TaskLabel).filter(TaskLabel.task_id == task.id).delete()
-        labels = _resolve_labels(db, label_ids)
+        labels = _resolve_labels(db, label_ids, task.user_id)
         for label in labels:
             db.add(TaskLabel(task_id=task.id, label_id=label.id))
 

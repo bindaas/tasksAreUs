@@ -1,8 +1,187 @@
 import { useState, useEffect } from 'react';
 import { getSettings, updateSettings } from '../api/settings';
+import { listLabels, createLabel, updateLabel, deleteLabel } from '../api/labels';
+import type { Label } from '../api/tasks';
 import { useAuth } from '../hooks/useAuth';
 
 const MAX_QUESTIONS = 5;
+
+type ConfigurableCategory = 'mode' | 'type';
+
+function LabelEditor({
+  category,
+  labels,
+  onAdd,
+  onRename,
+  onDelete,
+}: {
+  category: ConfigurableCategory;
+  labels: Label[];
+  onAdd: (category: ConfigurableCategory, value: string) => Promise<void>;
+  onRename: (id: string, value: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [addingNew, setAddingNew] = useState(false);
+  const [newValue, setNewValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function handleRename(id: string) {
+    const trimmed = editValue.trim();
+    if (!trimmed || trimmed === labels.find((l) => l.id === id)?.value) {
+      setEditingId(null);
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      await onRename(id, trimmed);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to rename');
+    } finally {
+      setBusy(false);
+      setEditingId(null);
+    }
+  }
+
+  async function handleAdd() {
+    const trimmed = newValue.trim();
+    if (!trimmed) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await onAdd(category, trimmed);
+      setNewValue('');
+      setAddingNew(false);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to add label');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setBusy(true);
+    setErr(null);
+    try {
+      await onDelete(id);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to delete');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-5">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide capitalize">
+          {category}
+        </h4>
+        <button
+          onClick={() => { setAddingNew(true); setNewValue(''); setErr(null); }}
+          disabled={addingNew || busy}
+          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-40"
+        >
+          + Add
+        </button>
+      </div>
+
+      {err && (
+        <p className="text-xs text-red-600 mb-1">{err}</p>
+      )}
+
+      <div className="space-y-1">
+        {labels.map((label) => (
+          <div key={label.id} className="flex items-center gap-2">
+            {editingId === label.id ? (
+              <>
+                <input
+                  autoFocus
+                  type="text"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleRename(label.id);
+                    if (e.key === 'Escape') setEditingId(null);
+                  }}
+                  className="flex-1 border border-indigo-400 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={busy}
+                />
+                <button
+                  onClick={() => handleRename(label.id)}
+                  disabled={busy}
+                  className="text-xs text-indigo-600 font-medium disabled:opacity-40"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setEditingId(null)}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 text-sm text-gray-700">{label.value}</span>
+                <button
+                  onClick={() => { setEditingId(label.id); setEditValue(label.value); setErr(null); }}
+                  disabled={busy}
+                  className="text-xs text-gray-400 hover:text-indigo-600 disabled:opacity-40"
+                  title="Rename"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(label.id)}
+                  disabled={busy}
+                  className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40"
+                  title="Delete"
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+
+        {addingNew && (
+          <div className="flex items-center gap-2 mt-1">
+            <input
+              autoFocus
+              type="text"
+              value={newValue}
+              onChange={(e) => setNewValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAdd();
+                if (e.key === 'Escape') { setAddingNew(false); setNewValue(''); }
+              }}
+              placeholder={`New ${category} label`}
+              className="flex-1 border border-indigo-400 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              disabled={busy}
+            />
+            <button
+              onClick={handleAdd}
+              disabled={busy || !newValue.trim()}
+              className="text-xs text-indigo-600 font-medium disabled:opacity-40"
+            >
+              Add
+            </button>
+            <button
+              onClick={() => { setAddingNew(false); setNewValue(''); }}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function SettingsPage() {
   const { user, signInWithGoogle, sendMagicLink, signOut } = useAuth();
@@ -19,14 +198,23 @@ export function SettingsPage() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [showEmailInput, setShowEmailInput] = useState(false);
 
+  const [modeLabels, setModeLabels] = useState<Label[]>([]);
+  const [typeLabels, setTypeLabels] = useState<Label[]>([]);
+
   useEffect(() => {
     async function fetch() {
       setLoading(true);
       setError(null);
       try {
-        const s = await getSettings();
+        const [s, modeRes, typeRes] = await Promise.all([
+          getSettings(),
+          listLabels('mode'),
+          listLabels('type'),
+        ]);
         setQuestions(s.starter_questions ?? []);
         setHighPriorityLimit(s.high_priority_daily_limit ?? 3);
+        setModeLabels(modeRes.labels);
+        setTypeLabels(typeRes.labels);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load settings');
       } finally {
@@ -35,6 +223,24 @@ export function SettingsPage() {
     }
     fetch();
   }, []);
+
+  async function handleAddLabel(category: 'mode' | 'type', value: string) {
+    const label = await createLabel(category, value);
+    if (category === 'mode') setModeLabels((prev) => [...prev, label]);
+    else setTypeLabels((prev) => [...prev, label]);
+  }
+
+  async function handleRenameLabel(id: string, value: string) {
+    const updated = await updateLabel(id, value);
+    setModeLabels((prev) => prev.map((l) => (l.id === id ? updated : l)));
+    setTypeLabels((prev) => prev.map((l) => (l.id === id ? updated : l)));
+  }
+
+  async function handleDeleteLabel(id: string) {
+    await deleteLabel(id);
+    setModeLabels((prev) => prev.filter((l) => l.id !== id));
+    setTypeLabels((prev) => prev.filter((l) => l.id !== id));
+  }
 
   function updateQuestion(idx: number, value: string) {
     setQuestions((prev) => {
@@ -119,7 +325,7 @@ export function SettingsPage() {
   return (
     <div className="p-4 max-w-xl mx-auto">
       <h2 className="text-xl font-bold text-gray-900 mb-1">Settings</h2>
-      <p className="text-sm text-gray-500 mb-6">Configure your chat starter questions</p>
+      <p className="text-sm text-gray-500 mb-6">Configure your labels, questions, and preferences</p>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">
@@ -139,6 +345,30 @@ export function SettingsPage() {
         </div>
       ) : (
         <>
+          {/* Labels */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">Labels</h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Customise Mode and Type labels. Frequency labels are fixed.
+            </p>
+            <div className="border border-gray-200 rounded-lg p-3 space-y-1">
+              <LabelEditor
+                category="mode"
+                labels={modeLabels}
+                onAdd={handleAddLabel}
+                onRename={handleRenameLabel}
+                onDelete={handleDeleteLabel}
+              />
+              <LabelEditor
+                category="type"
+                labels={typeLabels}
+                onAdd={handleAddLabel}
+                onRename={handleRenameLabel}
+                onDelete={handleDeleteLabel}
+              />
+            </div>
+          </div>
+
           {/* High-priority limit */}
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-1">High Priority Daily Limit</h3>
@@ -181,7 +411,6 @@ export function SettingsPage() {
             <div className="space-y-2">
               {questions.map((q, idx) => (
                 <div key={idx} className="flex items-center gap-2">
-                  {/* Reorder buttons */}
                   <div className="flex flex-col gap-0.5 shrink-0">
                     <button
                       onClick={() => moveUp(idx)}

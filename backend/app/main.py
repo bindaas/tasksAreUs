@@ -55,10 +55,10 @@ def _seed_system_user(db: Session) -> None:
 
 
 def _seed_labels(db: Session) -> None:
-    existing = {(l.category.value, l.value) for l in db.query(Label).all()}
+    existing = {(l.category.value, l.value) for l in db.query(Label).filter(Label.user_id.is_(None)).all()}
     for category, value in LABEL_SEED:
         if (category, value) not in existing:
-            db.add(Label(category=CategoryEnum(category), value=value))
+            db.add(Label(category=CategoryEnum(category), value=value, user_id=None))
     db.commit()
 
 
@@ -83,6 +83,27 @@ async def lifespan(app: FastAPI):
         ))
         conn.execute(text(
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR"
+        ))
+        # Per-user configurable labels migration
+        conn.execute(text(
+            "ALTER TABLE labels ADD COLUMN IF NOT EXISTS "
+            "user_id VARCHAR REFERENCES users(id) ON DELETE CASCADE"
+        ))
+        conn.execute(text(
+            "ALTER TABLE labels DROP CONSTRAINT IF EXISTS uq_label_category_value"
+        ))
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_global_label "
+            "ON labels(category, value) WHERE user_id IS NULL"
+        ))
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_user_label "
+            "ON labels(user_id, category, value) WHERE user_id IS NOT NULL"
+        ))
+        # Rename "raghav" → "child" for global seed and any existing per-user copies
+        conn.execute(text(
+            "UPDATE labels SET value = 'child' "
+            "WHERE category = 'type' AND value = 'raghav'"
         ))
         conn.commit()
     db = SessionLocal()

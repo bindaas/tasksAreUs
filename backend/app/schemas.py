@@ -15,6 +15,15 @@ class LabelOut(BaseModel):
     value: str
 
 
+class LabelCreate(BaseModel):
+    category: str  # "mode" or "type" only
+    value: str
+
+
+class LabelUpdate(BaseModel):
+    value: str
+
+
 # ── Users ─────────────────────────────────────────────────────────────────────
 
 class UserCreate(BaseModel):
