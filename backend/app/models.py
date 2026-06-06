@@ -68,10 +68,9 @@ class Label(Base):
     __tablename__ = "labels"
 
     id = Column(String, primary_key=True, default=_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     category = Column(Enum(CategoryEnum), nullable=False)
     value = Column(String, nullable=False)
-
-    __table_args__ = (UniqueConstraint("category", "value", name="uq_label_category_value"),)
 
 
 class TaskLabel(Base):
@@ -173,7 +172,7 @@ LABEL_SEED = [
     ("mode", "email"),
     ("type", "household"),
     ("type", "financial"),
-    ("type", "raghav"),
+    ("type", "child"),
     ("type", "trip"),
     ("type", "medical"),
 ]
