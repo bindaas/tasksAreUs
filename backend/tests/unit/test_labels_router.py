@@ -118,7 +118,7 @@ class TestUpdateLabel:
 
         with pytest.raises(HTTPException) as exc:
             update_label("l1", LabelUpdate(value="hourly"), db, "user-1")
-        assert exc.value.status_code == 403
+        assert exc.value.status_code == 400  # category guard fires first
 
     def test_rejects_not_found(self):
         db = MagicMock()
@@ -168,7 +168,7 @@ class TestDeleteLabel:
 
         with pytest.raises(HTTPException) as exc:
             delete_label("l1", db, "user-1")
-        assert exc.value.status_code == 403
+        assert exc.value.status_code == 400  # category guard fires first
 
     def test_rejects_not_found(self):
         db = MagicMock()

@@ -200,13 +200,11 @@ export function SettingsPage() {
 
   const [modeLabels, setModeLabels] = useState<Label[]>([]);
   const [typeLabels, setTypeLabels] = useState<Label[]>([]);
-  const [labelsError, setLabelsError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetch() {
       setLoading(true);
       setError(null);
-      setLabelsError(null);
       try {
         const [s, modeRes, typeRes] = await Promise.all([
           getSettings(),
@@ -353,9 +351,6 @@ export function SettingsPage() {
             <p className="text-xs text-gray-500 mb-3">
               Customise Mode and Type labels. Frequency labels are fixed.
             </p>
-            {labelsError && (
-              <p className="text-xs text-red-600 mb-2">{labelsError}</p>
-            )}
             <div className="border border-gray-200 rounded-lg p-3 space-y-1">
               <LabelEditor
                 category="mode"

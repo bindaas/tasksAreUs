@@ -100,10 +100,10 @@ async def lifespan(app: FastAPI):
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_user_label "
             "ON labels(user_id, category, value) WHERE user_id IS NOT NULL"
         ))
-        # Rename the old global "raghav" type label to "child"
+        # Rename "raghav" → "child" for global seed and any existing per-user copies
         conn.execute(text(
             "UPDATE labels SET value = 'child' "
-            "WHERE category = 'type' AND value = 'raghav' AND user_id IS NULL"
+            "WHERE category = 'type' AND value = 'raghav'"
         ))
         conn.commit()
     db = SessionLocal()

@@ -1,6 +1,7 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -22,7 +23,11 @@ def _seed_user_labels(db: Session, user_id: str, category: CategoryEnum) -> None
     )
     for gl in global_labels:
         db.add(Label(category=gl.category, value=gl.value, user_id=user_id))
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Another concurrent request already seeded this user's labels
+        db.rollback()
 
 
 @router.get("", response_model=dict)
@@ -123,10 +128,10 @@ def update_label(
     label = db.query(Label).filter(Label.id == label_id).first()
     if not label:
         raise HTTPException(status_code=404, detail="Label not found")
-    if label.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Cannot modify this label")
     if label.category not in _CONFIGURABLE:
         raise HTTPException(status_code=400, detail="Frequency labels are not editable")
+    if label.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Cannot modify this label")
 
     value = body.value.strip()
     if not value:
@@ -160,10 +165,10 @@ def delete_label(
     label = db.query(Label).filter(Label.id == label_id).first()
     if not label:
         raise HTTPException(status_code=404, detail="Label not found")
-    if label.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Cannot delete this label")
     if label.category not in _CONFIGURABLE:
         raise HTTPException(status_code=400, detail="Frequency labels cannot be deleted")
+    if label.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Cannot delete this label")
 
     db.delete(label)
     db.commit()
