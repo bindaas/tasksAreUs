@@ -2,7 +2,7 @@
 
 ## Overview
 
-tasksAreUs is a task management web app (React 19 + Vite, runs in the browser) with a Python/FastAPI/PostgreSQL backend. Users manage tasks through a kanban board and a conversational AI interface. The app is multi-tenant from day one, with identity bootstrapped from a device UUID stored in localStorage — no login required initially. Firebase Authentication is being introduced incrementally (Phase 1: backend only; frontend login UI is a future phase).
+tasksAreUs is a task management web app (React 19 + Vite, runs in the browser) with a Python/FastAPI/PostgreSQL backend. Users manage tasks through a kanban board and a conversational AI interface. The app is multi-tenant from day one. Identity is Firebase-only: the backend auto-creates a user row on first authenticated request; no device registration or migration step is needed.
 
 ---
 
@@ -128,10 +128,9 @@ Users can view a history of completed tasks over a user-selected date range. The
 
 ## Authentication
 
-Firebase Authentication is being introduced in phases:
+Firebase Authentication is the only identity mechanism. All device-based auth infrastructure (`device_uuid`, `POST /users`, `POST /users/migrate`) has been removed. The backend auto-creates a user row on first authenticated request.
 
 - **Phase 1 (shipped — PR #12)**: Backend only. The backend accepts `Authorization: Bearer <firebase_id_token>` on all endpoints. Three new columns added to `users`: `firebase_uid` (unique, indexed), `email`, `display_name`. The `auth_provider` column is now populated with the Firebase sign-in provider string.
-- **Migration endpoint**: `POST /users/migrate` — one-time stitch of an existing `device_uuid` row onto a Firebase UID; idempotent; returns 404 for unknown device_uuid, 409 on UID conflict.
 - **Phase 2 (shipped — PR #13)**: Frontend login UI using Firebase JS SDK. The browser sends `Authorization: Bearer <firebase_id_token>`. Key behaviours:
   - **Anonymous sign-in**: On first load the app calls `signInAnonymously()` automatically — zero friction, same UX as before.
   - **Named sign-in**: Users can upgrade from anonymous to a named account via Google (OAuth popup) or email magic link. Named sign-in is only exposed when the user explicitly signs out; anonymous is never a user-facing choice.
@@ -139,6 +138,7 @@ Firebase Authentication is being introduced in phases:
   - **Settings → Account section**: Anonymous users see upgrade options (Google / email); named users see their display name / email and a Sign out button.
   - **`client.ts`**: Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer` header on every request.
 - **Phase 3 (shipped)**: Removed legacy `X-User-ID` fallback path from the backend; removed `useUser.ts` shim. Bearer token is now the only accepted auth path.
+- **Phase 4 (shipped — PR #17)**: Removed all device-based identity infrastructure. Dropped `device_uuid` column from `users` table. Deleted `POST /users` (device registration) and `POST /users/migrate` endpoints, along with `UserCreate`, `MigrateRequest`, and `MigrateOut` schemas, `frontend/src/api/users.ts`, and historical migration scripts (`migrate_user_data.py`, `recover_data.py`). Firebase auto-create in `get_current_user` is now the sole user-creation path.
 
 Sign-in providers supported: Google (OAuth popup) and email magic link. Apple sign-in may be added via Firebase in a future phase (not yet configured).
 

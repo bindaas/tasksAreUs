@@ -54,7 +54,6 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String, primary_key=True, default=_uuid)
-    device_uuid = Column(String, unique=True, nullable=False)
     auth_provider = Column(String, nullable=True)
     auth_provider_id = Column(String, nullable=True)
     firebase_uid = Column(String, unique=True, nullable=True, index=True)

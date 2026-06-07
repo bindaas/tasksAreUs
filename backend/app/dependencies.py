@@ -51,7 +51,6 @@ def get_current_user(
     provider = claims.get("firebase", {}).get("sign_in_provider", "anonymous")
     new_user = User(
         firebase_uid=firebase_uid,
-        device_uuid=firebase_uid,
         email=claims.get("email"),
         display_name=claims.get("name"),
         auth_provider=provider,

@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from .config import settings as app_settings
 from .database import SessionLocal, engine
 from .models import Base, Label, User
-from .routers import beliefs, conversations, labels, reports, settings, sync, tasks, users
+from .routers import beliefs, conversations, labels, reports, settings, sync, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +44,10 @@ def _init_firebase() -> None:
 
 
 def _seed_system_user(db: Session) -> None:
-    existing = db.query(User).filter(User.device_uuid == _SYSTEM_UUID).first()
+    existing = db.query(User).filter(User.id == _SYSTEM_UUID).first()
     if existing is None:
-        db.add(User(id=_SYSTEM_UUID, device_uuid=_SYSTEM_UUID))
+        db.add(User(id=_SYSTEM_UUID))
         db.commit()
-    elif existing.id != _SYSTEM_UUID:
-        db.execute(text("DELETE FROM users WHERE id = :id"), {"id": existing.id})
-        db.execute(text("INSERT INTO users (id, device_uuid) VALUES (:id, :id)"), {"id": _SYSTEM_UUID})
-        db.commit()
-
 
 
 @asynccontextmanager
@@ -77,6 +72,9 @@ async def lifespan(app: FastAPI):
         conn.execute(text(
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR"
         ))
+        conn.execute(text(
+            "ALTER TABLE users DROP COLUMN IF EXISTS device_uuid"
+        ))
         # Enforce per-user label model: user_id NOT NULL, unique per user+category+value
         conn.execute(text("ALTER TABLE labels ALTER COLUMN user_id SET NOT NULL"))
         conn.execute(text(
@@ -99,7 +97,6 @@ app = FastAPI(title="tasksAreUs API", version="1.0.0", lifespan=lifespan)
 
 PREFIX = "/api/v1"
 
-app.include_router(users.router, prefix=PREFIX)
 app.include_router(labels.router, prefix=PREFIX)
 app.include_router(tasks.router, prefix=PREFIX)
 app.include_router(beliefs.router, prefix=PREFIX)
