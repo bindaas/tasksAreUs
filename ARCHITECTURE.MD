@@ -19,7 +19,7 @@
 ```
 backend/
   app/
-    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name + labels.user_id, drop uq_label_category_value, add uq_global_label + uq_user_label partial indices, rename raghav→child seed value, seed labels)
+    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name + labels.user_id SET NOT NULL + labels_user_id_category_value_key UNIQUE, drop old uq_global_label + uq_user_label partial indices)
     config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates, FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID)
     database.py      # engine, SessionLocal, get_db()
     models.py        # ORM models + LABEL_SEED
@@ -35,8 +35,9 @@ backend/
       settings.py    # GET/PUT /settings
       sync.py        # POST /sync
     services/
-      task_service.py  # create_task(), update_task(), complete_task(), recurring logic, high-priority limit; _get_high_priority_limit() reads user settings; _resolve_labels() scoped to user (own + global)
-      ai_service.py    # Claude calls (beliefs + conversations); _format_task_line() helper; label queries scoped to user (own + global)
+      task_service.py  # create_task(), update_task(), complete_task(), recurring logic, high-priority limit; _get_high_priority_limit() reads user settings; _resolve_labels() calls ensure_seeded() then queries user_id only
+      ai_service.py    # Claude calls (beliefs + conversations); _format_task_line() helper; label queries scoped to user_id only; calls ensure_seeded() in handle_conversation_message
+      label_service.py # seed_user_labels(db, user_id): seeds all categories from LABEL_SEED constant; ensure_seeded(db, user_id): no-op if user already has a frequency label (sentinel check); imported by labels router, task_service, and ai_service
   tests/
     test_api.py      # standalone integration test: creates data, tests all endpoints, cleans up
     unit/

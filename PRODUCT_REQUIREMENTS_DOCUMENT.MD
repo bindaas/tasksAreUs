@@ -21,15 +21,17 @@ A task can have zero or more labels in fixed system-defined categories. A task m
 
 | Category | Values | Editable? |
 |---|---|---|
-| Frequency | one-time, daily, weekly, monthly, annual | No — global and fixed for all users |
+| Frequency | one-time, daily, weekly, monthly, annual | No — per-user but fixed; users cannot add, rename, or delete |
 | Mode | online, phone, outdoor, email (defaults) | Yes — per-user; users can add, rename, and delete |
 | Type | household, financial, child, trip, medical (defaults) | Yes — per-user; users can add, rename, and delete |
 
-**Label ownership rules (shipped — PR #15):**
-- **Frequency** labels are global (`user_id = NULL` in the DB) and cannot be edited or deleted by anyone.
-- **Mode** and **Type** labels are per-user. On first access the backend auto-seeds each user's personal copies from the global defaults. Each user then has an independent set they can freely rename or delete, and can add new values.
+**Label ownership rules (shipped — PR #15, corrected in PR #16):**
+- **All labels are per-user** — `labels.user_id` is `NOT NULL`. There are no global seed rows in the DB. Each user gets their own independent copy of all three categories (Frequency, Mode, Type) on first access.
+- **Frequency** labels are seeded per-user and cannot be edited or deleted by the user (they are not shown in Settings). They serve as the sentinel for "has this user been seeded?" — a missing frequency label triggers full re-seeding.
+- **Mode** and **Type** labels are per-user and fully configurable: users can add, rename, and delete them.
 - Users cannot create or modify label *categories* — the three categories (Frequency, Mode, Type) are fixed.
-- The default Type value was renamed from `raghav` to `child` (applied via startup migration).
+- The default Type value was renamed from `raghav` to `child` (applied via startup migration in PR #15).
+- Seeding is driven by the `LABEL_SEED` constant in `models.py`; the `ensure_seeded()` / `seed_user_labels()` helpers live in `services/label_service.py`.
 
 **New label management API endpoints (shipped — PR #15):**
 - `POST /api/v1/labels` — create a new Mode or Type label for the current user (400 if Frequency, 409 if duplicate, strips whitespace)

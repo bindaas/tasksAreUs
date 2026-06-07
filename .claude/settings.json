@@ -6,7 +6,10 @@
       "Bash(docker-compose ps *)",
       "Bash(npm run build)",
       "Bash(npm run dev)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(cd /Users/bindaas/projects/tasksAreUs/frontend && npx tsc --noEmit*)",
+      "Bash(cd /Users/bindaas/projects/tasksAreUs/frontend && npx vitest run*)",
+      "Bash(cd /Users/bindaas/projects/tasksAreUs/backend && python3 -m pytest tests/unit/ *)"
     ]
   }
 }

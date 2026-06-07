@@ -32,22 +32,21 @@ The three new columns (`firebase_uid`, `email`, `display_name`) are added via `A
 ---
 
 ### Table: `labels`
-Frequency labels are global and system-defined (seeded at startup, `user_id = NULL`). Mode and Type labels are per-user: on a user's first `GET /labels` access the global defaults are auto-copied into personal rows. Users can add, rename, and delete their own mode/type labels; frequency labels are immutable.
+All labels are per-user. There are no global rows (`user_id` is NOT NULL). On a user's first access, all three categories (frequency + mode + type) are seeded from the `LABEL_SEED` constant in `models.py` by `label_service.seed_user_labels()`. Users can add, rename, and delete their own mode/type labels; frequency labels are immutable (cannot be renamed or deleted via the API).
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
-| `user_id` | VARCHAR | Nullable. FK → users (CASCADE). NULL for global/frequency labels; set to `user_id` for per-user mode/type labels. Indexed. |
+| `user_id` | VARCHAR | NOT NULL. FK → users (CASCADE). Every label belongs to exactly one user. Indexed. |
 | `category` | ENUM | `frequency`, `mode`, `type` |
 | `value` | VARCHAR | e.g. `daily`, `online`, `household` |
 
-**Uniqueness constraints (partial indices):**
-- `uq_global_label`: unique on `(category, value)` WHERE `user_id IS NULL`
-- `uq_user_label`: unique on `(user_id, category, value)` WHERE `user_id IS NOT NULL`
+**Uniqueness constraint:**
+- `labels_user_id_category_value_key`: unique on `(user_id, category, value)`
 
-The former `uq_label_category_value` single unique constraint was dropped in this migration.
+The old partial indices (`uq_global_label`, `uq_user_label`) were dropped when this constraint was added.
 
-**Global seed data** (`user_id = NULL`):
+**Per-user seed data** (from `LABEL_SEED` constant in `models.py`; seeded lazily on first access):
 
 | category | value |
 |---|---|
@@ -66,7 +65,7 @@ The former `uq_label_category_value` single unique constraint was dropped in thi
 | type | trip |
 | type | medical |
 
-Note: the `raghav` type seed value was renamed to `child` via a startup `UPDATE` migration.
+**Seeding sentinel**: `ensure_seeded()` in `label_service.py` checks whether the user has at least one `frequency` label. If not, it calls `seed_user_labels()` to insert all `LABEL_SEED` rows for the user. Since frequency labels cannot be deleted, their absence reliably indicates a brand-new user. Concurrent-request races are handled by catching `IntegrityError` and rolling back (idempotent).
 
 ---
 
@@ -265,8 +264,7 @@ Idempotent — calling again with the same Firebase UID and `device_uuid` return
 #### `GET /labels`
 Returns labels for the current user. Optionally filter by category.
 
-- **Frequency** labels are global (shared across all users) and returned as-is.
-- **Mode / Type** labels are per-user. On first access the global defaults are auto-copied into personal rows for the requesting user (idempotent — a concurrent-request race is swallowed via `IntegrityError` rollback).
+All labels (frequency, mode, and type) are per-user. On first access, all three categories are seeded from the `LABEL_SEED` constant for the requesting user via `ensure_seeded()` (idempotent — a concurrent-request race is swallowed via `IntegrityError` rollback). `ensure_seeded()` is also called by `_resolve_labels` in `task_service.py` and `handle_conversation_message` in `ai_service.py`, so seeding cannot be bypassed by clients that skip `GET /labels`.
 
 **Query params**: `?category=frequency|mode|type`
 
