@@ -2,7 +2,7 @@
 
 ## Overview
 
-tasksAreUs is a task management web app (React 19 + Vite, runs in the browser) with a Python/FastAPI/PostgreSQL backend. Users manage tasks through a kanban board and a conversational AI interface. The app is multi-tenant from day one. Identity is Firebase-only: the backend auto-creates a user row on first authenticated request; no device registration or migration step is needed.
+tasksAreUs is a task management app with a Python/FastAPI/PostgreSQL backend, a React 19 + Vite web frontend, and a React Native + Expo mobile client. Users manage tasks through a kanban board and a conversational AI interface. The app is multi-tenant from day one. Identity is Firebase-only: the backend auto-creates a user row on first authenticated request; no device registration or migration step is needed.
 
 ---
 
@@ -144,10 +144,55 @@ Sign-in providers supported: Google (OAuth popup) and email magic link. Apple si
 
 ---
 
+---
+
+## Mobile App
+
+A React Native + Expo managed-workflow client (`mobile/`) ships alongside the web frontend. Both clients share the same `/api/v1` backend; there is no mobile-specific API surface.
+
+### Tech Stack
+- **Framework**: React Native with Expo SDK 54 (managed workflow — no custom dev client required for development)
+- **Language**: TypeScript
+- **Styling**: NativeWind v4 (Tailwind CSS for React Native), configured via Metro and Babel
+- **Navigation**: React Navigation v7 — bottom tab navigator
+- **Auth**: Firebase JS SDK v10 with `@react-native-async-storage/async-storage` for persistence (compatible with Expo Go)
+- **Google OAuth**: `expo-auth-session` (browser-based redirect flow, not a native popup — works in Expo Go)
+- **Deep-link scheme**: `tasksareus://` for magic link sign-in in standalone builds
+
+### Navigation / Tabs
+The mobile app has four bottom tabs, mirroring the web app's four primary pages:
+
+| Tab | Equivalent web route | Status |
+|-----|----------------------|--------|
+| Tasks | `/` | Placeholder — full implementation in a later PR |
+| Chat | `/chat` | Placeholder — full implementation in a later PR |
+| Reports | `/reports` | Placeholder — full implementation in a later PR |
+| Settings | `/settings` | Placeholder — full implementation in a later PR |
+
+### Authentication (shipped — PR #18)
+Mobile auth follows the same Firebase-only identity model as the web frontend, with mobile-specific implementation details:
+
+- **Anonymous auto-sign-in**: On first launch (or after any non-deliberate sign-out) the app calls `signInAnonymously()` automatically — zero friction.
+- **Google Sign-In**: Uses `expo-auth-session` browser redirect flow. In Expo Go, the Expo Go redirect URI (`exp://[local-ip]:8081`) must be added to Google Cloud Console → Authorized redirect URIs.
+- **Magic link**: `sendSignInLinkToEmail` with `handleCodeInApp: true`. The email link carries the `tasksareus://` deep-link URL. **Known limitation**: in Expo Go, the email link opens in the system browser and cannot redirect back into the app; the UI notes this explicitly. Full magic-link sign-in (auto-redirect) works only in standalone builds.
+- **Cross-device magic link**: If the link is opened on a different device than where it was requested, the app prompts the user to confirm their email address before completing sign-in.
+- **LoginScreen**: Shown only after a deliberate sign-out; offers Google and magic-link options.
+- **SettingsScreen → Account section**: Shows "Anonymous user" or the signed-in user's display name / email, plus a Sign out button. Full label management, High Priority Limit, and starter questions configuration follow in a later PR.
+- **Deliberate sign-out flag**: A module-level boolean (resets on app force-quit) prevents the auto-anonymous-sign-in from firing after an explicit sign-out.
+- **API client** (`mobile/src/api/client.ts`): Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer <token>` on every request to `EXPO_PUBLIC_API_URL/api/v1`.
+
+### Utility Code
+Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`) and TypeScript types are copied from `frontend/src/` rather than extracted into a shared module. This is a deliberate no-monorepo decision — no shared package or workspace linking is used.
+
+### Environment / Config
+`mobile/.env.example` documents all required environment variables: Firebase project config, Google OAuth client IDs (web, iOS, Android), and `EXPO_PUBLIC_API_URL`.
+
+---
+
 ## Out of Scope (initial build)
 
 - Custom label *categories* (the three categories — Frequency, Mode, Type — are fixed for all users)
 - Editing or deleting Frequency label values (one-time, daily, weekly, monthly, annual are fixed globally)
 - Trip as a separate entity (trip is a Type label value)
 - Admin dashboard for cost tracking (note: per-call AI cost logging to the `ai_cost_log` table is implemented in the backend; only the admin-facing dashboard surface is out of scope)
-- Native mobile app (iOS/Android) — the current frontend is a web app
+- ~~Native mobile app (iOS/Android)~~ — **now in scope**: React Native + Expo mobile client is being built (PR #18 scaffolded the project; feature screens follow in subsequent PRs)

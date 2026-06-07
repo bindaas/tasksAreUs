@@ -3,14 +3,15 @@
 ## System Overview
 
 - **Backend**: Python / FastAPI / PostgreSQL; Docker for dev
-- **Frontend**: React 19 + Vite + TypeScript + Tailwind CSS; runs in the browser
+- **Frontend (web)**: React 19 + Vite + TypeScript + Tailwind CSS; runs in the browser
+- **Frontend (mobile)**: React Native + Expo SDK 54 (managed workflow) + TypeScript + NativeWind v4; runs on iOS and Android
 - **Multi-tenant**: every table includes `user_id`; full data isolation per user
 
 ## Identity
 
-**Phase 2 (current):** Firebase Auth is the primary identity mechanism end-to-end. The backend initializes the Firebase Admin SDK using `FIREBASE_SERVICE_ACCOUNT_JSON` (fail-fast if missing). The frontend uses the Firebase JS SDK (`@firebase/app` + `@firebase/auth`) initialised from `VITE_FIREBASE_*` env vars. On first load, `AuthContext` silently calls `signInAnonymously()` — zero-friction UX identical to Phase 1. Named sign-in (Google or magic link) is offered in Settings → Account. Authenticated requests from `client.ts` send `Authorization: Bearer <firebase_id_token>` obtained via `auth.currentUser?.getIdToken()`.
+**Phase 2 (current):** Firebase Auth is the primary identity mechanism end-to-end. The backend initializes the Firebase Admin SDK using `FIREBASE_SERVICE_ACCOUNT_JSON` (fail-fast if missing). Both the web frontend and mobile app use the Firebase JS/RN SDK initialised from `VITE_FIREBASE_*` / `EXPO_PUBLIC_FIREBASE_*` env vars respectively. On first load, `AuthContext` silently calls `signInAnonymously()` — zero-friction UX identical to Phase 1. Named sign-in (Google or magic link) is offered in Settings. Authenticated requests from `client.ts` (web) and `apiFetch` (mobile) send `Authorization: Bearer <firebase_id_token>` obtained via `auth.currentUser?.getIdToken()`.
 
-**Backend auth:** `get_current_user()` in `dependencies.py` verifies the Bearer token with the Firebase Admin SDK, looks up the user by `firebase_uid`, and auto-creates a new user row on first sign-in. Bearer token is the only accepted auth path.
+**Backend auth:** `get_current_user()` in `dependencies.py` verifies the Bearer token with the Firebase Admin SDK, looks up the user by `firebase_uid`, and auto-creates a new user row on first sign-in. Bearer token is the only accepted auth path. The same `/api/v1` endpoints serve both web and mobile clients.
 
 ## Code Structure
 
@@ -89,6 +90,46 @@ frontend/
     main.tsx
   .env.example          # VITE_FIREBASE_* env var template
   vite.config.ts        # proxies /api → http://localhost:8000 in dev; VITE_API_TARGET for Docker
+
+mobile/                 # React Native + Expo SDK 54 managed workflow
+  app.json              # Expo config: slug "tasksareus", deep-link scheme "tasksareus://", bundle ID "com.bindaas.tasksareus", New Architecture enabled
+  App.tsx               # Entry point: wraps AppNavigator in AuthProvider
+  src/
+    firebase.ts         # Firebase app + auth initialisation from EXPO_PUBLIC_FIREBASE_* env vars; uses getReactNativePersistence(AsyncStorage) so auth state survives app restarts
+    context/
+      AuthContext.tsx   # Mirrors web AuthContext: auto-signs in anonymously on first load; deliberate sign-out uses module-level flag (replaces sessionStorage — resets on force-quit); Google OAuth via expo-auth-session; magic-link via deep linking + AsyncStorage; cross-device link triggers pendingEmailConfirmation state
+    hooks/
+      useAuth.ts        # Thin re-export of useAuthContext
+    navigation/
+      AppNavigator.tsx  # Root navigator: shows loading shimmer → EmailConfirmation screen (cross-device magic link) → LoginScreen (post sign-out) → bottom tab navigator (Tasks / Chat / Reports / Settings)
+    screens/
+      LoginScreen.tsx   # Google Sign-In + magic link; shown only after deliberate sign-out
+      TasksScreen.tsx   # Placeholder — implementation follows in later PRs
+      ChatScreen.tsx    # Placeholder
+      ReportsScreen.tsx # Placeholder
+      SettingsScreen.tsx  # Shows current user (anonymous or named) + Sign Out
+    api/
+      client.ts         # apiFetch<T>: attaches Bearer token via auth.currentUser?.getIdToken(); parses FastAPI error detail; base URL from EXPO_PUBLIC_API_URL (default http://localhost:8000)
+      tasks.ts          # Task CRUD + complete
+      labels.ts         # Label list/create/update/delete
+      conversations.ts  # Conversations + messages
+      reports.ts        # GET /reports/completions
+      settings.ts       # GET/PUT /settings
+    types/
+      index.ts          # Shared TypeScript interfaces (Task, Label, Conversation, Message, etc.)
+    utils/
+      taskDateUtils.ts  # Copied from frontend/ — getColumn(), getDropDate(), getEffectiveDate(), etc.
+      taskFilters.ts    # Copied from frontend/ — filterTasks()
+      taskPriority.ts   # Copied from frontend/ — isHighPriorityEligible(), splitByPriority(), canAddHighPriority()
+    __tests__/
+      taskDateUtils.test.ts   # 84 Jest tests
+      taskFilters.test.ts     # 70 Jest tests
+      taskPriority.test.ts    # 97 Jest tests
+  .env.example          # EXPO_PUBLIC_FIREBASE_*, EXPO_PUBLIC_GOOGLE_*_CLIENT_ID, EXPO_PUBLIC_API_URL
+  babel.config.js       # NativeWind v4 preset + reanimated plugin
+  metro.config.js       # NativeWind v4 CSS interop wired via withNativeWind()
+  tailwind.config.js    # NativeWind Tailwind config pointing at src/**
+  tsconfig.json         # Extends expo/tsconfig.base
 ```
 
 ## Key Implementation Patterns
@@ -113,6 +154,10 @@ frontend/
 
 **Firebase Auth flow (Phase 2 frontend):** `AuthContext` mounts a single `onAuthStateChanged` listener. When `firebaseUser === null` and no deliberate sign-out is recorded in `sessionStorage` (`auth_signed_out`), it calls `signInAnonymously()` automatically — the user never sees a login screen. Deliberate sign-out sets `sessionStorage.auth_signed_out = '1'`, which prevents the auto-sign-in on the next listener fire; `LoginPage` is shown instead. Magic-link callbacks are handled on page load: if `localStorage.emailForSignIn` is present (same device), sign-in completes immediately; otherwise `EmailConfirmationPage` (an inline component in `App.tsx`) prompts the user for their email before completing the cross-device sign-in.
 
+**Firebase Auth flow (mobile):** Mirrors the web pattern with React Native–specific adaptations. `AsyncStorage` replaces `localStorage`/`sessionStorage`. Auth persistence uses `getReactNativePersistence(AsyncStorage)` so the Firebase session survives app restarts. The deliberate-sign-out flag is a module-level variable (resets on force-quit — correct behaviour for a mobile app). Magic-link deep links are received via `expo-linking`: `Linking.getInitialURL()` handles cold-start links; `Linking.addEventListener('url', ...)` handles links while the app is open. Google Sign-In uses `expo-auth-session/providers/google` with separate web/iOS/Android client IDs from `EXPO_PUBLIC_GOOGLE_*_CLIENT_ID` env vars. In Expo Go, the Google OAuth redirect is `exp://[local-ip]:8081` and must be added to Google Cloud Console. Magic link deep linking only works fully in standalone builds; Expo Go cannot redirect back from the browser.
+
+**No shared module between web and mobile:** TypeScript types (`types/index.ts`) and pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`) are duplicated from `frontend/src/` into `mobile/src/`. This is intentional — avoids monorepo complexity at the cost of keeping them in sync manually.
+
 For auth, soft deletes, recurring task rules, beliefs storage, sync protocol, and cost tracking see `DATA_MODEL_AND_API.MD`.
 
 ## Dev
@@ -133,6 +178,14 @@ Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`, `FIREBA
 
 Copy `frontend/.env.example` → `frontend/.env`; set all `VITE_FIREBASE_*` env vars (API key, auth domain, project ID, storage bucket, messaging sender ID, app ID). The frontend build requires these to initialise Firebase Auth — anonymous sign-in on first load will fail silently without them. In production (Railway), set these as frontend service env vars.
 
+Copy `mobile/.env.example` → `mobile/.env`; set all `EXPO_PUBLIC_FIREBASE_*` env vars and `EXPO_PUBLIC_GOOGLE_*_CLIENT_ID` env vars. Set `EXPO_PUBLIC_API_URL` to your machine's local IP (e.g. `http://192.168.1.100:8000`) — `localhost` does not resolve from a physical device or emulator to the host machine. For Google Sign-In in Expo Go, add the `exp://[local-ip]:8081` redirect URI to Google Cloud Console → Authorized redirect URIs.
+
+```bash
+# Mobile (Expo Go — no custom dev client needed):
+cd mobile && npm install && npx expo start
+# Scan QR with Expo Go on iOS/Android
+```
+
 ## Testing
 
 **API integration tests** (`tests/test_api.py`): standalone Python script; creates its own test data, exercises all endpoints (CRUD, label assignment, state transitions, recurring logic, high-priority limit, conversational endpoints), deletes all created data at the end. Run with:
@@ -148,4 +201,9 @@ cd backend && python3 -m pytest tests/unit/ -v
 **Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils` (including overdue and day_after_tomorrow column logic), `taskFilters`, `taskPriority` utilities, and `client.ts` auth header behaviour (57 tests total). Run with:
 ```bash
 cd frontend && npx vitest run
+```
+
+**Mobile unit tests** (`mobile/src/__tests__/`): Jest (jest-expo preset). Cover the three utility modules copied from `frontend/`: `taskDateUtils` (84 tests), `taskFilters` (70 tests), `taskPriority` (97 tests). Run with:
+```bash
+cd mobile && npm test
 ```

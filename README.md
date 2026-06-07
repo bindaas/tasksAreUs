@@ -1,5 +1,18 @@
 # tasksAreUs
 
+
+ 1. Start the dev server:
+  cd mobile && npx expo start
+  1. A QR code appears in the terminal.
+  2. On your iPhone: install Expo Go from the App Store (if not already installed), then open the Camera app and scan the QR code. It'll open in Expo Go automatically.
+  3. What you should see:
+    - App launches, auto-signs in anonymously (no login screen)
+    - Four tabs at the bottom: Tasks / Chat / Reports / Settings
+    - Settings tab shows "Anonymous user" and a Sign out button
+    - Sign out → LoginScreen with Google and magic link options
+
+  That's it. Set EXPO_PUBLIC_API_BASE_URL in mobile/.env to point at the backend.
+
 ## Railway-URLs
 - https://tasksareus-production.up.railway.app/api/v1/health
 - https://tasksareus-production.up.railway.app/

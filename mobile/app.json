@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "tasksAreUs",
+    "slug": "tasksareus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "tasksareus",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bindaas.tasksareus"
+    },
+    "android": {
+      "package": "com.bindaas.tasksareus",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "newArchEnabled": true
+  }
+}
