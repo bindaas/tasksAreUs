@@ -107,6 +107,16 @@ def main():
     r = client.get("/labels", headers=H)
     assert_eq("GET /labels with X-User-ID (no longer valid) → 401", r.status_code, 401)
 
+    # ── Removed endpoints (PR #17) ─────────────────────────────────────────────
+    # POST /users (device registration) and POST /users/migrate were deleted in
+    # PR #17.  Both routes must now return 404 — they no longer exist.
+    print("\n── Removed Endpoints (PR #17) ─────────────────────────")
+    r = client.post("/users", json={"device_uuid": "00000000-0000-0000-0000-000000000000"})
+    assert_eq("POST /users (deleted in PR #17) → 404", r.status_code, 404)
+
+    r = client.post("/users/migrate", json={"device_uuid": "00000000-0000-0000-0000-000000000000"})
+    assert_eq("POST /users/migrate (deleted in PR #17) → 404", r.status_code, 404)
+
     # ── Labels ─────────────────────────────────────────────────────────────────
     print("\n── Labels ─────────────────────────────────────────────")
     r = client.get("/labels", headers=H)
