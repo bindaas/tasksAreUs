@@ -68,7 +68,7 @@ class Label(Base):
     __tablename__ = "labels"
 
     id = Column(String, primary_key=True, default=_uuid)
-    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     category = Column(Enum(CategoryEnum), nullable=False)
     value = Column(String, nullable=False)
 

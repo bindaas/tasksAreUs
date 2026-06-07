@@ -8,7 +8,6 @@ from dateutil.relativedelta import relativedelta
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from sqlalchemy import or_
 
 from ..models import Label, StateEnum, Task, TaskLabel, UserSettings
 
@@ -90,7 +89,7 @@ def _resolve_labels(db: Session, label_ids: List[str], user_id: str) -> List[Lab
         return []
     labels = db.query(Label).filter(
         Label.id.in_(label_ids),
-        or_(Label.user_id == user_id, Label.user_id.is_(None)),
+        Label.user_id == user_id,
     ).all()
     found_ids = {l.id for l in labels}
     missing = set(label_ids) - found_ids

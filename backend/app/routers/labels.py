@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..dependencies import get_current_user
-from ..models import CategoryEnum, Label
+from ..models import CategoryEnum, Label, LABEL_SEED
 from ..schemas import LabelCreate, LabelOut, LabelUpdate
 
 router = APIRouter(prefix="/labels", tags=["labels"])
@@ -14,20 +14,26 @@ router = APIRouter(prefix="/labels", tags=["labels"])
 _CONFIGURABLE = {CategoryEnum.mode, CategoryEnum.type}
 
 
-def _seed_user_labels(db: Session, user_id: str, category: CategoryEnum) -> None:
-    """Copy global defaults into per-user labels on first access."""
-    global_labels = (
-        db.query(Label)
-        .filter(Label.category == category, Label.user_id.is_(None))
-        .all()
-    )
-    for gl in global_labels:
-        db.add(Label(category=gl.category, value=gl.value, user_id=user_id))
+def _seed_user_labels(db: Session, user_id: str) -> None:
+    """Seed all label categories from LABEL_SEED for a user on first access."""
+    existing = {
+        (l.category.value, l.value)
+        for l in db.query(Label).filter(Label.user_id == user_id).all()
+    }
+    for category, value in LABEL_SEED:
+        if (category, value) not in existing:
+            db.add(Label(category=CategoryEnum(category), value=value, user_id=user_id))
     try:
         db.commit()
     except IntegrityError:
-        # Another concurrent request already seeded this user's labels
         db.rollback()
+
+
+def _ensure_seeded(db: Session, user_id: str) -> None:
+    """Seed labels for the user if they have none yet."""
+    count = db.query(Label).filter(Label.user_id == user_id).count()
+    if count == 0:
+        _seed_user_labels(db, user_id)
 
 
 @router.get("", response_model=dict)
@@ -36,54 +42,17 @@ def list_labels(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    results: list[Label] = []
+    _ensure_seeded(db, user_id)
 
+    q = db.query(Label).filter(Label.user_id == user_id)
     if category:
         try:
             cat = CategoryEnum(category)
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Unknown category: {category}")
-        if cat in _CONFIGURABLE:
-            user_labels = (
-                db.query(Label)
-                .filter(Label.category == cat, Label.user_id == user_id)
-                .all()
-            )
-            if not user_labels:
-                _seed_user_labels(db, user_id, cat)
-                user_labels = (
-                    db.query(Label)
-                    .filter(Label.category == cat, Label.user_id == user_id)
-                    .all()
-                )
-            results = user_labels
-        else:
-            results = db.query(Label).filter(Label.category == cat, Label.user_id.is_(None)).all()
-    else:
-        # Frequency: global; mode/type: per-user (seed if needed)
-        freq_labels = (
-            db.query(Label)
-            .filter(Label.category == CategoryEnum.frequency, Label.user_id.is_(None))
-            .all()
-        )
-        configurable_labels: list[Label] = []
-        for cat in _CONFIGURABLE:
-            user_labels = (
-                db.query(Label)
-                .filter(Label.category == cat, Label.user_id == user_id)
-                .all()
-            )
-            if not user_labels:
-                _seed_user_labels(db, user_id, cat)
-                user_labels = (
-                    db.query(Label)
-                    .filter(Label.category == cat, Label.user_id == user_id)
-                    .all()
-                )
-            configurable_labels.extend(user_labels)
-        results = freq_labels + configurable_labels
+        q = q.filter(Label.category == cat)
 
-    return {"labels": [LabelOut.model_validate(l) for l in results]}
+    return {"labels": [LabelOut.model_validate(l) for l in q.all()]}
 
 
 @router.post("", response_model=LabelOut, status_code=201)

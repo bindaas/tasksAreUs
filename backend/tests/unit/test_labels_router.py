@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from fastapi import HTTPException
 
-from app.models import CategoryEnum, Label
+from app.models import CategoryEnum, Label, LABEL_SEED
 from app.routers.labels import _seed_user_labels, create_label, delete_label, update_label
 from app.schemas import LabelCreate, LabelUpdate
 
@@ -18,27 +18,41 @@ def _make_label(id: str, category: CategoryEnum, value: str, user_id: str | None
 # ── _seed_user_labels ─────────────────────────────────────────────────────────
 
 class TestSeedUserLabels:
-    def test_copies_global_labels_for_user(self):
-        db = MagicMock()
-        global_mode = [
-            _make_label("g1", CategoryEnum.mode, "online"),
-            _make_label("g2", CategoryEnum.mode, "phone"),
-        ]
-        db.query.return_value.filter.return_value.all.return_value = global_mode
-
-        _seed_user_labels(db, "user-1", CategoryEnum.mode)
-
-        assert db.add.call_count == 2
-        added_labels = [call_args[0][0] for call_args in db.add.call_args_list]
-        assert all(l.user_id == "user-1" for l in added_labels)
-        assert {l.value for l in added_labels} == {"online", "phone"}
-        db.commit.assert_called_once()
-
-    def test_seeds_nothing_when_no_globals(self):
+    def test_seeds_all_labels_for_new_user(self):
         db = MagicMock()
         db.query.return_value.filter.return_value.all.return_value = []
 
-        _seed_user_labels(db, "user-1", CategoryEnum.mode)
+        _seed_user_labels(db, "user-1")
+
+        assert db.add.call_count == len(LABEL_SEED)
+        added = [c[0][0] for c in db.add.call_args_list]
+        assert all(l.user_id == "user-1" for l in added)
+        assert {(l.category.value, l.value) for l in added} == set(LABEL_SEED)
+        db.commit.assert_called_once()
+
+    def test_skips_already_existing_labels(self):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.all.return_value = [
+            _make_label("e1", CategoryEnum.frequency, "daily", "user-1"),
+        ]
+
+        _seed_user_labels(db, "user-1")
+
+        assert db.add.call_count == len(LABEL_SEED) - 1
+        added = [c[0][0] for c in db.add.call_args_list]
+        assert not any(
+            l.category == CategoryEnum.frequency and l.value == "daily" for l in added
+        )
+        db.commit.assert_called_once()
+
+    def test_seeds_nothing_when_fully_seeded(self):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.all.return_value = [
+            _make_label(f"id-{i}", CategoryEnum(cat), val, "user-1")
+            for i, (cat, val) in enumerate(LABEL_SEED)
+        ]
+
+        _seed_user_labels(db, "user-1")
 
         db.add.assert_not_called()
         db.commit.assert_called_once()

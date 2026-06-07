@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from .config import settings as app_settings
 from .database import SessionLocal, engine
-from .models import Base, CategoryEnum, Label, LABEL_SEED, User
+from .models import Base, Label, User
 from .routers import beliefs, conversations, labels, reports, settings, sync, tasks, users
 
 logger = logging.getLogger(__name__)
@@ -54,13 +54,6 @@ def _seed_system_user(db: Session) -> None:
         db.commit()
 
 
-def _seed_labels(db: Session) -> None:
-    existing = {(l.category.value, l.value) for l in db.query(Label).filter(Label.user_id.is_(None)).all()}
-    for category, value in LABEL_SEED:
-        if (category, value) not in existing:
-            db.add(Label(category=CategoryEnum(category), value=value, user_id=None))
-    db.commit()
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -84,32 +77,13 @@ async def lifespan(app: FastAPI):
         conn.execute(text(
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR"
         ))
-        # Per-user configurable labels migration
-        conn.execute(text(
-            "ALTER TABLE labels ADD COLUMN IF NOT EXISTS "
-            "user_id VARCHAR REFERENCES users(id) ON DELETE CASCADE"
-        ))
-        conn.execute(text(
-            "ALTER TABLE labels DROP CONSTRAINT IF EXISTS uq_label_category_value"
-        ))
-        conn.execute(text(
-            "CREATE UNIQUE INDEX IF NOT EXISTS uq_global_label "
-            "ON labels(category, value) WHERE user_id IS NULL"
-        ))
-        conn.execute(text(
-            "CREATE UNIQUE INDEX IF NOT EXISTS uq_user_label "
-            "ON labels(user_id, category, value) WHERE user_id IS NOT NULL"
-        ))
-        # Rename "raghav" → "child" for global seed and any existing per-user copies
-        conn.execute(text(
-            "UPDATE labels SET value = 'child' "
-            "WHERE category = 'type' AND value = 'raghav'"
-        ))
+        # Clean up old partial indexes replaced by the per-user unique constraint
+        conn.execute(text("DROP INDEX IF EXISTS uq_global_label"))
+        conn.execute(text("DROP INDEX IF EXISTS uq_user_label"))
         conn.commit()
     db = SessionLocal()
     try:
         _seed_system_user(db)
-        _seed_labels(db)
     finally:
         db.close()
     yield
