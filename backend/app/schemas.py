@@ -24,26 +24,6 @@ class LabelUpdate(BaseModel):
     value: str
 
 
-# ── Users ─────────────────────────────────────────────────────────────────────
-
-class UserCreate(BaseModel):
-    device_uuid: str
-
-
-class UserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: str
-    device_uuid: str
-    created_at: datetime
-
-
-class MigrateRequest(BaseModel):
-    device_uuid: str
-
-
-class MigrateOut(BaseModel):
-    user_id: str
-
 
 # ── Tasks ─────────────────────────────────────────────────────────────────────
 

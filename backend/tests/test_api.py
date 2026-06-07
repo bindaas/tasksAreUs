@@ -20,7 +20,7 @@ import psycopg2
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000/api/v1")
 DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/tasksareus")
 
-SYSTEM_USER_DEVICE_UUID = "00000000-0000-0000-0000-000000000000"
+SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000000"
 
 PASS = "\033[92m✓\033[0m"
 FAIL = "\033[91m✗\033[0m"
@@ -66,7 +66,7 @@ def cleanup(user_id: str):
     # Per-user labels created by PR #15 (mode/type labels with user_id set)
     cur.execute("DELETE FROM labels WHERE user_id = %s", (user_id,))
     # System user is permanent — only delete data, not the user row itself
-    if user_id != SYSTEM_USER_DEVICE_UUID:
+    if user_id != SYSTEM_USER_ID:
         cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
     conn.commit()
     cur.close()
@@ -84,63 +84,28 @@ def main():
     assert_eq("GET /health → 200", r.status_code, 200)
     assert_in("health has status", "status", r.json())
 
-    # ── Users ──────────────────────────────────────────────────────────────────
-    print("\n── Users ──────────────────────────────────────────────")
-    r = client.post("/users", json={"device_uuid": SYSTEM_USER_DEVICE_UUID})
-    assert_eq("POST /users → 201", r.status_code, 201)
-    test_user_id = r.json()["id"]
+    # Use the system user for test data (it is seeded at startup and never deleted)
+    test_user_id = SYSTEM_USER_ID
     # Clean up any leftover data from a previous run before starting
     cleanup(test_user_id)
     atexit.register(cleanup, test_user_id)
-    assert_true("user has id", bool(test_user_id))
-
-    # Idempotency
-    r2 = client.post("/users", json={"device_uuid": SYSTEM_USER_DEVICE_UUID})
-    assert_eq("POST /users idempotent → 201", r2.status_code, 201)
-    assert_eq("same user returned", r2.json()["id"], test_user_id)
 
     H = {"X-User-ID": test_user_id}
 
-    # ── Auth (PR #12 — Firebase Phase 1; Phase 3 — Bearer only) ──────────────
-    # Phase 3 (commit 00920d6) removed the legacy X-User-ID fallback. Bearer
-    # token is now the ONLY accepted auth path.  Integration tests cannot
-    # obtain a real Firebase token, so all subsequent tests below use X-User-ID
-    # which will return 401 on the Phase-3+ backend.
-    #
-    # PRE-EXISTING ISSUE: The integration test suite is structurally blocked
-    # until a test-mode auth bypass (e.g., TEST_FIREBASE_BYPASS=1) is added to
-    # the backend, or until a real Firebase emulator is wired in.  All failures
-    # after this point are caused by this pre-existing issue, NOT by PR #15.
-    print("\n── Auth (Firebase Phase 1 — PR #12 / Phase 3 Bearer-only) ─")
+    # ── Auth ───────────────────────────────────────────────────────────────────
+    # Bearer token is the ONLY accepted auth path. Integration tests cannot
+    # obtain a real Firebase token, so all subsequent tests use X-User-ID which
+    # returns 401 on the backend. All failures after this point are caused by
+    # this structural limitation, not by the feature under test.
+    print("\n── Auth (Bearer-only) ─────────────────────────────────")
 
     # Protected endpoint with no auth at all must return 401
     r = client.get("/labels")
     assert_eq("GET /labels with no auth → 401", r.status_code, 401)
 
-    # Phase 3: X-User-ID is no longer a valid auth path — must return 401
+    # X-User-ID is no longer a valid auth path — must return 401
     r = client.get("/labels", headers=H)
-    assert_eq("GET /labels with X-User-ID (Phase 3: no longer valid) → 401", r.status_code, 401)
-
-    # POST /users/migrate without any Authorization header → 401
-    r = client.post("/users/migrate", json={"device_uuid": SYSTEM_USER_DEVICE_UUID})
-    assert_eq("POST /users/migrate with no Bearer token → 401", r.status_code, 401)
-
-    # POST /users/migrate with a non-Bearer Authorization header → 401
-    r = client.post(
-        "/users/migrate",
-        headers={"Authorization": "Basic dXNlcjpwYXNz"},
-        json={"device_uuid": SYSTEM_USER_DEVICE_UUID},
-    )
-    assert_eq("POST /users/migrate with Basic auth (not Bearer) → 401", r.status_code, 401)
-
-    # POST /users/migrate with a malformed Bearer token → 401
-    # The server will attempt to verify the token with Firebase and reject it.
-    r = client.post(
-        "/users/migrate",
-        headers={"Authorization": "Bearer not_a_real_firebase_token"},
-        json={"device_uuid": SYSTEM_USER_DEVICE_UUID},
-    )
-    assert_eq("POST /users/migrate with invalid Bearer token → 401", r.status_code, 401)
+    assert_eq("GET /labels with X-User-ID (no longer valid) → 401", r.status_code, 401)
 
     # ── Labels ─────────────────────────────────────────────────────────────────
     print("\n── Labels ─────────────────────────────────────────────")
@@ -164,8 +129,9 @@ def main():
     r = client.get("/labels?category=frequency", headers=H)
     freq_only = r.json()["labels"]
     assert_true("category filter works", all(l["category"] == "frequency" for l in freq_only))
+    assert_true("frequency labels seeded per-user (PR #16)", len(freq_only) == 5)
 
-    # Mode/type labels are per-user — verify they are returned for this user
+    # All 3 label categories are per-user (PR #16) — verify each is returned for this user
     r = client.get("/labels?category=mode", headers=H)
     assert_eq("GET /labels?category=mode → 200", r.status_code, 200)
     mode_only = r.json()["labels"]
@@ -178,9 +144,39 @@ def main():
     assert_true("type labels returned for user", len(type_only) >= 5)
     assert_true("type labels all have category=type", all(l["category"] == "type" for l in type_only))
 
-    # Frequency labels remain global (user_id=NULL) — unknown category returns 400
+    # Unknown category returns 400
     r = client.get("/labels?category=bogus", headers=H)
     assert_eq("GET /labels?category=bogus → 400", r.status_code, 400)
+
+    # ── Labels: Per-User Model (PR #16) ───────────────────────────────────────
+    print("\n── Labels: Per-User Model (PR #16) ────────────────────")
+    # All 14 LABEL_SEED entries (5 frequency + 4 mode + 5 type) are seeded per-user.
+    # GET /labels (no filter) must return exactly 14 entries for a fresh user.
+    assert_eq("GET /labels returns all 14 seeded labels (PR #16)", len(labels), 14)
+
+    # All 3 categories must be present
+    all_categories = {l["category"] for l in labels}
+    assert_true("all 3 categories present in GET /labels (PR #16)",
+                all_categories == {"frequency", "mode", "type"})
+
+    # The 5 standard frequency values must be present
+    assert_eq("5 frequency labels seeded per-user", len(freq_labels), 5)
+    for freq_val in ("one-time", "daily", "weekly", "monthly", "annual"):
+        assert_in(f"frequency label '{freq_val}' present", freq_val, freq_labels)
+
+    # Verify that label IDs from GET /labels can be used to create tasks (the core
+    # bug fixed in PR #16 — per-user IDs were not matching global IDs on task creation)
+    pr16_verify_task_r = client.post("/tasks", headers=H, json={
+        "title": "PR #16 label-ID verification task",
+        "label_ids": [freq_labels["daily"], mode_labels["online"]],
+    })
+    assert_eq("POST task using per-user label IDs → 201 (PR #16)", pr16_verify_task_r.status_code, 201)
+    pr16_task = pr16_verify_task_r.json()
+    pr16_task_id = pr16_task["id"]
+    pr16_label_values = {l["value"] for l in pr16_task["labels"]}
+    assert_eq("per-user label IDs attach correctly to task (PR #16)", pr16_label_values, {"daily", "online"})
+    # Clean up
+    client.delete(f"/tasks/{pr16_task_id}", headers=H)
 
     # ── Labels: Create / Update / Delete (PR #15) ─────────────────────────────
     print("\n── Labels: Configurable Mode/Type (PR #15) ─────────────")
@@ -241,7 +237,7 @@ def main():
     r = client.put(f"/labels/{str(uuid.uuid4())}", headers=H, json={"value": "anything"})
     assert_eq("PUT /labels/:id non-existent → 404", r.status_code, 404)
 
-    # PUT /labels/{id} — cannot edit a global frequency label (user_id=NULL means owner mismatch)
+    # PUT /labels/{id} — cannot edit a frequency label (category check fires first → 400)
     freq_label_id = list(freq_labels.values())[0]
     r = client.put(f"/labels/{freq_label_id}", headers=H, json={"value": "hourly"})
     assert_true("PUT /labels/:id on frequency label → 400 or 403",
@@ -260,7 +256,7 @@ def main():
     r = client.delete(f"/labels/{new_type_label_id}", headers=H)
     assert_eq("DELETE /labels/:id already deleted → 404", r.status_code, 404)
 
-    # DELETE /labels/{id} — cannot delete a global frequency label
+    # DELETE /labels/{id} — cannot delete a frequency label (category check fires first → 400)
     r = client.delete(f"/labels/{freq_label_id}", headers=H)
     assert_true("DELETE /labels/:id on frequency label → 400 or 403",
                 r.status_code in (400, 403))
@@ -274,8 +270,7 @@ def main():
     assert_eq("DELETE created mode label (cleanup) → 204", r.status_code, 204)
 
     # Verify label isolation: a task should not accept a label_id that belongs
-    # to a different user.  We use the global frequency label_id (user_id=NULL)
-    # which is valid, but also confirm that the per-user label we just deleted
+    # to a different user.  Confirm that the per-user label we just deleted
     # can no longer be attached to a task.
     today_str_labels = date.today().isoformat()
     r = client.post("/tasks", headers=H, json={
