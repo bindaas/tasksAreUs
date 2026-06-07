@@ -12,21 +12,19 @@
 
 **Backend auth:** `get_current_user()` in `dependencies.py` verifies the Bearer token with the Firebase Admin SDK, looks up the user by `firebase_uid`, and auto-creates a new user row on first sign-in. Bearer token is the only accepted auth path.
 
-**Migration path:** Existing device-UUID users call `POST /users/migrate` (authenticated with a Firebase Bearer token) to stitch their Firebase UID onto their existing row. Idempotent; 404 on unknown `device_uuid`; 409 on UID conflict.
-
 ## Code Structure
 
 ```
 backend/
   app/
-    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name + labels.user_id SET NOT NULL + labels_user_id_category_value_key UNIQUE, drop old uq_global_label + uq_user_label partial indices)
+    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name + labels.user_id SET NOT NULL + labels_user_id_category_value_key UNIQUE, drop old uq_global_label + uq_user_label partial indices, DROP COLUMN device_uuid)
     config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates, FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID)
     database.py      # engine, SessionLocal, get_db()
     models.py        # ORM models + LABEL_SEED
     schemas.py       # Pydantic v2 schemas
     dependencies.py  # get_current_user() — Bearer token (Firebase); get_firebase_claims() — token-only, no DB
     routers/         # one file per resource, mounted at /api/v1
-      users.py       # POST /users, POST /users/migrate
+      users.py       # (no public endpoints — user rows are auto-created by get_current_user())
       labels.py      # GET /labels; POST /labels (create mode/type label); PUT /labels/{id} (rename, owner only); DELETE /labels/{id} (delete, owner only)
       tasks.py       # CRUD + complete endpoint
       beliefs.py     # beliefs generate/list/update
@@ -43,18 +41,16 @@ backend/
     unit/
       test_task_service.py   # pytest unit tests for task_service (no DB — mocked)
       test_ai_service.py     # pytest unit tests for ai_service helpers
-      test_dependencies.py   # pytest unit tests for auth dependencies (Firebase Bearer auth, migrate edge cases)
+      test_dependencies.py   # pytest unit tests for auth dependencies (Firebase Bearer auth, token expiry/invalidity)
       test_labels_router.py  # pytest unit tests for labels router (no DB — mocked): seed, create, update, delete
   scripts/
     purge_test_data.py  # DB maintenance: remove test-generated rows
-    recover_data.py     # DB maintenance: recover soft-deleted records
 
 frontend/
   src/
     firebase.ts          # Firebase app + auth initialisation from VITE_FIREBASE_* env vars
     api/
       client.ts        # base fetch wrapper — attaches Authorization: Bearer <firebase_id_token> via auth.currentUser?.getIdToken(); parses FastAPI error detail
-      users.ts         # POST /users (no auth header)
       tasks.ts         # CRUD, complete; Task interface includes is_high_priority
       labels.ts        # listLabels(); createLabel(), updateLabel(), deleteLabel() for configurable mode/type labels
       conversations.ts

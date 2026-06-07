@@ -13,21 +13,20 @@
 ---
 
 ### Table: `users`
-Represents a tenant. Supports both legacy device-UUID users and Firebase-authenticated users.
+Represents a tenant. All users are identified solely by `firebase_uid` — there is no legacy device-UUID path.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
-| `device_uuid` | VARCHAR | Unique. The identity token for legacy / unauthenticated mode. Firebase-native users store their `firebase_uid` here as well. |
 | `auth_provider` | VARCHAR | Nullable. e.g. `google.com`, `apple.com`, `anonymous` |
 | `auth_provider_id` | VARCHAR | Nullable. Provider-specific user ID |
-| `firebase_uid` | VARCHAR | Nullable. Unique, indexed. Firebase user UID. Set on first Firebase sign-in or after `POST /users/migrate`. |
+| `firebase_uid` | VARCHAR | Unique, indexed. Firebase user UID. Set on first Firebase-authenticated request; the row is auto-created by `get_current_user()` in `dependencies.py`. |
 | `email` | VARCHAR | Nullable. Populated from Firebase claims on sign-in. |
 | `display_name` | VARCHAR | Nullable. Populated from Firebase claims (`name` claim) on sign-in. |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | |
 
-The three new columns (`firebase_uid`, `email`, `display_name`) are added via `ALTER TABLE IF NOT EXISTS` at startup — no manual migration SQL required.
+The `device_uuid` column was removed at startup via `ALTER TABLE users DROP COLUMN IF EXISTS device_uuid`. Columns `firebase_uid`, `email`, and `display_name` are added via `ALTER TABLE IF NOT EXISTS` at startup — no manual migration SQL required.
 
 ---
 
@@ -200,7 +199,7 @@ Tracks every Claude API call for cost monitoring.
 
 **Base URL**: `/api/v1`
 
-**Authentication:** All endpoints (except `/health` and `POST /users`) require:
+**Authentication:** All endpoints (except `/health`) require:
 - `Authorization: Bearer <firebase_id_token>` — `get_current_user()` verifies the token with the Firebase Admin SDK, then resolves or auto-creates the internal `user_id`.
 
 ---
@@ -214,48 +213,6 @@ Backend connectivity check. Used by the Settings screen.
 ```json
 { "status": "ok", "timestamp": "2026-05-06T10:00:00Z" }
 ```
-
----
-
-### Users
-
-#### `POST /users`
-Register a device UUID and get a `user_id` back. Idempotent — calling again with the same `device_uuid` returns the existing user.
-
-**Request**
-```json
-{ "device_uuid": "550e8400-e29b-41d4-a716-446655440000" }
-```
-
-**Response**
-```json
-{
-  "id": "uuid",
-  "device_uuid": "550e8400-e29b-41d4-a716-446655440000",
-  "created_at": "2026-05-06T10:00:00Z"
-}
-```
-
----
-
-#### `POST /users/migrate`
-One-time migration: stitch a Firebase UID onto an existing `device_uuid` row. Required header: `Authorization: Bearer <firebase_id_token>`.
-
-Idempotent — calling again with the same Firebase UID and `device_uuid` returns the existing `user_id` unchanged.
-
-**Request**
-```json
-{ "device_uuid": "550e8400-e29b-41d4-a716-446655440000" }
-```
-
-**Response**
-```json
-{ "user_id": "uuid" }
-```
-
-**Error cases**
-- `404` — `device_uuid` not found
-- `409` — `device_uuid` already linked to a different Firebase account, or the Firebase UID is already linked to a different account
 
 ---
 
