@@ -1,4 +1,4 @@
-"""Unit tests for dependencies.py — Firebase auth and legacy X-User-ID paths."""
+"""Unit tests for dependencies.py — Firebase auth path."""
 
 from unittest.mock import MagicMock, patch
 
@@ -66,11 +66,7 @@ class TestGetCurrentUser:
         claims = _firebase_claims(uid="uid123")
 
         with patch("app.dependencies.firebase_admin.auth.verify_id_token", return_value=claims):
-            result = get_current_user(
-                authorization="Bearer valid_token",
-                x_user_id=None,
-                db=db,
-            )
+            result = get_current_user(authorization="Bearer valid_token", db=db)
         assert result == "internal-uuid"
 
     def test_bearer_token_new_user_is_created(self):
@@ -81,42 +77,14 @@ class TestGetCurrentUser:
         claims = _firebase_claims(uid="new_uid")
 
         with patch("app.dependencies.firebase_admin.auth.verify_id_token", return_value=claims):
-            result = get_current_user(
-                authorization="Bearer valid_token",
-                x_user_id=None,
-                db=db,
-            )
+            result = get_current_user(authorization="Bearer valid_token", db=db)
         assert result == "new-uuid"
         db.add.assert_called_once()
-
-    def test_legacy_x_user_id_returns_it_directly(self):
-        db = MagicMock()
-        result = get_current_user(
-            authorization=None,
-            x_user_id="legacy-user-uuid",
-            db=db,
-        )
-        assert result == "legacy-user-uuid"
-        db.query.assert_not_called()
-
-    def test_bearer_takes_precedence_over_x_user_id(self):
-        existing = MagicMock()
-        existing.id = "firebase-user-uuid"
-        db = _make_db(user=existing)
-        claims = _firebase_claims(uid="uid_bearer")
-
-        with patch("app.dependencies.firebase_admin.auth.verify_id_token", return_value=claims):
-            result = get_current_user(
-                authorization="Bearer valid_token",
-                x_user_id="legacy-user-uuid",
-                db=db,
-            )
-        assert result == "firebase-user-uuid"
 
     def test_no_auth_raises_401(self):
         db = MagicMock()
         with pytest.raises(HTTPException) as exc:
-            get_current_user(authorization=None, x_user_id=None, db=db)
+            get_current_user(authorization=None, db=db)
         assert exc.value.status_code == 401
 
     def test_invalid_bearer_token_raises_401(self):
@@ -127,11 +95,7 @@ class TestGetCurrentUser:
             side_effect=fb_auth.InvalidIdTokenError("bad"),
         ):
             with pytest.raises(HTTPException) as exc:
-                get_current_user(
-                    authorization="Bearer bad_token",
-                    x_user_id=None,
-                    db=db,
-                )
+                get_current_user(authorization="Bearer bad_token", db=db)
         assert exc.value.status_code == 401
 
     def test_expired_token_raises_401(self):
@@ -142,11 +106,7 @@ class TestGetCurrentUser:
             side_effect=fb_auth.ExpiredIdTokenError("expired", None),
         ):
             with pytest.raises(HTTPException) as exc:
-                get_current_user(
-                    authorization="Bearer expired_token",
-                    x_user_id=None,
-                    db=db,
-                )
+                get_current_user(authorization="Bearer expired_token", db=db)
         assert exc.value.status_code == 401
 
 
