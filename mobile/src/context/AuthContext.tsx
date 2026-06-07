@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       url: Linking.createURL('/'),
       handleCodeInApp: true,
       iOS: { bundleId: 'com.bindaas.tasksareus' },
-      android: { packageName: 'com.bindaas.tasksareus', installIfNotInstalled: true },
+      android: { packageName: 'com.bindaas.tasksareus', installApp: true },
     });
     await AsyncStorage.setItem(EMAIL_FOR_SIGN_IN_KEY, email);
   }
