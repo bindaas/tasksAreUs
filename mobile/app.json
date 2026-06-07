@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "tasksAreUs",
+    "slug": "tasksareus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "tasksareus",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bindaas.tasksareus"
+    },
+    "android": {
+      "package": "com.bindaas.tasksareus",
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "newArchEnabled": true
+  }
+}
