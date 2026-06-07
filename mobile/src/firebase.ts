@@ -1,13 +1,5 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth, type Persistence } from 'firebase/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// getReactNativePersistence is not in firebase/auth web-facing types but is available
-// at runtime via Metro's react-native bundle resolver (@firebase/auth/dist/rn/index.js)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { getReactNativePersistence } = require('firebase/auth') as {
-  getReactNativePersistence: (storage: object) => Persistence;
-};
+import { getAuth, initializeAuth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY!,
@@ -18,10 +10,8 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID!,
 };
 
-// Guard against Fast Refresh re-initializing Firebase (which throws "already initialized")
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
+// Persistence removed temporarily to isolate startup error
 export const auth =
-  getApps().length === 1
-    ? initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) })
-    : getAuth(app);
+  getApps().length === 1 ? initializeAuth(app) : getAuth(app);
