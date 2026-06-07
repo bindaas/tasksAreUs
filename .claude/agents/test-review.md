@@ -63,7 +63,34 @@ cd backend && DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tasksar
 
 If tests fail: fix any failures caused by your own changes first. Note pre-existing failures but do not mask them.
 
-## Step 7 — Post a comment to the PR
+## Step 7 — Post one comment per bug found
+
+For every distinct bug, pre-existing failure, or deferred coverage gap identified — post a **separate** PR comment. Do not bundle bugs together. Each comment must follow this format:
+
+```bash
+gh pr comment $PR --body "$(cat <<'EOF'
+**Bug: <short title>**
+
+**Type:** <pre-existing failure | new failure | coverage gap | application bug>
+**Severity:** <blocking | major | minor>
+
+**Description:**
+<one paragraph: what is wrong, what behaviour was observed vs expected>
+
+**Reproduction / evidence:**
+<test assertion name or stack trace excerpt that demonstrates the issue>
+
+**Suggested fix:**
+<what should be changed and where>
+
+— *Sleepy*
+EOF
+)"
+```
+
+If there are no bugs, no pre-existing failures, and no deferred gaps, skip this step entirely.
+
+## Step 8 — Post a comment to the PR
 
 ```bash
 gh pr comment $PR --body "$(cat <<'EOF'
@@ -89,4 +116,4 @@ EOF
 )"
 ```
 
-After posting, report: PR number, whether tests passed, and a one-line summary of what changed in the test file.
+After posting, report: PR number, whether tests passed, how many individual bug comments were filed (if any), and a one-line summary of what changed in the test file.

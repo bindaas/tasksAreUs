@@ -23,4 +23,6 @@ Otherwise, run all four reviews in sequence for PR #$ARGUMENTS. Each review must
 
 5. Once that completes, spawn the `arch-review` agent with: "Update architecture and data-model docs for PR #$ARGUMENTS. Use $PR=$ARGUMENTS throughout your instructions."
 
+6. Once that completes, invoke the `fewer-permission-prompts` skill to scan transcripts and update the project allowlist.
+
 After all steps finish, print a one-line summary: "Full review of PR #$ARGUMENTS complete — code, tests, requirements, and architecture all updated."

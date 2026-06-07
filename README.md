@@ -19,7 +19,7 @@
 
 
 - fewer-permission-prompts
-- For all the permissions you asked me and I said yes- add it to the settings so that you dont have to ask me again    
+- For all the permissions you asked me and I said yes- add it to the settings so that you dont have to ask me again in the next session    
 ## Railway-Test
 
 - BASE_URL=https://tasksareus-production.up.railway.app/api/v1 DATABASE_URL=postgresql://postgres:vutcOZXtrMlhjmIPbbNGvamdnLdGwwNJ@interchange.proxy.rlwy.net:38123/railway python3 tests/test_api.py
@@ -38,7 +38,7 @@
 
 - cd backend && docker-compose up -d
 - cd backend && docker-compose up -d --build
-- git commit -m "your message [skip deploy]"
+- git commit -m "docs and claude stuff [skip deploy]"
 
 
 ## Local-Stop

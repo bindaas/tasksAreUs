@@ -7,9 +7,17 @@
       "Bash(npm run build)",
       "Bash(npm run dev)",
       "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc --noEmit *)",
       "Bash(cd /Users/bindaas/projects/tasksAreUs/frontend && npx tsc --noEmit*)",
       "Bash(cd /Users/bindaas/projects/tasksAreUs/frontend && npx vitest run*)",
-      "Bash(cd /Users/bindaas/projects/tasksAreUs/backend && python3 -m pytest tests/unit/ *)"
+      "Bash(cd /Users/bindaas/projects/tasksAreUs/backend && python3 -m pytest tests/unit/ *)",
+      "Bash(python3 -m pytest tests/unit/ *)",
+      "Bash(python3 -m pytest tests/unit/test_dependencies.py *)",
+      "Bash(cd /Users/bindaas/projects/tasksAreUs/backend && python3 -m pytest tests/unit/test_dependencies.py *)",
+      "Bash(cd /Users/bindaas/projects/tasksAreUs/mobile && ./node_modules/.bin/tsc --noEmit*)",
+      "Bash(railway variables *)",
+      "Bash(npx vitest run *)",
+      "Bash(npm view *)"
     ]
   }
 }
