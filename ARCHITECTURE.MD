@@ -11,7 +11,9 @@
 
 **Phase 2 (current):** Firebase Auth is the primary identity mechanism end-to-end. The backend initializes the Firebase Admin SDK using `FIREBASE_SERVICE_ACCOUNT_JSON` (fail-fast if missing). Both the web frontend and mobile app use the Firebase JS/RN SDK initialised from `VITE_FIREBASE_*` / `EXPO_PUBLIC_FIREBASE_*` env vars respectively. On first load, `AuthContext` silently calls `signInAnonymously()` — zero-friction UX identical to Phase 1. Named sign-in (Google or magic link) is offered in Settings. Authenticated requests from `client.ts` (web) and `apiFetch` (mobile) send `Authorization: Bearer <firebase_id_token>` obtained via `auth.currentUser?.getIdToken()`.
 
-**Backend auth:** `get_current_user()` in `dependencies.py` verifies the Bearer token with the Firebase Admin SDK, looks up the user by `firebase_uid`, and auto-creates a new user row on first sign-in. Bearer token is the only accepted auth path. The same `/api/v1` endpoints serve both web and mobile clients.
+**Backend auth:** `get_current_user()` in `dependencies.py` verifies the Bearer token with the Firebase Admin SDK, looks up the user by `firebase_uid`, and auto-creates a new user row on first sign-in. Bearer token is the only accepted auth path in production. The same `/api/v1` endpoints serve both web and mobile clients.
+
+**Test auth bypass (dev/CI only):** When `TEST_AUTH_BYPASS=true` (pydantic `Settings` field in `config.py`, default `false`), `get_current_user()` accepts the `X-User-ID` request header directly. It looks up the user row by UUID — no auto-create — and raises HTTP 401 if the UUID is unknown. The bypass is evaluated per-request via a `_test_auth_bypass()` helper (reads `settings.TEST_AUTH_BYPASS` at call time, so toggling the flag does not require a server restart). `test_api.py` passes the seeded system user UUID (`00000000-0000-0000-0000-000000000000`, inserted at server startup) as `X-User-ID`, eliminating the need for a real Firebase token in local integration tests. **Never set `TEST_AUTH_BYPASS=true` in production.**
 
 ## Code Structure
 
@@ -19,11 +21,11 @@
 backend/
   app/
     main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name + labels.user_id SET NOT NULL + labels_user_id_category_value_key UNIQUE, drop old uq_global_label + uq_user_label partial indices, DROP COLUMN device_uuid)
-    config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates, FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID)
+    config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates, FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID, TEST_AUTH_BYPASS)
     database.py      # engine, SessionLocal, get_db()
     models.py        # ORM models + LABEL_SEED
     schemas.py       # Pydantic v2 schemas
-    dependencies.py  # get_current_user() — Bearer token (Firebase); get_firebase_claims() — token-only, no DB
+    dependencies.py  # get_current_user() — Bearer token (Firebase) or X-User-ID bypass when TEST_AUTH_BYPASS=true; get_firebase_claims() — token-only, no DB; _test_auth_bypass() — per-request flag check
     routers/         # one file per resource, mounted at /api/v1
       users.py       # (no public endpoints — user rows are auto-created by get_current_user())
       labels.py      # GET /labels; POST /labels (create mode/type label); PUT /labels/{id} (rename, owner only); DELETE /labels/{id} (delete, owner only)
@@ -42,7 +44,7 @@ backend/
     unit/
       test_task_service.py   # pytest unit tests for task_service (no DB — mocked)
       test_ai_service.py     # pytest unit tests for ai_service helpers
-      test_dependencies.py   # pytest unit tests for auth dependencies (Firebase Bearer auth, token expiry/invalidity)
+      test_dependencies.py   # pytest unit tests for auth dependencies (Firebase Bearer auth, token expiry/invalidity, TEST_AUTH_BYPASS bypass paths)
       test_labels_router.py  # pytest unit tests for labels router (no DB — mocked): seed, create, update, delete
   scripts/
     purge_test_data.py  # DB maintenance: remove test-generated rows
@@ -174,7 +176,7 @@ cd backend && uvicorn app.main:app --reload
 cd frontend && npm run dev   # http://localhost:5173
 ```
 
-Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON` (full JSON string of the Firebase service account key), and `FIREBASE_PROJECT_ID`. The app will refuse to start without `FIREBASE_SERVICE_ACCOUNT_JSON`. pgAdmin credentials are also configured in `.env`.
+Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON` (full JSON string of the Firebase service account key), and `FIREBASE_PROJECT_ID`. The app will refuse to start without `FIREBASE_SERVICE_ACCOUNT_JSON`. pgAdmin credentials are also configured in `.env`. `TEST_AUTH_BYPASS` defaults to `false`; set it to `true` only for local integration tests (see Testing section). Never set it in production.
 
 Copy `frontend/.env.example` → `frontend/.env`; set all `VITE_FIREBASE_*` env vars (API key, auth domain, project ID, storage bucket, messaging sender ID, app ID). The frontend build requires these to initialise Firebase Auth — anonymous sign-in on first load will fail silently without them. In production (Railway), set these as frontend service env vars.
 
@@ -188,9 +190,9 @@ cd mobile && npm install && npx expo start
 
 ## Testing
 
-**API integration tests** (`tests/test_api.py`): standalone Python script; creates its own test data, exercises all endpoints (CRUD, label assignment, state transitions, recurring logic, high-priority limit, conversational endpoints), deletes all created data at the end. Run with:
+**API integration tests** (`tests/test_api.py`): standalone Python script; creates its own test data, exercises all endpoints (CRUD, label assignment, state transitions, recurring logic, high-priority limit, conversational endpoints), deletes all created data at the end. Uses `TEST_AUTH_BYPASS=true` so no real Firebase token is needed — the script passes the seeded system user UUID (`00000000-0000-0000-0000-000000000000`) via the `X-User-ID` header. Run with:
 ```bash
-cd backend && DATABASE_URL=... python3 tests/test_api.py
+cd backend && DATABASE_URL=... TEST_AUTH_BYPASS=true python3 tests/test_api.py
 ```
 
 **Backend unit tests** (`tests/unit/`): pytest-based, no DB required (mock SQLAlchemy sessions). Cover `task_service` (create, update, complete, recurring, high-priority limit), `ai_service` helpers (`_format_task_line`), `dependencies` (Firebase Bearer auth, token expiry/invalidity, migrate edge cases), and `labels` router (seed, create, update, delete — ownership + category guards). Run with:

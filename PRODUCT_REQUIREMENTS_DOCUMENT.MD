@@ -137,8 +137,9 @@ Firebase Authentication is the only identity mechanism. All device-based auth in
   - **LoginPage**: Shown only after an explicit sign-out; offers Google and magic-link options.
   - **Settings → Account section**: Anonymous users see upgrade options (Google / email); named users see their display name / email and a Sign out button.
   - **`client.ts`**: Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer` header on every request.
-- **Phase 3 (shipped)**: Removed legacy `X-User-ID` fallback path from the backend; removed `useUser.ts` shim. Bearer token is now the only accepted auth path.
-- **Phase 4 (shipped — PR #17)**: Removed all device-based identity infrastructure. Dropped `device_uuid` column from `users` table. Deleted `POST /users` (device registration) and `POST /users/migrate` endpoints, along with `UserCreate`, `MigrateRequest`, and `MigrateOut` schemas, `frontend/src/api/users.ts`, and historical migration scripts (`migrate_user_data.py`, `recover_data.py`). Firebase auto-create in `get_current_user` is now the sole user-creation path.
+- **Phase 3 (shipped)**: Removed legacy `X-User-ID` fallback path from the backend; removed `useUser.ts` shim. Bearer token is now the only accepted auth path for production traffic.
+- **Phase 4 (shipped — PR #17)**: Removed all device-based identity infrastructure.
+- **Test-auth bypass (shipped — PR #19, dev/CI tooling only)**: A `TEST_AUTH_BYPASS=true` env var (never set in production) allows integration tests to authenticate by passing an `X-User-ID` header instead of a real Firebase Bearer token. This is not a user-facing feature — it exists solely so `test_api.py` can run without a live Firebase project. The production auth contract (Bearer token required) is unchanged. Dropped `device_uuid` column from `users` table. Deleted `POST /users` (device registration) and `POST /users/migrate` endpoints, along with `UserCreate`, `MigrateRequest`, and `MigrateOut` schemas, `frontend/src/api/users.ts`, and historical migration scripts (`migrate_user_data.py`, `recover_data.py`). Firebase auto-create in `get_current_user` is now the sole user-creation path.
 
 Sign-in providers supported: Google (OAuth popup) and email magic link. Apple sign-in may be added via Firebase in a future phase (not yet configured).
 
