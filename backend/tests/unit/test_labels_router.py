@@ -6,7 +6,8 @@ import pytest
 from fastapi import HTTPException
 
 from app.models import CategoryEnum, Label, LABEL_SEED
-from app.routers.labels import _seed_user_labels, create_label, delete_label, update_label
+from app.routers.labels import create_label, delete_label, update_label
+from app.services.label_service import seed_user_labels as _seed_user_labels
 from app.schemas import LabelCreate, LabelUpdate
 
 
@@ -126,7 +127,7 @@ class TestUpdateLabel:
         assert exc.value.status_code == 403
 
     def test_rejects_frequency_label(self):
-        label = _make_label("l1", CategoryEnum.frequency, "daily", None)
+        label = _make_label("l1", CategoryEnum.frequency, "daily", "user-1")
         db = MagicMock()
         db.query.return_value.filter.return_value.first.return_value = label
 
@@ -176,7 +177,7 @@ class TestDeleteLabel:
         assert exc.value.status_code == 403
 
     def test_rejects_frequency_label(self):
-        label = _make_label("l1", CategoryEnum.frequency, "daily", None)
+        label = _make_label("l1", CategoryEnum.frequency, "daily", "user-1")
         db = MagicMock()
         db.query.return_value.filter.return_value.first.return_value = label
 

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 
 from ..models import Label, StateEnum, Task, TaskLabel, UserSettings
+from .label_service import ensure_seeded
 
 
 FREQUENCY_VALUES = {"daily", "weekly", "monthly", "annual"}
@@ -87,6 +88,7 @@ def get_task_or_404(db: Session, task_id: str, user_id: str) -> Task:
 def _resolve_labels(db: Session, label_ids: List[str], user_id: str) -> List[Label]:
     if not label_ids:
         return []
+    ensure_seeded(db, user_id)
     labels = db.query(Label).filter(
         Label.id.in_(label_ids),
         Label.user_id == user_id,

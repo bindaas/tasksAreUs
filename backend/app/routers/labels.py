@@ -1,39 +1,17 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..dependencies import get_current_user
-from ..models import CategoryEnum, Label, LABEL_SEED
+from ..models import CategoryEnum, Label
 from ..schemas import LabelCreate, LabelOut, LabelUpdate
+from ..services.label_service import ensure_seeded
 
 router = APIRouter(prefix="/labels", tags=["labels"])
 
 _CONFIGURABLE = {CategoryEnum.mode, CategoryEnum.type}
-
-
-def _seed_user_labels(db: Session, user_id: str) -> None:
-    """Seed all label categories from LABEL_SEED for a user on first access."""
-    existing = {
-        (l.category.value, l.value)
-        for l in db.query(Label).filter(Label.user_id == user_id).all()
-    }
-    for category, value in LABEL_SEED:
-        if (category, value) not in existing:
-            db.add(Label(category=CategoryEnum(category), value=value, user_id=user_id))
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-
-
-def _ensure_seeded(db: Session, user_id: str) -> None:
-    """Seed labels for the user if they have none yet."""
-    count = db.query(Label).filter(Label.user_id == user_id).count()
-    if count == 0:
-        _seed_user_labels(db, user_id)
 
 
 @router.get("", response_model=dict)
@@ -42,7 +20,7 @@ def list_labels(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    _ensure_seeded(db, user_id)
+    ensure_seeded(db, user_id)
 
     q = db.query(Label).filter(Label.user_id == user_id)
     if category:

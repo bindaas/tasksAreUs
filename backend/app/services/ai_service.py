@@ -9,13 +9,12 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from sqlalchemy import or_
-
 from ..models import (
     AICostLog, Belief, BeliefStatusEnum, BeliefTypeEnum,
     Conversation, Label, Message, RoleEnum, StateEnum, Task,
 )
 from ..services.task_service import create_task, complete_task as svc_complete_task
+from ..services.label_service import ensure_seeded
 
 
 def _anthropic_client():
@@ -66,9 +65,7 @@ def generate_beliefs(db: Session, task: Task, user_id: str) -> List[Belief]:
         if examples:
             accepted_context = "\nPreviously accepted beliefs (weight these patterns higher):\n" + "\n".join(examples)
 
-    all_labels = db.query(Label).filter(
-        or_(Label.user_id == user_id, Label.user_id.is_(None))
-    ).all()
+    all_labels = db.query(Label).filter(Label.user_id == user_id).all()
     labels_json = json.dumps([
         {"id": l.id, "category": l.category.value, "value": l.value}
         for l in all_labels
@@ -227,9 +224,8 @@ def handle_conversation_message(
         _format_task_line(t) for t in pending_tasks
     ]) or "  (no pending tasks)"
 
-    all_labels = db.query(Label).filter(
-        or_(Label.user_id == user_id, Label.user_id.is_(None))
-    ).all()
+    ensure_seeded(db, user_id)
+    all_labels = db.query(Label).filter(Label.user_id == user_id).all()
     labels_context = "\n".join([
         f"  - [{l.id}] {l.category.value}: {l.value}"
         for l in all_labels
