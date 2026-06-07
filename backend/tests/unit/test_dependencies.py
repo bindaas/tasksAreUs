@@ -108,3 +108,52 @@ class TestGetCurrentUser:
             with pytest.raises(HTTPException) as exc:
                 get_current_user(authorization="Bearer expired_token", db=db)
         assert exc.value.status_code == 401
+
+
+# ── TEST_AUTH_BYPASS ───────────────────────────────────────────────────────────
+
+class TestAuthBypass:
+    def test_bypass_get_current_user_known_user(self):
+        existing = MagicMock()
+        existing.id = "00000000-0000-0000-0000-000000000000"
+        db = _make_db(user=existing)
+
+        with patch("app.dependencies._TEST_AUTH_BYPASS", True):
+            result = get_current_user(
+                authorization=None,
+                x_user_id="00000000-0000-0000-0000-000000000000",
+                db=db,
+            )
+        assert result == "00000000-0000-0000-0000-000000000000"
+
+    def test_bypass_get_current_user_unknown_user_raises_401(self):
+        db = _make_db(user=None)
+
+        with patch("app.dependencies._TEST_AUTH_BYPASS", True):
+            with pytest.raises(HTTPException) as exc:
+                get_current_user(
+                    authorization=None,
+                    x_user_id="ffffffff-ffff-ffff-ffff-ffffffffffff",
+                    db=db,
+                )
+        assert exc.value.status_code == 401
+
+    def test_bypass_get_firebase_claims_returns_synthetic_claims(self):
+        with patch("app.dependencies._TEST_AUTH_BYPASS", True):
+            claims = get_firebase_claims(
+                authorization=None,
+                x_user_id="00000000-0000-0000-0000-000000000000",
+            )
+        assert claims["uid"] == "test-bypass-00000000-0000-0000-0000-000000000000"
+        assert claims["firebase"]["sign_in_provider"] == "test"
+
+    def test_bypass_inactive_still_requires_bearer(self):
+        db = MagicMock()
+        with patch("app.dependencies._TEST_AUTH_BYPASS", False):
+            with pytest.raises(HTTPException) as exc:
+                get_current_user(
+                    authorization=None,
+                    x_user_id="00000000-0000-0000-0000-000000000000",
+                    db=db,
+                )
+        assert exc.value.status_code == 401
