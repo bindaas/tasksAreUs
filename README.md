@@ -11,7 +11,7 @@
     - Settings tab shows "Anonymous user" and a Sign out button
     - Sign out → LoginScreen with Google and magic link options
 
-  That's it. Backend is already running at 10.0.0.35:8000 so the API is live.
+  That's it. Set EXPO_PUBLIC_API_BASE_URL in mobile/.env to point at the backend.
 
 ## Railway-URLs
 - https://tasksareus-production.up.railway.app/api/v1/health
