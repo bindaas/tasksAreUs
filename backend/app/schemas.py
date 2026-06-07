@@ -24,7 +24,6 @@ class LabelUpdate(BaseModel):
     value: str
 
 
-
 # ── Tasks ─────────────────────────────────────────────────────────────────────
 
 class TaskCreate(BaseModel):

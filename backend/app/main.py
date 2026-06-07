@@ -50,7 +50,6 @@ def _seed_system_user(db: Session) -> None:
         db.commit()
 
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _init_firebase()
