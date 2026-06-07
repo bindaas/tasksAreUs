@@ -6,6 +6,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.dependencies import get_current_user, get_firebase_claims
+import app.dependencies as deps
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -31,18 +32,18 @@ def _firebase_claims(uid="uid123", provider="anonymous", email=None, name=None):
 class TestGetFirebaseClaims:
     def test_missing_header_raises_401(self):
         with pytest.raises(HTTPException) as exc:
-            get_firebase_claims(authorization=None)
+            get_firebase_claims(authorization=None, x_user_id=None)
         assert exc.value.status_code == 401
 
     def test_non_bearer_header_raises_401(self):
         with pytest.raises(HTTPException) as exc:
-            get_firebase_claims(authorization="Basic abc123")
+            get_firebase_claims(authorization="Basic abc123", x_user_id=None)
         assert exc.value.status_code == 401
 
     def test_valid_token_returns_claims(self):
         claims = _firebase_claims()
         with patch("app.dependencies.firebase_admin.auth.verify_id_token", return_value=claims):
-            result = get_firebase_claims(authorization="Bearer valid_token")
+            result = get_firebase_claims(authorization="Bearer valid_token", x_user_id=None)
         assert result["uid"] == "uid123"
 
     def test_invalid_token_raises_401(self):
@@ -52,7 +53,7 @@ class TestGetFirebaseClaims:
             side_effect=fb_auth.InvalidIdTokenError("bad token"),
         ):
             with pytest.raises(HTTPException) as exc:
-                get_firebase_claims(authorization="Bearer bad_token")
+                get_firebase_claims(authorization="Bearer bad_token", x_user_id=None)
         assert exc.value.status_code == 401
 
 
@@ -66,7 +67,7 @@ class TestGetCurrentUser:
         claims = _firebase_claims(uid="uid123")
 
         with patch("app.dependencies.firebase_admin.auth.verify_id_token", return_value=claims):
-            result = get_current_user(authorization="Bearer valid_token", db=db)
+            result = get_current_user(authorization="Bearer valid_token", x_user_id=None, db=db)
         assert result == "internal-uuid"
 
     def test_bearer_token_new_user_is_created(self):
@@ -77,14 +78,14 @@ class TestGetCurrentUser:
         claims = _firebase_claims(uid="new_uid")
 
         with patch("app.dependencies.firebase_admin.auth.verify_id_token", return_value=claims):
-            result = get_current_user(authorization="Bearer valid_token", db=db)
+            result = get_current_user(authorization="Bearer valid_token", x_user_id=None, db=db)
         assert result == "new-uuid"
         db.add.assert_called_once()
 
     def test_no_auth_raises_401(self):
         db = MagicMock()
         with pytest.raises(HTTPException) as exc:
-            get_current_user(authorization=None, db=db)
+            get_current_user(authorization=None, x_user_id=None, db=db)
         assert exc.value.status_code == 401
 
     def test_invalid_bearer_token_raises_401(self):
@@ -95,7 +96,7 @@ class TestGetCurrentUser:
             side_effect=fb_auth.InvalidIdTokenError("bad"),
         ):
             with pytest.raises(HTTPException) as exc:
-                get_current_user(authorization="Bearer bad_token", db=db)
+                get_current_user(authorization="Bearer bad_token", x_user_id=None, db=db)
         assert exc.value.status_code == 401
 
     def test_expired_token_raises_401(self):
@@ -106,5 +107,54 @@ class TestGetCurrentUser:
             side_effect=fb_auth.ExpiredIdTokenError("expired", None),
         ):
             with pytest.raises(HTTPException) as exc:
-                get_current_user(authorization="Bearer expired_token", db=db)
+                get_current_user(authorization="Bearer expired_token", x_user_id=None, db=db)
+        assert exc.value.status_code == 401
+
+
+# ── TEST_AUTH_BYPASS ───────────────────────────────────────────────────────────
+
+class TestAuthBypass:
+    def test_bypass_get_current_user_known_user(self):
+        existing = MagicMock()
+        existing.id = "00000000-0000-0000-0000-000000000000"
+        db = _make_db(user=existing)
+
+        with patch.object(deps.settings, "TEST_AUTH_BYPASS", True):
+            result = get_current_user(
+                authorization=None,
+                x_user_id="00000000-0000-0000-0000-000000000000",
+                db=db,
+            )
+        assert result == "00000000-0000-0000-0000-000000000000"
+
+    def test_bypass_get_current_user_unknown_user_raises_401(self):
+        db = _make_db(user=None)
+
+        with patch.object(deps.settings, "TEST_AUTH_BYPASS", True):
+            with pytest.raises(HTTPException) as exc:
+                get_current_user(
+                    authorization=None,
+                    x_user_id="ffffffff-ffff-ffff-ffff-ffffffffffff",
+                    db=db,
+                )
+        assert exc.value.status_code == 401
+
+    def test_bypass_get_firebase_claims_returns_synthetic_claims(self):
+        with patch.object(deps.settings, "TEST_AUTH_BYPASS", True):
+            claims = get_firebase_claims(
+                authorization=None,
+                x_user_id="00000000-0000-0000-0000-000000000000",
+            )
+        assert claims["uid"] == "test-bypass-00000000-0000-0000-0000-000000000000"
+        assert claims["firebase"]["sign_in_provider"] == "test"
+
+    def test_bypass_inactive_still_requires_bearer(self):
+        db = MagicMock()
+        with patch.object(deps.settings, "TEST_AUTH_BYPASS", False):
+            with pytest.raises(HTTPException) as exc:
+                get_current_user(
+                    authorization=None,
+                    x_user_id="00000000-0000-0000-0000-000000000000",
+                    db=db,
+                )
         assert exc.value.status_code == 401

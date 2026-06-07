@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     CLAUDE_OUTPUT_COST_PER_M: float = 15.0
     FIREBASE_SERVICE_ACCOUNT_JSON: Optional[str] = None
     FIREBASE_PROJECT_ID: Optional[str] = None
+    # Local/CI integration-test bypass only. Never set true in production.
+    TEST_AUTH_BYPASS: bool = False
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
