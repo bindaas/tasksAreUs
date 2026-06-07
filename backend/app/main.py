@@ -80,8 +80,8 @@ async def lifespan(app: FastAPI):
         # Enforce per-user label model: user_id NOT NULL, unique per user+category+value
         conn.execute(text("ALTER TABLE labels ALTER COLUMN user_id SET NOT NULL"))
         conn.execute(text(
-            "ALTER TABLE labels ADD CONSTRAINT IF NOT EXISTS labels_user_id_category_value_key "
-            "UNIQUE (user_id, category, value)"
+            "CREATE UNIQUE INDEX IF NOT EXISTS labels_user_id_category_value_key "
+            "ON labels (user_id, category, value)"
         ))
         # Clean up old partial indexes replaced by the per-user unique constraint
         conn.execute(text("DROP INDEX IF EXISTS uq_global_label"))
