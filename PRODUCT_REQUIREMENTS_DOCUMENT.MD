@@ -14,7 +14,7 @@ tasksAreUs is a task management app with a Python/FastAPI/PostgreSQL backend, a 
 - **Must-do-by date**: hard deadline
 - **Target date**: aspirational completion date (e.g. "I want to return library books by Friday, but they're due Sunday")
 - **State**: Pending or Done
-- **High priority**: boolean flag. High priority is only meaningful for tasks whose effective date (earliest of `must_do_by` and `target_date`) falls on today or tomorrow. The backend auto-resets it to `false` whenever the effective date falls outside that window. At most **N high-priority tasks** are allowed per day (where N is the user-configured **High Priority Daily Limit**, defaulting to 3, minimum 1); the API returns 422 when the limit would be exceeded.
+- **High priority**: boolean flag. High priority is only meaningful for tasks whose effective date (earliest of `must_do_by` and `target_date`) falls on today or tomorrow. **`getEffectiveDate` correctly returns the minimum of the two dates when both are set (fixed in PR #20 for both web and mobile clients).** The backend auto-resets it to `false` whenever the effective date falls outside that window. At most **N high-priority tasks** are allowed per day (where N is the user-configured **High Priority Daily Limit**, defaulting to 3, minimum 1); the API returns 422 when the limit would be exceeded.
 
 ### Labels
 A task can have zero or more labels in fixed system-defined categories. A task may have **multiple labels within the same category** (e.g. both `online` and `email` under Mode).
@@ -164,7 +164,7 @@ The mobile app has four bottom tabs, mirroring the web app's four primary pages:
 
 | Tab | Equivalent web route | Status |
 |-----|----------------------|--------|
-| Tasks | `/` | Placeholder — full implementation in a later PR |
+| Tasks | `/` | **Shipped — PR #20** |
 | Chat | `/chat` | Placeholder — full implementation in a later PR |
 | Reports | `/reports` | Placeholder — full implementation in a later PR |
 | Settings | `/settings` | Placeholder — full implementation in a later PR |
@@ -180,6 +180,26 @@ Mobile auth follows the same Firebase-only identity model as the web frontend, w
 - **SettingsScreen → Account section**: Shows "Anonymous user" or the signed-in user's display name / email, plus a Sign out button. Full label management, High Priority Limit, and starter questions configuration follow in a later PR.
 - **Deliberate sign-out flag**: A module-level boolean (resets on app force-quit) prevents the auto-anonymous-sign-in from firing after an explicit sign-out.
 - **API client** (`mobile/src/api/client.ts`): Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer <token>` on every request to `EXPO_PUBLIC_API_URL/api/v1`.
+
+### Tasks Screen (shipped — PR #20)
+
+The Tasks tab is fully implemented as a `SectionList` grouped by date proximity:
+
+- **Grouped sections**: Overdue (red header) → Today → Tomorrow → Day After Tomorrow → Upcoming → No Date; empty sections are hidden.
+- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (frequency=blue, mode=green, type=purple).
+- **Complete**: check button → `completeTask()` → optimistic remove + background re-fetch (picks up the next recurring occurrence automatically).
+- **Delete**: trash button → confirmation dialog → `deleteTask()` → optimistic remove.
+- **Loading state**: full-screen spinner on first load.
+- **Error state**: friendly message + Retry button.
+- **Pull-to-refresh**: `RefreshControl` wired to `listTasks('pending')`.
+- **Focus refresh**: `useFocusEffect` re-fetches on every tab focus (stays fresh after web-app edits).
+- **Empty state**: "No pending tasks" message shown when there are no pending tasks.
+
+> **[ASPIRATIONAL — not yet in mobile]** "+" create-task button — planned for PR 3 when the create/edit screen and stack navigator land.
+
+New files shipped in PR #20:
+- `mobile/src/utils/taskGrouping.ts` — pure `groupTasksForList(tasks, referenceDate?)` → `SectionList` sections
+- `mobile/src/__tests__/taskGrouping.test.ts` — 11 unit tests covering all section keys and edge cases
 
 ### Utility Code
 Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`) and TypeScript types are copied from `frontend/src/` rather than extracted into a shared module. This is a deliberate no-monorepo decision — no shared package or workspace linking is used.

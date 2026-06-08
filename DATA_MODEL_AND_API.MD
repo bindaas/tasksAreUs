@@ -82,7 +82,7 @@ Core entity. One-time and recurring task instances are both stored here.
 | `target_date` | DATE | Nullable. Aspirational completion date |
 | `completed_at` | TIMESTAMP | Nullable. Set when state → done |
 | `recurrence_group_id` | UUID | Nullable. All instances of a recurring task share this ID |
-| `is_high_priority` | BOOLEAN | Default false. Only meaningful when effective date is overdue, today, or tomorrow |
+| `is_high_priority` | BOOLEAN | Default false. Only meaningful when effective date (earliest of `must_do_by` / `target_date`) is overdue, today, or tomorrow |
 | `is_deleted` | BOOLEAN | Default false. Soft delete |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | Used for last-write-wins conflict resolution |
@@ -93,6 +93,8 @@ Core entity. One-time and recurring task instances are both stored here.
 - At most **one** task per `recurrence_group_id` may be in `pending` state at any time
 - When a recurring task is marked `done`, the API creates a new `pending` instance with the same `recurrence_group_id` and labels, with `must_do_by` set to the next due date based on frequency
 - If a recurring task is overdue and still `pending`, no additional instance is created until it is completed
+
+**Effective date** is defined as the earliest of `must_do_by` and `target_date` when both are set; otherwise whichever one is non-null; `null` if both are null. This is computed by `getEffectiveDate()` in both `frontend/src/utils/taskDateUtils.ts` and `mobile/src/utils/taskDateUtils.ts`. (Prior to PR #20, `getEffectiveDate` incorrectly returned `target_date` when both were set, regardless of which was earlier. This was a client-side display bug only — the backend never relied on this helper.)
 
 **High-priority rules (enforced by the API):**
 - `is_high_priority = true` is only meaningful when the task's effective date (earliest of `must_do_by` / `target_date`) is today, tomorrow, or in the past (overdue)

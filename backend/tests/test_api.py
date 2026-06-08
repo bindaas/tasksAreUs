@@ -596,6 +596,58 @@ def main():
                 hp_nodate_task_id, hp_target_today_task_id, hp_default_task_id]:
         client.delete(f"/tasks/{tid}", headers=H)
 
+    # ── HP effective-date min-rule (PR #20 contract) ───────────────────────────
+    # PR #20 fixes the frontend's getEffectiveDate() to return min(must_do_by, target_date)
+    # instead of preferring target_date. These tests verify the matching backend contract
+    # that has always computed effective date as min(must_do_by, target_date).
+    print("\n── Tasks: HP effective-date min-rule (PR #20) ──────────")
+
+    # must_do_by=today (earlier) + target_date=far future → effective=today → HP valid
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP min-date rule: must_do_by today, target_date future",
+        "must_do_by": today_str,
+        "target_date": future_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST HP task: must_do_by=today, target_date=future → 201", r.status_code, 201)
+    hp_mindate_task = r.json()
+    hp_mindate_task_id = hp_mindate_task["id"]
+    assert_eq("HP valid when must_do_by (earlier) is today even if target_date is future",
+              hp_mindate_task["is_high_priority"], True)
+
+    # target_date=today (earlier) + must_do_by=far future → effective=today → HP valid
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP min-date rule: target_date today, must_do_by future",
+        "must_do_by": future_str,
+        "target_date": today_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST HP task: target_date=today, must_do_by=future → 201", r.status_code, 201)
+    hp_mindate_inv_task = r.json()
+    hp_mindate_inv_task_id = hp_mindate_inv_task["id"]
+    assert_eq("HP valid when target_date (earlier) is today even if must_do_by is future",
+              hp_mindate_inv_task["is_high_priority"], True)
+
+    # Both dates future → effective=future → HP auto-reset to false
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP min-date rule: both dates future",
+        "must_do_by": future_str,
+        "target_date": future_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST HP task: both dates future → 201", r.status_code, 201)
+    hp_both_future_task = r.json()
+    hp_both_future_task_id = hp_both_future_task["id"]
+    assert_eq("HP auto-reset when both must_do_by and target_date are future",
+              hp_both_future_task["is_high_priority"], False)
+
+    # Clean up min-date test tasks
+    for tid in [hp_mindate_task_id, hp_mindate_inv_task_id, hp_both_future_task_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
+
     # ── High-priority daily limit (PR #7) ─────────────────────────────────────
     print("\n── Tasks: High Priority Daily Limit ────────────────────")
     # Create exactly 3 high-priority tasks for today — all should succeed

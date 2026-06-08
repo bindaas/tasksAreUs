@@ -17,7 +17,8 @@
       "Bash(cd /Users/bindaas/projects/tasksAreUs/mobile && ./node_modules/.bin/tsc --noEmit*)",
       "Bash(railway variables *)",
       "Bash(npx vitest run *)",
-      "Bash(npm view *)"
+      "Bash(npm view *)",
+      "Bash(cd /Users/bindaas/projects/tasksAreUs/mobile && npx jest *)"
     ]
   }
 }
