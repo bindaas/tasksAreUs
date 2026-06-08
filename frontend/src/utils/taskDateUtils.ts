@@ -26,7 +26,10 @@ export function isOverdue(dateStr: string | null): boolean {
 }
 
 export function getEffectiveDate(task: Pick<Task, 'must_do_by' | 'target_date'>): string | null {
-  return task.target_date || task.must_do_by || null;
+  if (task.must_do_by && task.target_date) {
+    return task.must_do_by < task.target_date ? task.must_do_by : task.target_date;
+  }
+  return task.must_do_by ?? task.target_date ?? null;
 }
 
 export function getColumn(
