@@ -86,6 +86,13 @@ describe('groupTasksForList', () => {
     expect(section.key).toBe('today');
   });
 
+  it('uses earliest of must_do_by and target_date when both are set', () => {
+    // must_do_by is tomorrow, target_date is far future — must bucket as tomorrow
+    const task = makeTask({ must_do_by: '2026-06-08', target_date: '2026-07-15' });
+    const [section] = groupTasksForList([task], REF_DATE);
+    expect(section.key).toBe('tomorrow');
+  });
+
   it('places multiple tasks in the correct sections', () => {
     const overdue = makeTask({ target_date: '2026-01-01' });
     const today1 = makeTask({ target_date: '2026-06-07' });

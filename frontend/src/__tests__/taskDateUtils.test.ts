@@ -90,9 +90,9 @@ describe('getEffectiveDate', () => {
     expect(getEffectiveDate({ must_do_by: null, target_date: '2026-06-01' })).toBe('2026-06-01');
   });
 
-  it('returns target_date when both are set', () => {
+  it('returns earliest date when both are set', () => {
     expect(getEffectiveDate({ must_do_by: '2026-06-10', target_date: '2026-06-01' })).toBe('2026-06-01');
-    expect(getEffectiveDate({ must_do_by: '2026-06-01', target_date: '2026-06-10' })).toBe('2026-06-10');
+    expect(getEffectiveDate({ must_do_by: '2026-06-01', target_date: '2026-06-10' })).toBe('2026-06-01');
   });
 
   it('returns target_date when both dates are equal', () => {
@@ -131,10 +131,11 @@ describe('getColumn', () => {
     expect(getColumn({ must_do_by: '2026-06-01', target_date: null }, today, tomorrow)).toBe('upcoming');
   });
 
-  it('uses target_date for column assignment when both are set', () => {
+  it('uses earliest date for column assignment when both are set', () => {
+    // target_date is earlier (today), must_do_by is upcoming
     expect(getColumn({ must_do_by: '2026-06-01', target_date: today }, today, tomorrow)).toBe('today');
-    // must_do_by is earlier but target_date governs — task lands in upcoming, not today
-    expect(getColumn({ must_do_by: today, target_date: '2026-06-01' }, today, tomorrow)).toBe('upcoming');
+    // must_do_by is earlier (today), target_date is upcoming
+    expect(getColumn({ must_do_by: today, target_date: '2026-06-01' }, today, tomorrow)).toBe('today');
   });
 });
 

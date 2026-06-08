@@ -124,16 +124,16 @@ export function TasksScreen() {
   async function handleComplete(id: string) {
     try {
       await apiCompleteTask(id);
-      // Optimistic remove; background re-fetch picks up next recurring occurrence
+      // Optimistic remove; re-fetch surfaces the next recurring occurrence (if any)
       setTasks((prev) => prev.filter((t) => t.id !== id));
-      load(true);
+      load();
     } catch {
       Alert.alert('Error', 'Could not complete task. Please try again.');
     }
   }
 
   function handleDeletePress(id: string, title: string) {
-    Alert.alert('Delete task?', `"${title}" will be permanently deleted.`, [
+    Alert.alert('Delete task?', `"${title}" will be removed from your task list.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',

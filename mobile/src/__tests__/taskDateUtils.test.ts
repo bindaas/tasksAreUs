@@ -41,16 +41,24 @@ describe('isOverdue', () => {
 });
 
 describe('getEffectiveDate', () => {
-  it('prefers target_date over must_do_by', () => {
-    expect(getEffectiveDate({ target_date: '2026-03-01', must_do_by: '2026-03-05' })).toBe('2026-03-01');
+  it('returns null when both are null', () => {
+    expect(getEffectiveDate({ target_date: null, must_do_by: null })).toBeNull();
   });
 
-  it('falls back to must_do_by when target_date is null', () => {
+  it('returns target_date when must_do_by is null', () => {
+    expect(getEffectiveDate({ target_date: '2026-03-01', must_do_by: null })).toBe('2026-03-01');
+  });
+
+  it('returns must_do_by when target_date is null', () => {
     expect(getEffectiveDate({ target_date: null, must_do_by: '2026-03-05' })).toBe('2026-03-05');
   });
 
-  it('returns null when both are null', () => {
-    expect(getEffectiveDate({ target_date: null, must_do_by: null })).toBeNull();
+  it('returns earliest date when both are set — target_date earlier', () => {
+    expect(getEffectiveDate({ target_date: '2026-03-01', must_do_by: '2026-03-05' })).toBe('2026-03-01');
+  });
+
+  it('returns earliest date when both are set — must_do_by earlier', () => {
+    expect(getEffectiveDate({ target_date: '2026-06-15', must_do_by: '2026-06-08' })).toBe('2026-06-08');
   });
 });
 
