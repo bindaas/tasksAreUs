@@ -6,10 +6,11 @@ export const HIGH_PRIORITY_DAILY_LIMIT = 3;
 export function isFormHighPriorityEligible(
   mustDoBy: string,
   targetDate: string,
+  todayStr: string,
   tomorrowStr: string
 ): boolean {
-  return (mustDoBy !== '' && mustDoBy <= tomorrowStr) ||
-    (targetDate !== '' && targetDate <= tomorrowStr);
+  return (mustDoBy !== '' && mustDoBy >= todayStr && mustDoBy <= tomorrowStr) ||
+    (targetDate !== '' && targetDate >= todayStr && targetDate <= tomorrowStr);
 }
 
 export function isHighPriorityEligible(columnKey: ColumnKey): boolean {

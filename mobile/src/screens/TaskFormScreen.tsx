@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getTask, createTask, updateTask } from '../api/tasks';
+import { ApiError } from '../api/client';
 import { listLabels } from '../api/labels';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
@@ -55,10 +56,11 @@ export function TaskFormScreen({ taskId, onSave, onCancel }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const todayStr = dateOnly(new Date());
   const _tom = new Date();
   _tom.setDate(_tom.getDate() + 1);
   const tomorrowStr = dateOnly(_tom);
-  const highPriorityEligible = isFormHighPriorityEligible(mustDoBy, targetDate, tomorrowStr);
+  const highPriorityEligible = isFormHighPriorityEligible(mustDoBy, targetDate, todayStr, tomorrowStr);
 
   const loadData = useCallback(async () => {
     try {
@@ -134,8 +136,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel }: Props) {
       }
       onSave();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('422') || msg.toLowerCase().includes('high priority')) {
+      if (err instanceof ApiError && err.status === 422) {
         Alert.alert('High priority limit reached', 'You already have the maximum number of high-priority tasks for today. Uncheck high priority and try again.');
         setIsHighPriority(false);
       } else {

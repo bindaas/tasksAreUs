@@ -33,30 +33,35 @@ describe('HIGH_PRIORITY_DAILY_LIMIT', () => {
 });
 
 describe('isFormHighPriorityEligible', () => {
+  const today = '2026-06-09';
   const tomorrow = '2026-06-10';
 
   it('returns true when must_do_by is today', () => {
-    expect(isFormHighPriorityEligible('2026-06-09', '', tomorrow)).toBe(true);
+    expect(isFormHighPriorityEligible('2026-06-09', '', today, tomorrow)).toBe(true);
   });
 
   it('returns true when must_do_by is tomorrow', () => {
-    expect(isFormHighPriorityEligible('2026-06-10', '', tomorrow)).toBe(true);
+    expect(isFormHighPriorityEligible('2026-06-10', '', today, tomorrow)).toBe(true);
   });
 
   it('returns true when target_date is today', () => {
-    expect(isFormHighPriorityEligible('', '2026-06-09', tomorrow)).toBe(true);
+    expect(isFormHighPriorityEligible('', '2026-06-09', today, tomorrow)).toBe(true);
   });
 
   it('returns false when must_do_by is past tomorrow', () => {
-    expect(isFormHighPriorityEligible('2026-06-11', '', tomorrow)).toBe(false);
+    expect(isFormHighPriorityEligible('2026-06-11', '', today, tomorrow)).toBe(false);
   });
 
   it('returns false when both dates are empty', () => {
-    expect(isFormHighPriorityEligible('', '', tomorrow)).toBe(false);
+    expect(isFormHighPriorityEligible('', '', today, tomorrow)).toBe(false);
+  });
+
+  it('returns false when must_do_by is overdue (past today)', () => {
+    expect(isFormHighPriorityEligible('2026-06-01', '', today, tomorrow)).toBe(false);
   });
 
   it('returns true when either date qualifies (must_do_by far but target_date today)', () => {
-    expect(isFormHighPriorityEligible('2026-07-01', '2026-06-09', tomorrow)).toBe(true);
+    expect(isFormHighPriorityEligible('2026-07-01', '2026-06-09', today, tomorrow)).toBe(true);
   });
 });
 

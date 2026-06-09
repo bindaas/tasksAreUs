@@ -154,7 +154,7 @@ export function TasksScreen() {
 
   function handleFormSave() {
     setFormVisible(false);
-    load();
+    load(true);
   }
 
   function handleFormCancel() {
