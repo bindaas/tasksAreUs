@@ -7,12 +7,14 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { listTasks, completeTask as apiCompleteTask, deleteTask as apiDeleteTask } from '../api/tasks';
 import { groupTasksForList } from '../utils/taskGrouping';
 import { formatDate, getEffectiveDate } from '../utils/taskDateUtils';
+import { TaskFormScreen } from './TaskFormScreen';
 import type { Task, Label } from '../types';
 
 // Dynamic colors via inline style — safer than dynamic Tailwind class interpolation
@@ -44,14 +46,20 @@ function TaskRow({
   task,
   onComplete,
   onDeletePress,
+  onEditPress,
 }: {
   task: Task;
   onComplete: (id: string) => void;
   onDeletePress: (id: string, title: string) => void;
+  onEditPress: (id: string) => void;
 }) {
   const effectiveDate = getEffectiveDate(task);
   return (
-    <View className="bg-white mx-4 mb-2 rounded-xl border border-gray-100 overflow-hidden">
+    <TouchableOpacity
+      onPress={() => onEditPress(task.id)}
+      activeOpacity={0.7}
+      className="bg-white mx-4 mb-2 rounded-xl border border-gray-100 overflow-hidden"
+    >
       {task.is_high_priority && <View className="h-1 bg-amber-400" />}
       <View className="flex-row items-start p-4">
         <View className="flex-1 mr-3">
@@ -91,7 +99,7 @@ function TaskRow({
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -100,6 +108,8 @@ export function TasksScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formVisible, setFormVisible] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | undefined>(undefined);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -130,6 +140,25 @@ export function TasksScreen() {
     } catch {
       Alert.alert('Error', 'Could not complete task. Please try again.');
     }
+  }
+
+  function handleEditPress(id: string) {
+    setEditingTaskId(id);
+    setFormVisible(true);
+  }
+
+  function handleCreatePress() {
+    setEditingTaskId(undefined);
+    setFormVisible(true);
+  }
+
+  function handleFormSave() {
+    setFormVisible(false);
+    load(true);
+  }
+
+  function handleFormCancel() {
+    setFormVisible(false);
   }
 
   function handleDeletePress(id: string, title: string) {
@@ -176,9 +205,30 @@ export function TasksScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="px-4 pt-2 pb-4">
+      <View className="flex-row items-center justify-between px-4 pt-2 pb-4">
         <Text className="text-2xl font-bold text-gray-900">Tasks</Text>
+        <TouchableOpacity
+          onPress={handleCreatePress}
+          className="w-9 h-9 rounded-full bg-indigo-600 items-center justify-center"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text className="text-white text-xl font-light leading-none">+</Text>
+        </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={formVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleFormCancel}
+      >
+        <TaskFormScreen
+          taskId={editingTaskId}
+          onSave={handleFormSave}
+          onCancel={handleFormCancel}
+        />
+      </Modal>
+
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
@@ -187,6 +237,7 @@ export function TasksScreen() {
             task={item}
             onComplete={handleComplete}
             onDeletePress={handleDeletePress}
+            onEditPress={handleEditPress}
           />
         )}
         renderSectionHeader={({ section }) => (

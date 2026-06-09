@@ -23,6 +23,9 @@
         "backgroundColor": "#ffffff"
       }
     },
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }
