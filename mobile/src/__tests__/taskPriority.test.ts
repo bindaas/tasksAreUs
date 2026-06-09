@@ -1,6 +1,7 @@
 import {
   HIGH_PRIORITY_DAILY_LIMIT,
   isHighPriorityEligible,
+  isFormHighPriorityEligible,
   splitByPriority,
   canAddHighPriority,
 } from '../utils/taskPriority';
@@ -28,6 +29,34 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 describe('HIGH_PRIORITY_DAILY_LIMIT', () => {
   it('defaults to 3', () => {
     expect(HIGH_PRIORITY_DAILY_LIMIT).toBe(3);
+  });
+});
+
+describe('isFormHighPriorityEligible', () => {
+  const tomorrow = '2026-06-10';
+
+  it('returns true when must_do_by is today', () => {
+    expect(isFormHighPriorityEligible('2026-06-09', '', tomorrow)).toBe(true);
+  });
+
+  it('returns true when must_do_by is tomorrow', () => {
+    expect(isFormHighPriorityEligible('2026-06-10', '', tomorrow)).toBe(true);
+  });
+
+  it('returns true when target_date is today', () => {
+    expect(isFormHighPriorityEligible('', '2026-06-09', tomorrow)).toBe(true);
+  });
+
+  it('returns false when must_do_by is past tomorrow', () => {
+    expect(isFormHighPriorityEligible('2026-06-11', '', tomorrow)).toBe(false);
+  });
+
+  it('returns false when both dates are empty', () => {
+    expect(isFormHighPriorityEligible('', '', tomorrow)).toBe(false);
+  });
+
+  it('returns true when either date qualifies (must_do_by far but target_date today)', () => {
+    expect(isFormHighPriorityEligible('2026-07-01', '2026-06-09', tomorrow)).toBe(true);
   });
 });
 

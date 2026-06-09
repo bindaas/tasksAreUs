@@ -3,6 +3,15 @@ import type { ColumnKey } from './taskDateUtils';
 
 export const HIGH_PRIORITY_DAILY_LIMIT = 3;
 
+export function isFormHighPriorityEligible(
+  mustDoBy: string,
+  targetDate: string,
+  tomorrowStr: string
+): boolean {
+  return (mustDoBy !== '' && mustDoBy <= tomorrowStr) ||
+    (targetDate !== '' && targetDate <= tomorrowStr);
+}
+
 export function isHighPriorityEligible(columnKey: ColumnKey): boolean {
   return columnKey === 'today' || columnKey === 'tomorrow';
 }
