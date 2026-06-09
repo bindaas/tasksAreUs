@@ -25,4 +25,6 @@ Otherwise, run all four reviews in sequence for PR #$ARGUMENTS. Each review must
 
 6. Once that completes, invoke the `fewer-permission-prompts` skill to scan transcripts and update the project allowlist.
 
+7. Once that completes, invoke the `compact` skill to compact the conversation.
+
 After all steps finish, print a one-line summary: "Full review of PR #$ARGUMENTS complete — code, tests, requirements, and architecture all updated."
