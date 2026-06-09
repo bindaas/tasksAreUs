@@ -181,25 +181,49 @@ Mobile auth follows the same Firebase-only identity model as the web frontend, w
 - **Deliberate sign-out flag**: A module-level boolean (resets on app force-quit) prevents the auto-anonymous-sign-in from firing after an explicit sign-out.
 - **API client** (`mobile/src/api/client.ts`): Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer <token>` on every request to `EXPO_PUBLIC_API_URL/api/v1`.
 
-### Tasks Screen (shipped — PR #20)
+### Tasks Screen (shipped — PR #20, updated PR #21)
 
 The Tasks tab is fully implemented as a `SectionList` grouped by date proximity:
 
 - **Grouped sections**: Overdue (red header) → Today → Tomorrow → Day After Tomorrow → Upcoming → No Date; empty sections are hidden.
-- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (frequency=blue, mode=green, type=purple).
+- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (frequency=blue, mode=green, type=purple). Tapping a task row opens it in the task form in edit mode.
 - **Complete**: check button → `completeTask()` → optimistic remove + background re-fetch (picks up the next recurring occurrence automatically).
 - **Delete**: trash button → confirmation dialog → `deleteTask()` → optimistic remove.
+- **"+" button**: tapping the indigo "+" button in the Tasks header opens the task form in create mode.
 - **Loading state**: full-screen spinner on first load.
 - **Error state**: friendly message + Retry button.
 - **Pull-to-refresh**: `RefreshControl` wired to `listTasks('pending')`.
 - **Focus refresh**: `useFocusEffect` re-fetches on every tab focus (stays fresh after web-app edits).
 - **Empty state**: "No pending tasks" message shown when there are no pending tasks.
 
-> **[ASPIRATIONAL — not yet in mobile]** "+" create-task button — planned for PR 3 when the create/edit screen and stack navigator land.
-
 New files shipped in PR #20:
 - `mobile/src/utils/taskGrouping.ts` — pure `groupTasksForList(tasks, referenceDate?)` → `SectionList` sections
 - `mobile/src/__tests__/taskGrouping.test.ts` — 11 unit tests covering all section keys and edge cases
+
+### Task Form — Create / Edit (shipped — PR #21)
+
+`TaskFormScreen` is a slide-up modal (`pageSheet` presentation) used for both creating and editing tasks on mobile. It is surfaced from `TasksScreen` via a `Modal` component — no stack navigator change was needed.
+
+**Fields:**
+- **Title** (required) — auto-focuses in create mode
+- **Notes** — multiline text input
+- **Must do by** — date picker field with × clear button
+- **Target date** — date picker field with × clear button
+- **High priority** — checkbox visible only when at least one date is set to today or tomorrow (same eligibility rule as the web form). The checkbox is hidden and submits as `false` for all other dates. `isFormHighPriorityEligible` guards against overdue dates: both conditions must hold — the date must be `>= today` **and** `<= tomorrow`.
+- **Labels** — grouped by Mode → Type → Frequency; tap to toggle; matches web form colour coding (frequency=blue, mode=green, type=purple)
+
+**Behaviour:**
+- **Create mode** ("New Task" header): opened by the "+" button; title field is auto-focused; saves via `POST /api/v1/tasks`.
+- **Edit mode** ("Edit Task" header): opened by tapping a task row; form pre-populated with existing field values; saves via `PUT /api/v1/tasks/:id`. Clearing a date field sends an explicit `null` to the backend so the field is actually cleared.
+- **Native date picker**: `@react-native-community/datetimepicker` — iOS shows an inline calendar; Android shows a system modal dialog.
+- **422 handling**: if the backend returns 422 (high-priority limit reached), a user-friendly `Alert` is shown and the high-priority checkbox is automatically unchecked.
+- **Cancel**: dismisses the modal without changes.
+- After a successful save, the task list silently re-fetches to reflect the change.
+
+New file shipped in PR #21:
+- `mobile/src/screens/TaskFormScreen.tsx` — 380-line create/edit form component
+
+**API client improvement (PR #21):** `mobile/src/api/client.ts` now exports an `ApiError` class (extends `Error`) carrying the HTTP `status` code. All `apiFetch` errors are thrown as `ApiError` instances, enabling callers to branch on specific status codes (e.g. 422).
 
 ### Utility Code
 Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`) and TypeScript types are copied from `frontend/src/` rather than extracted into a shared module. This is a deliberate no-monorepo decision — no shared package or workspace linking is used.

@@ -104,12 +104,13 @@ mobile/                 # React Native + Expo SDK 54 managed workflow
       AppNavigator.tsx  # Root navigator: shows loading shimmer → EmailConfirmation screen (cross-device magic link) → LoginScreen (post sign-out) → bottom tab navigator (Tasks / Chat / Reports / Settings)
     screens/
       LoginScreen.tsx   # Google Sign-In + magic link; shown only after deliberate sign-out
-      TasksScreen.tsx   # Full implementation: grouped SectionList (Overdue → Today → Tomorrow → Day After Tomorrow → Upcoming → No Date); TaskRow component with effective-date chip, high-priority amber top bar + star, label badges; complete (optimistic remove + background re-fetch) and delete (confirmation dialog + optimistic remove) actions; pull-to-refresh via RefreshControl; useFocusEffect re-fetches on every tab focus; loading spinner, error + Retry, and empty-state views
+      TasksScreen.tsx   # Full implementation: grouped SectionList (Overdue → Today → Tomorrow → Day After Tomorrow → Upcoming → No Date); TaskRow component with effective-date chip, high-priority amber top bar + star, label badges; tapping a row opens TaskFormScreen in edit mode; + button in header opens TaskFormScreen in create mode; complete (optimistic remove + background re-fetch) and delete (confirmation dialog + optimistic remove) actions; pull-to-refresh via RefreshControl; useFocusEffect re-fetches on every tab focus; loading spinner, error + Retry, and empty-state views
+      TaskFormScreen.tsx  # Create/edit form presented as a slide-up pageSheet Modal (not a stack navigator screen). Props: taskId? (undefined = create mode), onSave, onCancel. Fields: title (required), notes, must-do-by, target-date, high-priority checkbox (conditional), labels. Uses @react-native-community/datetimepicker — iOS renders inline calendar; Android renders system dialog. 422 high-priority-limit error is caught via ApiError.status and surfaced as an Alert with the checkbox auto-unchecked.
       ChatScreen.tsx    # Placeholder
       ReportsScreen.tsx # Placeholder
       SettingsScreen.tsx  # Shows current user (anonymous or named) + Sign Out
     api/
-      client.ts         # apiFetch<T>: attaches Bearer token via auth.currentUser?.getIdToken(); parses FastAPI error detail; base URL from EXPO_PUBLIC_API_URL (default http://localhost:8000)
+      client.ts         # apiFetch<T>: attaches Bearer token via auth.currentUser?.getIdToken(); parses FastAPI error detail; base URL from EXPO_PUBLIC_API_URL (default http://localhost:8000). Exports ApiError class (subclass of Error) with a readonly .status: number property — callers can instanceof-check and branch on HTTP status (e.g. 422 high-priority limit in TaskFormScreen)
       tasks.ts          # Task CRUD + complete
       labels.ts         # Label list/create/update/delete
       conversations.ts  # Conversations + messages
@@ -120,7 +121,7 @@ mobile/                 # React Native + Expo SDK 54 managed workflow
     utils/
       taskDateUtils.ts  # Copied from frontend/ — getColumn(), getDropDate(), getEffectiveDate(), etc. getEffectiveDate() returns earliest of must_do_by / target_date when both are set (bug fix — previously always returned target_date)
       taskFilters.ts    # Copied from frontend/ — filterTasks()
-      taskPriority.ts   # Copied from frontend/ — isHighPriorityEligible(), splitByPriority(), canAddHighPriority()
+      taskPriority.ts   # Copied from frontend/ — isHighPriorityEligible(), splitByPriority(), canAddHighPriority(); plus mobile-only isFormHighPriorityEligible(mustDoBy, targetDate, todayStr, tomorrowStr) — returns true when at least one of the two date strings is non-empty and falls on today or tomorrow (used by TaskFormScreen to conditionally show the high-priority checkbox)
       taskGrouping.ts   # groupTasksForList(tasks, referenceDate?) → TaskSection[] for SectionList; buckets tasks into SECTION_ORDER (overdue → today → tomorrow → day_after_tomorrow → upcoming → nodate); empty sections omitted
     __tests__/
       taskDateUtils.test.ts   # Jest tests (updated for earliest-date semantics)
@@ -128,6 +129,7 @@ mobile/                 # React Native + Expo SDK 54 managed workflow
       taskPriority.test.ts    # 97 Jest tests
       taskGrouping.test.ts    # 11 Jest unit tests for groupTasksForList
   .env.example          # EXPO_PUBLIC_FIREBASE_*, EXPO_PUBLIC_GOOGLE_*_CLIENT_ID, EXPO_PUBLIC_API_URL
+  package.json          # includes @react-native-community/datetimepicker (Expo-compatible native date picker)
   babel.config.js       # NativeWind v4 preset + reanimated plugin
   metro.config.js       # NativeWind v4 CSS interop wired via withNativeWind()
   tailwind.config.js    # NativeWind Tailwind config pointing at src/**
@@ -158,7 +160,11 @@ mobile/                 # React Native + Expo SDK 54 managed workflow
 
 **Firebase Auth flow (mobile):** Mirrors the web pattern with React Native–specific adaptations. `AsyncStorage` replaces `localStorage`/`sessionStorage`. Auth persistence uses `getReactNativePersistence(AsyncStorage)` so the Firebase session survives app restarts. The deliberate-sign-out flag is a module-level variable (resets on force-quit — correct behaviour for a mobile app). Magic-link deep links are received via `expo-linking`: `Linking.getInitialURL()` handles cold-start links; `Linking.addEventListener('url', ...)` handles links while the app is open. Google Sign-In uses `expo-auth-session/providers/google` with separate web/iOS/Android client IDs from `EXPO_PUBLIC_GOOGLE_*_CLIENT_ID` env vars. In Expo Go, the Google OAuth redirect is `exp://[local-ip]:8081` and must be added to Google Cloud Console. Magic link deep linking only works fully in standalone builds; Expo Go cannot redirect back from the browser.
 
-**No shared module between web and mobile:** TypeScript types (`types/index.ts`) and pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`) are duplicated from `frontend/src/` into `mobile/src/`. This is intentional — avoids monorepo complexity at the cost of keeping them in sync manually. `taskGrouping.ts` is mobile-only (no web equivalent) because the web app uses a kanban column layout rather than a grouped list.
+**Mobile form navigation (pageSheet Modal):** `TaskFormScreen` is not registered in the navigator; it is presented as a React Native `<Modal animationType="slide" presentationStyle="pageSheet">` owned by `TasksScreen`. This avoids a nested stack navigator and keeps the form decoupled — `TasksScreen` tracks `formVisible: boolean` and `editingTaskId: string | undefined` in local state. `onSave` and `onCancel` callbacks close the modal and trigger a silent re-fetch. This pattern is the approved approach for full-screen forms in the mobile app.
+
+**Mobile API error handling (ApiError):** `mobile/src/api/client.ts` exports an `ApiError` class (extends `Error`) with a readonly `status: number` property equal to the HTTP response status code. All `apiFetch` errors are thrown as `ApiError`. Callers use `instanceof ApiError` to branch on specific HTTP statuses (e.g. `err.status === 422` to catch the high-priority daily limit and display a user-friendly `Alert` without treating it as a generic failure). This pattern replaces the old practice of parsing error strings.
+
+**No shared module between web and mobile:** TypeScript types (`types/index.ts`) and pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`) are duplicated from `frontend/src/` into `mobile/src/`. This is intentional — avoids monorepo complexity at the cost of keeping them in sync manually. `taskGrouping.ts` is mobile-only (no web equivalent) because the web app uses a kanban column layout rather than a grouped list. `isFormHighPriorityEligible` is also mobile-only — the web app's `TaskForm` derives eligibility from the selected column context rather than inspecting raw date strings.
 
 **Mobile label badge colors (NativeWind):** Dynamic Tailwind class interpolation is unsafe in NativeWind v4. `TasksScreen.tsx` uses inline `style` props (`backgroundColor`, `color`) driven by lookup objects (`LABEL_BG`, `LABEL_TEXT`) keyed by label category, rather than dynamic class strings. This is the approved pattern for per-category colors in mobile components.
 
@@ -207,7 +213,7 @@ cd backend && python3 -m pytest tests/unit/ -v
 cd frontend && npx vitest run
 ```
 
-**Mobile unit tests** (`mobile/src/__tests__/`): Jest (jest-expo preset). Cover the three utility modules copied from `frontend/`: `taskDateUtils` (updated for earliest-date semantics), `taskFilters` (70 tests), `taskPriority` (97 tests); plus `taskGrouping` (11 tests). 45 mobile unit tests pass in total. Run with:
+**Mobile unit tests** (`mobile/src/__tests__/`): Jest (jest-expo preset). Cover the three utility modules copied from `frontend/`: `taskDateUtils` (updated for earliest-date semantics), `taskFilters` (70 tests), `taskPriority` (97 tests, plus 34 new tests for `isFormHighPriorityEligible`); plus `taskGrouping` (11 tests). 46 mobile unit tests pass in total. Run with:
 ```bash
 cd mobile && npm test
 ```
