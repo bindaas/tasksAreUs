@@ -22,6 +22,7 @@
   - Data model changes: list or "none"
   - Test changes needed: list or "none"
   - Deployment order: component sequence + safe window or "single component"
+  - Mobile update type: **OTA** (`eas update`) if changes are JS/TS only — or **Full rebuild** (`eas build`) if native modules, `app.json`, or `eas.json` change. Omit if no mobile files touched.
 
 ---
 
