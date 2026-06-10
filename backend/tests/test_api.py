@@ -79,10 +79,24 @@ def main():
     test_user_id = None
 
     # ── Health ─────────────────────────────────────────────────────────────────
+    # GET /health is intentionally unauthenticated — the Settings Connection widget
+    # calls it without a Bearer token to test backend reachability (PR #25).
     print("\n── Health ─────────────────────────────────────────────")
     r = client.get("/health")
     assert_eq("GET /health → 200", r.status_code, 200)
-    assert_in("health has status", "status", r.json())
+    health_body = r.json()
+    assert_in("health has status", "status", health_body)
+    assert_eq("health status is ok", health_body.get("status"), "ok")
+    # PR #25: Settings connection widget reads the response — verify full shape
+    assert_in("health has timestamp", "timestamp", health_body)
+    assert_in("health has version", "version", health_body)
+    assert_in("health has checks", "checks", health_body)
+    assert_in("health checks has database", "database", health_body.get("checks", {}))
+    assert_eq("health checks.database.status is ok",
+              health_body.get("checks", {}).get("database", {}).get("status"), "ok")
+    # Must be accessible without any auth header (no X-User-ID, no Bearer)
+    r_noauth = httpx.get(f"{BASE_URL}/health", timeout=10)
+    assert_eq("GET /health with no auth header → 200 (unauthenticated endpoint)", r_noauth.status_code, 200)
 
     # Use the system user for test data (it is seeded at startup and never deleted)
     test_user_id = SYSTEM_USER_ID
