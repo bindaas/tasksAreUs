@@ -106,7 +106,7 @@ mobile/                 # React Native + Expo SDK 54 managed workflow
       LoginScreen.tsx   # Google Sign-In + magic link; shown only after deliberate sign-out
       TasksScreen.tsx   # Full implementation: grouped SectionList (Overdue → Today → Tomorrow → Day After Tomorrow → Upcoming → No Date); TaskRow component with effective-date chip, high-priority amber top bar + star, label badges; tapping a row opens TaskFormScreen in edit mode; + button in header opens TaskFormScreen in create mode; complete (optimistic remove + background re-fetch) and delete (confirmation dialog + optimistic remove) actions; pull-to-refresh via RefreshControl; useFocusEffect re-fetches on every tab focus; loading spinner, error + Retry, and empty-state views
       TaskFormScreen.tsx  # Create/edit form presented as a slide-up pageSheet Modal (not a stack navigator screen). Props: taskId? (undefined = create mode), onSave, onCancel. Fields: title (required), notes, must-do-by, target-date, high-priority checkbox (conditional), labels. Uses @react-native-community/datetimepicker — iOS renders inline calendar; Android renders system dialog. 422 high-priority-limit error is caught via ApiError.status and surfaced as an Alert with the checkbox auto-unchecked.
-      ChatScreen.tsx    # Placeholder
+      ChatScreen.tsx    # Full implementation: per-session conversation with optimistic user messages, typing indicator (ActivityIndicator), suggested follow-up chips rendered as horizontally-scrollable pressable chips, KeyboardAvoidingView (behavior="padding" on iOS / "height" on Android), ScrollView with onContentSizeChange for auto-scroll to latest message, inline error banner on send failure
       ReportsScreen.tsx # Placeholder
       SettingsScreen.tsx  # Shows current user (anonymous or named) + Sign Out
     api/
@@ -123,11 +123,13 @@ mobile/                 # React Native + Expo SDK 54 managed workflow
       taskFilters.ts    # Copied from frontend/ — filterTasks()
       taskPriority.ts   # Copied from frontend/ — isHighPriorityEligible(), splitByPriority(), canAddHighPriority(); plus mobile-only isFormHighPriorityEligible(mustDoBy, targetDate, todayStr, tomorrowStr) — returns true when at least one of the two date strings is non-empty and falls on today or tomorrow (used by TaskFormScreen to conditionally show the high-priority checkbox)
       taskGrouping.ts   # groupTasksForList(tasks, referenceDate?) → TaskSection[] for SectionList; buckets tasks into SECTION_ORDER (overdue → today → tomorrow → day_after_tomorrow → upcoming → nodate); empty sections omitted
+      chatUtils.ts      # Pure message-state helpers for ChatScreen: buildOptimisticMessage() creates a local-only Message with a temp ID and 'sending' status; confirmMessages() replaces the optimistic entry with the server-confirmed message; rollbackMessage() removes the optimistic entry on send failure — all three return new arrays (no mutation)
     __tests__/
       taskDateUtils.test.ts   # Jest tests (updated for earliest-date semantics)
       taskFilters.test.ts     # 70 Jest tests
       taskPriority.test.ts    # 97 Jest tests
       taskGrouping.test.ts    # 11 Jest unit tests for groupTasksForList
+      chatUtils.test.ts       # 9 Jest unit tests for chatUtils (buildOptimisticMessage, confirmMessages, rollbackMessage)
   .env.example          # EXPO_PUBLIC_FIREBASE_*, EXPO_PUBLIC_GOOGLE_*_CLIENT_ID, EXPO_PUBLIC_API_URL
   package.json          # includes @react-native-community/datetimepicker (Expo-compatible native date picker)
   babel.config.js       # NativeWind v4 preset + reanimated plugin
@@ -213,7 +215,7 @@ cd backend && python3 -m pytest tests/unit/ -v
 cd frontend && npx vitest run
 ```
 
-**Mobile unit tests** (`mobile/src/__tests__/`): Jest (jest-expo preset). Cover the three utility modules copied from `frontend/`: `taskDateUtils` (updated for earliest-date semantics), `taskFilters` (70 tests), `taskPriority` (97 tests, plus 34 new tests for `isFormHighPriorityEligible`); plus `taskGrouping` (11 tests). 46 mobile unit tests pass in total. Run with:
+**Mobile unit tests** (`mobile/src/__tests__/`): Jest (jest-expo preset). Cover the three utility modules copied from `frontend/`: `taskDateUtils` (updated for earliest-date semantics), `taskFilters` (70 tests), `taskPriority` (97 tests, plus 34 new tests for `isFormHighPriorityEligible`); plus `taskGrouping` (11 tests) and `chatUtils` (9 tests). 55 mobile unit tests pass in total. Run with:
 ```bash
 cd mobile && npm test
 ```
