@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getSettings, updateSettings } from '../api/settings';
 import { listLabels, createLabel, updateLabel, deleteLabel } from '../api/labels';
+import { API_BASE_URL, API_V1_URL } from '../api/client';
 import type { Label } from '../types';
 
 const MAX_QUESTIONS = 5;
@@ -203,6 +204,28 @@ export function SettingsScreen() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [accountError, setAccountError] = useState<string | null>(null);
 
+  const [connStatus, setConnStatus] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
+  const [connLatency, setConnLatency] = useState<number | null>(null);
+  const [connError, setConnError] = useState<string | null>(null);
+
+  const isProduction = API_BASE_URL.startsWith('https://');
+
+  async function testConnection() {
+    setConnStatus('testing');
+    setConnLatency(null);
+    setConnError(null);
+    const start = Date.now();
+    try {
+      const res = await fetch(`${API_V1_URL}/health`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setConnLatency(Date.now() - start);
+      setConnStatus('ok');
+    } catch (e) {
+      setConnError(e instanceof Error ? e.message : 'Unreachable');
+      setConnStatus('error');
+    }
+  }
+
   useEffect(() => {
     async function load() {
       setLoading(true);
@@ -324,6 +347,47 @@ export function SettingsScreen() {
             </View>
           ) : (
             <>
+              {/* Connection */}
+              <View className="bg-white rounded-xl border border-gray-200 px-4 py-4 mb-4">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-sm font-semibold text-gray-700">Connection</Text>
+                  <View
+                    className="px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: isProduction ? '#dcfce7' : '#fef9c3' }}
+                  >
+                    <Text
+                      className="text-xs font-medium"
+                      style={{ color: isProduction ? '#15803d' : '#a16207' }}
+                    >
+                      {isProduction ? 'Production' : 'Development'}
+                    </Text>
+                  </View>
+                </View>
+                <Text className="text-xs text-gray-400 mb-3" numberOfLines={1}>{API_BASE_URL}</Text>
+                <View className="flex-row items-center" style={{ gap: 12 }}>
+                  <TouchableOpacity
+                    onPress={testConnection}
+                    disabled={connStatus === 'testing'}
+                    className="border border-gray-300 rounded-lg px-4 py-2"
+                    style={{ opacity: connStatus === 'testing' ? 0.5 : 1 }}
+                  >
+                    <Text className="text-sm font-medium text-gray-700">
+                      {connStatus === 'testing' ? 'Testing…' : 'Test Connection'}
+                    </Text>
+                  </TouchableOpacity>
+                  {connStatus === 'ok' && (
+                    <Text className="text-sm text-green-600 font-medium">
+                      Connected {connLatency}ms
+                    </Text>
+                  )}
+                  {connStatus === 'error' && (
+                    <Text className="text-sm text-red-600" numberOfLines={1}>
+                      Failed: {connError}
+                    </Text>
+                  )}
+                </View>
+              </View>
+
               {/* Labels */}
               <View className="bg-white rounded-xl border border-gray-200 px-4 pt-4 pb-2 mb-4">
                 <Text className="text-sm font-semibold text-gray-700 mb-0.5">Labels</Text>

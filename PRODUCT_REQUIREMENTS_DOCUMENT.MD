@@ -114,9 +114,7 @@ The primary interaction mode. Supported input styles:
 - **Labels section (shipped — PR #15)**: Appears at the top of Settings, above High Priority Limit and Starter Questions. Shows **Mode** and **Type** subsections with the user's personal label set. Each label has Edit and Delete buttons; each subsection has an Add button to create new values. Frequency labels are not shown here (they are not editable). Changes take effect immediately in TaskForm label pickers and on task cards.
 - **High Priority Daily Limit**: numeric input (min 1) that sets the per-day cap for high-priority tasks in Today and Tomorrow columns. Defaults to 3 when unset. Reducing the limit below the current count is allowed — a warning is shown but no retroactive removal occurs. Persisted server-side via `user_settings.high_priority_daily_limit`.
 - Configure up to 5 starter questions saved server-side. Questions can be added, removed, and reordered.
-- Note: backend connectivity testing from the Settings screen is **not currently implemented**.
-
-> **[ASPIRATIONAL]** — Not yet shipped. A backend connectivity test in the Settings screen was originally planned but has not been built.
+- **Connection section (shipped — PR #25)**: Shown at the bottom of Settings (below the Save Settings button). Displays an environment badge — green "Production" when the app is served over HTTPS, yellow "Development" otherwise — and the resolved API base URL. A "Test Connection" button pings `GET /api/v1/health` (unauthenticated) and reports either "Connected Xms" (with measured round-trip latency) or "Failed: <error message>". Implemented on both the web frontend and the mobile app.
 
 ---
 
@@ -254,6 +252,7 @@ New files shipped in PR #22:
 - **High Priority Daily Limit**: stepper with − and + buttons (clamped to minimum 1) showing the current limit numerically. Persisted server-side along with starter questions via the Save button.
 - **Starter Questions**: up to 5 text inputs. Questions can be added (up to 5), edited inline, and removed individually. A counter shows `(N/5)` in the section header. Saved server-side via `PUT /settings` when the user taps "Save Settings".
 - **Save Settings button**: persists High Priority Limit and Starter Questions together in a single `PUT /settings` call. Shows a "Settings saved" confirmation banner for 3 seconds on success.
+- **Connection section (shipped — PR #25)**: Shown at the top of the screen (above Labels). Displays an environment badge — green "Production" when `EXPO_PUBLIC_API_URL` starts with `https://`, yellow "Development" otherwise — and the resolved API base URL. A "Test Connection" button pings `GET /api/v1/health` (unauthenticated) and reports either "Connected Xms" or "Failed: <error message>".
 - **Account section**: see Authentication section above.
 
 ### Reports Screen (shipped — PR #24)
@@ -278,6 +277,8 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 ### Environment / Config
 `mobile/.env.example` documents all required environment variables: Firebase project config, Google OAuth client IDs (web, iOS, Android), and `EXPO_PUBLIC_API_URL`.
 
+**EAS Build (shipped — PR #25):** `mobile/eas.json` configures two EAS build profiles: `development` (dev-client build, reads `EXPO_PUBLIC_API_URL` from `.env`) and `production` (ad-hoc distribution, bakes in `https://tasksareus-production.up.railway.app` as `EXPO_PUBLIC_API_URL` at build time). The production binary installs directly from an EAS build URL — no TestFlight or App Store required.
+
 ---
 
 ## Out of Scope (initial build)
@@ -290,4 +291,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #24 (feat(mobile): Reports screen)*
+*Last updated by — *Bashful* after PR #25 (feat: EAS production build + Settings connection status)*

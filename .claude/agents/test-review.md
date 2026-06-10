@@ -116,14 +116,15 @@ EOF
 )"
 ```
 
-After posting, commit the updated test file to the PR branch and push:
+**MANDATORY — do this even if tests failed with pre-existing failures:** commit the updated test file to the PR branch and push. Skipping this step means the test changes are lost.
 
 ```bash
 PR_BRANCH=$(gh pr view $PR --json headRefName -q .headRefName)
-git checkout "$PR_BRANCH"
-git add backend/tests/test_api.py
-git commit -m "test: update test_api.py for PR #$PR [skip deploy]"
-git push
+REPO=$(git rev-parse --show-toplevel)
+git -C "$REPO" checkout "$PR_BRANCH"
+git -C "$REPO" add backend/tests/test_api.py
+git -C "$REPO" commit -m "test: update test_api.py for PR #$PR [skip deploy]"
+git -C "$REPO" push
 ```
 
 Then report: PR number, whether tests passed, how many individual bug comments were filed (if any), and a one-line summary of what changed in the test file.

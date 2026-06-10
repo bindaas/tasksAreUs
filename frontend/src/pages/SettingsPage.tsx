@@ -201,6 +201,31 @@ export function SettingsPage() {
   const [modeLabels, setModeLabels] = useState<Label[]>([]);
   const [typeLabels, setTypeLabels] = useState<Label[]>([]);
 
+  const [connStatus, setConnStatus] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
+  const [connLatency, setConnLatency] = useState<number | null>(null);
+  const [connError, setConnError] = useState<string | null>(null);
+
+  const isProduction = import.meta.env.PROD;
+  const apiDisplayUrl = import.meta.env.DEV
+    ? (import.meta.env.VITE_API_TARGET ?? 'http://localhost:8000')
+    : window.location.origin;
+
+  async function testConnection() {
+    setConnStatus('testing');
+    setConnLatency(null);
+    setConnError(null);
+    const start = Date.now();
+    try {
+      const res = await fetch('/api/v1/health');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setConnLatency(Date.now() - start);
+      setConnStatus('ok');
+    } catch (e) {
+      setConnError(e instanceof Error ? e.message : 'Unreachable');
+      setConnStatus('error');
+    }
+  }
+
   useEffect(() => {
     async function fetch() {
       setLoading(true);
@@ -463,6 +488,38 @@ export function SettingsPage() {
           >
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
+
+          {/* Connection */}
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-sm font-semibold text-gray-700">Connection</h3>
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  isProduction ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                }`}
+              >
+                {isProduction ? 'Production' : 'Development'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 mb-3 truncate">
+              {apiDisplayUrl}{import.meta.env.DEV && ' (proxied via Vite)'}
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={testConnection}
+                disabled={connStatus === 'testing'}
+                className="border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {connStatus === 'testing' ? 'Testing…' : 'Test Connection'}
+              </button>
+              {connStatus === 'ok' && (
+                <span className="text-sm text-green-600 font-medium">Connected {connLatency ?? 0}ms</span>
+              )}
+              {connStatus === 'error' && (
+                <span className="text-sm text-red-600 truncate">Failed: {connError}</span>
+              )}
+            </div>
+          </div>
         </>
       )}
 

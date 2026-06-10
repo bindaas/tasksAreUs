@@ -209,12 +209,20 @@ Tracks every Claude API call for cost monitoring.
 ### Health
 
 #### `GET /health`
-Backend connectivity check. Used by the Settings screen.
+Backend connectivity check. Used by the Settings Connection section on both web and mobile. No authentication required.
 
 **Response**
 ```json
-{ "status": "ok", "timestamp": "2026-05-06T10:00:00Z" }
+{
+  "status": "ok",
+  "version": "<git-commit-hash>",
+  "timestamp": "2026-05-06T10:00:00Z",
+  "checks": {
+    "database": { "status": "ok" }
+  }
+}
 ```
+`status` is `"ok"` when the database check passes; `"degraded"` otherwise. `checks.database.error` is included when the database check fails.
 
 ---
 
