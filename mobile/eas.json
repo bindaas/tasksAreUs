@@ -10,6 +10,7 @@
     },
     "production": {
       "distribution": "internal",
+      "channel": "production",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://tasksareus-production.up.railway.app"
       }
