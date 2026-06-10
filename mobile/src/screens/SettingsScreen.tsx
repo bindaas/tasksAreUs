@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { getSettings, updateSettings } from '../api/settings';
 import { listLabels, createLabel, updateLabel, deleteLabel } from '../api/labels';
-import { API_BASE_URL } from '../api/client';
+import { API_BASE_URL, API_V1_URL } from '../api/client';
 import type { Label } from '../types';
 
 const MAX_QUESTIONS = 5;
@@ -216,7 +216,7 @@ export function SettingsScreen() {
     setConnError(null);
     const start = Date.now();
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/health`);
+      const res = await fetch(`${API_V1_URL}/health`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setConnLatency(Date.now() - start);
       setConnStatus('ok');
