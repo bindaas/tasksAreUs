@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { listTasks, completeTask as apiCompleteTask, deleteTask as apiDeleteTask } from '../api/tasks';
 import { listLabels } from '../api/labels';
 import { groupTasksForList, type TaskSection } from '../utils/taskGrouping';
-import { filterTasks } from '../utils/taskFilter';
+import { filterTasks } from '../utils/taskFilters';
 import { formatDate, getEffectiveDate } from '../utils/taskDateUtils';
 import { TaskFormScreen } from './TaskFormScreen';
 import type { Task, Label, LabelCategory } from '../types';
@@ -64,7 +64,7 @@ function TaskRow({
       onPress={() => onEditPress(task.id)}
       activeOpacity={0.7}
       className="bg-white mx-4 mb-2 rounded-xl border border-gray-100 overflow-hidden"
-      style={{ opacity: isDone ? 0.55 : 1 }}
+      style={isDone ? { opacity: 0.55 } : undefined}
     >
       {task.is_high_priority && !isDone && <View className="h-1 bg-amber-400" />}
       <View className="flex-row items-start p-4">
@@ -153,17 +153,15 @@ export function TasksScreen() {
   useFocusEffect(
     useCallback(() => {
       load();
+      // Re-fetch labels on every focus so chips stay current after Settings changes
+      listLabels()
+        .then(({ labels }) => setAllLabels(labels))
+        .catch(() => {});
     }, [load]),
   );
 
-  useEffect(() => {
-    listLabels()
-      .then(({ labels }) => setAllLabels(labels))
-      .catch(() => {});
-  }, []);
-
   const allFilteredSections = useMemo(() => {
-    const filtered = filterTasks(tasks, { selectedLabelIds, searchQuery });
+    const filtered = filterTasks(tasks, selectedLabelIds, searchQuery);
     return groupTasksForList(filtered);
   }, [tasks, selectedLabelIds, searchQuery]);
 
@@ -252,7 +250,11 @@ export function TasksScreen() {
     if (allSectionsExpanded) {
       setExpandedSections(new Set());
     } else {
-      setExpandedSections(new Set(allFilteredSections.map((s) => s.key)));
+      // Expand all possible keys so sections that become visible after clearing
+      // filters are not left collapsed
+      setExpandedSections(
+        new Set(['overdue', 'today', 'tomorrow', 'day_after_tomorrow', 'upcoming', 'nodate']),
+      );
     }
   }
 
@@ -442,6 +444,8 @@ export function TasksScreen() {
             </TouchableOpacity>
           );
         }}
+        // SectionList's built-in empty check sees collapsed sections as non-empty
+        // (data: [] but sections array is non-empty), so we guard manually.
         ListEmptyComponent={
           allFilteredSections.length === 0 ? (
             <View className="items-center justify-center pt-24">
