@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(railway variables *)",
-      "Bash(npx tsc --noEmit *)"
-    ]
-  }
-}

@@ -352,10 +352,12 @@ export function SettingsScreen() {
                 <View className="flex-row items-center justify-between mb-1">
                   <Text className="text-sm font-semibold text-gray-700">Connection</Text>
                   <View
-                    className={`px-2 py-0.5 rounded-full ${isProduction ? 'bg-green-100' : 'bg-yellow-100'}`}
+                    className="px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: isProduction ? '#dcfce7' : '#fef9c3' }}
                   >
                     <Text
-                      className={`text-xs font-medium ${isProduction ? 'text-green-700' : 'text-yellow-700'}`}
+                      className="text-xs font-medium"
+                      style={{ color: isProduction ? '#15803d' : '#a16207' }}
                     >
                       {isProduction ? 'Production' : 'Development'}
                     </Text>
