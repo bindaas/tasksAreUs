@@ -895,6 +895,19 @@ def main():
     assert_eq("PUT /settings without limit field → 200", r.status_code, 200)
     assert_eq("limit defaults to 3 when omitted from PUT body", r.json()["high_priority_daily_limit"], 3)
 
+    # PUT /settings with partial body — omitting starter_questions must return 422
+    # because SettingsUpdate.starter_questions has no default (required field).
+    # The mobile UpdateSettingsBody marks both fields optional, so this test pins
+    # the backend contract so any future loosening is intentional.
+    r = client.put("/settings", headers=H, json={"high_priority_daily_limit": 2})
+    assert_eq("PUT /settings omitting required starter_questions → 422", r.status_code, 422)
+
+    # Backend silently truncates starter_questions to 5 entries
+    six_questions = [f"Question {i}" for i in range(1, 7)]
+    r = client.put("/settings", headers=H, json={"starter_questions": six_questions, "high_priority_daily_limit": 3})
+    assert_eq("PUT /settings with 6 questions → 200 (truncates to 5)", r.status_code, 200)
+    assert_eq("starter_questions truncated to 5 by backend", len(r.json()["starter_questions"]), 5)
+
     # ── Configurable high-priority limit (PR #9) ──────────────────────────────
     print("\n── Settings: Configurable High-Priority Limit ──────────")
     # Set limit to 2 for this test section
