@@ -11,24 +11,22 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createConversation, sendMessage } from '../api/conversations';
+import { buildOptimisticMessage, confirmMessages, rollbackMessage } from '../utils/chatUtils';
 import type { Message } from '../types';
 
-interface DisplayMessage extends Message {
-  pending?: boolean;
-}
-
 export function ChatScreen() {
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<DisplayMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  // Ref latch prevents duplicate conversations if ensureConversation is ever called concurrently
+  const conversationIdRef = useRef<string | null>(null);
 
   async function ensureConversation(): Promise<string> {
-    if (conversationId) return conversationId;
+    if (conversationIdRef.current) return conversationIdRef.current;
     const conv = await createConversation();
-    setConversationId(conv.id);
+    conversationIdRef.current = conv.id;
     return conv.id;
   }
 
@@ -41,34 +39,15 @@ export function ChatScreen() {
     setSending(true);
 
     const tempId = `temp-${Date.now()}`;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: tempId,
-        role: 'user',
-        content: trimmed,
-        suggested_questions: null,
-        created_at: new Date().toISOString(),
-      },
-    ]);
+    setMessages((prev) => [...prev, buildOptimisticMessage(trimmed, tempId)]);
 
     try {
       const convId = await ensureConversation();
       const response = await sendMessage(convId, trimmed);
-      setMessages((prev) => [
-        ...prev.filter((m) => m.id !== tempId),
-        {
-          id: `user-${response.message.id}`,
-          role: 'user' as const,
-          content: trimmed,
-          suggested_questions: null,
-          created_at: response.message.created_at,
-        },
-        response.message,
-      ]);
+      setMessages((prev) => confirmMessages(prev, tempId, trimmed, response.message));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message');
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setMessages((prev) => rollbackMessage(prev, tempId));
     } finally {
       setSending(false);
     }
@@ -124,9 +103,9 @@ export function ChatScreen() {
                 msg.suggested_questions &&
                 msg.suggested_questions.length > 0 && (
                   <View className="flex-row flex-wrap mt-2" style={{ maxWidth: '85%' }}>
-                    {msg.suggested_questions.map((q, i) => (
+                    {msg.suggested_questions.map((q) => (
                       <TouchableOpacity
-                        key={i}
+                        key={q}
                         onPress={() => send(q)}
                         disabled={sending}
                         className="bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1.5 mr-2 mb-2"
