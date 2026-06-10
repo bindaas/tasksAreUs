@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -25,7 +25,7 @@ def get_completions(
         Task.state == StateEnum.done,
         Task.is_deleted == False,
         Task.completed_at >= from_date,
-        Task.completed_at <= to_date,
+        Task.completed_at < to_date + timedelta(days=1),
     )
 
     if label_ids:

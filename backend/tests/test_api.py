@@ -853,14 +853,82 @@ def main():
 
     # ── Reports ────────────────────────────────────────────────────────────────
     print("\n── Reports ─────────────────────────────────────────────")
+    # NOTE: the backend filters completed_at (TIMESTAMP) against to_date (DATE).
+    # In PostgreSQL, '2026-06-10T15:00:00 <= 2026-06-10' is FALSE because a bare
+    # date is cast to midnight (00:00:00). Tasks completed TODAY are therefore
+    # excluded when to_date = today. We use to_date = tomorrow so that tasks
+    # completed during this test run are included in the results.
     from_date = (date.today() - timedelta(days=7)).isoformat()
-    to_date = date.today().isoformat()
+    to_date = (date.today() + timedelta(days=1)).isoformat()  # tomorrow, to include today's completions
     r = client.get("/reports/completions", headers=H, params={"from": from_date, "to": to_date})
     assert_eq("GET /reports/completions → 200", r.status_code, 200)
     report = r.json()
     assert_in("report has completions", "completions", report)
     assert_in("report has total", "total", report)
     assert_true("total matches completions count", report["total"] == len(report["completions"]))
+
+    # The one-time task (task_id) was completed earlier in this test run.
+    # Verify that a completion record has all fields the mobile ReportsScreen needs.
+    completed_ids_in_report = [c["task_id"] for c in report["completions"]]
+    assert_in("completed task appears in report by task_id", task_id, completed_ids_in_report)
+    completion_rec = next((c for c in report["completions"] if c["task_id"] == task_id), None)
+    assert_true("completion record found for completed task", completion_rec is not None)
+    if completion_rec is not None:
+        assert_in("completion record has task_id field", "task_id", completion_rec)
+        assert_in("completion record has title field", "title", completion_rec)
+        assert_in("completion record has completed_at field", "completed_at", completion_rec)
+        assert_in("completion record has labels field", "labels", completion_rec)
+        assert_true("completion record labels is a list", isinstance(completion_rec["labels"], list))
+        # The completed task had its labels replaced to just [outdoor] via PUT before completion.
+        completion_label_values = {l["value"] for l in completion_rec["labels"]}
+        assert_in("outdoor label in completion record", "outdoor", completion_label_values)
+        # Each label in a completion record must have id, category, value
+        if completion_rec["labels"]:
+            first_label = completion_rec["labels"][0]
+            assert_in("completion label has id", "id", first_label)
+            assert_in("completion label has category", "category", first_label)
+            assert_in("completion label has value", "value", first_label)
+
+    # Missing required query params → 422
+    r = client.get("/reports/completions", headers=H, params={"from": from_date})
+    assert_eq("GET /reports/completions missing 'to' → 422", r.status_code, 422)
+    r = client.get("/reports/completions", headers=H, params={"to": to_date})
+    assert_eq("GET /reports/completions missing 'from' → 422", r.status_code, 422)
+    r = client.get("/reports/completions", headers=H)
+    assert_eq("GET /reports/completions missing both params → 422", r.status_code, 422)
+
+    # Date range filtering: a future-only range must return empty results
+    future_from = (date.today() + timedelta(days=30)).isoformat()
+    future_to = (date.today() + timedelta(days=37)).isoformat()
+    r = client.get("/reports/completions", headers=H, params={"from": future_from, "to": future_to})
+    assert_eq("GET /reports/completions future range → 200", r.status_code, 200)
+    future_report = r.json()
+    assert_eq("future range returns 0 completions", future_report["total"], 0)
+    assert_eq("future range completions list is empty", future_report["completions"], [])
+
+    # Auth required: no headers → 401
+    r = client.get("/reports/completions", params={"from": from_date, "to": to_date})
+    assert_eq("GET /reports/completions with no auth → 401", r.status_code, 401)
+
+    # label_ids filter on reports: the completed task has outdoor label — filtering by it
+    # should include the task; filtering by a non-matching label should exclude it.
+    outdoor_label_id = mode_labels["outdoor"]
+    r = client.get("/reports/completions", headers=H,
+                   params={"from": from_date, "to": to_date, "label_ids": outdoor_label_id})
+    assert_eq("GET /reports/completions with label_ids filter → 200", r.status_code, 200)
+    label_filtered_report = r.json()
+    label_filtered_ids = [c["task_id"] for c in label_filtered_report["completions"]]
+    assert_in("completed task found via label_ids filter", task_id, label_filtered_ids)
+
+    # Filtering by a label that the completed task does NOT have → excludes the task
+    financial_label_id = type_labels["financial"]
+    r = client.get("/reports/completions", headers=H,
+                   params={"from": from_date, "to": to_date, "label_ids": financial_label_id})
+    assert_eq("GET /reports/completions with non-matching label_ids → 200", r.status_code, 200)
+    nonmatch_report = r.json()
+    nonmatch_ids = [c["task_id"] for c in nonmatch_report["completions"]]
+    assert_true("completed task excluded by non-matching label_ids filter",
+                task_id not in nonmatch_ids)
 
     # ── Settings ───────────────────────────────────────────────────────────────
     print("\n── Settings ────────────────────────────────────────────")
