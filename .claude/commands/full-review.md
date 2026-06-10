@@ -10,10 +10,10 @@ Otherwise, run all four reviews in sequence for PR #$ARGUMENTS. Each review must
 1. Spawn the `code-reviewer` agent with: "Review PR #$ARGUMENTS. Use $PR=$ARGUMENTS throughout your instructions."
 
 2. Once the code review completes, fetch the review it posted to the PR and automatically apply all **Must fix** and **Should fix** items it identified. To do this:
-   - Run `gh pr view $ARGUMENTS --json headRefName` to get the PR branch name, then check it out
+   - Run `gh pr view $ARGUMENTS --json headRefName,changedFiles` to get the PR branch name and changed file list, then check out the branch
    - Read the review comment Dopey just posted (fetch via `gh pr view $ARGUMENTS --json reviews` or `gh api repos/:owner/:repo/pulls/$ARGUMENTS/reviews`)
    - Make the code changes directly in the working tree
-   - Commit and push to the PR branch
+   - Commit and push to the PR branch. Include `[skip deploy]` in the commit message if none of the changed files are under `backend/app/`.
    - Do NOT ask the user for approval before applying fixes — just do it. Only pause if you hit a genuine ambiguity or conflict that makes you unsure what the correct fix should be (that is the "serious kerfuffle" threshold).
    - Skip this step entirely if the code-review agent approved with no Must fix or Should fix items.
 

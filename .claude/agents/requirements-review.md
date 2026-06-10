@@ -116,7 +116,7 @@ After posting, commit any changes to `PRODUCT_REQUIREMENTS_DOCUMENT.MD` to the P
 
 ```bash
 git add PRODUCT_REQUIREMENTS_DOCUMENT.MD
-git commit -m "docs(prd): update PRODUCT_REQUIREMENTS_DOCUMENT.MD for PR #$PR"
+git commit -m "docs(prd): update PRODUCT_REQUIREMENTS_DOCUMENT.MD for PR #$PR [skip deploy]"
 git push
 ```
 

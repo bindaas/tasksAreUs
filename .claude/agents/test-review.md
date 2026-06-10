@@ -116,4 +116,14 @@ EOF
 )"
 ```
 
-After posting, report: PR number, whether tests passed, how many individual bug comments were filed (if any), and a one-line summary of what changed in the test file.
+After posting, commit the updated test file to the PR branch and push:
+
+```bash
+PR_BRANCH=$(gh pr view $PR --json headRefName -q .headRefName)
+git checkout "$PR_BRANCH"
+git add backend/tests/test_api.py
+git commit -m "test: update test_api.py for PR #$PR [skip deploy]"
+git push
+```
+
+Then report: PR number, whether tests passed, how many individual bug comments were filed (if any), and a one-line summary of what changed in the test file.

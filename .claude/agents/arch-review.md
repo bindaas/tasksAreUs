@@ -248,7 +248,7 @@ After posting, commit any changed doc files to the PR branch and push:
 
 ```bash
 git add ARCHITECTURE.MD DATA_MODEL_AND_API.MD
-git commit -m "docs(arch): update ARCHITECTURE.MD and DATA_MODEL_AND_API.MD for PR #$PR"
+git commit -m "docs(arch): update ARCHITECTURE.MD and DATA_MODEL_AND_API.MD for PR #$PR [skip deploy]"
 git push
 ```
 

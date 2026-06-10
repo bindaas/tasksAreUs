@@ -69,5 +69,8 @@
 - **Never** log or display credential values — confirm set/unset only
 - **Always** use a feature or a bug fix branch and create a PR to be merged. The PR comments should have a functional description of teh feature or the bug
 - **Always** end every PR body you create with a horizontal rule and signature: `— *Grumpy*`
+- **`[skip deploy]` on non-backend commits**: Any commit that contains no backend changes must include `[skip deploy]` in the commit message to prevent a Railway deployment. This applies to mobile (`mobile/`), frontend (`frontend/`), Claude config (`.claude/`), docs, and test-only (`backend/tests/`) commits. Backend code lives in `backend/app/` — anything touching only that directory (or alongside it) does trigger a deploy.
+- **`test_api.py` belongs on the feature branch**: Changes made to `backend/tests/test_api.py` (e.g. by Sleepy during a full-review) must be committed to the PR's feature branch and merged via the PR — never committed directly to main outside a PR.
+- **Claude config changes belong on the feature branch**: Changes to `.claude/` files made as part of implementing a specific PR (new skills, agent tweaks, permission rules) must be committed to that PR's branch and merged with it. Cross-cutting process improvements unrelated to any specific PR may be committed directly to main.
 
 
