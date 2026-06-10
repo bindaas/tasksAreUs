@@ -207,7 +207,7 @@ export function SettingsPage() {
 
   const isProduction = import.meta.env.PROD;
   const apiDisplayUrl = import.meta.env.DEV
-    ? 'http://localhost:8000'
+    ? (import.meta.env.VITE_API_TARGET ?? 'http://localhost:8000')
     : window.location.origin;
 
   async function testConnection() {

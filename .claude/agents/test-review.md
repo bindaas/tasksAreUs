@@ -120,10 +120,11 @@ EOF
 
 ```bash
 PR_BRANCH=$(gh pr view $PR --json headRefName -q .headRefName)
-git -C /Users/bindaas/projects/tasksAreUs checkout "$PR_BRANCH"
-git -C /Users/bindaas/projects/tasksAreUs add backend/tests/test_api.py
-git -C /Users/bindaas/projects/tasksAreUs commit -m "test: update test_api.py for PR #$PR [skip deploy]"
-git -C /Users/bindaas/projects/tasksAreUs push
+REPO=$(git rev-parse --show-toplevel)
+git -C "$REPO" checkout "$PR_BRANCH"
+git -C "$REPO" add backend/tests/test_api.py
+git -C "$REPO" commit -m "test: update test_api.py for PR #$PR [skip deploy]"
+git -C "$REPO" push
 ```
 
 Then report: PR number, whether tests passed, how many individual bug comments were filed (if any), and a one-line summary of what changed in the test file.
