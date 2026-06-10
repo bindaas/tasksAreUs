@@ -11,14 +11,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getCompletions } from '../api/reports';
 import type { CompletionRecord } from '../types';
 
+function toLocalISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalISO(new Date());
 }
 
 function sevenDaysAgoISO(): string {
   const d = new Date();
   d.setDate(d.getDate() - 6);
-  return d.toISOString().slice(0, 10);
+  return toLocalISO(d);
 }
 
 function formatCompletedAt(iso: string): string {
@@ -57,12 +61,12 @@ export function ReportsScreen() {
   const [from, setFrom] = useState(sevenDaysAgoISO);
   const [to, setTo] = useState(todayISO);
   const [records, setRecords] = useState<CompletionRecord[]>([]);
-  const [total, setTotal] = useState<number | null>(null);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fetched, setFetched] = useState(false);
 
-  const fetch = useCallback(async () => {
+  const runReport = useCallback(async () => {
     if (!from || !to) return;
     setLoading(true);
     setError(null);
@@ -115,7 +119,7 @@ export function ReportsScreen() {
           </View>
           <View style={{ paddingTop: 16 }}>
             <TouchableOpacity
-              onPress={fetch}
+              onPress={runReport}
               disabled={loading || !from || !to}
               className="bg-indigo-600 rounded-xl px-4 py-2"
               style={{ opacity: loading || !from || !to ? 0.5 : 1 }}
@@ -161,7 +165,7 @@ export function ReportsScreen() {
           ) : (
             <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 24 }}>
               {records.map((r) => (
-                <CompletionRow key={r.task_id + r.completed_at} record={r} />
+                <CompletionRow key={r.task_id} record={r} />
               ))}
             </ScrollView>
           )}
