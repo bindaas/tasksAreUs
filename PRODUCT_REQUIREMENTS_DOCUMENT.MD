@@ -165,7 +165,7 @@ The mobile app has four bottom tabs, mirroring the web app's four primary pages:
 | Tab | Equivalent web route | Status |
 |-----|----------------------|--------|
 | Tasks | `/` | **Shipped — PR #20** |
-| Chat | `/chat` | Placeholder — full implementation in a later PR |
+| Chat | `/chat` | **Shipped — PR #22** |
 | Reports | `/reports` | Placeholder — full implementation in a later PR |
 | Settings | `/settings` | Placeholder — full implementation in a later PR |
 
@@ -225,8 +225,29 @@ New file shipped in PR #21:
 
 **API client improvement (PR #21):** `mobile/src/api/client.ts` now exports an `ApiError` class (extends `Error`) carrying the HTTP `status` code. All `apiFetch` errors are thrown as `ApiError` instances, enabling callers to branch on specific status codes (e.g. 422).
 
+### Chat Screen (shipped — PR #22)
+
+`ChatScreen` is a fully working conversational AI interface replacing the earlier placeholder.
+
+**Behaviour:**
+- **Lazy conversation creation**: `POST /conversations` fires on the first message send, not on screen mount. No conversation is created if the user never types.
+- **Optimistic user message**: the user's message bubble appears immediately with a temporary ID; it is replaced with the confirmed message once the API responds.
+- **Typing indicator**: an `ActivityIndicator` spinner inside an assistant bubble is shown while awaiting the AI response.
+- **Suggested follow-up chips**: rendered below each assistant message; tapping a chip sends it immediately as the next message.
+- **Multiline input**: `TextInput` expands up to 120pt tall, then scrolls internally. The send button is disabled while the input is empty or a send is in flight (prevents double-send).
+- **Keyboard handling**: `KeyboardAvoidingView` with `padding` behaviour on iOS and `height` on Android keeps the input field above the software keyboard.
+- **Error handling**: an inline dismissible error banner is shown on send failure; the optimistic message is removed (rolled back) on error.
+- **Auto-scroll**: `ScrollView.scrollToEnd` fires on `onContentSizeChange` to keep the latest message visible.
+- **Empty state**: a 💬 icon and "Ask me about your tasks" prompt are shown before any messages exist.
+
+> **[ASPIRATIONAL]** Starter questions (suggested opening chips before the first message) are not yet shown — they depend on the Settings screen shipping in a later PR.
+
+New files shipped in PR #22:
+- `mobile/src/utils/chatUtils.ts` — pure utility functions extracted for testability: `buildOptimisticMessage`, `confirmMessages`, `rollbackMessage`
+- `mobile/src/__tests__/chatUtils.test.ts` — 9 Jest unit tests covering message-state transitions
+
 ### Utility Code
-Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`) and TypeScript types are copied from `frontend/src/` rather than extracted into a shared module. This is a deliberate no-monorepo decision — no shared package or workspace linking is used.
+Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUtils`) and TypeScript types are copied from `frontend/src/` rather than extracted into a shared module. This is a deliberate no-monorepo decision — no shared package or workspace linking is used.
 
 ### Environment / Config
 `mobile/.env.example` documents all required environment variables: Firebase project config, Google OAuth client IDs (web, iOS, Android), and `EXPO_PUBLIC_API_URL`.
@@ -240,3 +261,7 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`) and Type
 - Trip as a separate entity (trip is a Type label value)
 - Admin dashboard for cost tracking (note: per-call AI cost logging to the `ai_cost_log` table is implemented in the backend; only the admin-facing dashboard surface is out of scope)
 - ~~Native mobile app (iOS/Android)~~ — **now in scope**: React Native + Expo mobile client is being built (PR #18 scaffolded the project; feature screens follow in subsequent PRs)
+
+---
+
+*Last updated by — *Bashful* after PR #22 (feat(mobile): Chat screen)*
