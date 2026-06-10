@@ -72,6 +72,11 @@ export interface Settings {
   high_priority_daily_limit: number;
 }
 
+export interface UpdateSettingsBody {
+  starter_questions?: string[];
+  high_priority_daily_limit?: number;
+}
+
 export interface CompletionRecord {
   task_id: string;
   title: string;

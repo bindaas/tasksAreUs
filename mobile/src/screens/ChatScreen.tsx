@@ -88,9 +88,9 @@ export function ChatScreen() {
               </Text>
               {starterQuestions.length > 0 && (
                 <View className="flex-row flex-wrap justify-center" style={{ gap: 8 }}>
-                  {starterQuestions.map((q) => (
+                  {starterQuestions.map((q, idx) => (
                     <TouchableOpacity
-                      key={q}
+                      key={`${idx}-${q}`}
                       onPress={() => send(q)}
                       disabled={sending}
                       className="bg-indigo-50 border border-indigo-200 rounded-full px-3 py-2"

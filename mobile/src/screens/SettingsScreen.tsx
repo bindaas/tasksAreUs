@@ -18,6 +18,12 @@ import type { Label } from '../types';
 
 const MAX_QUESTIONS = 5;
 
+type StarterQuestion = { id: string; text: string };
+
+function makeQuestion(text = ''): StarterQuestion {
+  return { id: Math.random().toString(36).slice(2), text };
+}
+
 function LabelSection({
   category,
   labels,
@@ -40,12 +46,15 @@ function LabelSection({
 
   async function handleRename(id: string) {
     const trimmed = editValue.trim();
-    setEditingId(null);
-    if (!trimmed || trimmed === labels.find((l) => l.id === id)?.value) return;
+    if (!trimmed || trimmed === labels.find((l) => l.id === id)?.value) {
+      setEditingId(null);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       await onRename(id, trimmed);
+      setEditingId(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Rename failed');
     } finally {
@@ -187,7 +196,7 @@ export function SettingsScreen() {
   const [modeLabels, setModeLabels] = useState<Label[]>([]);
   const [typeLabels, setTypeLabels] = useState<Label[]>([]);
   const [highPriorityLimit, setHighPriorityLimit] = useState(3);
-  const [questions, setQuestions] = useState<string[]>([]);
+  const [questions, setQuestions] = useState<StarterQuestion[]>([]);
 
   const [emailInput, setEmailInput] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
@@ -205,7 +214,7 @@ export function SettingsScreen() {
           listLabels('type'),
         ]);
         setHighPriorityLimit(settings.high_priority_daily_limit ?? 3);
-        setQuestions(settings.starter_questions ?? []);
+        setQuestions((settings.starter_questions ?? []).map(makeQuestion));
         setModeLabels(modeRes.labels);
         setTypeLabels(typeRes.labels);
       } catch (e) {
@@ -241,7 +250,7 @@ export function SettingsScreen() {
     setSaved(false);
     try {
       await updateSettings({
-        starter_questions: questions.filter((q) => q.trim()),
+        starter_questions: questions.map((q) => q.text).filter((t) => t.trim()),
         high_priority_daily_limit: Math.max(1, highPriorityLimit),
       });
       setSaved(true);
@@ -375,7 +384,7 @@ export function SettingsScreen() {
                   </Text>
                   {questions.length < MAX_QUESTIONS && (
                     <TouchableOpacity
-                      onPress={() => setQuestions((prev) => [...prev, ''])}
+                      onPress={() => setQuestions((prev) => [...prev, makeQuestion()])}
                     >
                       <Text className="text-xs text-indigo-600 font-medium">+ Add</Text>
                     </TouchableOpacity>
@@ -392,15 +401,13 @@ export function SettingsScreen() {
                 ) : (
                   <View style={{ gap: 8 }}>
                     {questions.map((q, idx) => (
-                      <View key={idx} className="flex-row items-center" style={{ gap: 8 }}>
+                      <View key={q.id} className="flex-row items-center" style={{ gap: 8 }}>
                         <TextInput
-                          value={q}
+                          value={q.text}
                           onChangeText={(v) =>
-                            setQuestions((prev) => {
-                              const next = [...prev];
-                              next[idx] = v;
-                              return next;
-                            })
+                            setQuestions((prev) =>
+                              prev.map((item) => (item.id === q.id ? { ...item, text: v } : item)),
+                            )
                           }
                           placeholder={`Question ${idx + 1}`}
                           placeholderTextColor="#9ca3af"
@@ -408,7 +415,7 @@ export function SettingsScreen() {
                         />
                         <TouchableOpacity
                           onPress={() =>
-                            setQuestions((prev) => prev.filter((_, i) => i !== idx))
+                            setQuestions((prev) => prev.filter((item) => item.id !== q.id))
                           }
                           className="p-1"
                         >
