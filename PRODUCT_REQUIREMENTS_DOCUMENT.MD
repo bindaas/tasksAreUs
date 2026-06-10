@@ -167,7 +167,7 @@ The mobile app has four bottom tabs, mirroring the web app's four primary pages:
 | Tasks | `/` | **Shipped — PR #20** |
 | Chat | `/chat` | **Shipped — PR #22** |
 | Reports | `/reports` | Placeholder — full implementation in a later PR |
-| Settings | `/settings` | Placeholder — full implementation in a later PR |
+| Settings | `/settings` | **Shipped — PR #23** |
 
 ### Authentication (shipped — PR #18)
 Mobile auth follows the same Firebase-only identity model as the web frontend, with mobile-specific implementation details:
@@ -177,7 +177,7 @@ Mobile auth follows the same Firebase-only identity model as the web frontend, w
 - **Magic link**: `sendSignInLinkToEmail` with `handleCodeInApp: true`. The email link carries the `tasksareus://` deep-link URL. **Known limitation**: in Expo Go, the email link opens in the system browser and cannot redirect back into the app; the UI notes this explicitly. Full magic-link sign-in (auto-redirect) works only in standalone builds.
 - **Cross-device magic link**: If the link is opened on a different device than where it was requested, the app prompts the user to confirm their email address before completing sign-in.
 - **LoginScreen**: Shown only after a deliberate sign-out; offers Google and magic-link options.
-- **SettingsScreen → Account section**: Shows "Anonymous user" or the signed-in user's display name / email, plus a Sign out button. Full label management, High Priority Limit, and starter questions configuration follow in a later PR.
+- **SettingsScreen → Account section**: Shows "Anonymous user" or the signed-in user's display name / email, plus a Sign out button. Anonymous users are offered Google sign-in and email sign-in options to upgrade to a named account. Full label management, High Priority Limit, and starter questions configuration are now also available (shipped — PR #23).
 - **Deliberate sign-out flag**: A module-level boolean (resets on app force-quit) prevents the auto-anonymous-sign-in from firing after an explicit sign-out.
 - **API client** (`mobile/src/api/client.ts`): Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer <token>` on every request to `EXPO_PUBLIC_API_URL/api/v1`.
 
@@ -238,13 +238,23 @@ New file shipped in PR #21:
 - **Keyboard handling**: `KeyboardAvoidingView` with `padding` behaviour on iOS and `height` on Android keeps the input field above the software keyboard.
 - **Error handling**: an inline dismissible error banner is shown on send failure; the optimistic message is removed (rolled back) on error.
 - **Auto-scroll**: `ScrollView.scrollToEnd` fires on `onContentSizeChange` to keep the latest message visible.
-- **Empty state**: a 💬 icon and "Ask me about your tasks" prompt are shown before any messages exist.
-
-> **[ASPIRATIONAL]** Starter questions (suggested opening chips before the first message) are not yet shown — they depend on the Settings screen shipping in a later PR.
+- **Empty state**: a 💬 icon is shown before any messages exist. If the user has configured starter questions, they appear as indigo chips ("What would you like to know?") that can be tapped to send immediately; if no starter questions are configured, a plain "Ask me about your tasks" prompt is shown instead (shipped — PR #23).
 
 New files shipped in PR #22:
 - `mobile/src/utils/chatUtils.ts` — pure utility functions extracted for testability: `buildOptimisticMessage`, `confirmMessages`, `rollbackMessage`
 - `mobile/src/__tests__/chatUtils.test.ts` — 9 Jest unit tests covering message-state transitions
+
+### Settings Screen (shipped — PR #23)
+
+`SettingsScreen` is a fully scrollable screen replacing the earlier placeholder. It uses `KeyboardAvoidingView` + `ScrollView` to handle on-screen keyboards gracefully.
+
+**Sections:**
+
+- **Labels**: Mode and Type subsections, each showing the user's personal label list. Each label has inline rename (tap to edit, submit to save, Cancel to abort) and Delete (with confirmation alert). Each subsection has an "+ Add" button to create a new label. Frequency labels are not shown here (they are immutable). Changes take effect immediately against the live API.
+- **High Priority Daily Limit**: stepper with − and + buttons (clamped to minimum 1) showing the current limit numerically. Persisted server-side along with starter questions via the Save button.
+- **Starter Questions**: up to 5 text inputs. Questions can be added (up to 5), edited inline, and removed individually. A counter shows `(N/5)` in the section header. Saved server-side via `PUT /settings` when the user taps "Save Settings".
+- **Save Settings button**: persists High Priority Limit and Starter Questions together in a single `PUT /settings` call. Shows a "Settings saved" confirmation banner for 3 seconds on success.
+- **Account section**: see Authentication section above.
 
 ### Utility Code
 Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUtils`) and TypeScript types are copied from `frontend/src/` rather than extracted into a shared module. This is a deliberate no-monorepo decision — no shared package or workspace linking is used.
@@ -264,4 +274,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #22 (feat(mobile): Chat screen)*
+*Last updated by — *Bashful* after PR #23 (feat(mobile): Settings screen)*

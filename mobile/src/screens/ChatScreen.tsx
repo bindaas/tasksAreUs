@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createConversation, sendMessage } from '../api/conversations';
+import { getSettings } from '../api/settings';
 import { buildOptimisticMessage, confirmMessages, rollbackMessage } from '../utils/chatUtils';
 import type { Message } from '../types';
 
@@ -19,9 +20,16 @@ export function ChatScreen() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [starterQuestions, setStarterQuestions] = useState<string[]>([]);
   const scrollRef = useRef<ScrollView>(null);
   // Ref latch prevents duplicate conversations if ensureConversation is ever called concurrently
   const conversationIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    getSettings()
+      .then((s) => setStarterQuestions(s.starter_questions ?? []))
+      .catch(() => {});
+  }, []);
 
   async function ensureConversation(): Promise<string> {
     if (conversationIdRef.current) return conversationIdRef.current;
@@ -71,11 +79,28 @@ export function ChatScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {messages.length === 0 && !sending && (
-            <View className="items-center justify-center pt-24">
+            <View className="items-center justify-center pt-24 px-4">
               <Text className="text-4xl mb-3">💬</Text>
-              <Text className="text-gray-400 text-base text-center">
-                Ask me about your tasks
+              <Text className="text-gray-400 text-base text-center mb-4">
+                {starterQuestions.length > 0
+                  ? 'What would you like to know?'
+                  : 'Ask me about your tasks'}
               </Text>
+              {starterQuestions.length > 0 && (
+                <View className="flex-row flex-wrap justify-center" style={{ gap: 8 }}>
+                  {starterQuestions.map((q, idx) => (
+                    <TouchableOpacity
+                      key={`${idx}-${q}`}
+                      onPress={() => send(q)}
+                      disabled={sending}
+                      className="bg-indigo-50 border border-indigo-200 rounded-full px-3 py-2"
+                      style={{ opacity: sending ? 0.5 : 1 }}
+                    >
+                      <Text className="text-xs text-indigo-700">{q}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 
