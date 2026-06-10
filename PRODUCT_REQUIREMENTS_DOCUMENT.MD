@@ -166,7 +166,7 @@ The mobile app has four bottom tabs, mirroring the web app's four primary pages:
 |-----|----------------------|--------|
 | Tasks | `/` | **Shipped — PR #20** |
 | Chat | `/chat` | **Shipped — PR #22** |
-| Reports | `/reports` | Placeholder — full implementation in a later PR |
+| Reports | `/reports` | **Shipped — PR #24** |
 | Settings | `/settings` | **Shipped — PR #23** |
 
 ### Authentication (shipped — PR #18)
@@ -256,6 +256,22 @@ New files shipped in PR #22:
 - **Save Settings button**: persists High Priority Limit and Starter Questions together in a single `PUT /settings` call. Shows a "Settings saved" confirmation banner for 3 seconds on success.
 - **Account section**: see Authentication section above.
 
+### Reports Screen (shipped — PR #24)
+
+`ReportsScreen` is a fully implemented reports view replacing the earlier "Coming in PR 6" placeholder.
+
+**Behaviour:**
+- **Date-range picker**: From and To text inputs accepting ISO `YYYY-MM-DD` format. Defaults to the last 7 days (today−6 through today) on first render. Uses local-timezone date arithmetic so the defaults are always correct regardless of UTC offset.
+- **Go button**: Lazy fetch — no request is made on mount. The user adjusts the date range first, then taps Go to run the report. The button is disabled while a request is in flight or either date field is empty.
+- **Pre-fetch state**: An illustrated "Set a date range and tap Go" prompt is shown before the first fetch.
+- **Loading spinner**: `ActivityIndicator` is shown while the request is in flight.
+- **Summary bar**: After a successful fetch, shows "N completion(s)" (singular/plural) in the header area.
+- **Completions list**: Scrollable list of `CompletionRow` cards, each showing: task title (up to 2 lines), formatted completion timestamp (locale date + time), and label badges sorted Mode → Type → Frequency.
+- **Empty state**: Illustrated "No completions in this range" when `total === 0`.
+- **Dismissable error banner**: Shown inline on network or API failure; user can tap Dismiss to clear it.
+
+**Backend boundary fix (PR #24):** The `GET /reports/completions` endpoint's `to_date` filter was changed from `completed_at <= to_date` to `completed_at < to_date + 1 day`. This ensures that tasks completed at any time on the `to_date` calendar day are included; previously, PostgreSQL's implicit cast of a bare DATE to midnight excluded tasks completed after 00:00 on the `to_date`.
+
 ### Utility Code
 Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUtils`) and TypeScript types are copied from `frontend/src/` rather than extracted into a shared module. This is a deliberate no-monorepo decision — no shared package or workspace linking is used.
 
@@ -274,4 +290,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #23 (feat(mobile): Settings screen)*
+*Last updated by — *Bashful* after PR #24 (feat(mobile): Reports screen)*
