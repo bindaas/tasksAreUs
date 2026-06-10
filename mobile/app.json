@@ -14,7 +14,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.bindaas.tasksareus"
+      "bundleIdentifier": "com.bindaas.tasksareus",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.bindaas.tasksareus",
@@ -23,6 +26,17 @@
         "backgroundColor": "#ffffff"
       }
     },
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": "bd9e5b1a-f670-4a56-8eac-5d921f0cfd4e"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/bd9e5b1a-f670-4a56-8eac-5d921f0cfd4e"
+    }
   }
 }
