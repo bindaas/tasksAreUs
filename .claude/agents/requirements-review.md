@@ -112,4 +112,12 @@ EOF
 )"
 ```
 
-After posting, report: PR number, a one-line summary of the most significant PRD change made, and how many items were marked aspirational (if any).
+After posting, commit any changes to `PRODUCT_REQUIREMENTS_DOCUMENT.MD` to the PR branch and push:
+
+```bash
+git add PRODUCT_REQUIREMENTS_DOCUMENT.MD
+git commit -m "docs(prd): update PRODUCT_REQUIREMENTS_DOCUMENT.MD for PR #$PR"
+git push
+```
+
+Then report: PR number, a one-line summary of the most significant PRD change made, and how many items were marked aspirational (if any).

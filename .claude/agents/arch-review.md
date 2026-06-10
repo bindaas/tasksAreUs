@@ -244,4 +244,12 @@ EOF
 )"
 ```
 
-After posting, report: PR number, which documents were modified, how many critique comments were filed (with severity breakdown), and a one-line summary of the most significant architectural concern (or "no concerns" if clean).
+After posting, commit any changed doc files to the PR branch and push:
+
+```bash
+git add ARCHITECTURE.MD DATA_MODEL_AND_API.MD
+git commit -m "docs(arch): update ARCHITECTURE.MD and DATA_MODEL_AND_API.MD for PR #$PR"
+git push
+```
+
+Then report: PR number, which documents were modified, how many critique comments were filed (with severity breakdown), and a one-line summary of the most significant architectural concern (or "no concerns" if clean).
