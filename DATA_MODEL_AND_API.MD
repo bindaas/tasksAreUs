@@ -524,8 +524,8 @@ Get the message history for a conversation.
 Get completed tasks within a date range.
 
 **Query params**:
-- `from=YYYY-MM-DD` (required)
-- `to=YYYY-MM-DD` (required)
+- `from=YYYY-MM-DD` (required) — lower bound, inclusive (`completed_at >= from`)
+- `to=YYYY-MM-DD` (required) — upper bound, inclusive of the full calendar day (`completed_at < to + 1 day`); tasks completed at any time on `to` are included
 - `label_ids=uuid,uuid` — optional filter
 
 **Response**
