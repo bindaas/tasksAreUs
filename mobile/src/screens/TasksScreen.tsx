@@ -11,17 +11,32 @@ import {
   TextInput,
   Switch,
 } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import type { SharedValue } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { listTasks, completeTask as apiCompleteTask, deleteTask as apiDeleteTask } from '../api/tasks';
+import {
+  listTasks,
+  completeTask as apiCompleteTask,
+  deleteTask as apiDeleteTask,
+  updateTask,
+} from '../api/tasks';
 import { listLabels } from '../api/labels';
+import { getSettings } from '../api/settings';
 import { groupTasksForList, type TaskSection } from '../utils/taskGrouping';
 import { filterTasks } from '../utils/taskFilters';
-import { formatDate, getEffectiveDate } from '../utils/taskDateUtils';
+import {
+  formatDate,
+  getEffectiveDate,
+  getDropDate,
+  getColumn,
+  dateOnly,
+  type ColumnKey,
+} from '../utils/taskDateUtils';
 import { TaskFormScreen } from './TaskFormScreen';
-import type { Task, Label, LabelCategory } from '../types';
+import type { Task, Label, LabelCategory, UpdateTaskBody } from '../types';
 
-// Dynamic colors via inline style — safer than dynamic Tailwind class interpolation
 const LABEL_BG: Record<string, string> = {
   frequency: '#dbeafe',
   mode: '#dcfce7',
@@ -115,6 +130,99 @@ function TaskRow({
   );
 }
 
+function TaskGhost({ task }: { task: Task }) {
+  const effectiveDate = getEffectiveDate(task);
+  return (
+    <View
+      className="bg-white mx-4 rounded-xl border border-indigo-300 overflow-hidden"
+      style={{
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 5 },
+        elevation: 8,
+      }}
+    >
+      {task.is_high_priority && <View className="h-1 bg-amber-400" />}
+      <View className="p-4">
+        {task.is_high_priority && (
+          <Text className="text-amber-500 text-sm mb-0.5">★</Text>
+        )}
+        <Text className="text-gray-900 text-base font-medium" numberOfLines={2}>
+          {task.title}
+        </Text>
+        {effectiveDate && (
+          <Text className="text-gray-400 text-xs mt-1">{formatDate(effectiveDate)}</Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function DraggableTaskRow({
+  task,
+  isBeingDragged,
+  ghostY,
+  ghostVisible,
+  onDragActivate,
+  onDragMove,
+  onDragEnd,
+  onComplete,
+  onDeletePress,
+  onEditPress,
+}: {
+  task: Task;
+  isBeingDragged: boolean;
+  ghostY: SharedValue<number>;
+  ghostVisible: SharedValue<boolean>;
+  onDragActivate: (task: Task, absX: number, absY: number) => void;
+  onDragMove: (absX: number, absY: number) => void;
+  onDragEnd: (dropped: boolean) => void;
+  onComplete: (id: string) => void;
+  onDeletePress: (id: string, title: string) => void;
+  onEditPress: (id: string) => void;
+}) {
+  const panGesture = Gesture.Pan()
+    .activateAfterLongPress(500)
+    .enabled(task.state !== 'done')
+    .onStart((e) => {
+      'worklet';
+      ghostY.value = e.absoluteY - 50;
+      ghostVisible.value = true;
+      runOnJS(onDragActivate)(task, e.absoluteX, e.absoluteY);
+    })
+    .onUpdate((e) => {
+      'worklet';
+      ghostY.value = e.absoluteY - 50;
+      runOnJS(onDragMove)(e.absoluteX, e.absoluteY);
+    })
+    .onEnd(() => {
+      'worklet';
+      ghostVisible.value = false;
+      runOnJS(onDragEnd)(true);
+    })
+    .onFinalize((_, success) => {
+      'worklet';
+      if (!success) {
+        ghostVisible.value = false;
+        runOnJS(onDragEnd)(false);
+      }
+    });
+
+  return (
+    <GestureDetector gesture={panGesture}>
+      <Animated.View style={{ opacity: isBeingDragged ? 0.3 : 1 }}>
+        <TaskRow
+          task={task}
+          onComplete={onComplete}
+          onDeletePress={onDeletePress}
+          onEditPress={onEditPress}
+        />
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
 type DisplaySection = TaskSection & { totalCount: number };
 
 export function TasksScreen() {
@@ -124,7 +232,6 @@ export function TasksScreen() {
   const [error, setError] = useState<string | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | undefined>(undefined);
-
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['today', 'overdue']),
   );
@@ -135,6 +242,34 @@ export function TasksScreen() {
   const [showDone, setShowDone] = useState(false);
   // Ref lets load() read the latest showDone without being in its dep array
   const showDoneRef = useRef(false);
+
+  const [highPriorityLimit, setHighPriorityLimit] = useState(3);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dragTargetSection, setDragTargetSection] = useState<ColumnKey | null>(null);
+
+  const draggingTaskRef = useRef<Task | null>(null);
+  const currentDragTargetRef = useRef<ColumnKey | null>(null);
+  const sectionContentYRef = useRef<Record<string, number>>({});
+  const sectionHeaderRefs = useRef<Record<string, View | null>>({});
+  const listContainerRef = useRef<View>(null);
+  const listAbsoluteTopRef = useRef(0);
+  const listHeightRef = useRef(0);
+  const scrollOffsetRef = useRef(0);
+  const autoScrollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastFingerYRef = useRef(0);
+  const listRef = useRef<SectionList<Task, DisplaySection>>(null);
+
+  const ghostY = useSharedValue(0);
+  const ghostVisible = useSharedValue(false);
+
+  const ghostAnimatedStyle = useAnimatedStyle(() => ({
+    position: 'absolute' as const,
+    top: ghostY.value,
+    left: 0,
+    right: 0,
+    opacity: ghostVisible.value ? 1 : 0,
+    zIndex: 999,
+  }));
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -156,6 +291,9 @@ export function TasksScreen() {
       // Re-fetch labels on every focus so chips stay current after Settings changes
       listLabels()
         .then(({ labels }) => setAllLabels(labels))
+        .catch(() => {});
+      getSettings()
+        .then((s) => setHighPriorityLimit(s.high_priority_daily_limit))
         .catch(() => {});
     }, [load]),
   );
@@ -250,8 +388,6 @@ export function TasksScreen() {
     if (allSectionsExpanded) {
       setExpandedSections(new Set());
     } else {
-      // Expand all possible keys so sections that become visible after clearing
-      // filters are not left collapsed
       setExpandedSections(
         new Set(['overdue', 'today', 'tomorrow', 'day_after_tomorrow', 'upcoming', 'nodate']),
       );
@@ -284,6 +420,165 @@ export function TasksScreen() {
     }
   }
 
+  // ── drag-drop ─────────────────────────────────────────────────────────────
+
+  function stopAutoScroll() {
+    if (autoScrollRef.current) {
+      clearInterval(autoScrollRef.current);
+      autoScrollRef.current = null;
+    }
+  }
+
+  function updateDragTarget(fingerAbsY: number) {
+    const fingerContentY =
+      fingerAbsY - listAbsoluteTopRef.current + scrollOffsetRef.current;
+
+    const sortedKeys = (Object.keys(sectionContentYRef.current) as ColumnKey[]).sort(
+      (a, b) => sectionContentYRef.current[a] - sectionContentYRef.current[b],
+    );
+
+    let newTarget: ColumnKey | null = null;
+    for (let i = 0; i < sortedKeys.length; i++) {
+      const key = sortedKeys[i];
+      const sectionStart = sectionContentYRef.current[key];
+      const sectionEnd =
+        i + 1 < sortedKeys.length
+          ? sectionContentYRef.current[sortedKeys[i + 1]]
+          : sectionStart + 300;
+      if (fingerContentY >= sectionStart && fingerContentY < sectionEnd) {
+        newTarget = key === 'overdue' ? null : key;
+        break;
+      }
+    }
+
+    if (newTarget !== currentDragTargetRef.current) {
+      currentDragTargetRef.current = newTarget;
+      setDragTargetSection(newTarget);
+    }
+  }
+
+  function startAutoScroll(direction: 1 | -1) {
+    if (autoScrollRef.current) return;
+    autoScrollRef.current = setInterval(() => {
+      const newOffset = Math.max(0, scrollOffsetRef.current + direction * 6);
+      scrollOffsetRef.current = newOffset;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // getScrollResponder is an internal RN API; typed workaround for arbitrary-offset scroll
+      // since SectionList.scrollToLocation does not support free-form offsets.
+      (listRef.current as any)?.getScrollResponder()?.scrollTo({ y: newOffset, animated: false });
+      updateDragTarget(lastFingerYRef.current);
+    }, 16);
+  }
+
+  function onDragActivate(task: Task, _absX: number, absY: number) {
+    draggingTaskRef.current = task;
+    setDraggingTaskId(task.id);
+    lastFingerYRef.current = absY;
+    listContainerRef.current?.measure((_x, _y, _w, height, _px, listPageY) => {
+      listAbsoluteTopRef.current = listPageY;
+      listHeightRef.current = height;
+      // onLayout inside SectionList gives Y relative to RN's internal CellContainer
+      // wrapper (always ~0), not the scroll content. Use measure() on refs instead to
+      // get true absolute positions, then convert to content-relative.
+      const keys = Object.keys(sectionHeaderRefs.current);
+      let pending = keys.length;
+      if (pending === 0) {
+        updateDragTarget(absY);
+        return;
+      }
+      for (const key of keys) {
+        const ref = sectionHeaderRefs.current[key];
+        if (!ref) {
+          pending--;
+          if (pending === 0) updateDragTarget(absY);
+          continue;
+        }
+        ref.measure((_x2, _y2, _w2, _h2, _px2, headerPageY) => {
+          sectionContentYRef.current[key] = headerPageY - listPageY + scrollOffsetRef.current;
+          pending--;
+          if (pending === 0) updateDragTarget(absY);
+        });
+      }
+    });
+  }
+
+  function onDragMove(_absX: number, absY: number) {
+    lastFingerYRef.current = absY;
+    const listTop = listAbsoluteTopRef.current;
+    const listBottom = listTop + listHeightRef.current;
+    const edge = 80;
+
+    if (absY < listTop + edge && absY > listTop) {
+      if (!autoScrollRef.current) startAutoScroll(-1);
+    } else if (absY > listBottom - edge && absY < listBottom) {
+      if (!autoScrollRef.current) startAutoScroll(1);
+    } else {
+      stopAutoScroll();
+    }
+
+    updateDragTarget(absY);
+  }
+
+  function handleDragEnd(dropped: boolean) {
+    stopAutoScroll();
+    if (dropped && draggingTaskRef.current && currentDragTargetRef.current) {
+      void performDrop(draggingTaskRef.current, currentDragTargetRef.current);
+    }
+    draggingTaskRef.current = null;
+    currentDragTargetRef.current = null;
+    setDraggingTaskId(null);
+    setDragTargetSection(null);
+  }
+
+  async function performDrop(task: Task, targetSection: ColumnKey) {
+    if (targetSection === 'overdue') return;
+
+    // HP check: only fires for already-HP tasks. Mobile has no HP zone, so a drag
+    // cannot promote a non-HP task — the limit only matters when moving an existing
+    // HP task into a section that may already be at capacity.
+    if (task.is_high_priority && (targetSection === 'today' || targetSection === 'tomorrow')) {
+      const todayStr = dateOnly(new Date());
+      const tomDate = new Date();
+      tomDate.setDate(tomDate.getDate() + 1);
+      const tomStr = dateOnly(tomDate);
+      const hpCount = tasks.filter(
+        (t) =>
+          t.id !== task.id &&
+          t.is_high_priority &&
+          t.state === 'pending' &&
+          getColumn(t, todayStr, tomStr) === targetSection,
+      ).length;
+      if (hpCount >= highPriorityLimit) {
+        Alert.alert(
+          'High Priority Limit',
+          `You already have ${highPriorityLimit} high-priority tasks for ${
+            targetSection === 'today' ? 'Today' : 'Tomorrow'
+          }.`,
+        );
+        return;
+      }
+    }
+
+    // Only target_date is cleared on a no-date drop; must_do_by and is_high_priority
+    // are left untouched (matches web behaviour and architecture spec).
+    const newDate = getDropDate(targetSection);
+    const body: UpdateTaskBody = { target_date: newDate };
+
+    const original = task;
+    setTasks((prev) =>
+      prev.map((t) => (t.id !== task.id ? t : { ...t, target_date: newDate })),
+    );
+
+    try {
+      await updateTask(task.id, body);
+    } catch {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? original : t)));
+      Alert.alert('Error', 'Could not move task. Please try again.');
+    }
+  }
+
+  // ── render ─────────────────────────────────────────────────────────────────
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
@@ -296,10 +591,7 @@ export function TasksScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center px-8">
         <Text className="text-gray-500 text-center mb-4">{error}</Text>
-        <TouchableOpacity
-          onPress={() => load()}
-          className="bg-indigo-600 rounded-xl px-6 py-3"
-        >
+        <TouchableOpacity onPress={() => load()} className="bg-indigo-600 rounded-xl px-6 py-3">
           <Text className="text-white font-semibold">Retry</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -411,64 +703,101 @@ export function TasksScreen() {
         />
       </Modal>
 
-      <SectionList<Task, DisplaySection>
-        sections={displaySections}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TaskRow
-            task={item}
-            onComplete={handleComplete}
-            onDeletePress={handleDeletePress}
-            onEditPress={handleEditPress}
-          />
-        )}
-        renderSectionHeader={({ section }) => {
-          const isExpanded = expandedSections.has(section.key);
-          const sectionColor = section.key === 'overdue' ? '#ef4444' : '#9ca3af';
-          return (
-            <TouchableOpacity
-              onPress={() => toggleSection(section.key)}
-              className="flex-row items-center px-4 py-2"
-              activeOpacity={0.7}
-            >
-              <Text
-                className="text-xs font-semibold uppercase tracking-wider flex-1"
-                style={{ color: sectionColor }}
+      {/* List + ghost container */}
+      <View ref={listContainerRef} style={{ flex: 1 }}>
+        <SectionList<Task, DisplaySection>
+          ref={listRef}
+          sections={displaySections}
+          keyExtractor={(item) => item.id}
+          scrollEnabled={draggingTaskId === null}
+          onScroll={(e) => {
+            scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
+          renderItem={({ item }) => (
+            <DraggableTaskRow
+              task={item}
+              isBeingDragged={item.id === draggingTaskId}
+              ghostY={ghostY}
+              ghostVisible={ghostVisible}
+              onDragActivate={onDragActivate}
+              onDragMove={onDragMove}
+              onDragEnd={handleDragEnd}
+              onComplete={handleComplete}
+              onDeletePress={handleDeletePress}
+              onEditPress={handleEditPress}
+            />
+          )}
+          renderSectionHeader={({ section }) => {
+            const isExpanded = expandedSections.has(section.key);
+            const isDragTarget = dragTargetSection === section.key;
+            const sectionColor =
+              section.key === 'overdue'
+                ? '#ef4444'
+                : isDragTarget
+                  ? '#4f46e5'
+                  : '#9ca3af';
+            return (
+              <View
+                ref={(ref) => {
+                  sectionHeaderRefs.current[section.key] = ref;
+                }}
               >
-                {section.title}
-                {!isExpanded && section.totalCount > 0 ? ` (${section.totalCount})` : ''}
-              </Text>
-              <Text className="text-xs ml-2" style={{ color: sectionColor }}>
-                {isExpanded ? '▾' : '▸'}
-              </Text>
-            </TouchableOpacity>
-          );
-        }}
-        // SectionList's built-in empty check sees collapsed sections as non-empty
-        // (data: [] but sections array is non-empty), so we guard manually.
-        ListEmptyComponent={
-          allFilteredSections.length === 0 ? (
-            <View className="items-center justify-center pt-24">
-              <Text className="text-4xl mb-3">✓</Text>
-              <Text className="text-gray-400 text-base">
-                {hasActiveFilters ? 'No tasks match your filters' : 'No pending tasks'}
-              </Text>
-            </View>
-          ) : null
-        }
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              load(true);
-            }}
-            tintColor="#4f46e5"
-          />
-        }
-        contentContainerStyle={{ paddingBottom: 24 }}
-        stickySectionHeadersEnabled={false}
-      />
+                <TouchableOpacity
+                  onPress={() => toggleSection(section.key)}
+                  className="flex-row items-center px-4 py-2"
+                  activeOpacity={0.7}
+                  style={
+                    isDragTarget
+                      ? { backgroundColor: '#e0e7ff', borderLeftWidth: 3, borderLeftColor: '#4f46e5' }
+                      : undefined
+                  }
+                >
+                  <Text
+                    className="text-xs font-semibold uppercase tracking-wider flex-1"
+                    style={{ color: sectionColor }}
+                  >
+                    {section.title}
+                    {!isExpanded && section.totalCount > 0 ? ` (${section.totalCount})` : ''}
+                  </Text>
+                  <Text className="text-xs ml-2" style={{ color: sectionColor }}>
+                    {isExpanded ? '▾' : '▸'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }}
+          // SectionList's built-in empty check sees collapsed sections as non-empty
+          // (data: [] but sections array is non-empty), so we guard manually.
+          ListEmptyComponent={
+            allFilteredSections.length === 0 ? (
+              <View className="items-center justify-center pt-24">
+                <Text className="text-4xl mb-3">✓</Text>
+                <Text className="text-gray-400 text-base">
+                  {hasActiveFilters ? 'No tasks match your filters' : 'No pending tasks'}
+                </Text>
+              </View>
+            ) : null
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                load(true);
+              }}
+              tintColor="#4f46e5"
+            />
+          }
+          contentContainerStyle={{ paddingBottom: 24 }}
+          stickySectionHeadersEnabled={false}
+        />
+
+        {/* Floating ghost — follows finger during drag */}
+        <Animated.View style={ghostAnimatedStyle} pointerEvents="none">
+          {draggingTaskRef.current && <TaskGhost task={draggingTaskRef.current} />}
+        </Animated.View>
+      </View>
     </SafeAreaView>
   );
 }

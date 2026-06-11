@@ -32,6 +32,18 @@ export function getEffectiveDate(task: Pick<Task, 'must_do_by' | 'target_date'>)
   return task.must_do_by ?? task.target_date ?? null;
 }
 
+export function getDropDate(key: ColumnKey, today: Date = new Date()): string | null {
+  const d = new Date(today);
+  switch (key) {
+    case 'today': return dateOnly(d);
+    case 'tomorrow': d.setDate(d.getDate() + 1); return dateOnly(d);
+    case 'day_after_tomorrow': d.setDate(d.getDate() + 2); return dateOnly(d);
+    case 'upcoming': d.setDate(d.getDate() + 7); return dateOnly(d);
+    case 'nodate': return null;
+    default: return null;
+  }
+}
+
 export function getColumn(
   task: Pick<Task, 'must_do_by' | 'target_date'>,
   today: string,

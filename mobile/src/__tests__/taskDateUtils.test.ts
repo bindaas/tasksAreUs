@@ -1,4 +1,4 @@
-import { dateOnly, formatDate, isOverdue, getEffectiveDate, getColumn } from '../utils/taskDateUtils';
+import { dateOnly, formatDate, isOverdue, getEffectiveDate, getColumn, getDropDate } from '../utils/taskDateUtils';
 
 describe('dateOnly', () => {
   it('formats a Date to YYYY-MM-DD', () => {
@@ -59,6 +59,34 @@ describe('getEffectiveDate', () => {
 
   it('returns earliest date when both are set — must_do_by earlier', () => {
     expect(getEffectiveDate({ target_date: '2026-06-15', must_do_by: '2026-06-08' })).toBe('2026-06-08');
+  });
+});
+
+describe('getDropDate', () => {
+  const ref = new Date(2026, 5, 10); // 2026-06-10 (Wednesday)
+
+  it('returns today for "today"', () => {
+    expect(getDropDate('today', ref)).toBe('2026-06-10');
+  });
+
+  it('returns tomorrow for "tomorrow"', () => {
+    expect(getDropDate('tomorrow', ref)).toBe('2026-06-11');
+  });
+
+  it('returns day+2 for "day_after_tomorrow"', () => {
+    expect(getDropDate('day_after_tomorrow', ref)).toBe('2026-06-12');
+  });
+
+  it('returns today+7 for "upcoming"', () => {
+    expect(getDropDate('upcoming', ref)).toBe('2026-06-17');
+  });
+
+  it('returns null for "nodate"', () => {
+    expect(getDropDate('nodate', ref)).toBeNull();
+  });
+
+  it('returns null for "overdue" (invalid drop target)', () => {
+    expect(getDropDate('overdue', ref)).toBeNull();
   });
 });
 

@@ -179,7 +179,7 @@ Mobile auth follows the same Firebase-only identity model as the web frontend, w
 - **Deliberate sign-out flag**: A module-level boolean (resets on app force-quit) prevents the auto-anonymous-sign-in from firing after an explicit sign-out.
 - **API client** (`mobile/src/api/client.ts`): Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer <token>` on every request to `EXPO_PUBLIC_API_URL/api/v1`.
 
-### Tasks Screen (shipped — PR #20, updated PR #21, updated PR #26)
+### Tasks Screen (shipped — PR #20, updated PR #21, updated PR #26, updated PR #27)
 
 The Tasks tab is fully implemented as a `SectionList` grouped by date proximity:
 
@@ -191,6 +191,7 @@ The Tasks tab is fully implemented as a `SectionList` grouped by date proximity:
   - **Label chips**: grouped by category (Mode / Type / Frequency) with the same category colors as task badges; tap to toggle; multiple selections compose with AND logic.
   - **"Show completed" switch**: when on, re-fetches all tasks (not just pending); completed tasks appear in their date sections faded with a strikethrough title and no complete button.
   - **"Clear filters" link**: visible when any filter is active; resets text search, label selection, and show-completed toggle.
+- **Drag-and-drop between sections (shipped — PR #27)**: Long-press (500ms) any pending task to enter drag mode. A ghost card lifts and follows the finger. Section headers highlight in indigo as valid drop targets. On drop, sets `target_date` only — matching web behavior; `must_do_by` is never modified by drag. Drop targets and their resulting `target_date` values: Today → today, Tomorrow → tomorrow, Day After Tomorrow → today+2, Upcoming → today+7, No Date → null. Dropping onto the Overdue section is silently rejected; the task stays put. Scroll is disabled while a drag is active. Done tasks are not draggable. The high-priority limit (from user settings) is enforced for Today/Tomorrow drops of already-high-priority tasks — an Alert is shown and the drop is cancelled if the limit would be exceeded. The optimistic update reverts on API error. The list auto-scrolls when the finger is within 80px of the top or bottom edge.
 - **Complete**: check button → `completeTask()` → optimistic remove + background re-fetch (picks up the next recurring occurrence automatically). The complete button is hidden for completed tasks shown via "Show completed".
 - **Delete**: trash button → confirmation dialog → `deleteTask()` → optimistic remove.
 - **"+" button**: tapping the indigo "+" button in the Tasks header opens the task form in create mode.
@@ -297,4 +298,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #26 (feat(mobile): collapse/expand sections + filter panel on Tasks screen)*
+*Last updated by — *Bashful* after PR #27 (feat(mobile): drag-drop tasks between sections)*
