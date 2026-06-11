@@ -83,8 +83,7 @@ Agents (`.claude/agents/`) and commands (`.claude/commands/`) must be project-ne
 
 - **Never** commit secrets, credentials, or user-specific paths
 - **Never** log or display credential values — confirm set/unset only
-- **Always** use a feature or a bug fix branch and create a PR to be merged. The PR comments should have a functional description of teh feature or the bug
-- **Always** end every PR body you create with a horizontal rule and signature: `— *Grumpy*`
+- **Always** use a feature or a bug fix branch and create a PR to be merged. The PR comments should have a functional description of the feature or the bug
 - **CI/CD deploy tagging**: consult `CLAUDE.md` for which commit paths trigger a deployment and what tag to include to skip it.
 - **The integration test file belongs on the feature branch**: changes made by Sleepy during a full-review must be committed to the PR branch and merged via PR — never committed directly to main.
 - **Claude config changes belong on the feature branch**: Changes to `.claude/` files made as part of implementing a specific PR (new skills, agent tweaks, permission rules) must be committed to that PR's branch and merged with it. Cross-cutting process improvements unrelated to any specific PR may be committed directly to main.

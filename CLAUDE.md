@@ -33,6 +33,9 @@ Any commit with no backend application changes must include `[skip deploy]` in t
 ### Branch rules
 - **`backend/tests/test_api.py` belongs on the feature branch** — Sleepy's test changes must be committed to the PR branch and merged via PR, never directly to main.
 
+### PR signature
+- **Always** end every PR body with a horizontal rule and signature: `— *Grumpy*`
+
 ## Agent Roster
 
 Every agent (including Grumpy) signs its PR body or comment so you can tell at a glance who said what. All posts are made under your GitHub account — the signature is the only way to distinguish them. Every PR body must end with `— *Grumpy*`; every agent comment must end with its own signature.
