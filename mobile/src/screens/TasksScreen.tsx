@@ -240,6 +240,7 @@ export function TasksScreen() {
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [showDone, setShowDone] = useState(false);
+  // Ref lets load() read the latest showDone without being in its dep array
   const showDoneRef = useRef(false);
 
   const [highPriorityLimit, setHighPriorityLimit] = useState(3);
@@ -286,6 +287,7 @@ export function TasksScreen() {
   useFocusEffect(
     useCallback(() => {
       load();
+      // Re-fetch labels on every focus so chips stay current after Settings changes
       listLabels()
         .then(({ labels }) => setAllLabels(labels))
         .catch(() => {});
@@ -460,6 +462,8 @@ export function TasksScreen() {
       const newOffset = Math.max(0, scrollOffsetRef.current + direction * 6);
       scrollOffsetRef.current = newOffset;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // getScrollResponder is an internal RN API; typed workaround for arbitrary-offset scroll
+      // since SectionList.scrollToLocation does not support free-form offsets.
       (listRef.current as any)?.getScrollResponder()?.scrollTo({ y: newOffset, animated: false });
       updateDragTarget(lastFingerYRef.current);
     }, 16);
@@ -469,11 +473,13 @@ export function TasksScreen() {
     draggingTaskRef.current = task;
     setDraggingTaskId(task.id);
     lastFingerYRef.current = absY;
+    // measure is async; run updateDragTarget inside the callback so
+    // listAbsoluteTopRef is populated before the first hit-test.
     listContainerRef.current?.measure((_x, _y, _w, height, _px, pageY) => {
       listAbsoluteTopRef.current = pageY;
       listHeightRef.current = height;
+      updateDragTarget(absY);
     });
-    updateDragTarget(absY);
   }
 
   function onDragMove(_absX: number, absY: number) {
@@ -507,6 +513,9 @@ export function TasksScreen() {
   async function performDrop(task: Task, targetSection: ColumnKey) {
     if (targetSection === 'overdue') return;
 
+    // HP check: only fires for already-HP tasks. Mobile has no HP zone, so a drag
+    // cannot promote a non-HP task — the limit only matters when moving an existing
+    // HP task into a section that may already be at capacity.
     if (task.is_high_priority && (targetSection === 'today' || targetSection === 'tomorrow')) {
       const todayStr = dateOnly(new Date());
       const tomDate = new Date();
@@ -530,19 +539,14 @@ export function TasksScreen() {
       }
     }
 
-    const isNoDate = targetSection === 'nodate';
+    // Only target_date is cleared on a no-date drop; must_do_by and is_high_priority
+    // are left untouched (matches web behaviour and architecture spec).
     const newDate = getDropDate(targetSection);
-    const body: UpdateTaskBody = isNoDate
-      ? { target_date: null, must_do_by: null, is_high_priority: false }
-      : { target_date: newDate };
+    const body: UpdateTaskBody = { target_date: newDate };
 
     const original = task;
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== task.id) return t;
-        if (isNoDate) return { ...t, target_date: null, must_do_by: null, is_high_priority: false };
-        return { ...t, target_date: newDate };
-      }),
+      prev.map((t) => (t.id !== task.id ? t : { ...t, target_date: newDate })),
     );
 
     try {
