@@ -41,6 +41,7 @@
 - git commit -m "docs and claude stuff [skip deploy]"
 
 
+
 ## Local-Stop
 - cd backend && docker-compose down
 
@@ -52,3 +53,14 @@
 ## Railway-Deploy
 - git rev-parse --short HEAD
 -  curl -s https://tasksareus-production.up.railway.app/api/v1/health | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['version'])"
+
+# iphone local
+- EXPO_PUBLIC_API_URL=http://10.0.0.35:8000 npx expo start
+
+# iphone-OTA
+- EXPO_PUBLIC_API_URL=https://tasksareus-production.up.railway.app eas update --branch production --message "Task list collapse/filter panel"
+
+
+
+
+- git rev-parse --short HEAD

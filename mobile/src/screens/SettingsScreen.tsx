@@ -11,6 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
 import { useAuth } from '../hooks/useAuth';
 import { getSettings, updateSettings } from '../api/settings';
 import { listLabels, createLabel, updateLabel, deleteLabel } from '../api/labels';
@@ -210,6 +212,10 @@ export function SettingsScreen() {
 
   const isProduction = API_BASE_URL.startsWith('https://');
 
+  const gitHash = (Constants.expoConfig?.extra?.gitHash as string | undefined) ?? 'unknown';
+  const updateId = Updates.updateId ? Updates.updateId.slice(0, 8) : 'embedded';
+  const updateChannel = Updates.channel ?? '—';
+
   async function testConnection() {
     setConnStatus('testing');
     setConnLatency(null);
@@ -363,7 +369,10 @@ export function SettingsScreen() {
                     </Text>
                   </View>
                 </View>
-                <Text className="text-xs text-gray-400 mb-3" numberOfLines={1}>{API_BASE_URL}</Text>
+                <Text className="text-xs text-gray-400" numberOfLines={1}>{API_BASE_URL}</Text>
+                <Text className="text-xs text-gray-400 mb-3">
+                  git: {gitHash} · update: {updateId} · ch: {updateChannel}
+                </Text>
                 <View className="flex-row items-center" style={{ gap: 12 }}>
                   <TouchableOpacity
                     onPress={testConnection}
