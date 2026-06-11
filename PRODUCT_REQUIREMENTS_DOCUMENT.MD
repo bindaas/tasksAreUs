@@ -179,20 +179,26 @@ Mobile auth follows the same Firebase-only identity model as the web frontend, w
 - **Deliberate sign-out flag**: A module-level boolean (resets on app force-quit) prevents the auto-anonymous-sign-in from firing after an explicit sign-out.
 - **API client** (`mobile/src/api/client.ts`): Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer <token>` on every request to `EXPO_PUBLIC_API_URL/api/v1`.
 
-### Tasks Screen (shipped — PR #20, updated PR #21)
+### Tasks Screen (shipped — PR #20, updated PR #21, updated PR #26)
 
 The Tasks tab is fully implemented as a `SectionList` grouped by date proximity:
 
 - **Grouped sections**: Overdue (red header) → Today → Tomorrow → Day After Tomorrow → Upcoming → No Date; empty sections are hidden.
-- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (frequency=blue, mode=green, type=purple). Tapping a task row opens it in the task form in edit mode.
-- **Complete**: check button → `completeTask()` → optimistic remove + background re-fetch (picks up the next recurring occurrence automatically).
+- **Collapse / expand sections (shipped — PR #26)**: Each section header is tappable to collapse or expand it. Today and Overdue start expanded on first load; all other sections start collapsed. When collapsed, the task count is shown in parentheses after the section title (e.g. "Tomorrow (3)"). An "Expand" / "Collapse" text button in the screen header toggles all sections at once.
+- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (frequency=blue, mode=green, type=purple). Tapping a task row opens it in the task form in edit mode. Completed tasks shown via the filter panel appear faded (reduced opacity) with a strikethrough title and without the high-priority bar or star.
+- **Filter panel (shipped — PR #26)**: A `☰` icon in the screen header opens a collapsible filter panel. The icon turns indigo when any filter is active. The panel provides:
+  - **Text search**: filters tasks by title and notes simultaneously (case-insensitive, live filtering) — same AND semantics as the web client.
+  - **Label chips**: grouped by category (Mode / Type / Frequency) with the same category colors as task badges; tap to toggle; multiple selections compose with AND logic.
+  - **"Show completed" switch**: when on, re-fetches all tasks (not just pending); completed tasks appear in their date sections faded with a strikethrough title and no complete button.
+  - **"Clear filters" link**: visible when any filter is active; resets text search, label selection, and show-completed toggle.
+- **Complete**: check button → `completeTask()` → optimistic remove + background re-fetch (picks up the next recurring occurrence automatically). The complete button is hidden for completed tasks shown via "Show completed".
 - **Delete**: trash button → confirmation dialog → `deleteTask()` → optimistic remove.
 - **"+" button**: tapping the indigo "+" button in the Tasks header opens the task form in create mode.
 - **Loading state**: full-screen spinner on first load.
 - **Error state**: friendly message + Retry button.
-- **Pull-to-refresh**: `RefreshControl` wired to `listTasks('pending')`.
-- **Focus refresh**: `useFocusEffect` re-fetches on every tab focus (stays fresh after web-app edits).
-- **Empty state**: "No pending tasks" message shown when there are no pending tasks.
+- **Pull-to-refresh**: `RefreshControl` wired to the current fetch mode (pending-only or all tasks depending on "Show completed").
+- **Focus refresh**: `useFocusEffect` re-fetches tasks and labels on every tab focus (stays fresh after web-app edits and Settings label changes).
+- **Empty state**: "No pending tasks" when no tasks exist; "No tasks match your filters" when filters are active and yield no results.
 
 New files shipped in PR #20:
 - `mobile/src/utils/taskGrouping.ts` — pure `groupTasksForList(tasks, referenceDate?)` → `SectionList` sections
@@ -291,4 +297,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #25 (feat: EAS production build + Settings connection status)*
+*Last updated by — *Bashful* after PR #26 (feat(mobile): collapse/expand sections + filter panel on Tasks screen)*
