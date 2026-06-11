@@ -250,6 +250,7 @@ export function TasksScreen() {
   const draggingTaskRef = useRef<Task | null>(null);
   const currentDragTargetRef = useRef<ColumnKey | null>(null);
   const sectionContentYRef = useRef<Record<string, number>>({});
+  const sectionHeaderRefs = useRef<Record<string, View | null>>({});
   const listContainerRef = useRef<View>(null);
   const listAbsoluteTopRef = useRef(0);
   const listHeightRef = useRef(0);
@@ -473,12 +474,31 @@ export function TasksScreen() {
     draggingTaskRef.current = task;
     setDraggingTaskId(task.id);
     lastFingerYRef.current = absY;
-    // measure is async; run updateDragTarget inside the callback so
-    // listAbsoluteTopRef is populated before the first hit-test.
-    listContainerRef.current?.measure((_x, _y, _w, height, _px, pageY) => {
-      listAbsoluteTopRef.current = pageY;
+    listContainerRef.current?.measure((_x, _y, _w, height, _px, listPageY) => {
+      listAbsoluteTopRef.current = listPageY;
       listHeightRef.current = height;
-      updateDragTarget(absY);
+      // onLayout inside SectionList gives Y relative to RN's internal CellContainer
+      // wrapper (always ~0), not the scroll content. Use measure() on refs instead to
+      // get true absolute positions, then convert to content-relative.
+      const keys = Object.keys(sectionHeaderRefs.current);
+      let pending = keys.length;
+      if (pending === 0) {
+        updateDragTarget(absY);
+        return;
+      }
+      for (const key of keys) {
+        const ref = sectionHeaderRefs.current[key];
+        if (!ref) {
+          pending--;
+          if (pending === 0) updateDragTarget(absY);
+          continue;
+        }
+        ref.measure((_x2, _y2, _w2, _h2, _px2, headerPageY) => {
+          sectionContentYRef.current[key] = headerPageY - listPageY + scrollOffsetRef.current;
+          pending--;
+          if (pending === 0) updateDragTarget(absY);
+        });
+      }
     });
   }
 
@@ -718,26 +738,33 @@ export function TasksScreen() {
                   ? '#4f46e5'
                   : '#9ca3af';
             return (
-              <TouchableOpacity
-                onPress={() => toggleSection(section.key)}
-                className="flex-row items-center px-4 py-2"
-                activeOpacity={0.7}
-                onLayout={(e) => {
-                  sectionContentYRef.current[section.key] = e.nativeEvent.layout.y;
+              <View
+                ref={(ref) => {
+                  sectionHeaderRefs.current[section.key] = ref;
                 }}
-                style={isDragTarget ? { backgroundColor: '#eef2ff' } : undefined}
               >
-                <Text
-                  className="text-xs font-semibold uppercase tracking-wider flex-1"
-                  style={{ color: sectionColor }}
+                <TouchableOpacity
+                  onPress={() => toggleSection(section.key)}
+                  className="flex-row items-center px-4 py-2"
+                  activeOpacity={0.7}
+                  style={
+                    isDragTarget
+                      ? { backgroundColor: '#e0e7ff', borderLeftWidth: 3, borderLeftColor: '#4f46e5' }
+                      : undefined
+                  }
                 >
-                  {section.title}
-                  {!isExpanded && section.totalCount > 0 ? ` (${section.totalCount})` : ''}
-                </Text>
-                <Text className="text-xs ml-2" style={{ color: sectionColor }}>
-                  {isExpanded ? '▾' : '▸'}
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    className="text-xs font-semibold uppercase tracking-wider flex-1"
+                    style={{ color: sectionColor }}
+                  >
+                    {section.title}
+                    {!isExpanded && section.totalCount > 0 ? ` (${section.totalCount})` : ''}
+                  </Text>
+                  <Text className="text-xs ml-2" style={{ color: sectionColor }}>
+                    {isExpanded ? '▾' : '▸'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             );
           }}
           // SectionList's built-in empty check sees collapsed sections as non-empty
