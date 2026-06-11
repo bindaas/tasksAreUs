@@ -36,11 +36,12 @@ interface Props {
   taskId?: string;
   onSave: () => void;
   onCancel: () => void;
+  initialLabelIds?: string[];
 }
 
 type DateField = 'mustDoBy' | 'targetDate' | null;
 
-export function TaskFormScreen({ taskId, onSave, onCancel }: Props) {
+export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Props) {
   const isEditMode = !!taskId;
 
   const [title, setTitle] = useState('');
@@ -48,7 +49,9 @@ export function TaskFormScreen({ taskId, onSave, onCancel }: Props) {
   const [mustDoBy, setMustDoBy] = useState('');
   const [targetDate, setTargetDate] = useState('');
   const [isHighPriority, setIsHighPriority] = useState(false);
-  const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
+  const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(
+    () => (!isEditMode && initialLabelIds ? new Set(initialLabelIds) : new Set()),
+  );
   const [allLabels, setAllLabels] = useState<Label[]>([]);
 
   const [activeDatePicker, setActiveDatePicker] = useState<DateField>(null);

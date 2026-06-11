@@ -446,7 +446,7 @@ export function TasksScreen() {
           ? sectionContentYRef.current[sortedKeys[i + 1]]
           : sectionStart + 300;
       if (fingerContentY >= sectionStart && fingerContentY < sectionEnd) {
-        newTarget = key === 'overdue' ? null : key;
+        newTarget = (key === 'overdue' || key === 'upcoming') ? null : key;
         break;
       }
     }
@@ -531,7 +531,7 @@ export function TasksScreen() {
   }
 
   async function performDrop(task: Task, targetSection: ColumnKey) {
-    if (targetSection === 'overdue') return;
+    if (targetSection === 'overdue' || targetSection === 'upcoming') return;
 
     // HP check: only fires for already-HP tasks. Mobile has no HP zone, so a drag
     // cannot promote a non-HP task — the limit only matters when moving an existing
@@ -700,6 +700,7 @@ export function TasksScreen() {
           taskId={editingTaskId}
           onSave={handleFormSave}
           onCancel={handleFormCancel}
+          initialLabelIds={editingTaskId ? undefined : [...selectedLabelIds]}
         />
       </Modal>
 
