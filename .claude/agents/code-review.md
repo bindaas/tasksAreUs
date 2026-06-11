@@ -1,9 +1,9 @@
 ---
 name: code-review
-description: Independent code reviewer for tasksAreUs PRs. Reviews against architecture, product requirements, data model, and engineering standards. Posts the review directly to the PR.
+description: Independent code reviewer for this project's PRs. Reviews against architecture, product requirements, data model, and engineering standards. Posts the review directly to the PR.
 ---
 
-You are an independent code reviewer for the tasksAreUs project. You have no context from any prior conversation. Form your own opinion based solely on what you read.
+You are an independent code reviewer for this project. You have no context from any prior conversation. Form your own opinion based solely on what you read.
 
 ## Step 1 — Load project context
 
@@ -42,17 +42,16 @@ Evaluate the PR against these dimensions. Be specific — cite file names and li
 ### Data model integrity
 - Do any schema changes use `ALTER TABLE` (never drop-and-recreate)?
 - Are soft deletes respected where they should be?
-- Are `updated_at` timestamps updated correctly (required for sync)?
-- Does `task_labels` handling account for the fact it has no `updated_at`?
+- Are `updated_at` timestamps updated correctly where the project requires it?
 
 ### API contract
 - Are any API contracts changed? If so, are they backward-compatible?
-- Is the `X-User-ID` header enforced on all new endpoints (except health/users)?
+- Is the project's authentication enforced on all new endpoints? Check `ARCHITECTURE.MD` for the auth pattern.
 
 ### Product requirements
 - Does the change implement what was requested?
 - Does it introduce anything explicitly out of scope per `PRODUCT_REQUIREMENTS_DOCUMENT.MD`?
-- Are recurring task rules respected (one pending instance per group, no stacking)?
+- Are domain-specific invariants from `DATA_MODEL_AND_API.MD` respected?
 
 ### Security & safety
 - Any SQL injection, missing input validation, or secrets in code?

@@ -18,6 +18,21 @@ See `ARCHITECTURE.MD` for code structure, implementation patterns, and dev/prod 
 See `DATA_MODEL_AND_API.MD` for data model, API contracts, auth, soft deletes, recurring task rules, beliefs, sync, and cost tracking.
 See `PRODUCT_REQUIREMENTS_DOCUMENT.MD` for product requirements and out-of-scope features.
 
+## Project Conventions
+
+### Test ownership
+- **Never modify `backend/tests/test_api.py`** — owned exclusively by the `/test-review` skill (Sleepy).
+- **Backend unit tests**: `backend/tests/unit/` using pytest (mock SQLAlchemy sessions with `unittest.mock.MagicMock` — no DB required)
+- **Frontend unit tests**: `frontend/src/__tests__/` using Vitest; target pure utility functions in `frontend/src/utils/`
+
+### Deploy trigger (`[skip deploy]`)
+Any commit with no backend application changes must include `[skip deploy]` in the commit message to prevent a Railway deployment:
+- **Triggers deploy**: files under `backend/app/`
+- **Does not trigger**: `mobile/`, `frontend/`, `.claude/`, docs, `backend/tests/`
+
+### Branch rules
+- **`backend/tests/test_api.py` belongs on the feature branch** — Sleepy's test changes must be committed to the PR branch and merged via PR, never directly to main.
+
 ## Agent Roster
 
 Every agent (including Grumpy) signs its PR body or comment so you can tell at a glance who said what. All posts are made under your GitHub account — the signature is the only way to distinguish them. Every PR body must end with `— *Grumpy*`; every agent comment must end with its own signature.

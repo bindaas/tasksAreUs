@@ -34,10 +34,8 @@
 
 ## TEST OWNERSHIP
 
-- **Never modify `backend/tests/test_api.py`** — that file is owned exclusively by the `/test-review` skill. Do not add, edit, or delete anything in it, even when implementing a feature that clearly needs API test coverage.
-- **Unit tests for frontend and backend are always required** — when adding or changing business logic, write or update unit tests alongside the implementation. No exceptions.
-  - Backend unit tests: `backend/tests/unit/` using pytest (no DB required — mock SQLAlchemy sessions with `unittest.mock.MagicMock`)
-  - Frontend unit tests: `frontend/src/__tests__/` using Vitest; pure utility functions in `frontend/src/utils/` are the primary target
+- **The integration test file is owned exclusively by the `/test-review` skill** — do not modify it directly. Its location is documented in `ARCHITECTURE.MD`.
+- **Unit tests are always required** when adding or changing business logic — write or update them alongside the implementation. Paths and frameworks are documented in `ARCHITECTURE.MD`.
 
 ---
 
@@ -57,6 +55,23 @@
 
 ---
 
+## AGENT & SKILL NEUTRALITY
+
+Agents (`.claude/agents/`) and commands (`.claude/commands/`) must be project-neutral so they can be shared across projects without modification.
+
+**Rules:**
+- Do not hardcode project-specific file paths (e.g. `backend/tests/test_api.py`, `backend/app/`). Reference `ARCHITECTURE.MD` or `CLAUDE.md` for project-specific paths.
+- Do not hardcode database URLs, connection strings, or environment variables. Reference `ARCHITECTURE.MD` or `CLAUDE.md` for the correct test run command.
+- Do not hardcode project names in agent body text. Use "this project" instead.
+- Do not hardcode domain-specific rules (e.g. recurring task rules, specific table names). Reference `DATA_MODEL_AND_API.MD` for domain invariants at runtime.
+- Do not hardcode auth patterns (e.g. specific header names or function names). Reference `ARCHITECTURE.MD` for the auth pattern.
+- Document names that are uniform across projects (`ARCHITECTURE.MD`, `DATA_MODEL_AND_API.MD`, `PRODUCT_REQUIREMENTS_DOCUMENT.MD`, `RULES_OF_ENGAGEMENT.MD`) are explicitly allowed in agents and commands.
+- Agent signatures (Dopey, Sleepy, Bashful, Doc, Grumpy) are uniform across projects and are explicitly allowed.
+
+**Neutrality test:** before adding or modifying an agent or command, ask: would this work unmodified in a different project that follows the same document conventions? If not, remove the project-specific reference.
+
+---
+
 ## SESSION MANAGEMENT
 
 - If the conversation is getting long: **warn me to start a new session**
@@ -70,8 +85,8 @@
 - **Never** log or display credential values — confirm set/unset only
 - **Always** use a feature or a bug fix branch and create a PR to be merged. The PR comments should have a functional description of teh feature or the bug
 - **Always** end every PR body you create with a horizontal rule and signature: `— *Grumpy*`
-- **`[skip deploy]` on non-backend commits**: Any commit that contains no backend changes must include `[skip deploy]` in the commit message to prevent a Railway deployment. This applies to mobile (`mobile/`), frontend (`frontend/`), Claude config (`.claude/`), docs, and test-only (`backend/tests/`) commits. Backend code lives in `backend/app/` — anything touching only that directory (or alongside it) does trigger a deploy.
-- **`test_api.py` belongs on the feature branch**: Changes made to `backend/tests/test_api.py` (e.g. by Sleepy during a full-review) must be committed to the PR's feature branch and merged via the PR — never committed directly to main outside a PR.
+- **CI/CD deploy tagging**: consult `CLAUDE.md` for which commit paths trigger a deployment and what tag to include to skip it.
+- **The integration test file belongs on the feature branch**: changes made by Sleepy during a full-review must be committed to the PR branch and merged via PR — never committed directly to main.
 - **Claude config changes belong on the feature branch**: Changes to `.claude/` files made as part of implementing a specific PR (new skills, agent tweaks, permission rules) must be committed to that PR's branch and merged with it. Cross-cutting process improvements unrelated to any specific PR may be committed directly to main.
 
 

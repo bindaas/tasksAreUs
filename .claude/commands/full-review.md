@@ -13,17 +13,17 @@ Otherwise, run all four reviews in sequence for PR #$ARGUMENTS. Each review must
    - Run `gh pr view $ARGUMENTS --json headRefName,changedFiles` to get the PR branch name and changed file list, then check out the branch
    - Read the review comment Dopey just posted (fetch via `gh pr view $ARGUMENTS --json reviews` or `gh api repos/:owner/:repo/pulls/$ARGUMENTS/reviews`)
    - Make the code changes directly in the working tree
-   - Commit and push to the PR branch. Include `[skip deploy]` in the commit message if none of the changed files are under `backend/app/`.
+   - Commit and push to the PR branch. Include `[skip deploy]` in the commit message if no backend application files were changed — consult `RULES_OF_ENGAGEMENT.MD` for which paths trigger a deploy.
    - Do NOT ask the user for approval before applying fixes — just do it. Only pause if you hit a genuine ambiguity or conflict that makes you unsure what the correct fix should be (that is the "serious kerfuffle" threshold).
    - Skip this step entirely if the code-review agent approved with no Must fix or Should fix items.
 
 3. Once that completes, spawn the `test-reviewer` agent with: "Assess and update tests for PR #$ARGUMENTS. Use $PR=$ARGUMENTS throughout your instructions."
 
 4. Once that completes, spawn a `general-purpose` agent with the following prompt:
-   "You are Bashful, the requirements-review agent for tasksAreUs. Read the full instructions in .claude/agents/requirements-review.md before doing anything else — those are your complete operating instructions. Then carry them out for PR #$ARGUMENTS. When you are done updating PRODUCT_REQUIREMENTS_DOCUMENT.MD, commit the file to the PR branch and push it before exiting."
+   "You are Bashful, the requirements-review agent. Read the full instructions in .claude/agents/requirements-review.md before doing anything else — those are your complete operating instructions. Then carry them out for PR #$ARGUMENTS. When you are done updating PRODUCT_REQUIREMENTS_DOCUMENT.MD, commit the file to the PR branch and push it before exiting."
 
 5. Once that completes, spawn a `general-purpose` agent with the following prompt:
-   "You are Doc, the arch-review agent for tasksAreUs. Read the full instructions in .claude/agents/arch-review.md before doing anything else — those are your complete operating instructions. Then carry them out for PR #$ARGUMENTS. When you are done updating ARCHITECTURE.MD and/or DATA_MODEL_AND_API.MD, commit any changed files to the PR branch and push them before exiting."
+   "You are Doc, the arch-review agent. Read the full instructions in .claude/agents/arch-review.md before doing anything else — those are your complete operating instructions. Then carry them out for PR #$ARGUMENTS. When you are done updating ARCHITECTURE.MD and/or DATA_MODEL_AND_API.MD, commit any changed files to the PR branch and push them before exiting."
 
 6. Once that completes, invoke the `fewer-permission-prompts` skill to scan transcripts and update the project allowlist.
 
