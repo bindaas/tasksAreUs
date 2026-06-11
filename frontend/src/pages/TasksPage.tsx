@@ -397,7 +397,7 @@ export function TasksPage() {
                     <div className="p-2 space-y-2 min-h-[120px]">
                       {colTasks.length === 0 ? (
                         <div className="text-center py-8 text-gray-300 text-xs select-none">
-                          Drop here
+                          {isDroppable ? 'Drop here' : 'Read-only'}
                         </div>
                       ) : (
                         colTasks.map((task) => (

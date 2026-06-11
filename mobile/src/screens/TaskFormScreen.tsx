@@ -49,9 +49,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
   const [mustDoBy, setMustDoBy] = useState('');
   const [targetDate, setTargetDate] = useState('');
   const [isHighPriority, setIsHighPriority] = useState(false);
-  const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(
-    () => (!isEditMode && initialLabelIds ? new Set(initialLabelIds) : new Set()),
-  );
+  const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
   const [allLabels, setAllLabels] = useState<Label[]>([]);
 
   const [activeDatePicker, setActiveDatePicker] = useState<DateField>(null);
@@ -79,13 +77,15 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
         setTargetDate(task.target_date ?? '');
         setIsHighPriority(task.is_high_priority);
         setSelectedLabelIds(new Set(task.labels.map((l) => l.id)));
+      } else {
+        setSelectedLabelIds(new Set(initialLabelIds ?? []));
       }
     } catch {
       setError('Failed to load data.');
     } finally {
       setLoadingInitial(false);
     }
-  }, [isEditMode, taskId]);
+  }, [isEditMode, taskId, initialLabelIds]);
 
   useEffect(() => {
     loadData();
