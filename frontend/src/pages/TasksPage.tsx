@@ -111,7 +111,7 @@ export function TasksPage() {
   }
 
   async function handleDrop(taskId: string, columnKey: ColumnKey, priority: 'high' | 'normal' = 'normal') {
-    if (columnKey === 'overdue') return;
+    if (columnKey === 'overdue' || columnKey === 'upcoming') return;
 
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
@@ -361,16 +361,19 @@ export function TasksPage() {
                 }
 
                 // Upcoming / No Date columns — no priority split
+                const isDroppable = col.key !== 'upcoming';
                 return (
                   <div
                     key={col.key}
                     className={`w-52 sm:w-60 flex-shrink-0 rounded-xl border-2 transition-colors ${
-                      isOver ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50'
+                      isOver && isDroppable ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50'
                     }`}
                     onDragOver={(e) => {
                       e.preventDefault();
-                      setDragOverColumn(col.key);
-                      setDragOverPriority(null);
+                      if (isDroppable) {
+                        setDragOverColumn(col.key);
+                        setDragOverPriority(null);
+                      }
                     }}
                     onDragLeave={(e) => {
                       if (!e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -380,6 +383,7 @@ export function TasksPage() {
                     onDrop={(e) => {
                       e.preventDefault();
                       clearDragState();
+                      if (!isDroppable) return;
                       const taskId = e.dataTransfer.getData('text/plain');
                       if (taskId) handleDrop(taskId, col.key, 'normal');
                     }}
@@ -393,7 +397,7 @@ export function TasksPage() {
                     <div className="p-2 space-y-2 min-h-[120px]">
                       {colTasks.length === 0 ? (
                         <div className="text-center py-8 text-gray-300 text-xs select-none">
-                          Drop here
+                          {isDroppable ? 'Drop here' : 'Read-only'}
                         </div>
                       ) : (
                         colTasks.map((task) => (

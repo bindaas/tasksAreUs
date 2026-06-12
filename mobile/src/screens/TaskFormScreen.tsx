@@ -36,11 +36,12 @@ interface Props {
   taskId?: string;
   onSave: () => void;
   onCancel: () => void;
+  initialLabelIds?: string[];
 }
 
 type DateField = 'mustDoBy' | 'targetDate' | null;
 
-export function TaskFormScreen({ taskId, onSave, onCancel }: Props) {
+export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Props) {
   const isEditMode = !!taskId;
 
   const [title, setTitle] = useState('');
@@ -76,13 +77,15 @@ export function TaskFormScreen({ taskId, onSave, onCancel }: Props) {
         setTargetDate(task.target_date ?? '');
         setIsHighPriority(task.is_high_priority);
         setSelectedLabelIds(new Set(task.labels.map((l) => l.id)));
+      } else {
+        setSelectedLabelIds(new Set(initialLabelIds ?? []));
       }
     } catch {
       setError('Failed to load data.');
     } finally {
       setLoadingInitial(false);
     }
-  }, [isEditMode, taskId]);
+  }, [isEditMode, taskId, initialLabelIds]);
 
   useEffect(() => {
     loadData();
