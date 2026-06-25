@@ -126,7 +126,8 @@ def main():
     r = client.get("/labels", headers=H)
     assert_eq("GET /labels → 200", r.status_code, 200)
     labels = r.json()["labels"]
-    assert_true("at least 14 labels seeded", len(labels) >= 14)
+    # PR #30: frequency labels removed from LABEL_SEED — new users get 9 labels (mode + type only)
+    assert_true("at least 9 labels seeded (PR #30)", len(labels) >= 9)
 
     # Pick specific labels for use in tests
     freq_labels = {l["value"]: l["id"] for l in labels if l["category"] == "frequency"}
@@ -142,10 +143,12 @@ def main():
 
     r = client.get("/labels?category=frequency", headers=H)
     freq_only = r.json()["labels"]
-    assert_true("category filter works", all(l["category"] == "frequency" for l in freq_only))
-    assert_true("frequency labels seeded per-user (PR #16)", len(freq_only) == 5)
+    assert_true("category filter works (frequency returns only frequency items)",
+                all(l["category"] == "frequency" for l in freq_only))
+    # PR #30: frequency labels no longer seeded for new users — existing DB rows may remain
+    # (freq_only may be 0 for a fresh test user; this is correct and expected)
 
-    # All 3 label categories are per-user (PR #16) — verify each is returned for this user
+    # All label categories are per-user (PR #16) — verify mode and type are returned for this user
     r = client.get("/labels?category=mode", headers=H)
     assert_eq("GET /labels?category=mode → 200", r.status_code, 200)
     mode_only = r.json()["labels"]
@@ -162,79 +165,57 @@ def main():
     r = client.get("/labels?category=bogus", headers=H)
     assert_eq("GET /labels?category=bogus → 400", r.status_code, 400)
 
-    # ── Labels: Per-User Model (PR #16) ───────────────────────────────────────
-    print("\n── Labels: Per-User Model (PR #16) ────────────────────")
-    # All 14 LABEL_SEED entries (5 frequency + 4 mode + 5 type) are seeded per-user.
-    # GET /labels (no filter) must return exactly 14 entries for a fresh user.
-    assert_eq("GET /labels returns all 14 seeded labels (PR #16)", len(labels), 14)
+    # ── Labels: Per-User Model (PR #16, updated PR #30) ───────────────────────
+    print("\n── Labels: Per-User Model (PR #16, updated PR #30) ─────")
+    # PR #30: LABEL_SEED now contains 9 entries (4 mode + 5 type); frequency entries removed.
+    # Fresh users (never seeded before) get 9 labels.
+    # The system test user is persistent and may have frequency labels from before PR #30
+    # (existing DB rows are NOT removed until PR 3 — the DB migration). So we check that
+    # at minimum 9 labels are present (the new seed set) and that mode + type are present.
+    assert_true("GET /labels returns at least 9 seeded labels (PR #30)", len(labels) >= 9)
 
-    # All 3 categories must be present
+    # mode and type categories must be present for all users (seeded by PR #30 LABEL_SEED)
     all_categories = {l["category"] for l in labels}
-    assert_true("all 3 categories present in GET /labels (PR #16)",
-                all_categories == {"frequency", "mode", "type"})
-
-    # The 5 standard frequency values must be present
-    assert_eq("5 frequency labels seeded per-user", len(freq_labels), 5)
-    for freq_val in ("one-time", "daily", "weekly", "monthly", "annual"):
-        assert_in(f"frequency label '{freq_val}' present", freq_val, freq_labels)
+    assert_true("mode and type categories present in GET /labels (PR #30)",
+                {"mode", "type"}.issubset(all_categories))
 
     # Verify that label IDs from GET /labels can be used to create tasks (the core
     # bug fixed in PR #16 — per-user IDs were not matching global IDs on task creation)
     pr16_verify_task_r = client.post("/tasks", headers=H, json={
         "title": "PR #16 label-ID verification task",
-        "label_ids": [freq_labels["daily"], mode_labels["online"]],
+        "label_ids": [mode_labels["online"]],
     })
     assert_eq("POST task using per-user label IDs → 201 (PR #16)", pr16_verify_task_r.status_code, 201)
     pr16_task = pr16_verify_task_r.json()
     pr16_task_id = pr16_task["id"]
     pr16_label_values = {l["value"] for l in pr16_task["labels"]}
-    assert_eq("per-user label IDs attach correctly to task (PR #16)", pr16_label_values, {"daily", "online"})
+    assert_eq("per-user label IDs attach correctly to task (PR #16)", pr16_label_values, {"online"})
     # Clean up
     client.delete(f"/tasks/{pr16_task_id}", headers=H)
 
-    # ── Labels: Frequency backend contract (PR #29) ───────────────────────────
-    # PR #29 removes 'frequency' from LabelCategory in the frontend and mobile UI
-    # (no rendering, no filter chips, no form sections for frequency labels).
-    # The backend is unchanged — it still seeds, serves, and accepts frequency labels.
-    # These assertions guard against accidental backend regressions.
-    print("\n── Labels: Frequency still served by backend (PR #29) ──")
-    # GET /labels still returns frequency labels (5 values)
+    # ── Labels: Frequency seeding removed (PR #30) ────────────────────────────
+    # PR #29 removed frequency from all client UI surfaces.
+    # PR #30 removed frequency entries from LABEL_SEED and recurrence logic from the backend.
+    # New users are no longer seeded with frequency labels.
+    # IMPORTANT: Existing DB rows for frequency labels are NOT removed until PR 3 (DB migration).
+    # The system test user is persistent and carries pre-existing frequency labels from before
+    # PR #30. So this section verifies the API contract, not an exact count.
+    print("\n── Labels: Frequency seeding removed (PR #30) ──────────")
+    # GET /labels?category=frequency must still return 200 (endpoint not removed)
     r = client.get("/labels?category=frequency", headers=H)
-    assert_eq("GET /labels?category=frequency still returns 200 (PR #29)", r.status_code, 200)
+    assert_eq("GET /labels?category=frequency → 200 (PR #30)", r.status_code, 200)
+    # The endpoint still works and returns whatever frequency rows exist in the DB.
+    # For the system test user (pre-existing), this will be 5. For a brand-new user it will be 0.
+    # We only assert the response shape is correct.
     freq_check = r.json()["labels"]
-    assert_eq("backend still seeds 5 frequency labels (PR #29)", len(freq_check), 5)
-    freq_check_values = {l["value"] for l in freq_check}
-    for freq_val in ("one-time", "daily", "weekly", "monthly", "annual"):
-        assert_in(f"frequency value '{freq_val}' still in API response (PR #29)", freq_val, freq_check_values)
+    assert_true("GET /labels?category=frequency returns a list (PR #30)", isinstance(freq_check, list))
+    assert_true("all returned rows are category=frequency",
+                all(l["category"] == "frequency" for l in freq_check))
 
-    # GET /labels (no filter) still includes frequency in the returned set
-    r = client.get("/labels", headers=H)
-    all_cats_pr29 = {l["category"] for l in r.json()["labels"]}
-    assert_in("frequency category still present in GET /labels (PR #29)", "frequency", all_cats_pr29)
-
-    # Tasks with frequency labels are still retrievable with their frequency label intact
-    r = client.post("/tasks", headers=H, json={
-        "title": "PR #29 frequency contract task",
-        "label_ids": [freq_labels["weekly"]],
-    })
-    assert_eq("POST task with frequency label still works (PR #29)", r.status_code, 201)
-    freq_contract_task = r.json()
-    freq_contract_task_id = freq_contract_task["id"]
-    freq_contract_label_values = [l["value"] for l in freq_contract_task["labels"]]
-    assert_in("frequency label 'weekly' still attached to task (PR #29)",
-              "weekly", freq_contract_label_values)
-    freq_contract_label_categories = [l["category"] for l in freq_contract_task["labels"]]
-    assert_in("label category='frequency' still returned in task response (PR #29)",
-              "frequency", freq_contract_label_categories)
-    # GET /tasks/:id confirms frequency label survives a round-trip
-    r = client.get(f"/tasks/{freq_contract_task_id}", headers=H)
-    assert_eq("GET /tasks/:id with frequency label → 200 (PR #29)", r.status_code, 200)
-    fetched_task_pr29 = r.json()
-    fetched_freq_values = [l["value"] for l in fetched_task_pr29["labels"]]
-    assert_in("frequency label persists in GET /tasks/:id response (PR #29)",
-              "weekly", fetched_freq_values)
-    # Clean up
-    client.delete(f"/tasks/{freq_contract_task_id}", headers=H)
+    # POST /labels — frequency category is still rejected (enforcement unchanged in PR #30)
+    r = client.post("/labels", headers=H, json={"category": "frequency", "value": "hourly"})
+    assert_eq("POST /labels frequency category → 400 (enforcement still active, PR #30)",
+              r.status_code, 400)
 
     # ── Labels: Create / Update / Delete (PR #15) ─────────────────────────────
     print("\n── Labels: Configurable Mode/Type (PR #15) ─────────────")
@@ -257,10 +238,6 @@ def main():
     # POST /labels — duplicate label returns 409
     r = client.post("/labels", headers=H, json={"category": "mode", "value": "in-person"})
     assert_eq("POST /labels duplicate → 409", r.status_code, 409)
-
-    # POST /labels — frequency category is not configurable → 400
-    r = client.post("/labels", headers=H, json={"category": "frequency", "value": "hourly"})
-    assert_eq("POST /labels frequency category → 400", r.status_code, 400)
 
     # POST /labels — unknown category → 400
     r = client.post("/labels", headers=H, json={"category": "bogus", "value": "x"})
@@ -295,11 +272,9 @@ def main():
     r = client.put(f"/labels/{str(uuid.uuid4())}", headers=H, json={"value": "anything"})
     assert_eq("PUT /labels/:id non-existent → 404", r.status_code, 404)
 
-    # PUT /labels/{id} — cannot edit a frequency label (category check fires first → 400)
-    freq_label_id = list(freq_labels.values())[0]
-    r = client.put(f"/labels/{freq_label_id}", headers=H, json={"value": "hourly"})
-    assert_true("PUT /labels/:id on frequency label → 400 or 403",
-                r.status_code in (400, 403))
+    # NOTE: PUT /labels on a frequency label test is skipped — PR #30 removed
+    # frequency labels from LABEL_SEED so fresh test users have no frequency rows.
+    # Enforcement (400 for category=frequency) is verified in the PR #30 section above.
 
     # DELETE /labels/{id} — delete the type label
     r = client.delete(f"/labels/{new_type_label_id}", headers=H)
@@ -314,10 +289,9 @@ def main():
     r = client.delete(f"/labels/{new_type_label_id}", headers=H)
     assert_eq("DELETE /labels/:id already deleted → 404", r.status_code, 404)
 
-    # DELETE /labels/{id} — cannot delete a frequency label (category check fires first → 400)
-    r = client.delete(f"/labels/{freq_label_id}", headers=H)
-    assert_true("DELETE /labels/:id on frequency label → 400 or 403",
-                r.status_code in (400, 403))
+    # NOTE: DELETE /labels on a frequency label test is skipped — PR #30 removed
+    # frequency labels from LABEL_SEED so fresh test users have no frequency rows.
+    # Enforcement (400 for category=frequency POST) is verified in the PR #30 section above.
 
     # DELETE /labels/{id} — 404 for non-existent label
     r = client.delete(f"/labels/{str(uuid.uuid4())}", headers=H)
@@ -787,40 +761,41 @@ def main():
     assert_eq("completed state", result["completed_task"]["state"], "done")
     assert_eq("no next task for one-time", result["next_task"], None)
 
-    # ── Recurring task ─────────────────────────────────────────────────────────
-    print("\n── Tasks: Recurring ────────────────────────────────────")
+    # ── Recurring task (PR #30: recurrence logic removed) ─────────────────────
+    # PR #30 removes recurrence logic from complete_task(). next_task is always null.
+    # Frequency labels are no longer seeded for new users, so this section now verifies
+    # that completing ANY task (including one that formerly had a frequency label) always
+    # returns next_task: null.
+    print("\n── Tasks: Complete always returns next_task=null (PR #30) ──")
     today_str = date.today().isoformat()
     r = client.post("/tasks", headers=H, json={
         "title": "Daily exercise",
         "must_do_by": today_str,
-        "label_ids": [freq_labels["daily"], mode_labels["outdoor"]],
+        "label_ids": [mode_labels["outdoor"]],
     })
-    assert_eq("POST recurring task → 201", r.status_code, 201)
+    assert_eq("POST task for recurrence-removal test → 201", r.status_code, 201)
     rec_task_id = r.json()["id"]
 
     r = client.post(f"/tasks/{rec_task_id}/complete", headers=H)
-    assert_eq("Complete recurring → 200", r.status_code, 200)
+    assert_eq("Complete task → 200 (PR #30)", r.status_code, 200)
     result = r.json()
-    assert_eq("recurring task done", result["completed_task"]["state"], "done")
-    assert_true("next_task created", result["next_task"] is not None)
-    next_task = result["next_task"]
-    assert_eq("next task is pending", next_task["state"], "pending")
-    assert_true("next task shares recurrence_group_id",
-                next_task["recurrence_group_id"] == result["completed_task"]["recurrence_group_id"])
-    tomorrow_check = (date.today() + timedelta(days=1)).isoformat()
-    assert_eq("next task due tomorrow", next_task["must_do_by"], tomorrow_check)
-    next_task_id = next_task["id"]
+    assert_eq("completed task state is done (PR #30)", result["completed_task"]["state"], "done")
+    # PR #30: recurrence logic removed — next_task is always null regardless of labels
+    assert_eq("next_task is always null after PR #30", result["next_task"], None)
+    # Completing the same task again must return 422 (already done)
+    r = client.post(f"/tasks/{rec_task_id}/complete", headers=H)
+    assert_eq("Complete already-done task → 422", r.status_code, 422)
 
     # ── Soft delete ────────────────────────────────────────────────────────────
     print("\n── Tasks: Soft Delete ──────────────────────────────────")
-    r = client.delete(f"/tasks/{next_task_id}", headers=H)
+    r = client.delete(f"/tasks/{rec_task_id}", headers=H)
     assert_eq("DELETE /tasks/:id → 204", r.status_code, 204)
-    r = client.get(f"/tasks/{next_task_id}", headers=H)
+    r = client.get(f"/tasks/{rec_task_id}", headers=H)
     assert_eq("deleted task is 404", r.status_code, 404)
 
     r = client.get("/tasks", headers=H, params={"include_deleted": "true"})
     deleted_ids = [t["id"] for t in r.json()["tasks"] if t["is_deleted"]]
-    assert_in("soft deleted task present with include_deleted", next_task_id, deleted_ids)
+    assert_in("soft deleted task present with include_deleted", rec_task_id, deleted_ids)
 
     # ── Beliefs ────────────────────────────────────────────────────────────────
     print("\n── Beliefs ─────────────────────────────────────────────")
