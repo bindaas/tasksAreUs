@@ -17,14 +17,10 @@ import {
 import { isHighPriorityEligible, splitByPriority, canAddHighPriority } from '../utils/taskPriority';
 import { useSettings } from '../hooks/useSettings';
 
-type LabelCategory = 'frequency' | 'mode' | 'type';
-const CATEGORIES: LabelCategory[] = ['mode', 'type', 'frequency'];
+type LabelCategory = 'mode' | 'type';
+const CATEGORIES: LabelCategory[] = ['mode', 'type'];
 
 const CATEGORY_COLORS: Record<LabelCategory, { active: string; inactive: string }> = {
-  frequency: {
-    active: 'bg-blue-600 text-white border-blue-600',
-    inactive: 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50',
-  },
   mode: {
     active: 'bg-green-600 text-white border-green-600',
     inactive: 'bg-white text-green-700 border-green-300 hover:bg-green-50',

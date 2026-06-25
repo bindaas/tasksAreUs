@@ -61,6 +61,6 @@
 - EXPO_PUBLIC_API_URL=https://tasksareus-production.up.railway.app eas update --branch production --message "Task list collapse/filter panel"
 
 
-
+- eas build --platform android --profile production
 
 - git rev-parse --short HEAD

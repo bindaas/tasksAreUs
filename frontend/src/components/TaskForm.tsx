@@ -14,9 +14,9 @@ interface TaskFormProps {
   loading?: boolean;
 }
 
-type LabelCategory = 'frequency' | 'mode' | 'type';
+type LabelCategory = 'mode' | 'type';
 
-const CATEGORY_ORDER: LabelCategory[] = ['mode', 'type', 'frequency'];
+const CATEGORY_ORDER: LabelCategory[] = ['mode', 'type'];
 
 export function TaskForm({
   initialValues,
@@ -43,12 +43,12 @@ export function TaskForm({
 
   const labelsByCategory = labels.reduce<Record<LabelCategory, Label[]>>(
     (acc, label) => {
-      const cat = label.category as LabelCategory;
-      if (!acc[cat]) acc[cat] = [];
-      acc[cat].push(label);
+      if (label.category === 'mode' || label.category === 'type') {
+        acc[label.category].push(label);
+      }
       return acc;
     },
-    { frequency: [], mode: [], type: [] }
+    { mode: [], type: [] }
   );
 
   function toggleLabel(id: string) {

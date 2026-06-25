@@ -38,12 +38,10 @@ import { TaskFormScreen } from './TaskFormScreen';
 import type { Task, Label, LabelCategory, UpdateTaskBody } from '../types';
 
 const LABEL_BG: Record<string, string> = {
-  frequency: '#dbeafe',
   mode: '#dcfce7',
   type: '#f3e8ff',
 };
 const LABEL_TEXT: Record<string, string> = {
-  frequency: '#1d4ed8',
   mode: '#15803d',
   type: '#7e22ce',
 };
@@ -314,9 +312,11 @@ export function TasksScreen() {
   );
 
   const labelsByCategory = useMemo(() => {
-    const groups: Record<LabelCategory, Label[]> = { frequency: [], mode: [], type: [] };
+    const groups: Record<LabelCategory, Label[]> = { mode: [], type: [] };
     for (const label of allLabels) {
-      groups[label.category].push(label);
+      if (label.category === 'mode' || label.category === 'type') {
+        groups[label.category].push(label);
+      }
     }
     return groups;
   }, [allLabels]);
@@ -642,7 +642,7 @@ export function TasksScreen() {
             onChangeText={setSearchQuery}
             className="bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-900 border border-gray-200"
           />
-          {(['mode', 'type', 'frequency'] as LabelCategory[])
+          {(['mode', 'type'] as LabelCategory[])
             .filter((cat) => labelsByCategory[cat].length > 0)
             .map((cat) => (
               <View key={cat}>

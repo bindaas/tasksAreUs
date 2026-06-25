@@ -4,7 +4,7 @@ export interface Label {
   value: string;
 }
 
-export type LabelCategory = 'frequency' | 'mode' | 'type';
+export type LabelCategory = 'mode' | 'type';
 
 export interface Task {
   id: string;
