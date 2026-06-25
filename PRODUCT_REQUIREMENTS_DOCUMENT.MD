@@ -19,11 +19,11 @@ tasksAreUs is a task management app with a Python/FastAPI/PostgreSQL backend, a 
 ### Labels
 A task can have zero or more labels in fixed system-defined categories. A task may have **multiple labels within the same category** (e.g. both `online` and `email` under Mode).
 
-| Category | Values | Editable? |
-|---|---|---|
-| Frequency | one-time, daily, weekly, monthly, annual | No — per-user but fixed; users cannot add, rename, or delete |
-| Mode | online, phone, outdoor, email (defaults) | Yes — per-user; users can add, rename, and delete |
-| Type | household, financial, child, trip, medical (defaults) | Yes — per-user; users can add, rename, and delete |
+| Category | Values | Editable? | UI Visible? |
+|---|---|---|---|
+| Frequency | one-time, daily, weekly, monthly, annual | No — per-user but fixed; users cannot add, rename, or delete | **No** — hidden from all UI surfaces as of PR #29; backend still stores and serves frequency labels |
+| Mode | online, phone, outdoor, email (defaults) | Yes — per-user; users can add, rename, and delete | Yes |
+| Type | household, financial, child, trip, medical (defaults) | Yes — per-user; users can add, rename, and delete | Yes |
 
 **Label ownership rules (shipped — PR #15, corrected in PR #16):**
 - **All labels are per-user** — `labels.user_id` is `NOT NULL`. There are no global seed rows in the DB. Each user gets their own independent copy of all three categories (Frequency, Mode, Type) on first access.
@@ -32,6 +32,12 @@ A task can have zero or more labels in fixed system-defined categories. A task m
 - Users cannot create or modify label *categories* — the three categories (Frequency, Mode, Type) are fixed.
 - The default Type value was renamed from `raghav` to `child` (applied via startup migration in PR #15).
 - Seeding is driven by the `LABEL_SEED` constant in `models.py`; the `ensure_seeded()` / `seed_user_labels()` helpers live in `services/label_service.py`.
+
+**Frequency label UI removal (shipped — PR #29):**
+- `frequency` has been removed from the `LabelCategory` TypeScript union in both the frontend (`frontend/src/api/labels.ts`) and mobile (`mobile/src/types/index.ts`).
+- All label filter panels, label pickers (TaskForm / TaskFormScreen), label ordering arrays, color maps, and grouped-state initializers on both web and mobile no longer include `frequency`.
+- Existing tasks that have frequency labels continue to load and function — the backend API is unchanged. Tasks with frequency labels simply render without a frequency badge (the color map falls through to the `bg-gray-100` default on web; no badge is shown on mobile) until a backend migration removes the frequency data.
+- **Backend still serves frequency labels** — `GET /labels?category=frequency` returns the 5 values; tasks with frequency labels return them in the `labels` array. This is intentional: the backend migration to drop frequency from the DB is a separate, future PR.
 
 **New label management API endpoints (shipped — PR #15):**
 - `POST /api/v1/labels` — create a new Mode or Type label for the current user (400 if Frequency, 409 if duplicate, strips whitespace)
@@ -47,6 +53,8 @@ A task can have zero or more labels in fixed system-defined categories. A task m
 - When marked Done, a new task is created for the next due date
 - If missed (past due, not completed), no additional tasks are created — only **one pending instance** at a time
 - Completion history is preserved so reports accurately show what was done and when
+
+> **Note (aspirational):** Recurring task behavior is defined by the Frequency label category, which is being phased out of the UI (PR #29 removed frequency from all client surfaces). Full removal of recurrence logic and the Frequency label category from the backend is a future work item — not yet started. Until the backend migration ships, the lifecycle rules above remain in effect at the data layer.
 
 ---
 
@@ -94,10 +102,10 @@ The primary interaction mode. Supported input styles:
 - Pending tasks are shown in a **6-column kanban board**: Overdue | Today | Tomorrow | Day After Tomorrow | Upcoming | No Date. Tasks whose effective date is in the past appear in the leftmost **Overdue** column (red accent), not in Today. The **Overdue** column is hidden entirely when it contains no tasks.
 - **Overdue**, **Today**, and **Tomorrow** columns each split into two zones separated by a labeled divider: a high-priority zone (above the line) and a normal-priority zone (below the line). The high-priority cap does not apply within Overdue — tasks carry their existing priority; the cap re-engages when a task is dragged to Today or Tomorrow. Dropping a task *into* the Overdue column is blocked. When a column has more high-priority tasks than the configured limit, the column header shows a ⚠ N/M warning in amber. The **Day After Tomorrow** column has no high-priority zone split — it renders as a simple column (like Upcoming and No Date).
 - **Drag-and-drop** between columns always updates `target_date` only via `PUT /tasks/:id` — `must_do_by` is never modified by a drag. Dragging to Day After Tomorrow sets `target_date` to today+2; dragging to No Date clears `target_date` only (preserving `must_do_by`). **Dropping into the Overdue or Upcoming columns is blocked** — both are read-only drop targets (Upcoming shows a "Read-only" placeholder; no highlight appears on hover). Dragging into the high zone sets `is_high_priority = true`; into the normal zone or Day After Tomorrow/No Date, it resets to `false`. The frontend enforces the user-configured high-priority limit before making the API call; the backend enforces it independently.
-- **Label filter chips** are shown above the board (Mode / Type / Frequency categories). Filter state persists across navigation via React context.
+- **Label filter chips** are shown above the board (Mode / Type categories only — Frequency category hidden as of PR #29). Filter state persists across navigation via React context.
 - **Text search** filters tasks by title and notes simultaneously (case-insensitive). Search and label filters compose with AND semantics.
 - When navigating to New Task while a label filter is active, those labels are pre-checked in the form.
-- **Task cards** show: title, high-priority badge (orange "High") when applicable, `must_do_by` date in red with "Overdue ·" prefix when past, `target_date` in gray (hidden when equal to `must_do_by`), and label badges in Mode → Type → Frequency order. Inline edit (title + labels), inline complete, and inline delete are available directly on cards.
+- **Task cards** show: title, high-priority badge (orange "High") when applicable, `must_do_by` date in red with "Overdue ·" prefix when past, `target_date` in gray (hidden when equal to `must_do_by`), and label badges in Mode → Type order (Frequency badges removed from UI as of PR #29; tasks with existing frequency labels render without a frequency badge). Inline edit (title + labels), inline complete, and inline delete are available directly on cards.
 
 ### Task Form (Create / Edit)
 
@@ -185,10 +193,10 @@ The Tasks tab is fully implemented as a `SectionList` grouped by date proximity:
 
 - **Grouped sections**: Overdue (red header) → Today → Tomorrow → Day After Tomorrow → Upcoming → No Date; empty sections are hidden.
 - **Collapse / expand sections (shipped — PR #26)**: Each section header is tappable to collapse or expand it. Today and Overdue start expanded on first load; all other sections start collapsed. When collapsed, the task count is shown in parentheses after the section title (e.g. "Tomorrow (3)"). An "Expand" / "Collapse" text button in the screen header toggles all sections at once.
-- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (frequency=blue, mode=green, type=purple). Tapping a task row opens it in the task form in edit mode. Completed tasks shown via the filter panel appear faded (reduced opacity) with a strikethrough title and without the high-priority bar or star.
+- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (mode=green, type=purple — frequency badges removed from UI as of PR #29). Tapping a task row opens it in the task form in edit mode. Completed tasks shown via the filter panel appear faded (reduced opacity) with a strikethrough title and without the high-priority bar or star.
 - **Filter panel (shipped — PR #26)**: A `☰` icon in the screen header opens a collapsible filter panel. The icon turns indigo when any filter is active. The panel provides:
   - **Text search**: filters tasks by title and notes simultaneously (case-insensitive, live filtering) — same AND semantics as the web client.
-  - **Label chips**: grouped by category (Mode / Type / Frequency) with the same category colors as task badges; tap to toggle; multiple selections compose with AND logic.
+  - **Label chips**: grouped by category (Mode / Type — Frequency chips removed as of PR #29) with the same category colors as task badges; tap to toggle; multiple selections compose with AND logic.
   - **"Show completed" switch**: when on, re-fetches all tasks (not just pending); completed tasks appear in their date sections faded with a strikethrough title and no complete button.
   - **"Clear filters" link**: visible when any filter is active; resets text search, label selection, and show-completed toggle.
 - **Drag-and-drop between sections (shipped — PR #27, updated PR #28)**: Long-press (500ms) any pending task to enter drag mode. A ghost card lifts and follows the finger. Section headers highlight in indigo as valid drop targets. On drop, sets `target_date` only — matching web behavior; `must_do_by` is never modified by drag. Drop targets and their resulting `target_date` values: Today → today, Tomorrow → tomorrow, Day After Tomorrow → today+2, No Date → null. **Dropping onto the Overdue or Upcoming sections is silently rejected** — neither section highlights during a drag; the task stays put. Scroll is disabled while a drag is active. Done tasks are not draggable. The high-priority limit (from user settings) is enforced for Today/Tomorrow drops of already-high-priority tasks — an Alert is shown and the drop is cancelled if the limit would be exceeded. The optimistic update reverts on API error. The list auto-scrolls when the finger is within 80px of the top or bottom edge.
@@ -215,7 +223,7 @@ New files shipped in PR #20:
 - **Must do by** — date picker field with × clear button
 - **Target date** — date picker field with × clear button
 - **High priority** — checkbox visible only when at least one date is set to today or tomorrow (same eligibility rule as the web form). The checkbox is hidden and submits as `false` for all other dates. `isFormHighPriorityEligible` guards against overdue dates: both conditions must hold — the date must be `>= today` **and** `<= tomorrow`.
-- **Labels** — grouped by Mode → Type → Frequency; tap to toggle; matches web form colour coding (frequency=blue, mode=green, type=purple)
+- **Labels** — grouped by Mode → Type (Frequency section removed as of PR #29); tap to toggle; matches web form colour coding (mode=green, type=purple)
 
 **Behaviour:**
 - **Create mode** ("New Task" header): opened by the "+" button; title field is auto-focused; saves via `POST /api/v1/tasks`.
@@ -272,7 +280,7 @@ New files shipped in PR #22:
 - **Pre-fetch state**: An illustrated "Set a date range and tap Go" prompt is shown before the first fetch.
 - **Loading spinner**: `ActivityIndicator` is shown while the request is in flight.
 - **Summary bar**: After a successful fetch, shows "N completion(s)" (singular/plural) in the header area.
-- **Completions list**: Scrollable list of `CompletionRow` cards, each showing: task title (up to 2 lines), formatted completion timestamp (locale date + time), and label badges sorted Mode → Type → Frequency.
+- **Completions list**: Scrollable list of `CompletionRow` cards, each showing: task title (up to 2 lines), formatted completion timestamp (locale date + time), and label badges sorted Mode → Type (Frequency removed from sort order and rendering as of PR #29).
 - **Empty state**: Illustrated "No completions in this range" when `total === 0`.
 - **Dismissable error banner**: Shown inline on network or API failure; user can tap Dismiss to clear it.
 
@@ -292,10 +300,11 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 - Custom label *categories* (the three categories — Frequency, Mode, Type — are fixed for all users)
 - Editing or deleting Frequency label values (one-time, daily, weekly, monthly, annual are fixed globally)
+- **Aspirational — complete Frequency label removal**: PR #29 removed frequency from all client UI surfaces (filter chips, label pickers, badge rendering, sort orders). The backend still stores and serves frequency labels. A future PR will add a DB migration to drop the frequency data and the remaining backend seeding/enforcement logic. Recurrence logic tied to Frequency labels is also aspirationally removed as part of this initiative.
 - Trip as a separate entity (trip is a Type label value)
 - Admin dashboard for cost tracking (note: per-call AI cost logging to the `ai_cost_log` table is implemented in the backend; only the admin-facing dashboard surface is out of scope)
 - ~~Native mobile app (iOS/Android)~~ — **now in scope**: React Native + Expo mobile client is being built (PR #18 scaffolded the project; feature screens follow in subsequent PRs)
 
 ---
 
-*Last updated by — *Bashful* after PR #28 (Block drag-drop to Upcoming; auto-select labels on new task)*
+*Last updated by — *Bashful* after PR #29 (Remove frequency label category from frontend and mobile UI)*
