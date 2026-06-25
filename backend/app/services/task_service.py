@@ -35,7 +35,6 @@ def _is_hp_eligible_date(d: Optional[date]) -> bool:
     return d <= date.today() + relativedelta(days=1)
 
 
-
 def _count_high_priority_for_date(
     db: Session, user_id: str, d: Optional[date], exclude_task_id: Optional[str] = None
 ) -> int:

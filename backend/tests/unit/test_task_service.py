@@ -57,7 +57,7 @@ class TestCompleteTask:
     def test_raises_422_if_already_completed(self):
         task = self._make_task(state=StateEnum.done)
         db = self._make_db()
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(HTTPException) as exc_info:
             complete_task(db, task, notes=None)
         assert exc_info.value.status_code == 422
 

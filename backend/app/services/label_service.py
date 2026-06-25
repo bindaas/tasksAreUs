@@ -23,12 +23,13 @@ def seed_user_labels(db: Session, user_id: str) -> None:
 def ensure_seeded(db: Session, user_id: str) -> None:
     """Seed labels for the user if they have not been seeded yet.
 
-    Uses the presence of a mode label as the sentinel — if none exist, the
-    user is brand new and needs their initial label set.
+    Uses total label count as the sentinel — zero labels means a brand-new
+    user. Existing users always have at least their frequency labels (until
+    PR 3 removes them), so any_count == 0 reliably identifies new users
+    across both the pre- and post-PR-3 windows.
     """
-    mode_count = db.query(Label).filter(
+    any_count = db.query(Label).filter(
         Label.user_id == user_id,
-        Label.category == CategoryEnum.mode,
     ).count()
-    if mode_count == 0:
+    if any_count == 0:
         seed_user_labels(db, user_id)
