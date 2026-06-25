@@ -192,6 +192,50 @@ def main():
     # Clean up
     client.delete(f"/tasks/{pr16_task_id}", headers=H)
 
+    # ── Labels: Frequency backend contract (PR #29) ───────────────────────────
+    # PR #29 removes 'frequency' from LabelCategory in the frontend and mobile UI
+    # (no rendering, no filter chips, no form sections for frequency labels).
+    # The backend is unchanged — it still seeds, serves, and accepts frequency labels.
+    # These assertions guard against accidental backend regressions.
+    print("\n── Labels: Frequency still served by backend (PR #29) ──")
+    # GET /labels still returns frequency labels (5 values)
+    r = client.get("/labels?category=frequency", headers=H)
+    assert_eq("GET /labels?category=frequency still returns 200 (PR #29)", r.status_code, 200)
+    freq_check = r.json()["labels"]
+    assert_eq("backend still seeds 5 frequency labels (PR #29)", len(freq_check), 5)
+    freq_check_values = {l["value"] for l in freq_check}
+    for freq_val in ("one-time", "daily", "weekly", "monthly", "annual"):
+        assert_in(f"frequency value '{freq_val}' still in API response (PR #29)", freq_val, freq_check_values)
+
+    # GET /labels (no filter) still includes frequency in the returned set
+    r = client.get("/labels", headers=H)
+    all_cats_pr29 = {l["category"] for l in r.json()["labels"]}
+    assert_in("frequency category still present in GET /labels (PR #29)", "frequency", all_cats_pr29)
+
+    # Tasks with frequency labels are still retrievable with their frequency label intact
+    r = client.post("/tasks", headers=H, json={
+        "title": "PR #29 frequency contract task",
+        "label_ids": [freq_labels["weekly"]],
+    })
+    assert_eq("POST task with frequency label still works (PR #29)", r.status_code, 201)
+    freq_contract_task = r.json()
+    freq_contract_task_id = freq_contract_task["id"]
+    freq_contract_label_values = [l["value"] for l in freq_contract_task["labels"]]
+    assert_in("frequency label 'weekly' still attached to task (PR #29)",
+              "weekly", freq_contract_label_values)
+    freq_contract_label_categories = [l["category"] for l in freq_contract_task["labels"]]
+    assert_in("label category='frequency' still returned in task response (PR #29)",
+              "frequency", freq_contract_label_categories)
+    # GET /tasks/:id confirms frequency label survives a round-trip
+    r = client.get(f"/tasks/{freq_contract_task_id}", headers=H)
+    assert_eq("GET /tasks/:id with frequency label → 200 (PR #29)", r.status_code, 200)
+    fetched_task_pr29 = r.json()
+    fetched_freq_values = [l["value"] for l in fetched_task_pr29["labels"]]
+    assert_in("frequency label persists in GET /tasks/:id response (PR #29)",
+              "weekly", fetched_freq_values)
+    # Clean up
+    client.delete(f"/tasks/{freq_contract_task_id}", headers=H)
+
     # ── Labels: Create / Update / Delete (PR #15) ─────────────────────────────
     print("\n── Labels: Configurable Mode/Type (PR #15) ─────────────")
 
