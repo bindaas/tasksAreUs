@@ -314,7 +314,9 @@ export function TasksScreen() {
   const labelsByCategory = useMemo(() => {
     const groups: Record<LabelCategory, Label[]> = { mode: [], type: [] };
     for (const label of allLabels) {
-      groups[label.category].push(label);
+      if (label.category === 'mode' || label.category === 'type') {
+        groups[label.category].push(label);
+      }
     }
     return groups;
   }, [allLabels]);

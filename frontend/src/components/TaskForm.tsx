@@ -43,9 +43,9 @@ export function TaskForm({
 
   const labelsByCategory = labels.reduce<Record<LabelCategory, Label[]>>(
     (acc, label) => {
-      const cat = label.category as LabelCategory;
-      if (!acc[cat]) acc[cat] = [];
-      acc[cat].push(label);
+      if (label.category === 'mode' || label.category === 'type') {
+        acc[label.category].push(label);
+      }
       return acc;
     },
     { mode: [], type: [] }

@@ -1,6 +1,6 @@
 export interface Label {
   id: string;
-  category: 'mode' | 'type';
+  category: 'frequency' | 'mode' | 'type';
   value: string;
 }
 
