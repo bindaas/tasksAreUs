@@ -25,9 +25,9 @@ export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = fal
   const [editLabelIds, setEditLabelIds] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
-  const sortedLabels = [...task.labels].sort(
-    (a, b) => (LABEL_CATEGORY_ORDER[a.category] ?? 3) - (LABEL_CATEGORY_ORDER[b.category] ?? 3)
-  );
+  const sortedLabels = [...task.labels]
+    .filter((l) => l.category !== 'frequency')
+    .sort((a, b) => (LABEL_CATEGORY_ORDER[a.category] ?? 3) - (LABEL_CATEGORY_ORDER[b.category] ?? 3));
 
   const labelsByCategory = useMemo(
     () => labels.reduce<Record<string, Label[]>>((acc, label) => {
