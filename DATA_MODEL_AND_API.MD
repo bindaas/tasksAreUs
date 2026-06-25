@@ -33,6 +33,8 @@ The `device_uuid` column was removed at startup via `ALTER TABLE users DROP COLU
 ### Table: `labels`
 All labels are per-user. There are no global rows (`user_id` is NOT NULL). On a user's first access, all three categories (frequency + mode + type) are seeded from the `LABEL_SEED` constant in `models.py` by `label_service.seed_user_labels()`. Users can add, rename, and delete their own mode/type labels; frequency labels are immutable (cannot be renamed or deleted via the API).
 
+**Frequency label UI status (PR #29):** The `frequency` category has been removed from all client UI surfaces (web and mobile) — it no longer appears in label filter panels, label pickers, badge renderers, or sort orders. The backend is **unchanged**: `GET /labels?category=frequency` still returns the 5 seeded values; tasks with frequency labels still carry them in the `labels` array. A future backend migration will drop the frequency data from the DB; until then, the backend contract below remains fully in effect.
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
@@ -93,6 +95,8 @@ Core entity. One-time and recurring task instances are both stored here.
 - At most **one** task per `recurrence_group_id` may be in `pending` state at any time
 - When a recurring task is marked `done`, the API creates a new `pending` instance with the same `recurrence_group_id` and labels, with `must_do_by` set to the next due date based on frequency
 - If a recurring task is overdue and still `pending`, no additional instance is created until it is completed
+
+> **Aspirational:** Recurrence logic is tied to the Frequency label category, which is being phased out of all client UI surfaces (PR #29 removed frequency from web and mobile UI). Full removal of recurrence logic and the Frequency label category from the backend is a future work item — not yet started. Until a backend migration ships, the rules above remain in effect at the data layer.
 
 **Effective date** is defined as the earliest of `must_do_by` and `target_date` when both are set; otherwise whichever one is non-null; `null` if both are null. This is computed by `getEffectiveDate()` in both `frontend/src/utils/taskDateUtils.ts` and `mobile/src/utils/taskDateUtils.ts`. (Prior to PR #20, `getEffectiveDate` incorrectly returned `target_date` when both were set, regardless of which was earlier. This was a client-side display bug only — the backend never relied on this helper.)
 
