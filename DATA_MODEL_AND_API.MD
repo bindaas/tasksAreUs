@@ -31,9 +31,9 @@ The `device_uuid` column was removed at startup via `ALTER TABLE users DROP COLU
 ---
 
 ### Table: `labels`
-All labels are per-user. There are no global rows (`user_id` is NOT NULL). On a user's first access, all three categories (frequency + mode + type) are seeded from the `LABEL_SEED` constant in `models.py` by `label_service.seed_user_labels()`. Users can add, rename, and delete their own mode/type labels; frequency labels are immutable (cannot be renamed or deleted via the API).
+All labels are per-user. There are no global rows (`user_id` is NOT NULL). On a user's first access, mode and type labels (9 entries total) are seeded from the `LABEL_SEED` constant in `models.py` by `label_service.seed_user_labels()`. Frequency entries were removed from `LABEL_SEED` in PR #30 — new users are no longer seeded with frequency labels. Users can add, rename, and delete their own mode/type labels; frequency labels are immutable (cannot be renamed or deleted via the API).
 
-**Frequency label UI status (PR #29):** The `frequency` category has been removed from all client UI surfaces (web and mobile) — it no longer appears in label filter panels, label pickers, badge renderers, or sort orders. The backend is **unchanged**: `GET /labels?category=frequency` still returns the 5 seeded values; tasks with frequency labels still carry them in the `labels` array. A future backend migration will drop the frequency data from the DB; until then, the backend contract below remains fully in effect.
+**Frequency label status (PR #29 + PR #30):** The `frequency` category has been removed from all client UI surfaces (web and mobile) — it no longer appears in label filter panels, label pickers, badge renderers, or sort orders. As of PR #30, frequency entries are no longer in `LABEL_SEED` — new users are not seeded with frequency labels. `GET /labels?category=frequency` still returns 200 and any existing frequency rows for a user (existing users retain their frequency label rows in the DB). `CategoryEnum.frequency` remains in the SQLAlchemy model to deserialize existing DB rows. A future DB migration (PR 3) will delete all frequency label rows and drop the `frequency` value from the Postgres `category` enum.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -47,15 +47,10 @@ All labels are per-user. There are no global rows (`user_id` is NOT NULL). On a 
 
 The old partial indices (`uq_global_label`, `uq_user_label`) were dropped when this constraint was added.
 
-**Per-user seed data** (from `LABEL_SEED` constant in `models.py`; seeded lazily on first access):
+**Per-user seed data** (from `LABEL_SEED` constant in `models.py`; seeded lazily on first access — 9 entries as of PR #30; frequency entries removed):
 
 | category | value |
 |---|---|
-| frequency | one-time |
-| frequency | daily |
-| frequency | weekly |
-| frequency | monthly |
-| frequency | annual |
 | mode | online |
 | mode | phone |
 | mode | outdoor |
@@ -66,7 +61,7 @@ The old partial indices (`uq_global_label`, `uq_user_label`) were dropped when t
 | type | trip |
 | type | medical |
 
-**Seeding sentinel**: `ensure_seeded()` in `label_service.py` checks whether the user has at least one `frequency` label. If not, it calls `seed_user_labels()` to insert all `LABEL_SEED` rows for the user. Since frequency labels cannot be deleted, their absence reliably indicates a brand-new user. Concurrent-request races are handled by catching `IntegrityError` and rolling back (idempotent).
+**Seeding sentinel**: `ensure_seeded()` in `label_service.py` checks whether the user has any labels at all (total count = 0). If so, it calls `seed_user_labels()` to insert all `LABEL_SEED` rows for the user. Zero labels reliably identifies a brand-new user — existing users always have at least their mode/type labels (or legacy frequency labels until PR 3 removes them). Concurrent-request races are handled by catching `IntegrityError` and rolling back (idempotent).
 
 ---
 
@@ -89,14 +84,11 @@ Core entity. One-time and recurring task instances are both stored here.
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | Used for last-write-wins conflict resolution |
 
-**Recurring task rules (enforced by the API, not the DB):**
-- A recurring task is identified by having a `frequency` label (daily / weekly / monthly / annual)
-- All instances share a `recurrence_group_id`
-- At most **one** task per `recurrence_group_id` may be in `pending` state at any time
-- When a recurring task is marked `done`, the API creates a new `pending` instance with the same `recurrence_group_id` and labels, with `must_do_by` set to the next due date based on frequency
-- If a recurring task is overdue and still `pending`, no additional instance is created until it is completed
+**Recurring task rules: removed (PR #30)**
 
-> **Aspirational:** Recurrence logic is tied to the Frequency label category, which is being phased out of all client UI surfaces (PR #29 removed frequency from web and mobile UI). Full removal of recurrence logic and the Frequency label category from the backend is a future work item — not yet started. Until a backend migration ships, the rules above remain in effect at the data layer.
+Recurrence logic has been removed from the backend. `FREQUENCY_VALUES`, `_get_frequency_label()`, and `_next_due_date()` were deleted from `task_service.py`. `complete_task()` always returns `next_task: null` — no follow-on task is ever created.
+
+The `recurrence_group_id` column remains in the `tasks` table and schema. Existing tasks in the DB may have non-null `recurrence_group_id` values; these are left in place and are harmless. The sync router still accepts and stores `recurrence_group_id` when creating tasks. Full removal of the column and `CategoryEnum.frequency` is deferred to PR 3 (DB migration).
 
 **Effective date** is defined as the earliest of `must_do_by` and `target_date` when both are set; otherwise whichever one is non-null; `null` if both are null. This is computed by `getEffectiveDate()` in both `frontend/src/utils/taskDateUtils.ts` and `mobile/src/utils/taskDateUtils.ts`. (Prior to PR #20, `getEffectiveDate` incorrectly returned `target_date` when both were set, regardless of which was earlier. This was a client-side display bug only — the backend never relied on this helper.)
 
@@ -402,7 +394,7 @@ Soft-delete a task (`is_deleted = true`).
 #### `POST /tasks/{task_id}/complete`
 Mark a task as done.
 - Sets `state = done` and `completed_at = now`
-- If the task is recurring (has a frequency label), creates a new `pending` task instance with the same `recurrence_group_id`, labels, and a `must_do_by` set to the next due date
+- Recurrence logic was removed in PR #30 — no follow-on task is created
 
 **Request** (optional)
 ```json
@@ -413,10 +405,10 @@ Mark a task as done.
 ```json
 {
   "completed_task": { ...task object... },
-  "next_task": { ...task object... }
+  "next_task": null
 }
 ```
-`next_task` is `null` for one-time tasks.
+`next_task` is always `null` as of PR #30 (recurrence logic removed). The field is retained in the response schema for backward compatibility.
 
 ---
 
