@@ -7,74 +7,59 @@ import pytest
 
 from fastapi import HTTPException
 
+from app.models import StateEnum
 from app.services.task_service import (
     HIGH_PRIORITY_DAILY_LIMIT,
     _count_high_priority_for_date,
     _effective_date,
-    _get_frequency_label,
     _get_high_priority_limit,
     _is_hp_eligible_date,
-    _next_due_date,
+    complete_task,
     update_task,
 )
 
 
-# ── _next_due_date ────────────────────────────────────────────────────────────
+# ── complete_task ─────────────────────────────────────────────────────────────
 
-class TestNextDueDate:
-    def test_daily(self):
-        assert _next_due_date(date(2026, 5, 25), "daily") == date(2026, 5, 26)
+class TestCompleteTask:
+    def _make_task(self, state=StateEnum.pending, labels=None):
+        task = MagicMock()
+        task.state = state
+        task.labels = labels or []
+        task.recurrence_group_id = None
+        task.must_do_by = None
+        task.notes = None
+        return task
 
-    def test_weekly(self):
-        assert _next_due_date(date(2026, 5, 25), "weekly") == date(2026, 6, 1)
+    def _make_db(self):
+        db = MagicMock()
+        db.flush = MagicMock()
+        db.commit = MagicMock()
+        db.refresh = MagicMock()
+        return db
 
-    def test_monthly(self):
-        assert _next_due_date(date(2026, 5, 25), "monthly") == date(2026, 6, 25)
+    def test_returns_none_next_task(self):
+        task = self._make_task()
+        db = self._make_db()
+        completed, next_task = complete_task(db, task, notes=None)
+        assert next_task is None
+        assert completed is task
 
-    def test_annual(self):
-        assert _next_due_date(date(2026, 5, 25), "annual") == date(2027, 5, 25)
-
-    def test_monthly_end_of_month(self):
-        # dateutil clamps Jan 31 + 1 month to Feb 28
-        result = _next_due_date(date(2026, 1, 31), "monthly")
-        assert result == date(2026, 2, 28)
-
-    def test_unknown_frequency_returns_base(self):
-        base = date(2026, 5, 25)
-        assert _next_due_date(base, "quarterly") == base
-
-
-# ── _get_frequency_label ──────────────────────────────────────────────────────
-
-class TestGetFrequencyLabel:
-    def _make_label(self, category: str, value: str):
+    def test_returns_none_next_task_even_with_legacy_frequency_label(self):
         label = MagicMock()
-        label.category = category
-        label.value = value
-        return label
+        label.category = "frequency"
+        label.value = "weekly"
+        task = self._make_task(labels=[label])
+        db = self._make_db()
+        _, next_task = complete_task(db, task, notes=None)
+        assert next_task is None
 
-    def test_returns_frequency_label(self):
-        task = MagicMock()
-        task.labels = [
-            self._make_label("mode", "online"),
-            self._make_label("frequency", "weekly"),
-        ]
-        assert _get_frequency_label(task) == "weekly"
-
-    def test_returns_none_when_no_frequency_label(self):
-        task = MagicMock()
-        task.labels = [self._make_label("mode", "online")]
-        assert _get_frequency_label(task) is None
-
-    def test_ignores_unknown_frequency_value(self):
-        task = MagicMock()
-        task.labels = [self._make_label("frequency", "quarterly")]
-        assert _get_frequency_label(task) is None
-
-    def test_returns_none_for_empty_labels(self):
-        task = MagicMock()
-        task.labels = []
-        assert _get_frequency_label(task) is None
+    def test_raises_422_if_already_completed(self):
+        task = self._make_task(state=StateEnum.done)
+        db = self._make_db()
+        with pytest.raises(Exception) as exc_info:
+            complete_task(db, task, notes=None)
+        assert exc_info.value.status_code == 422
 
 
 # ── update_task date clearing ─────────────────────────────────────────────────
