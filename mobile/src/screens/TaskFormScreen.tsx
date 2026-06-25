@@ -19,18 +19,16 @@ import { isFormHighPriorityEligible } from '../utils/taskPriority';
 import type { Task, Label, CreateTaskBody, UpdateTaskBody } from '../types';
 
 const LABEL_BG: Record<string, string> = {
-  frequency: '#dbeafe',
   mode: '#dcfce7',
   type: '#f3e8ff',
 };
 const LABEL_TEXT: Record<string, string> = {
-  frequency: '#1d4ed8',
   mode: '#15803d',
   type: '#7e22ce',
 };
 
-const CATEGORY_ORDER: Array<'mode' | 'type' | 'frequency'> = ['mode', 'type', 'frequency'];
-const CATEGORY_LABELS: Record<string, string> = { mode: 'Mode', type: 'Type', frequency: 'Frequency' };
+const CATEGORY_ORDER: Array<'mode' | 'type'> = ['mode', 'type'];
+const CATEGORY_LABELS: Record<string, string> = { mode: 'Mode', type: 'Type' };
 
 interface Props {
   taskId?: string;

@@ -13,8 +13,8 @@ interface TaskCardProps {
   onTogglePriority?: () => void;
 }
 
-const LABEL_CATEGORY_ORDER: Record<string, number> = { mode: 0, type: 1, frequency: 2 };
-const EDIT_CATEGORY_ORDER = ['mode', 'type', 'frequency'] as const;
+const LABEL_CATEGORY_ORDER: Record<string, number> = { mode: 0, type: 1 };
+const EDIT_CATEGORY_ORDER = ['mode', 'type'] as const;
 
 export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = false, onTogglePriority }: TaskCardProps) {
   const navigate = useNavigate();

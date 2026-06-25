@@ -14,9 +14,9 @@ interface TaskFormProps {
   loading?: boolean;
 }
 
-type LabelCategory = 'frequency' | 'mode' | 'type';
+type LabelCategory = 'mode' | 'type';
 
-const CATEGORY_ORDER: LabelCategory[] = ['mode', 'type', 'frequency'];
+const CATEGORY_ORDER: LabelCategory[] = ['mode', 'type'];
 
 export function TaskForm({
   initialValues,
@@ -48,7 +48,7 @@ export function TaskForm({
       acc[cat].push(label);
       return acc;
     },
-    { frequency: [], mode: [], type: [] }
+    { mode: [], type: [] }
   );
 
   function toggleLabel(id: string) {

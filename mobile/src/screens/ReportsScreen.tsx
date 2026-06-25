@@ -32,7 +32,7 @@ function formatCompletedAt(iso: string): string {
     d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
-const LABEL_CATEGORY_ORDER = { mode: 0, type: 1, frequency: 2 };
+const LABEL_CATEGORY_ORDER = { mode: 0, type: 1 };
 
 function CompletionRow({ record }: { record: CompletionRecord }) {
   const sorted = [...record.labels].sort(
