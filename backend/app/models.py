@@ -160,11 +160,6 @@ class AICostLog(Base):
 
 
 LABEL_SEED = [
-    ("frequency", "one-time"),
-    ("frequency", "daily"),
-    ("frequency", "weekly"),
-    ("frequency", "monthly"),
-    ("frequency", "annual"),
     ("mode", "online"),
     ("mode", "phone"),
     ("mode", "outdoor"),

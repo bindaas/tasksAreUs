@@ -34,7 +34,7 @@ class TestSeedUserLabels:
     def test_skips_already_existing_labels(self):
         db = MagicMock()
         db.query.return_value.filter.return_value.all.return_value = [
-            _make_label("e1", CategoryEnum.frequency, "daily", "user-1"),
+            _make_label("e1", CategoryEnum.mode, "online", "user-1"),
         ]
 
         _seed_user_labels(db, "user-1")
@@ -42,7 +42,7 @@ class TestSeedUserLabels:
         assert db.add.call_count == len(LABEL_SEED) - 1
         added = [c[0][0] for c in db.add.call_args_list]
         assert not any(
-            l.category == CategoryEnum.frequency and l.value == "daily" for l in added
+            l.category == CategoryEnum.mode and l.value == "online" for l in added
         )
         db.commit.assert_called_once()
 

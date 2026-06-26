@@ -34,9 +34,9 @@ backend/
       settings.py    # GET/PUT /settings
       sync.py        # POST /sync
     services/
-      task_service.py  # create_task(), update_task(), complete_task(), recurring logic, high-priority limit; _get_high_priority_limit() reads user settings; _resolve_labels() calls ensure_seeded() then queries user_id only
+      task_service.py  # create_task(), update_task(), complete_task(); high-priority limit; _get_high_priority_limit() reads user settings; _resolve_labels() calls ensure_seeded() then queries user_id only; recurrence logic removed in PR #30
       ai_service.py    # Claude calls (beliefs + conversations); _format_task_line() helper; label queries scoped to user_id only; calls ensure_seeded() in handle_conversation_message
-      label_service.py # seed_user_labels(db, user_id): seeds all categories from LABEL_SEED constant; ensure_seeded(db, user_id): no-op if user already has a frequency label (sentinel check); imported by labels router, task_service, and ai_service
+      label_service.py # seed_user_labels(db, user_id): seeds mode+type labels from LABEL_SEED (9 entries; frequency entries removed in PR #30); ensure_seeded(db, user_id): no-op if user has any labels (zero-count sentinel); imported by labels router, task_service, and ai_service
   tests/
     test_api.py      # standalone integration test: creates data, tests all endpoints, cleans up
     unit/
