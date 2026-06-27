@@ -158,6 +158,40 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    # ── Board migration — Step C.5: safety cleanup for any nulls Step C missed ──
+    # Handles orphaned rows (user_id with no entry in users table, etc.).
+    # First: assign via default board for rows whose user still has one.
+    # Then: delete any rows that genuinely have no board (truly orphaned).
+    with engine.connect() as conn:
+        conn.execute(text("""
+            UPDATE labels l SET board_id = b.id
+            FROM boards b
+            WHERE l.board_id IS NULL
+              AND b.user_id = l.user_id
+              AND b.is_default = true
+              AND b.is_deleted = false
+        """))
+        conn.execute(text("DELETE FROM labels WHERE board_id IS NULL"))
+        conn.execute(text("""
+            UPDATE tasks t SET board_id = b.id
+            FROM boards b
+            WHERE t.board_id IS NULL
+              AND b.user_id = t.user_id
+              AND b.is_default = true
+              AND b.is_deleted = false
+        """))
+        conn.execute(text("DELETE FROM tasks WHERE board_id IS NULL"))
+        conn.execute(text("""
+            UPDATE conversations c SET board_id = b.id
+            FROM boards b
+            WHERE c.board_id IS NULL
+              AND b.user_id = c.user_id
+              AND b.is_default = true
+              AND b.is_deleted = false
+        """))
+        conn.execute(text("DELETE FROM conversations WHERE board_id IS NULL"))
+        conn.commit()
+
     # ── Board migration — Step D: tighten board_id columns to NOT NULL ─────────
     with engine.connect() as conn:
         conn.execute(text(
