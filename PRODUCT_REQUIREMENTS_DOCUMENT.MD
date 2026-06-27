@@ -25,7 +25,17 @@ Each user can have up to **5 boards** (server-side cap: `MAX_BOARDS_PER_USER = 5
 - `PUT /api/v1/boards/{id}` — rename a board or change its default status. Setting `is_default: true` atomically demotes the previously-default board. Setting `is_default: false` on the current default returns `400` — promote another board first.
 - `DELETE /api/v1/boards/{id}` — soft-delete a board. Returns `400` if it is the only board, the default board, or still has tasks or labels.
 
-> **[ASPIRATIONAL]** — Not yet shipped. Board selection UI in the web frontend and mobile app (a board picker / switcher visible to the user) is planned for subsequent PRs (PR 2/3 and PR 3/3 of the multi-board feature); only the backend is shipped as of PR #33.
+### Board UI — Web frontend (shipped — PR #34)
+
+- **Board switcher**: A dropdown embedded in the desktop sidebar (below the "tasksAreUs" title) and the mobile web header shows the active board name. Clicking it opens a dropdown listing all boards (active board highlighted, default board marked with a star). Selecting a board switches the active board instantly; no API call is made on switch.
+- **Create board inline**: A "New board" option at the bottom of the switcher dropdown opens an inline text input; submitting creates the board via `POST /boards` and immediately activates it. A `422` (board cap reached) or `400` (empty name) error is shown inline.
+- **Active board state**: Tracked in `BoardContext`. Initialised to the user's default board on every app open — never persisted to localStorage. Switching boards clears any active label filters (labels from Board A are not valid in Board B).
+- **Board-scoped data**: All data fetches (tasks, labels, conversation creation, reports) are scoped to the active board by passing `board_id` to API calls. Hooks (`useTasks`, `useLabels`) and pages (`TaskDetailPage`, `ChatPage`, `ReportsPage`, `SettingsPage`) re-fetch automatically when the active board changes.
+- **Chat reset on board switch**: Switching boards resets the current conversation so the new chat is scoped to the new board's tasks and labels.
+- **Reports re-fetch on board switch**: The Reports page re-fetches automatically when the active board changes.
+- **Settings — Boards section**: A new "Boards" section appears at the top of the Settings page (above Labels). It shows all boards with inline rename, set-default (star icon), and delete actions. Delete is disabled for the default board and for the only remaining board. Adding a new board is available via a "+ Add board" button. The Labels section heading shows the active board's name to make clear which board's labels are being managed.
+
+> **[ASPIRATIONAL]** — Not yet shipped. Board selection UI in the **mobile app** (React Native) — a board switcher visible to the user, board-scoped data fetches, and board management in SettingsScreen — is planned for PR 3/3 of the multi-board feature.
 
 ---
 
@@ -146,7 +156,8 @@ The primary interaction mode. Each conversation is tied to a specific board (via
 
 ### Settings Page
 
-- **Labels section (shipped — PR #15)**: Appears at the top of Settings, above High Priority Limit and Starter Questions. Shows **Mode** and **Type** subsections with the user's personal label set. Each label has Edit and Delete buttons; each subsection has an Add button to create new values. Frequency labels are not shown here (they are not editable). Changes take effect immediately in TaskForm label pickers and on task cards.
+- **Boards section (shipped — PR #34)**: Appears at the top of Settings, above Labels. Shows all boards with: inline rename; a star icon to set the default board (the current default's star is amber and non-clickable); a Delete button (disabled for the default board or the only board — server errors such as "board has tasks" are surfaced inline); and a "+ Add board" button to create a new board. The Labels section heading shows the active board name to make clear which board's labels are being managed.
+- **Labels section (shipped — PR #15, updated PR #34)**: Appears below Boards, above High Priority Limit and Starter Questions. Shows **Mode** and **Type** subsections scoped to the **active board**. Each label has Edit and Delete buttons; each subsection has an Add button to create new values. Labels created here are added to the active board. Frequency labels are not shown here (they are not editable). Changes take effect immediately in TaskForm label pickers and on task cards.
 - **High Priority Daily Limit**: numeric input (min 1) that sets the per-day cap for high-priority tasks in Today and Tomorrow columns. Defaults to 3 when unset. Reducing the limit below the current count is allowed — a warning is shown but no retroactive removal occurs. Persisted server-side via `user_settings.high_priority_daily_limit`.
 - Configure up to 5 starter questions saved server-side. Questions can be added, removed, and reordered.
 - **Connection section (shipped — PR #25)**: Shown at the bottom of Settings (below the Save Settings button). Displays an environment badge — green "Production" when the app is served over HTTPS, yellow "Development" otherwise — and the resolved API base URL. A "Test Connection" button pings `GET /api/v1/health` (unauthenticated) and reports either "Connected Xms" (with measured round-trip latency) or "Failed: <error message>". Implemented on both the web frontend and the mobile app.
@@ -333,4 +344,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #33 (multi-board backend: boards table, board-scoped tasks/labels/conversations, board CRUD API, backward-compatible default-board resolution)*
+*Last updated by — *Bashful* after PR #34 (multi-board web frontend: BoardContext, BoardSwitcher, board-scoped API calls, Boards section in Settings)*
