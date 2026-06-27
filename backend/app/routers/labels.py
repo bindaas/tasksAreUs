@@ -23,7 +23,7 @@ def list_labels(
 ):
     effective_board_id = board_svc.resolve_board_id(db, user_id, board_id)
 
-    q = db.query(Label).filter(Label.board_id == effective_board_id)
+    q = db.query(Label).filter(Label.board_id == effective_board_id, Label.user_id == user_id)
     if category:
         try:
             cat = CategoryEnum(category)

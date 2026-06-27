@@ -46,37 +46,46 @@ def resolve_board_id(db: Session, user_id: str, board_id: Optional[str]) -> str:
 def ensure_board_seeded(db: Session, user_id: str) -> str:
     """Ensure the user has a default board with seeded labels. Returns the default board ID.
 
-    Sentinel: user has 0 non-deleted boards → create "General tasks" + seed its labels.
+    Happy path (existing user): single .first() query — no COUNT overhead.
+    New-user path: COUNT confirms zero boards, then create + seed.
     Idempotent — concurrent races are swallowed via IntegrityError rollback.
     """
+    existing = db.query(Board).filter(
+        Board.user_id == user_id,
+        Board.is_default == True,
+        Board.is_deleted == False,
+    ).first()
+    if existing:
+        return existing.id
+
     board_count = db.query(Board).filter(
         Board.user_id == user_id,
         Board.is_deleted == False,
     ).count()
+    if board_count > 0:
+        raise HTTPException(status_code=500, detail="No default board found for user")
 
-    if board_count == 0:
-        board = Board(
-            user_id=user_id,
-            name="General tasks",
-            is_default=True,
-            is_deleted=False,
-        )
-        db.add(board)
-        try:
-            db.commit()
-            db.refresh(board)
-        except IntegrityError:
-            db.rollback()
-            board = db.query(Board).filter(
-                Board.user_id == user_id,
-                Board.is_default == True,
-                Board.is_deleted == False,
-            ).first()
-            if not board:
-                raise HTTPException(status_code=500, detail="Failed to initialise user board")
-        _seed_board_labels(db, board.id, user_id)
-
-    return get_default_board_id(db, user_id)
+    board = Board(
+        user_id=user_id,
+        name="General tasks",
+        is_default=True,
+        is_deleted=False,
+    )
+    db.add(board)
+    try:
+        db.commit()
+        db.refresh(board)
+    except IntegrityError:
+        db.rollback()
+        board = db.query(Board).filter(
+            Board.user_id == user_id,
+            Board.is_default == True,
+            Board.is_deleted == False,
+        ).first()
+        if not board:
+            raise HTTPException(status_code=500, detail="Failed to initialise user board")
+    _seed_board_labels(db, board.id, user_id)
+    return board.id
 
 
 def get_board_or_404(db: Session, board_id: str, user_id: str) -> Board:
@@ -139,6 +148,7 @@ def update_board(
         if old_default:
             old_default.is_default = False
             old_default.updated_at = datetime.now(timezone.utc)
+            db.flush()  # clear old default before setting new one — avoids partial-index IntegrityError
         board.is_default = True
 
     board.updated_at = datetime.now(timezone.utc)

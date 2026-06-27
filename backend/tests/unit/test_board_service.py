@@ -84,13 +84,10 @@ class TestResolveBoardId:
 class TestEnsureBoardSeeded:
     def test_creates_board_and_seeds_for_new_user(self):
         db = MagicMock()
+        # Happy-path first() finds no default board; COUNT confirms zero boards
+        db.query.return_value.filter.return_value.first.return_value = None
         db.query.return_value.filter.return_value.count.return_value = 0
-
-        new_board = _make_board("b1", "user-1", is_default=True)
         db.refresh.side_effect = lambda obj: setattr(obj, "id", "b1")
-
-        # After commit/refresh, the default board lookup should find the board
-        db.query.return_value.filter.return_value.first.return_value = new_board
 
         with patch("app.services.board_service._seed_board_labels") as mock_seed:
             result = ensure_board_seeded(db, "user-1")
@@ -103,8 +100,7 @@ class TestEnsureBoardSeeded:
 
     def test_skips_creation_when_board_exists(self):
         db = MagicMock()
-        db.query.return_value.filter.return_value.count.return_value = 1
-
+        # Happy-path first() finds the existing default board immediately — no COUNT needed
         board = _make_board("b1", "user-1", is_default=True)
         db.query.return_value.filter.return_value.first.return_value = board
 
