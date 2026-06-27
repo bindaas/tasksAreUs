@@ -6,6 +6,29 @@ tasksAreUs is a task management app with a Python/FastAPI/PostgreSQL backend, a 
 
 ---
 
+## Boards
+
+Each user can have up to **5 boards** (server-side cap: `MAX_BOARDS_PER_USER = 5`). Boards are the top-level organizational unit — tasks, labels, and conversations each belong to exactly one board.
+
+**Default board**: Every user has exactly one default board. For new users it is created automatically on first access (any endpoint hit) and named **"General tasks"**. Existing users received a "General tasks" board via startup migration (PR #33) — all their existing tasks, labels, and conversations were assigned to it.
+
+**Board isolation**: Labels and tasks are strictly board-scoped. A label from Board A cannot be applied to a task in Board B. The AI (both belief generation and conversational interface) only sees tasks and labels belonging to the conversation's board.
+
+**Label seeding**: When a new board is created for a new user, mode and type labels (9 entries total) are seeded into that board. Label uniqueness is enforced per board: `(board_id, category, value)` — not per user.
+
+**Backward compatibility**: All pre-existing endpoints accept requests that omit `board_id`. The server resolves the missing value to the user's default board, so old mobile and web clients continue to work without changes.
+
+### Board API (shipped — PR #33)
+
+- `GET /api/v1/boards` — list the current user's non-deleted boards, ordered default-first then by creation time. Returns a `boards` array.
+- `POST /api/v1/boards` — create a new board for the current user. `422` if the 5-board cap would be exceeded. `400` if the name is empty.
+- `PUT /api/v1/boards/{id}` — rename a board or change its default status. Setting `is_default: true` atomically demotes the previously-default board. Setting `is_default: false` on the current default returns `400` — promote another board first.
+- `DELETE /api/v1/boards/{id}` — soft-delete a board. Returns `400` if it is the only board, the default board, or still has tasks or labels.
+
+> **[ASPIRATIONAL]** — Not yet shipped. Board selection UI in the web frontend and mobile app (a board picker / switcher visible to the user) is planned for subsequent PRs (PR 2/3 and PR 3/3 of the multi-board feature); only the backend is shipped as of PR #33.
+
+---
+
 ## Task Model
 
 ### Core Fields
@@ -25,13 +48,14 @@ A task can have zero or more labels in fixed system-defined categories. A task m
 | Mode | online, phone, outdoor, email (defaults) | Yes — per-user; users can add, rename, and delete | Yes |
 | Type | household, financial, child, trip, medical (defaults) | Yes — per-user; users can add, rename, and delete | Yes |
 
-**Label ownership rules (shipped — PR #15, corrected in PR #16, updated PR #30, updated PR #31):**
-- **All labels are per-user** — `labels.user_id` is `NOT NULL`. There are no global seed rows in the DB. New users are seeded with **Mode and Type labels only** (9 entries total) on first access, as of PR #30.
+**Label ownership rules (shipped — PR #15, corrected in PR #16, updated PR #30, updated PR #31, updated PR #33):**
+- **All labels are per-board** — `labels.user_id` and `labels.board_id` are both `NOT NULL`. There are no global seed rows in the DB. A user's default board is seeded with **Mode and Type labels only** (9 entries total) on first access to any endpoint (as of PR #33, seeding is triggered by `resolve_board_id`/`ensure_board_seeded`, not only by `GET /labels`).
+- **Label uniqueness is per-board**: the constraint is `(board_id, category, value)` — the same label value can exist independently in two different boards belonging to the same user.
 - **Frequency** labels have been fully removed (PR #31): all frequency label rows were deleted from the DB by the SQL migration, `CategoryEnum.frequency` was removed from Python, and `GET /labels?category=frequency` now returns 400 (unknown category). Frequency labels cannot be created, edited, or deleted via the API and are not shown in Settings.
-- **Mode** and **Type** labels are per-user and fully configurable: users can add, rename, and delete them.
+- **Mode** and **Type** labels are per-user, per-board, and fully configurable: users can add, rename, and delete them.
 - Users cannot create or modify label *categories* — the two active categories (Mode, Type) are fixed.
 - The default Type value was renamed from `raghav` to `child` (applied via startup migration in PR #15).
-- Seeding is driven by the `LABEL_SEED` constant in `models.py`; the `ensure_seeded()` / `seed_user_labels()` helpers live in `services/label_service.py`. The seeding sentinel checks for any existing labels (zero labels = new user).
+- Seeding is driven by the `LABEL_SEED` constant in `models.py`; the `seed_board_labels()` helper lives in `services/label_service.py`. The seeding sentinel checks for any non-deleted boards (zero boards = new user) via `ensure_board_seeded()` in `services/board_service.py`.
 
 **Frequency label removal — fully complete (PR #29 + PR #30 + PR #31 + PR #32):**
 - `frequency` has been removed from all TypeScript `Label.category` unions in the frontend (`frontend/src/api/tasks.ts`) and mobile (`mobile/src/types/index.ts`) (PR #29 for UI surfaces, PR #32 for the `Label` interface itself).
@@ -40,9 +64,9 @@ A task can have zero or more labels in fixed system-defined categories. A task m
 - **DB migration complete (PR #31)**: All frequency label rows deleted from the `labels` table (beliefs FK references nulled; `task_labels` join rows deleted). `frequency` dropped from the Postgres `categoryenum` enum type. `CategoryEnum.frequency` removed from Python. `GET /labels?category=frequency` returns 400 (unknown category). `POST /labels` with `category=frequency` returns 400. No frequency data remains in the DB.
 - **Type cleanup complete (PR #32)**: `recurrence_group_id` removed from the `Task` TypeScript interface in both frontend (`frontend/src/api/tasks.ts`) and mobile (`mobile/src/types/index.ts`). The dead `.filter((l) => l.category !== 'frequency')` guard removed from `TaskCard.tsx`. Test fixture factories updated accordingly. `Label.category` union is now `'mode' | 'type'` throughout the TypeScript codebase.
 
-**New label management API endpoints (shipped — PR #15, updated PR #31):**
-- `POST /api/v1/labels` — create a new Mode or Type label for the current user (400 if unknown/non-configurable category, 409 if duplicate, strips whitespace)
-- `PUT /api/v1/labels/{id}` — rename a Mode or Type label owned by the current user (403 if wrong owner, 400 if non-configurable category, 409 if duplicate name)
+**New label management API endpoints (shipped — PR #15, updated PR #31, updated PR #33):**
+- `POST /api/v1/labels` — create a new Mode or Type label for the current user in the specified board (or the default board if `board_id` is omitted). `400` if unknown/non-configurable category. `409` if a duplicate exists within that board. Strips whitespace.
+- `PUT /api/v1/labels/{id}` — rename a Mode or Type label owned by the current user (403 if wrong owner, 400 if non-configurable category, 409 if duplicate name within the same board)
 - `DELETE /api/v1/labels/{id}` — delete a Mode or Type label owned by the current user (403 if wrong owner, 400 if non-configurable category)
 
 ### Task Lifecycle
@@ -52,6 +76,8 @@ All tasks follow a single lifecycle: Pending → Done. Completing a task via `PO
 **Recurrence logic removed (PR #30):** The backend no longer creates follow-on tasks when a task is marked done. `FREQUENCY_VALUES`, `_get_frequency_label()`, and `_next_due_date()` have been deleted from `task_service.py`. This makes recurrence behavior consistent with the UI-level removal of the Frequency label category (PR #29).
 
 **DB migration complete (PR #31):** All frequency label rows have been deleted from the DB, `CategoryEnum.frequency` removed from Python, and `frequency` dropped from the Postgres enum. The `recurrence_group_id` column has also been dropped from the `tasks` table — it is absent from `TaskOut` schema, `GET /tasks` responses, `POST /sync` push and pull payloads, and the `GET /tasks` query parameter list. Stale mobile clients that still send `recurrence_group_id` in sync payloads are handled gracefully (the field is silently ignored).
+
+**Board column added (PR #33):** `board_id` is now included in all `TaskOut` responses (`GET /tasks`, `POST /tasks`, `PUT /tasks/{id}`, etc.) and in sync pull payloads. `POST /tasks` and sync push accept an optional `board_id`; omitting it defaults to the user's default board. The sync pull response now includes a `boards` array containing any boards updated since `last_synced_at`. Stale clients that omit `board_id` in sync push task objects have their tasks automatically assigned to the user's default board.
 
 **Type cleanup complete (PR #32):** `recurrence_group_id` has been removed from the `Task` TypeScript interface in both frontend and mobile clients, matching the backend schema. `Label.category` is now narrowed to `'mode' | 'type'` (the `'frequency'` variant has been removed from all TypeScript type declarations).
 
@@ -67,7 +93,7 @@ The AI generates suggestions that users validate, following an RLHF-style feedba
 Users accept or reject each belief. Accepted beliefs carry more weight in future suggestions than pending or rejected ones.
 
 ### Conversational Interface
-The primary interaction mode. Supported input styles:
+The primary interaction mode. Each conversation is tied to a specific board (via `board_id` on the `conversations` table). The AI only sees tasks and labels belonging to that board — there is no cross-board leakage. Supported input styles:
 
 1. **Journal-style entries** — freeform natural language:
    - "I need to return books to the library tomorrow" → creates a task with a due date
@@ -80,6 +106,8 @@ The primary interaction mode. Supported input styles:
    - Date-based queries match on both `must_do_by` and `target_date` — tasks are not omitted from AI context just because they only have a `target_date`.
 
 3. Every response must include one or more **suggested follow-up questions** that the app can actually answer and that don't repeat what was just answered.
+
+`POST /conversations` accepts an optional `board_id`; omitting it defaults the conversation to the user's default board. The conversation's `board_id` is included in the `ConversationOut` response (shipped — PR #33).
 
 ---
 
@@ -305,4 +333,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #32 (Type cleanup: narrow Label.category and drop recurrence_group_id from frontend/mobile TypeScript interfaces)*
+*Last updated by — *Bashful* after PR #33 (multi-board backend: boards table, board-scoped tasks/labels/conversations, board CRUD API, backward-compatible default-board resolution)*

@@ -14,7 +14,6 @@ from ..models import (
     Conversation, Label, Message, RoleEnum, StateEnum, Task,
 )
 from ..services.task_service import create_task, complete_task as svc_complete_task
-from ..services.label_service import ensure_seeded
 
 
 def _anthropic_client():
@@ -65,7 +64,7 @@ def generate_beliefs(db: Session, task: Task, user_id: str) -> List[Belief]:
         if examples:
             accepted_context = "\nPreviously accepted beliefs (weight these patterns higher):\n" + "\n".join(examples)
 
-    all_labels = db.query(Label).filter(Label.user_id == user_id).all()
+    all_labels = db.query(Label).filter(Label.board_id == task.board_id).all()
     labels_json = json.dumps([
         {"id": l.id, "category": l.category.value, "value": l.value}
         for l in all_labels
@@ -213,9 +212,10 @@ def handle_conversation_message(
 ) -> Tuple[Message, List[str], List[str]]:
     client = _anthropic_client()
 
-    # Build context: pending tasks
+    # Build context: pending tasks scoped to this board
     pending_tasks = db.query(Task).filter(
         Task.user_id == user_id,
+        Task.board_id == conversation.board_id,
         Task.state == StateEnum.pending,
         Task.is_deleted == False,
     ).limit(100).all()
@@ -224,8 +224,7 @@ def handle_conversation_message(
         _format_task_line(t) for t in pending_tasks
     ]) or "  (no pending tasks)"
 
-    ensure_seeded(db, user_id)
-    all_labels = db.query(Label).filter(Label.user_id == user_id).all()
+    all_labels = db.query(Label).filter(Label.board_id == conversation.board_id).all()
     labels_context = "\n".join([
         f"  - [{l.id}] {l.category.value}: {l.value}"
         for l in all_labels
@@ -299,6 +298,7 @@ Instructions:
                         new_task = create_task(
                             db=db,
                             user_id=user_id,
+                            board_id=conversation.board_id,
                             title=tool_input["title"],
                             notes=tool_input.get("notes"),
                             must_do_by=_parse_date(tool_input.get("must_do_by")),

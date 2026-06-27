@@ -8,6 +8,7 @@ from ..database import get_db
 from ..dependencies import get_current_user
 from ..models import Label, StateEnum, Task, TaskLabel
 from ..schemas import CompletionItem, CompletionsReport, LabelOut
+from ..services import board_service as board_svc
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -17,11 +18,14 @@ def get_completions(
     from_date: date = Query(..., alias="from"),
     to_date: date = Query(..., alias="to"),
     label_ids: Optional[str] = Query(None),
+    board_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
+    effective_board_id = board_svc.resolve_board_id(db, user_id, board_id)
     q = db.query(Task).filter(
         Task.user_id == user_id,
+        Task.board_id == effective_board_id,
         Task.state == StateEnum.done,
         Task.is_deleted == False,
         Task.completed_at >= from_date,

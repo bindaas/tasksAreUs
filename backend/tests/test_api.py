@@ -65,6 +65,8 @@ def cleanup(user_id: str):
         cur.execute(f"DELETE FROM {table} WHERE user_id = %s", (user_id,))
     # Per-user labels created by PR #15 (mode/type labels with user_id set)
     cur.execute("DELETE FROM labels WHERE user_id = %s", (user_id,))
+    # PR #33: boards table; labels must be deleted before boards (FK constraint)
+    cur.execute("DELETE FROM boards WHERE user_id = %s", (user_id,))
     # System user is permanent — only delete data, not the user row itself
     if user_id != SYSTEM_USER_ID:
         cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
@@ -120,6 +122,237 @@ def main():
     # X-User-ID is no longer a valid auth path — must return 401
     r = client.get("/labels", headers=H)
     assert_eq("GET /labels with X-User-ID (no longer valid) → 401", r.status_code, 401)
+
+    # ── Boards (PR #33) ────────────────────────────────────────────────────────
+    print("\n── Boards (PR #33) ─────────────────────────────────────")
+
+    # GET /boards — must return at least the default "General tasks" board
+    r = client.get("/boards", headers=H)
+    assert_eq("GET /boards → 200", r.status_code, 200)
+    boards_body = r.json()
+    assert_in("GET /boards response has boards key", "boards", boards_body)
+    boards_list = boards_body["boards"]
+    assert_true("GET /boards returns at least 1 board (General tasks)", len(boards_list) >= 1)
+
+    # The default board must be first in the list (ordered is_default DESC, created_at ASC)
+    default_board = boards_list[0]
+    assert_eq("first board is_default=true", default_board["is_default"], True)
+    assert_eq("default board name is 'General tasks'", default_board["name"], "General tasks")
+    assert_in("board has id field", "id", default_board)
+    assert_in("board has is_deleted field", "is_deleted", default_board)
+    assert_in("board has created_at field", "created_at", default_board)
+    assert_in("board has updated_at field", "updated_at", default_board)
+    assert_eq("default board is_deleted=false", default_board["is_deleted"], False)
+    default_board_id = default_board["id"]
+
+    # No auth → 401
+    r = client.get("/boards")
+    assert_eq("GET /boards with no auth → 401", r.status_code, 401)
+
+    # POST /boards — create a new board
+    r = client.post("/boards", headers=H, json={"name": "Job search"})
+    assert_eq("POST /boards → 201", r.status_code, 201)
+    new_board = r.json()
+    assert_eq("new board name", new_board["name"], "Job search")
+    assert_eq("new board is_default=false", new_board["is_default"], False)
+    assert_eq("new board is_deleted=false", new_board["is_deleted"], False)
+    assert_in("new board has id", "id", new_board)
+    new_board_id = new_board["id"]
+
+    # POST /boards — empty name → 400
+    r = client.post("/boards", headers=H, json={"name": "   "})
+    assert_eq("POST /boards empty name → 400", r.status_code, 400)
+
+    # POST /boards — enforce cap of 5; already have 2, create 3 more
+    extra_board_ids = [new_board_id]
+    for i in range(3):
+        r = client.post("/boards", headers=H, json={"name": f"Extra board {i + 1}"})
+        assert_eq(f"POST /boards extra board {i + 1} → 201", r.status_code, 201)
+        extra_board_ids.append(r.json()["id"])
+    # Now at 5 boards — 6th must be rejected
+    r = client.post("/boards", headers=H, json={"name": "One too many"})
+    assert_eq("POST /boards at cap → 422", r.status_code, 422)
+    assert_true("422 detail mentions board limit",
+                "5" in r.json().get("detail", "") or "limit" in r.json().get("detail", "").lower())
+
+    # PUT /boards/{id} — rename a board
+    r = client.put(f"/boards/{new_board_id}", headers=H, json={"name": "Career search"})
+    assert_eq("PUT /boards/:id rename → 200", r.status_code, 200)
+    renamed_board = r.json()
+    assert_eq("board renamed", renamed_board["name"], "Career search")
+    assert_eq("board still not default after rename", renamed_board["is_default"], False)
+
+    # PUT /boards/{id} — empty name → 400
+    r = client.put(f"/boards/{new_board_id}", headers=H, json={"name": "  "})
+    assert_eq("PUT /boards/:id empty name → 400", r.status_code, 400)
+
+    # PUT /boards/{id} — is_default: true promotes a non-default board
+    r = client.put(f"/boards/{new_board_id}", headers=H, json={"is_default": True})
+    assert_eq("PUT /boards/:id set is_default=true → 200", r.status_code, 200)
+    promoted = r.json()
+    assert_eq("promoted board is_default=true", promoted["is_default"], True)
+    # Original default board must no longer be default
+    r = client.get("/boards", headers=H)
+    all_boards = r.json()["boards"]
+    old_default_in_list = next((b for b in all_boards if b["id"] == default_board_id), None)
+    assert_true("old default board found in list", old_default_in_list is not None)
+    if old_default_in_list:
+        assert_eq("old default board demoted", old_default_in_list["is_default"], False)
+
+    # PUT /boards/{id} — is_default: false on current default → 400
+    r = client.put(f"/boards/{new_board_id}", headers=H, json={"is_default": False})
+    assert_eq("PUT /boards/:id is_default=false on current default → 400", r.status_code, 400)
+    assert_true("400 detail mentions demote restriction",
+                "demote" in r.json().get("detail", "").lower() or "default" in r.json().get("detail", "").lower())
+
+    # PUT /boards/{id} — 404 for non-existent board
+    r = client.put(f"/boards/{str(uuid.uuid4())}", headers=H, json={"name": "Ghost board"})
+    assert_eq("PUT /boards/:id non-existent → 404", r.status_code, 404)
+
+    # Restore default_board_id as the default so later tests use the original board
+    r = client.put(f"/boards/{default_board_id}", headers=H, json={"is_default": True})
+    assert_eq("Restore original default board → 200", r.status_code, 200)
+    assert_eq("original board is_default=true again", r.json()["is_default"], True)
+
+    # DELETE /boards/{id} — cannot delete the only board (but we have multiple, so this guards differently)
+    # First verify: cannot delete the default board
+    r = client.delete(f"/boards/{default_board_id}", headers=H)
+    assert_eq("DELETE /boards/:id on default board → 400", r.status_code, 400)
+    assert_true("400 detail mentions default board",
+                "default" in r.json().get("detail", "").lower())
+
+    # Cannot delete a board that has tasks — put a task on new_board_id first
+    r = client.post("/tasks", headers=H, json={
+        "title": "Board isolation task",
+        "label_ids": [],
+        "board_id": new_board_id,
+    })
+    assert_eq("POST /tasks with board_id → 201", r.status_code, 201)
+    board_task = r.json()
+    board_task_id = board_task["id"]
+    assert_eq("task board_id matches requested board", board_task["board_id"], new_board_id)
+
+    r = client.delete(f"/boards/{new_board_id}", headers=H)
+    assert_eq("DELETE /boards/:id with tasks → 400", r.status_code, 400)
+    assert_true("400 detail mentions tasks",
+                "task" in r.json().get("detail", "").lower())
+
+    # Remove the task so we can test label guard
+    client.delete(f"/tasks/{board_task_id}", headers=H)
+
+    # Cannot delete a board that has labels — add a label to new_board_id
+    r = client.post("/labels", headers=H, json={"category": "mode", "value": "video-call", "board_id": new_board_id})
+    assert_eq("POST /labels with board_id → 201", r.status_code, 201)
+    board_label = r.json()
+    board_label_id = board_label["id"]
+
+    r = client.delete(f"/boards/{new_board_id}", headers=H)
+    assert_eq("DELETE /boards/:id with labels → 400", r.status_code, 400)
+    assert_true("400 detail mentions labels",
+                "label" in r.json().get("detail", "").lower())
+
+    # Remove the label
+    client.delete(f"/labels/{board_label_id}", headers=H)
+
+    # Now the board is empty and non-default — delete should succeed
+    r = client.delete(f"/boards/{new_board_id}", headers=H)
+    assert_eq("DELETE /boards/:id empty non-default board → 204", r.status_code, 204)
+
+    # Verify the deleted board no longer appears in GET /boards
+    r = client.get("/boards", headers=H)
+    remaining_board_ids = [b["id"] for b in r.json()["boards"]]
+    assert_true("deleted board no longer in GET /boards", new_board_id not in remaining_board_ids)
+
+    # DELETE /boards/{id} — 404 for non-existent board
+    r = client.delete(f"/boards/{str(uuid.uuid4())}", headers=H)
+    assert_eq("DELETE /boards/:id non-existent → 404", r.status_code, 404)
+
+    # Cannot delete the only remaining board (when user is down to 1)
+    # Delete all extra boards down to only 1 remaining (the default)
+    for extra_id in extra_board_ids[1:]:  # skip new_board_id (already deleted)
+        client.delete(f"/boards/{extra_id}", headers=H)
+    r = client.delete(f"/boards/{default_board_id}", headers=H)
+    assert_eq("DELETE /boards/:id when only one board exists → 400", r.status_code, 400)
+    assert_true("400 detail mentions only board",
+                "only" in r.json().get("detail", "").lower())
+
+    # ── Boards: cross-board label isolation (PR #33 core invariant) ─────────────
+    print("\n── Boards: cross-board label isolation ──────────────────")
+    # Create a second board to test scoping
+    r = client.post("/boards", headers=H, json={"name": "Isolation test board"})
+    assert_eq("POST /boards for isolation test → 201", r.status_code, 201)
+    isolation_board_id = r.json()["id"]
+
+    # Add a label to each board
+    r = client.post("/labels", headers=H, json={"category": "mode", "value": "default-board-label", "board_id": default_board_id})
+    assert_eq("POST label to default board → 201", r.status_code, 201)
+    default_isolation_label_id = r.json()["id"]
+
+    r = client.post("/labels", headers=H, json={"category": "mode", "value": "other-board-label", "board_id": isolation_board_id})
+    assert_eq("POST label to isolation board → 201", r.status_code, 201)
+    isolation_label_id = r.json()["id"]
+
+    # GET /labels?board_id=default_board_id must NOT include the isolation board's label
+    r = client.get("/labels", headers=H, params={"board_id": default_board_id})
+    assert_eq("GET /labels?board_id=default → 200", r.status_code, 200)
+    default_board_labels = [l["id"] for l in r.json()["labels"]]
+    assert_true("default board label appears in its own board GET /labels",
+                default_isolation_label_id in default_board_labels)
+    assert_true("isolation board label does NOT appear in default board GET /labels",
+                isolation_label_id not in default_board_labels)
+
+    # GET /labels?board_id=isolation_board_id must NOT include the default board's label
+    r = client.get("/labels", headers=H, params={"board_id": isolation_board_id})
+    assert_eq("GET /labels?board_id=isolation → 200", r.status_code, 200)
+    isolation_board_labels = [l["id"] for l in r.json()["labels"]]
+    assert_true("isolation board label appears in its own board GET /labels",
+                isolation_label_id in isolation_board_labels)
+    assert_true("default board label does NOT appear in isolation board GET /labels",
+                default_isolation_label_id not in isolation_board_labels)
+
+    # A label from board B cannot be assigned to a task in board A
+    r = client.post("/tasks", headers=H, json={
+        "title": "Cross-board label assignment test task",
+        "label_ids": [isolation_label_id],  # label from isolation board
+        "board_id": default_board_id,        # but task on default board
+    })
+    assert_eq("POST /tasks with cross-board label → 422", r.status_code, 422)
+
+    # Clean up isolation labels and board
+    client.delete(f"/labels/{default_isolation_label_id}", headers=H)
+    client.delete(f"/labels/{isolation_label_id}", headers=H)
+    client.delete(f"/boards/{isolation_board_id}", headers=H)
+
+    # ── Boards: backward-compat — omitting board_id defaults to the default board ──
+    print("\n── Boards: backward-compat default-board resolution ────")
+    # Tasks created without board_id go to the default board
+    r = client.post("/tasks", headers=H, json={
+        "title": "Backward-compat task (no board_id)",
+        "label_ids": [],
+    })
+    assert_eq("POST /tasks without board_id → 201 (backward-compat)", r.status_code, 201)
+    compat_task = r.json()
+    compat_task_id = compat_task["id"]
+    assert_in("task response has board_id field (PR #33)", "board_id", compat_task)
+    assert_eq("task board_id defaults to default board", compat_task["board_id"], default_board_id)
+    client.delete(f"/tasks/{compat_task_id}", headers=H)
+
+    # Labels created without board_id go to the default board
+    r = client.post("/labels", headers=H, json={"category": "mode", "value": "compat-test"})
+    assert_eq("POST /labels without board_id → 201 (backward-compat)", r.status_code, 201)
+    compat_label_id = r.json()["id"]
+    # Verify it appears in GET /labels (default board)
+    r = client.get("/labels", headers=H)
+    all_label_ids_compat = [l["id"] for l in r.json()["labels"]]
+    assert_in("label created without board_id appears in default board GET /labels", compat_label_id, all_label_ids_compat)
+    client.delete(f"/labels/{compat_label_id}", headers=H)
+
+    # Conversations created without board_id go to the default board
+    r = client.post("/conversations", headers=H)
+    assert_eq("POST /conversations without board_id → 201 (backward-compat)", r.status_code, 201)
+    compat_conv = r.json()
+    assert_in("conversation response has board_id field (PR #33)", "board_id", compat_conv)
+    assert_eq("conversation board_id defaults to default board", compat_conv["board_id"], default_board_id)
 
     # ── Labels ─────────────────────────────────────────────────────────────────
     print("\n── Labels ─────────────────────────────────────────────")
@@ -336,6 +569,9 @@ def main():
     # PR #31: recurrence_group_id column dropped — must not appear in API response
     assert_true("task response has no recurrence_group_id field (PR #31)",
                 "recurrence_group_id" not in task)
+    # PR #33: board_id must be present in task response
+    assert_in("task response has board_id field (PR #33)", "board_id", task)
+    assert_eq("task board_id is the default board (PR #33)", task["board_id"], default_board_id)
 
     r = client.get(f"/tasks/{task_id}", headers=H)
     assert_eq("GET /tasks/:id → 200", r.status_code, 200)
@@ -850,7 +1086,11 @@ def main():
     print("\n── Conversations ───────────────────────────────────────")
     r = client.post("/conversations", headers=H)
     assert_eq("POST /conversations → 201", r.status_code, 201)
-    conv_id = r.json()["id"]
+    conv_resp = r.json()
+    conv_id = conv_resp["id"]
+    # PR #33: conversation response must include board_id
+    assert_in("POST /conversations response has board_id (PR #33)", "board_id", conv_resp)
+    assert_eq("conversation board_id is default board (PR #33)", conv_resp["board_id"], default_board_id)
 
     if os.getenv("ANTHROPIC_API_KEY"):
         r = client.post(f"/conversations/{conv_id}/messages", headers=H, json={
@@ -1104,6 +1344,11 @@ def main():
         assert_in("sync task object includes is_high_priority field", "is_high_priority", first_sync_task)
         assert_true("sync task object has no recurrence_group_id field (PR #31)",
                     "recurrence_group_id" not in first_sync_task)
+        # PR #33: board_id must be present in sync task objects
+        assert_in("sync task object includes board_id field (PR #33)", "board_id", first_sync_task)
+    # PR #33: sync response must include boards array
+    assert_in("sync changes has boards array (PR #33)", "boards", sync_result["changes"])
+    assert_true("sync boards is a list (PR #33)", isinstance(sync_result["changes"]["boards"], list))
 
     # Verify sync push: sending a task with is_high_priority=true round-trips correctly.
     # PR #31: recurrence_group_id is omitted from the push payload (column dropped).
@@ -1139,11 +1384,16 @@ def main():
     assert_eq("synced task is_high_priority persisted", r.json()["is_high_priority"], True)
     assert_true("synced task response has no recurrence_group_id field (PR #31)",
                 "recurrence_group_id" not in r.json())
+    # PR #33: synced task must have board_id set to the default board (no board_id in payload)
+    assert_in("synced task response has board_id field (PR #33)", "board_id", r.json())
+    assert_eq("synced task board_id defaults to default board (PR #33)",
+              r.json()["board_id"], default_board_id)
     # Clean up the sync test task
     client.delete(f"/tasks/{hp_sync_task_id}", headers=H)
 
     # PR #31: backward-compat check — old mobile clients may still send recurrence_group_id
     # in their sync payload. The server must accept (200) and silently discard the field.
+    # PR #33: old clients also omit board_id; the sync router must default to the default board.
     stale_sync_task_id = str(uuid.uuid4())
     r = client.post("/sync", headers=H, json={
         "last_synced_at": "2020-01-01T00:00:00Z",
@@ -1159,6 +1409,7 @@ def main():
                 "is_high_priority": False,
                 "is_deleted": False,
                 "recurrence_group_id": None,  # old clients still send this; must be ignored
+                # board_id intentionally absent — must default to default board (PR #33)
                 "completed_at": None,
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -1174,6 +1425,10 @@ def main():
     assert_eq("GET stale-sync task → 200", r.status_code, 200)
     assert_true("stale-sync task response has no recurrence_group_id (PR #31)",
                 "recurrence_group_id" not in r.json())
+    # PR #33: stale client omitting board_id must get task on default board
+    assert_in("stale-sync task response has board_id (PR #33)", "board_id", r.json())
+    assert_eq("stale-sync task board_id defaults to default board (PR #33)",
+              r.json()["board_id"], default_board_id)
     # Clean up
     client.delete(f"/tasks/{stale_sync_task_id}", headers=H)
 

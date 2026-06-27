@@ -5,20 +5,23 @@ from ..database import get_db
 from ..dependencies import get_current_user
 from ..models import Conversation, Message
 from ..schemas import (
-    ConversationOut, MessageActions, MessageOut,
+    ConversationCreate, ConversationOut, MessageActions, MessageOut,
     MessageRequest, SendMessageResponse,
 )
 from ..services import ai_service
+from ..services import board_service as board_svc
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
 
 @router.post("", response_model=ConversationOut, status_code=201)
 def start_conversation(
+    body: ConversationCreate = ConversationCreate(),
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    conv = Conversation(user_id=user_id)
+    effective_board_id = board_svc.resolve_board_id(db, user_id, body.board_id)
+    conv = Conversation(user_id=user_id, board_id=effective_board_id)
     db.add(conv)
     db.commit()
     db.refresh(conv)

@@ -18,7 +18,7 @@
 ```
 backend/
   app/
-    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name + labels.user_id SET NOT NULL + labels_user_id_category_value_key UNIQUE, drop old uq_global_label + uq_user_label partial indices, DROP COLUMN device_uuid, DROP COLUMN recurrence_group_id)
+    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, legacy ALTER TABLE migrations, 4-step board migration: add board_id columns as nullable → create boards_user_id_default_key partial unique index + swap labels uniqueness to board_id → DML populate boards for existing users via _migrate_boards() → tighten board_id to NOT NULL; registers boards router)
     config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates, FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID)
     database.py      # engine, SessionLocal, get_db()
     models.py        # ORM models + LABEL_SEED
@@ -26,7 +26,8 @@ backend/
     dependencies.py  # get_current_user() — Bearer token (Firebase); get_firebase_claims() — token-only, no DB
     routers/         # one file per resource, mounted at /api/v1
       users.py       # (no public endpoints — user rows are auto-created by get_current_user())
-      labels.py      # GET /labels; POST /labels (create mode/type label); PUT /labels/{id} (rename, owner only); DELETE /labels/{id} (delete, owner only)
+      boards.py      # GET /boards; POST /boards; PUT /boards/{id} (rename/set-default); DELETE /boards/{id} (soft-delete, guarded)
+      labels.py      # GET /labels (board-scoped); POST /labels (create mode/type label, board-scoped); PUT /labels/{id} (rename, owner only); DELETE /labels/{id} (delete, owner only)
       tasks.py       # CRUD + complete endpoint
       beliefs.py     # beliefs generate/list/update
       conversations.py  # conversations + messages
@@ -34,19 +35,24 @@ backend/
       settings.py    # GET/PUT /settings
       sync.py        # POST /sync
     services/
-      task_service.py  # create_task(), update_task(), complete_task(); high-priority limit; _get_high_priority_limit() reads user settings; _resolve_labels() calls ensure_seeded() then queries user_id only; recurrence logic removed in PR #30
-      ai_service.py    # Claude calls (beliefs + conversations); _format_task_line() helper; label queries scoped to user_id only; calls ensure_seeded() in handle_conversation_message
-      label_service.py # seed_user_labels(db, user_id): seeds mode+type labels from LABEL_SEED (9 entries; frequency entries removed in PR #30; CategoryEnum.frequency removed in PR #31); ensure_seeded(db, user_id): no-op if user has any labels (zero-count sentinel); imported by labels router, task_service, and ai_service
+      board_service.py # Board CRUD, cap enforcement (MAX_BOARDS_PER_USER = 5), default-board resolution; get_default_board_id(), resolve_board_id(), ensure_board_seeded(), get_board_or_404(), create_board(), update_board(), delete_board()
+      task_service.py  # create_task(), update_task(), complete_task(); high-priority limit; _get_high_priority_limit() reads user settings; _resolve_labels() filters by both user_id and board_id; recurrence logic removed in PR #30
+      ai_service.py    # Claude calls (beliefs + conversations); _format_task_line() helper; label queries scoped to board_id in both generate_beliefs() and handle_conversation_message()
+      label_service.py # seed_board_labels(db, board_id, user_id): seeds mode+type labels from LABEL_SEED (9 entries) into a specific board; called by board_service during board initialisation
   tests/
     test_api.py      # standalone integration test: creates data, tests all endpoints, cleans up
     unit/
       test_task_service.py   # pytest unit tests for task_service (no DB — mocked)
       test_ai_service.py     # pytest unit tests for ai_service helpers
       test_dependencies.py   # pytest unit tests for auth dependencies (Firebase Bearer auth, token expiry/invalidity)
-      test_labels_router.py  # pytest unit tests for labels router (no DB — mocked): seed, create, update, delete
+      test_labels_router.py  # pytest unit tests for labels router (no DB — mocked): seed (TestSeedBoardLabels), create, update, delete
+      test_board_service.py  # pytest unit tests for board_service (no DB — mocked): 21 tests covering get_default_board_id, resolve_board_id, ensure_board_seeded, create_board, update_board, delete_board
   scripts/
     purge_test_data.py               # DB maintenance: remove test-generated rows
     migrate_drop_frequency_labels.sql  # One-time production SQL migration (PR #31): deletes all frequency label rows, drops recurrence_group_id column, and removes the 'frequency' value from the categoryenum Postgres type. Must be run against the production DB before deploying this PR.
+
+development-plans/
+  PLAN-feat-multi-board.md  # Development plan for multi-board feature (PR #33); includes Sneezy's review and Grumpy's inline responses
 
 frontend/
   src/
@@ -142,11 +148,15 @@ mobile/                 # React Native + Expo SDK 54 managed workflow
 
 ## Key Implementation Patterns
 
-**Schema management**: `Base.metadata.create_all()` on startup. No migrations.
+**Schema management**: `Base.metadata.create_all()` on startup. No migrations file — all schema changes run as idempotent `ALTER TABLE` / `CREATE INDEX IF NOT EXISTS` / `DROP INDEX IF EXISTS` statements in `main.py`'s lifespan block. The `boards` table is created by `create_all()` on first run; the partial unique index on `(user_id) WHERE is_default = true AND is_deleted = false` is created separately via raw SQL because SQLAlchemy `UniqueConstraint` does not support partial indexes.
+
+**Board scoping**: All resources (tasks, labels, conversations) belong to exactly one board. `board_service.resolve_board_id(db, user_id, board_id?)` is the single entry point for board resolution in all routers — it validates ownership when `board_id` is supplied and calls `ensure_board_seeded()` when it is omitted, returning the user's default board and lazily creating "General tasks" + seeding 9 default labels for brand-new users. New boards created by users via `POST /boards` start empty (no label seeding). `MAX_BOARDS_PER_USER = 5` is enforced by `board_service.create_board()`.
+
+**Label seeding (board-scoped)**: `label_service.seed_board_labels(db, board_id, user_id)` seeds the 9 LABEL_SEED entries into a specific board. It is called only during initial board creation (via `ensure_board_seeded` in `board_service`). New boards created by users are NOT seeded. The sentinel is "this board has 0 labels" — checked per-board, not per-user.
 
 **API proxy**: Vite dev server proxies `/api` to `http://localhost:8000`, so the frontend makes same-origin requests and CORS is not an issue in development.
 
-**AI conversations** (`handle_conversation_message`): builds a system prompt with the user's pending tasks (up to 100) and all labels, then runs a Claude tool-use loop (max 8 turns) with tools `create_task`, `complete_task`, and `respond_to_user`. Loop exits when Claude calls `respond_to_user`, which also carries `suggested_questions`. Task context is formatted by `_format_task_line()`, which includes both `must_do_by` and `target_date` when set.
+**AI conversations** (`handle_conversation_message`): builds a system prompt with the user's pending tasks (up to 100) and all labels scoped to the conversation's `board_id`, then runs a Claude tool-use loop (max 8 turns) with tools `create_task`, `complete_task`, and `respond_to_user`. Loop exits when Claude calls `respond_to_user`, which also carries `suggested_questions`. Task context is formatted by `_format_task_line()`, which includes both `must_do_by` and `target_date` when set. Tasks created by the AI tool are assigned to the conversation's board.
 
 **AI beliefs** (`generate_beliefs`): single JSON-mode Claude call; response parsed for `label_suggestions` (label_id + rationale) and `time_estimate_minutes`.
 
@@ -211,7 +221,7 @@ cd mobile && npm install && npx expo start
 cd backend && DATABASE_URL=... python3 tests/test_api.py
 ```
 
-**Backend unit tests** (`tests/unit/`): pytest-based, no DB required (mock SQLAlchemy sessions). Cover `task_service` (create, update, complete, recurring, high-priority limit), `ai_service` helpers (`_format_task_line`), `dependencies` (Firebase Bearer auth, token expiry/invalidity, migrate edge cases), and `labels` router (seed, create, update, delete — ownership + category guards). Run with:
+**Backend unit tests** (`tests/unit/`): pytest-based, no DB required (mock SQLAlchemy sessions). Cover `task_service` (create, update, complete, recurring, high-priority limit), `ai_service` helpers (`_format_task_line`), `dependencies` (Firebase Bearer auth, token expiry/invalidity, migrate edge cases), `labels` router (seed via `TestSeedBoardLabels`, create, update, delete — ownership + category guards), and `board_service` (21 tests: board cap, default swap, deletion guards, seeding idempotency). Run with:
 ```bash
 cd backend && python3 -m pytest tests/unit/ -v
 ```
