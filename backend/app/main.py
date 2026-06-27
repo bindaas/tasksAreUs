@@ -141,6 +141,8 @@ async def lifespan(app: FastAPI):
             "ON boards (user_id) WHERE is_default = true AND is_deleted = false"
         ))
         # Swap label uniqueness from (user_id, category, value) to (board_id, category, value)
+        # Production DB has this as a UNIQUE CONSTRAINT (not a plain index) — must drop constraint first
+        conn.execute(text("ALTER TABLE labels DROP CONSTRAINT IF EXISTS labels_user_id_category_value_key"))
         conn.execute(text("DROP INDEX IF EXISTS labels_user_id_category_value_key"))
         conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS labels_board_id_category_value_key "
