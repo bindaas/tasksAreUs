@@ -276,6 +276,53 @@ def main():
     assert_true("400 detail mentions only board",
                 "only" in r.json().get("detail", "").lower())
 
+    # ── Boards: cross-board label isolation (PR #33 core invariant) ─────────────
+    print("\n── Boards: cross-board label isolation ──────────────────")
+    # Create a second board to test scoping
+    r = client.post("/boards", headers=H, json={"name": "Isolation test board"})
+    assert_eq("POST /boards for isolation test → 201", r.status_code, 201)
+    isolation_board_id = r.json()["id"]
+
+    # Add a label to each board
+    r = client.post("/labels", headers=H, json={"category": "mode", "value": "default-board-label", "board_id": default_board_id})
+    assert_eq("POST label to default board → 201", r.status_code, 201)
+    default_isolation_label_id = r.json()["id"]
+
+    r = client.post("/labels", headers=H, json={"category": "mode", "value": "other-board-label", "board_id": isolation_board_id})
+    assert_eq("POST label to isolation board → 201", r.status_code, 201)
+    isolation_label_id = r.json()["id"]
+
+    # GET /labels?board_id=default_board_id must NOT include the isolation board's label
+    r = client.get("/labels", headers=H, params={"board_id": default_board_id})
+    assert_eq("GET /labels?board_id=default → 200", r.status_code, 200)
+    default_board_labels = [l["id"] for l in r.json()["labels"]]
+    assert_true("default board label appears in its own board GET /labels",
+                default_isolation_label_id in default_board_labels)
+    assert_true("isolation board label does NOT appear in default board GET /labels",
+                isolation_label_id not in default_board_labels)
+
+    # GET /labels?board_id=isolation_board_id must NOT include the default board's label
+    r = client.get("/labels", headers=H, params={"board_id": isolation_board_id})
+    assert_eq("GET /labels?board_id=isolation → 200", r.status_code, 200)
+    isolation_board_labels = [l["id"] for l in r.json()["labels"]]
+    assert_true("isolation board label appears in its own board GET /labels",
+                isolation_label_id in isolation_board_labels)
+    assert_true("default board label does NOT appear in isolation board GET /labels",
+                default_isolation_label_id not in isolation_board_labels)
+
+    # A label from board B cannot be assigned to a task in board A
+    r = client.post("/tasks", headers=H, json={
+        "title": "Cross-board label assignment test task",
+        "label_ids": [isolation_label_id],  # label from isolation board
+        "board_id": default_board_id,        # but task on default board
+    })
+    assert_eq("POST /tasks with cross-board label → 422", r.status_code, 422)
+
+    # Clean up isolation labels and board
+    client.delete(f"/labels/{default_isolation_label_id}", headers=H)
+    client.delete(f"/labels/{isolation_label_id}", headers=H)
+    client.delete(f"/boards/{isolation_board_id}", headers=H)
+
     # ── Boards: backward-compat — omitting board_id defaults to the default board ──
     print("\n── Boards: backward-compat default-board resolution ────")
     # Tasks created without board_id go to the default board
