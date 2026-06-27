@@ -30,24 +30,45 @@ The `device_uuid` column was removed at startup via `ALTER TABLE users DROP COLU
 
 ---
 
-### Table: `labels`
-All labels are per-user. There are no global rows (`user_id` is NOT NULL). On a user's first access, mode and type labels (9 entries total) are seeded from the `LABEL_SEED` constant in `models.py` by `label_service.seed_user_labels()`. Users can add, rename, and delete their own mode/type labels.
+### Table: `boards`
+Top-level organizational unit. Each user has up to `MAX_BOARDS_PER_USER = 5` boards. Tasks, labels, and conversations each belong to exactly one board. A default board named "General tasks" is created automatically for new users on first access (via `board_service.ensure_board_seeded`). Existing users received a "General tasks" board via the startup migration in PR #33.
 
-**Frequency label removal (completed — PR #29, #30, #31):** The `frequency` category has been fully removed from the system. PR #29 removed it from all client UI surfaces. PR #30 removed frequency entries from `LABEL_SEED` and recurrence logic from the backend. PR #31 (this PR) removed `CategoryEnum.frequency` from Python, ran the SQL migration to delete all frequency label DB rows and drop the `frequency` value from the Postgres `categoryenum` type, and dropped the `recurrence_group_id` column. `GET /labels?category=frequency` now returns `400 Unknown category`.
+| Column | Type | Notes |
+|---|---|---|
+| `id` | VARCHAR | PK (UUID string) |
+| `user_id` | VARCHAR | NOT NULL. FK → users (CASCADE). Indexed. |
+| `name` | VARCHAR | NOT NULL. |
+| `is_default` | BOOLEAN | NOT NULL. Exactly one non-deleted board per user has `is_default = true`. |
+| `is_deleted` | BOOLEAN | NOT NULL. Default false. Soft-delete. |
+| `created_at` | TIMESTAMP | |
+| `updated_at` | TIMESTAMP | |
+
+**Constraints:**
+- Partial unique index `boards_user_id_default_key ON boards (user_id) WHERE is_default = true AND is_deleted = false` — enforces exactly one default board per user. Created via raw SQL in `main.py` lifespan (not expressible via SQLAlchemy `UniqueConstraint`).
+
+**Display order**: `ORDER BY is_default DESC, created_at ASC` — default board first, then creation order.
+
+---
+
+### Table: `labels`
+All labels are per-board (and per-user). There are no global rows. On first access, the user's default board is seeded with mode and type labels (9 entries total) from the `LABEL_SEED` constant in `models.py` by `label_service.seed_board_labels()`. New boards created by users start with zero labels. Users can add, rename, and delete their own mode/type labels.
+
+**Frequency label removal (completed — PR #29, #30, #31):** The `frequency` category has been fully removed from the system. `GET /labels?category=frequency` now returns `400 Unknown category`.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
-| `user_id` | VARCHAR | NOT NULL. FK → users (CASCADE). Every label belongs to exactly one user. Indexed. |
+| `user_id` | VARCHAR | NOT NULL. FK → users (CASCADE). Indexed. |
+| `board_id` | VARCHAR | NOT NULL. FK → boards. Indexed. Every label belongs to exactly one board. |
 | `category` | ENUM | `mode`, `type` |
 | `value` | VARCHAR | e.g. `online`, `household` |
 
 **Uniqueness constraint:**
-- `labels_user_id_category_value_key`: unique on `(user_id, category, value)`
+- `labels_board_id_category_value_key`: unique on `(board_id, category, value)` — the same label value can exist independently in two different boards.
 
-The old partial indices (`uq_global_label`, `uq_user_label`) were dropped when this constraint was added.
+The old `labels_user_id_category_value_key` index (on `(user_id, category, value)`) and the older partial indices (`uq_global_label`, `uq_user_label`) have all been dropped.
 
-**Per-user seed data** (from `LABEL_SEED` constant in `models.py`; seeded lazily on first access — 9 entries, mode and type only):
+**Per-board seed data** (from `LABEL_SEED` constant in `models.py`; seeded lazily into the "General tasks" board on first user access — 9 entries, mode and type only):
 
 | category | value |
 |---|---|
@@ -61,7 +82,7 @@ The old partial indices (`uq_global_label`, `uq_user_label`) were dropped when t
 | type | trip |
 | type | medical |
 
-**Seeding sentinel**: `ensure_seeded()` in `label_service.py` checks whether the user has any labels at all (total count = 0). If so, it calls `seed_user_labels()` to insert all `LABEL_SEED` rows for the user. Zero labels reliably identifies a brand-new user — existing users always have at least their mode/type labels. Concurrent-request races are handled by catching `IntegrityError` and rolling back (idempotent).
+**Seeding sentinel**: `ensure_board_seeded()` in `board_service.py` checks whether the user has any non-deleted boards (count = 0). If so, it creates a "General tasks" board and calls `seed_board_labels()` to insert all `LABEL_SEED` rows for that board. This is the sentinel for brand-new users — existing users always have at least one board. Concurrent-request races are handled by catching `IntegrityError` on the board insert and falling back to a lookup (idempotent). New boards created by users via `POST /boards` are NOT seeded.
 
 ---
 
@@ -72,6 +93,7 @@ Core entity. One-time and recurring task instances are both stored here.
 |---|---|---|
 | `id` | UUID | PK |
 | `user_id` | UUID | FK → users |
+| `board_id` | VARCHAR | NOT NULL. FK → boards. Indexed. Every task belongs to exactly one board. |
 | `title` | VARCHAR | Required |
 | `notes` | TEXT | Nullable |
 | `state` | ENUM | `pending`, `done` |
@@ -135,12 +157,13 @@ AI-generated suggestions (labels, time estimates) awaiting user validation.
 ---
 
 ### Table: `conversations`
-A session of conversational UI interaction.
+A session of conversational UI interaction. Each conversation is scoped to a single board — the AI only sees tasks and labels from that board.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
 | `user_id` | UUID | FK → users |
+| `board_id` | VARCHAR | NOT NULL. FK → boards. Indexed. Scopes the AI context to this board's tasks and labels. |
 | `created_at` | TIMESTAMP | |
 
 ---
@@ -201,6 +224,72 @@ Tracks every Claude API call for cost monitoring.
 
 ---
 
+### Boards
+
+#### `GET /boards`
+Returns all non-deleted boards for the current user, ordered default-first then by creation time.
+
+**Response**
+```json
+{
+  "boards": [
+    { "id": "uuid", "name": "General tasks", "is_default": true, "is_deleted": false, "created_at": "...", "updated_at": "..." },
+    { "id": "uuid", "name": "Job search", "is_default": false, "is_deleted": false, "created_at": "...", "updated_at": "..." }
+  ]
+}
+```
+
+---
+
+#### `POST /boards`
+Create a new board for the current user. New boards always start with `is_default = false` and zero labels.
+
+**Request**
+```json
+{ "name": "Write a book" }
+```
+
+**Response** `201 Created` — the created board object (same shape as GET /boards item)
+
+**Error cases**
+- `400` — name is empty/whitespace
+- `422` — user already has `MAX_BOARDS_PER_USER` (5) non-deleted boards
+
+---
+
+#### `PUT /boards/{board_id}`
+Rename a board and/or change its default status. The caller must own the board.
+
+**Request** (all fields optional)
+```json
+{ "name": "Personal tasks", "is_default": true }
+```
+
+Setting `is_default: true` atomically demotes the previously-default board and promotes this one (single DB transaction). Setting `is_default: false` on the current default returns `400`. Setting `is_default: false` on a non-default board is a no-op.
+
+**Response** — updated board object
+
+**Error cases**
+- `400` — name is empty/whitespace
+- `400` — `is_default: false` sent on the current default board
+- `404` — board not found or not owned by caller
+
+---
+
+#### `DELETE /boards/{board_id}`
+Soft-delete a board (`is_deleted = true`). The caller must own the board.
+
+**Response** `204 No Content`
+
+**Error cases**
+- `400` — board is the only non-deleted board (minimum 1 required)
+- `400` — board is the current default (promote another board to default first)
+- `400` — board has pending tasks (delete the tasks first)
+- `400` — board has labels (delete the labels first)
+- `404` — board not found or not owned by caller
+
+---
+
 ### Health
 
 #### `GET /health`
@@ -224,11 +313,11 @@ Backend connectivity check. Used by the Settings Connection section on both web 
 ### Labels
 
 #### `GET /labels`
-Returns labels for the current user. Optionally filter by category.
+Returns labels for the specified board. Optionally filter by category.
 
-All labels (mode and type) are per-user. On first access, both categories are seeded from the `LABEL_SEED` constant for the requesting user via `ensure_seeded()` (idempotent — a concurrent-request race is swallowed via `IntegrityError` rollback). `ensure_seeded()` is also called by `_resolve_labels` in `task_service.py` and `handle_conversation_message` in `ai_service.py`, so seeding cannot be bypassed by clients that skip `GET /labels`.
+All labels are per-board. On first access (when `board_id` is omitted), the user's default board is resolved via `resolve_board_id()`, which lazily creates the "General tasks" board and seeds it if needed (idempotent — concurrent-request races swallowed via `IntegrityError` rollback).
 
-**Query params**: `?category=mode|type`
+**Query params**: `?category=mode|type`, `?board_id=uuid` (optional; defaults to the user's default board)
 
 **Response**
 ```json
@@ -246,12 +335,13 @@ All labels (mode and type) are per-user. On first access, both categories are se
 ---
 
 #### `POST /labels`
-Create a new mode or type label for the current user. Only `mode` and `type` categories are accepted.
+Create a new mode or type label in the specified board (or the user's default board if `board_id` is omitted). Only `mode` and `type` categories are accepted.
 
 **Request**
 ```json
-{ "category": "mode", "value": "in-person" }
+{ "category": "mode", "value": "in-person", "board_id": "uuid" }
 ```
+`board_id` is optional; omitting it creates the label in the user's default board.
 
 **Response** `201 Created` — the created label object
 ```json
@@ -260,7 +350,8 @@ Create a new mode or type label for the current user. Only `mode` and `type` cat
 
 **Error cases**
 - `400` — unknown category (including `frequency`), category is not `mode` or `type`, or value is empty/whitespace
-- `409` — label with that value already exists for this user in this category
+- `404` — `board_id` not found or not owned by caller
+- `409` — label with that value already exists in this board in this category
 
 ---
 
@@ -278,7 +369,7 @@ Rename a mode or type label. The caller must own the label.
 - `400` — label category is not `mode` or `type` (not editable), or new value is empty/whitespace
 - `403` — caller does not own the label
 - `404` — label not found
-- `409` — another label with the new value already exists for this user in this category
+- `409` — another label with the new value already exists in this board in this category
 
 ---
 
@@ -306,6 +397,7 @@ List tasks for the current user.
 - `due_after=YYYY-MM-DD`
 - `include_deleted=true` — include soft-deleted records (for sync)
 - `updated_after=ISO8601` — records updated after this timestamp (for sync)
+- `board_id=uuid` (optional) — filter to a specific board; defaults to the user's default board
 
 **Response**
 ```json
@@ -313,6 +405,7 @@ List tasks for the current user.
   "tasks": [
     {
       "id": "uuid",
+      "board_id": "uuid",
       "title": "Return library books",
       "notes": null,
       "state": "pending",
@@ -344,12 +437,14 @@ Create a new task.
   "notes": null,
   "must_do_by": "2026-05-11",
   "target_date": "2026-05-09",
-  "label_ids": ["uuid-outdoor", "uuid-raghav"],
-  "is_high_priority": false
+  "label_ids": ["uuid-outdoor", "uuid-child"],
+  "is_high_priority": false,
+  "board_id": "uuid"
 }
 ```
+`board_id` is optional; omitting it creates the task in the user's default board. `label_ids` must all belong to the same board as the task — cross-board label assignment returns `422`.
 
-**Response**: the created task object (same shape as GET /tasks item)
+**Response**: the created task object (same shape as GET /tasks item, including `board_id`)
 
 ---
 
@@ -467,9 +562,15 @@ Accept or reject a belief.
 #### `POST /conversations`
 Start a new conversation session.
 
+**Request** (optional body)
+```json
+{ "board_id": "uuid" }
+```
+`board_id` is optional; omitting it scopes the conversation to the user's default board.
+
 **Response**
 ```json
-{ "id": "uuid", "created_at": "2026-05-06T10:00:00Z" }
+{ "id": "uuid", "board_id": "uuid", "created_at": "2026-05-06T10:00:00Z" }
 ```
 
 ---
@@ -528,6 +629,7 @@ Get completed tasks within a date range.
 - `from=YYYY-MM-DD` (required) — lower bound, inclusive (`completed_at >= from`)
 - `to=YYYY-MM-DD` (required) — upper bound, inclusive of the full calendar day (`completed_at < to + 1 day`); tasks completed at any time on `to` are included
 - `label_ids=uuid,uuid` — optional filter
+- `board_id=uuid` (optional) — filter to a specific board; defaults to the user's default board
 
 **Response**
 ```json
@@ -600,10 +702,11 @@ Push local changes to the server and pull server changes since last sync. Uses l
 {
   "last_synced_at": "2026-05-06T08:00:00Z",
   "changes": {
-    "tasks": [ ...task objects with updated_at... ],
+    "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board)... ],
     "task_labels": [ ...task_label objects... ],
     "beliefs": [ ...belief objects... ],
-    "settings": { ...settings object... }
+    "settings": { ...settings object... },
+    "boards": []
   }
 }
 ```
@@ -613,10 +716,13 @@ Push local changes to the server and pull server changes since last sync. Uses l
 {
   "synced_at": "2026-05-06T10:05:00Z",
   "changes": {
-    "tasks": [ ...server-side task objects updated since last_synced_at... ],
+    "tasks": [ ...server-side task objects updated since last_synced_at, each including board_id... ],
     "task_labels": [ ... ],
     "beliefs": [ ... ],
-    "settings": { ... }
+    "settings": { ... },
+    "boards": [ ...board objects updated since last_synced_at... ]
   }
 }
 ```
+
+**Board sync notes**: Task objects in the pull response always include `board_id`. Stale clients that push tasks without `board_id` have them assigned to the user's default board. Cross-board label assignments in sync push payloads are silently dropped (only labels matching the task's board are applied). The pull response includes a `boards` array of boards updated since `last_synced_at`; clients that do not yet support boards can ignore this field.
