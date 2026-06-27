@@ -26,7 +26,6 @@ export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = fal
   const [saving, setSaving] = useState(false);
 
   const sortedLabels = [...task.labels]
-    .filter((l) => l.category !== 'frequency')
     .sort((a, b) => (LABEL_CATEGORY_ORDER[a.category] ?? 3) - (LABEL_CATEGORY_ORDER[b.category] ?? 3));
 
   const labelsByCategory = useMemo(

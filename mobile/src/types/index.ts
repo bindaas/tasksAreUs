@@ -1,6 +1,6 @@
 export interface Label {
   id: string;
-  category: 'frequency' | 'mode' | 'type';
+  category: 'mode' | 'type';
   value: string;
 }
 
@@ -14,7 +14,6 @@ export interface Task {
   must_do_by: string | null;
   target_date: string | null;
   completed_at: string | null;
-  recurrence_group_id: string | null;
   labels: Label[];
   is_high_priority: boolean;
   is_deleted: boolean;

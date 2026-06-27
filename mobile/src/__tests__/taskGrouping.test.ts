@@ -12,7 +12,6 @@ function makeTask(overrides: Partial<Pick<Task, 'id' | 'target_date' | 'must_do_
     must_do_by: null,
     target_date: null,
     completed_at: null,
-    recurrence_group_id: null,
     labels: [],
     is_high_priority: false,
     is_deleted: false,
