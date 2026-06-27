@@ -66,7 +66,7 @@ All labels are per-board (and per-user). There are no global rows. On first acce
 **Uniqueness constraint:**
 - `labels_board_id_category_value_key`: unique on `(board_id, category, value)` — the same label value can exist independently in two different boards.
 
-The old `labels_user_id_category_value_key` index (on `(user_id, category, value)`) and the older partial indices (`uq_global_label`, `uq_user_label`) have all been dropped.
+The old `labels_user_id_category_value_key` unique **constraint** (on `(user_id, category, value)`) and the older partial indices (`uq_global_label`, `uq_user_label`) have all been dropped. Note: SQLAlchemy creates `UNIQUE(...)` as a table constraint, not a plain index — it must be removed with `ALTER TABLE labels DROP CONSTRAINT`, not `DROP INDEX`.
 
 **Per-board seed data** (from `LABEL_SEED` constant in `models.py`; seeded lazily into the "General tasks" board on first user access — 9 entries, mode and type only):
 
@@ -82,7 +82,7 @@ The old `labels_user_id_category_value_key` index (on `(user_id, category, value
 | type | trip |
 | type | medical |
 
-**Seeding sentinel**: `ensure_board_seeded()` in `board_service.py` checks whether the user has any non-deleted boards (count = 0). If so, it creates a "General tasks" board and calls `seed_board_labels()` to insert all `LABEL_SEED` rows for that board. This is the sentinel for brand-new users — existing users always have at least one board. Concurrent-request races are handled by catching `IntegrityError` on the board insert and falling back to a lookup (idempotent). New boards created by users via `POST /boards` are NOT seeded.
+**Seeding sentinel**: `ensure_board_seeded()` in `board_service.py` first looks up the user's default board via `.first()` — if found, returns immediately (single query, hot path). Only if no default board exists does it issue a COUNT to distinguish "zero boards → create + seed" from "boards exist but none is default → 500". This is the sentinel for brand-new users — existing users always have at least one board. Concurrent-request races are handled by catching `IntegrityError` on the board insert and falling back to a lookup (idempotent). New boards created by users via `POST /boards` are NOT seeded.
 
 ---
 
