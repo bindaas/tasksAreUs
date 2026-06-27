@@ -130,7 +130,6 @@ def main():
     assert_true("at least 9 labels seeded (PR #30)", len(labels) >= 9)
 
     # Pick specific labels for use in tests
-    freq_labels = {l["value"]: l["id"] for l in labels if l["category"] == "frequency"}
     mode_labels = {l["value"]: l["id"] for l in labels if l["category"] == "mode"}
     type_labels = {l["value"]: l["id"] for l in labels if l["category"] == "type"}
 
