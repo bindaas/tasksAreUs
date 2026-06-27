@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..dependencies import get_current_user
+from ..models import Board
 from ..schemas import BoardCreate, BoardOut, BoardUpdate
 from ..services import board_service as svc
 
@@ -14,7 +15,6 @@ def list_boards(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    from ..models import Board
     boards = db.query(Board).filter(
         Board.user_id == user_id,
         Board.is_deleted == False,

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..dependencies import get_current_user
-from ..models import Belief, Board, Task, TaskLabel, UserSettings
+from ..models import Belief, Board, Label, Task, TaskLabel, UserSettings
 from ..schemas import SyncChanges, SyncRequest, SyncResponse, TaskLabelSync
 from ..services import board_service as board_svc
 
@@ -96,11 +96,18 @@ def sync(
 
     db.flush()
 
-    # Apply label updates for tasks where client won
+    # Apply label updates for tasks where client won — only labels in the same board
     for task_id, label_ids in label_updates.items():
         db.query(TaskLabel).filter(TaskLabel.task_id == task_id).delete()
-        for lid in label_ids:
-            db.add(TaskLabel(task_id=task_id, label_id=lid))
+        if label_ids:
+            task_obj = db.query(Task).filter(Task.id == task_id).first()
+            if task_obj and task_obj.board_id:
+                valid_labels = db.query(Label).filter(
+                    Label.id.in_(label_ids),
+                    Label.board_id == task_obj.board_id,
+                ).all()
+                for label in valid_labels:
+                    db.add(TaskLabel(task_id=task_id, label_id=label.id))
 
     # ── Apply incoming belief changes ──────────────────────────────────────────
     for b_data in body.changes.beliefs:

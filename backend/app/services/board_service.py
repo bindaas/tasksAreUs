@@ -8,7 +8,8 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..models import Board, CategoryEnum, Conversation, Label, LABEL_SEED, Task
+from ..models import Board, Label, Task
+from .label_service import seed_board_labels as _seed_board_labels
 
 MAX_BOARDS_PER_USER = 5
 
@@ -25,9 +26,13 @@ def get_default_board_id(db: Session, user_id: str) -> str:
 
 
 def resolve_board_id(db: Session, user_id: str, board_id: Optional[str]) -> str:
-    """Return board_id after validating ownership, or the default board if board_id is None."""
+    """Return board_id after validating ownership, or the default board if board_id is None.
+
+    When board_id is None, calls ensure_board_seeded so new users are always initialised
+    regardless of which endpoint they hit first.
+    """
     if board_id is None:
-        return get_default_board_id(db, user_id)
+        return ensure_board_seeded(db, user_id)
     board = db.query(Board).filter(
         Board.id == board_id,
         Board.user_id == user_id,
@@ -36,25 +41,6 @@ def resolve_board_id(db: Session, user_id: str, board_id: Optional[str]) -> str:
     if not board:
         raise HTTPException(status_code=404, detail="Board not found")
     return board.id
-
-
-def _seed_board_labels(db: Session, board_id: str, user_id: str) -> None:
-    existing = {
-        (l.category.value, l.value)
-        for l in db.query(Label).filter(Label.board_id == board_id).all()
-    }
-    for category, value in LABEL_SEED:
-        if (category, value) not in existing:
-            db.add(Label(
-                category=CategoryEnum(category),
-                value=value,
-                user_id=user_id,
-                board_id=board_id,
-            ))
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
 
 
 def ensure_board_seeded(db: Session, user_id: str) -> str:
@@ -86,6 +72,8 @@ def ensure_board_seeded(db: Session, user_id: str) -> str:
                 Board.is_default == True,
                 Board.is_deleted == False,
             ).first()
+            if not board:
+                raise HTTPException(status_code=500, detail="Failed to initialise user board")
         _seed_board_labels(db, board.id, user_id)
 
     return get_default_board_id(db, user_id)

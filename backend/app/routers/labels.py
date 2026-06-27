@@ -21,9 +21,7 @@ def list_labels(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    effective_board_id = board_svc.ensure_board_seeded(db, user_id)
-    if board_id is not None:
-        effective_board_id = board_svc.resolve_board_id(db, user_id, board_id)
+    effective_board_id = board_svc.resolve_board_id(db, user_id, board_id)
 
     q = db.query(Label).filter(Label.board_id == effective_board_id)
     if category:

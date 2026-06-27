@@ -1,6 +1,6 @@
 """Unit tests for board_service — no database required."""
 
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 from datetime import datetime, timezone
 
 import pytest
