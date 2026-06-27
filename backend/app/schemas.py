@@ -53,7 +53,6 @@ class TaskOut(BaseModel):
     must_do_by: Optional[date] = None
     target_date: Optional[date] = None
     completed_at: Optional[datetime] = None
-    recurrence_group_id: Optional[str] = None
     labels: List[LabelOut] = []
     is_high_priority: bool = False
     is_deleted: bool

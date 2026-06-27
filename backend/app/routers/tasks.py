@@ -23,7 +23,6 @@ def list_tasks(
     label_ids: Optional[str] = Query(None),
     due_before: Optional[date] = Query(None),
     due_after: Optional[date] = Query(None),
-    recurrence_group_id: Optional[str] = Query(None),
     include_deleted: bool = Query(False),
     updated_after: Optional[str] = Query(None),
     db: Session = Depends(get_db),
@@ -39,8 +38,6 @@ def list_tasks(
         q = q.filter(Task.must_do_by <= due_before)
     if due_after:
         q = q.filter(Task.must_do_by >= due_after)
-    if recurrence_group_id:
-        q = q.filter(Task.recurrence_group_id == recurrence_group_id)
     if updated_after:
         from datetime import datetime, timezone
         dt = datetime.fromisoformat(updated_after.replace("Z", "+00:00"))

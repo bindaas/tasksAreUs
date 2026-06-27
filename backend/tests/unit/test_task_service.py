@@ -26,7 +26,6 @@ class TestCompleteTask:
         task = MagicMock()
         task.state = state
         task.labels = labels or []
-        task.recurrence_group_id = None
         task.must_do_by = None
         task.notes = None
         return task
@@ -44,15 +43,6 @@ class TestCompleteTask:
         completed, next_task = complete_task(db, task, notes=None)
         assert next_task is None
         assert completed is task
-
-    def test_returns_none_next_task_even_with_legacy_frequency_label(self):
-        label = MagicMock()
-        label.category = "frequency"
-        label.value = "weekly"
-        task = self._make_task(labels=[label])
-        db = self._make_db()
-        _, next_task = complete_task(db, task, notes=None)
-        assert next_task is None
 
     def test_raises_422_if_already_completed(self):
         task = self._make_task(state=StateEnum.done)
