@@ -6,6 +6,27 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
+# ── Boards ────────────────────────────────────────────────────────────────────
+
+class BoardOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    name: str
+    is_default: bool
+    is_deleted: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class BoardCreate(BaseModel):
+    name: str
+
+
+class BoardUpdate(BaseModel):
+    name: Optional[str] = None
+    is_default: Optional[bool] = None
+
+
 # ── Labels ────────────────────────────────────────────────────────────────────
 
 class LabelOut(BaseModel):
@@ -18,6 +39,7 @@ class LabelOut(BaseModel):
 class LabelCreate(BaseModel):
     category: str  # "mode" or "type" only
     value: str
+    board_id: Optional[str] = None  # resolved to default board if omitted
 
 
 class LabelUpdate(BaseModel):
@@ -33,6 +55,7 @@ class TaskCreate(BaseModel):
     target_date: Optional[date] = None
     label_ids: List[str] = []
     is_high_priority: bool = False
+    board_id: Optional[str] = None  # resolved to default board if omitted
 
 
 class TaskUpdate(BaseModel):
@@ -47,6 +70,7 @@ class TaskUpdate(BaseModel):
 class TaskOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    board_id: str
     title: str
     notes: Optional[str] = None
     state: str
@@ -88,9 +112,14 @@ class BeliefUpdate(BaseModel):
 
 # ── Conversations ─────────────────────────────────────────────────────────────
 
+class ConversationCreate(BaseModel):
+    board_id: Optional[str] = None  # resolved to default board if omitted
+
+
 class ConversationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    board_id: str
     created_at: datetime
 
 
@@ -155,6 +184,7 @@ class SyncChanges(BaseModel):
     task_labels: List[TaskLabelSync] = []
     beliefs: List[Dict[str, Any]] = []
     settings: Optional[Dict[str, Any]] = None
+    boards: List[Dict[str, Any]] = []
 
 
 class SyncRequest(BaseModel):

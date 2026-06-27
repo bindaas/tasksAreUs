@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..dependencies import get_current_user
-from ..models import Belief, Task, TaskLabel, UserSettings
+from ..models import Belief, Board, Task, TaskLabel, UserSettings
 from ..schemas import SyncChanges, SyncRequest, SyncResponse, TaskLabelSync
+from ..services import board_service as board_svc
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 
@@ -46,10 +47,12 @@ def sync(
         ).first()
 
         if server_task is None:
-            # New task from client
+            # New task from client — resolve board_id (missing = default board)
+            task_board_id = t_data.get("board_id") or board_svc.get_default_board_id(db, user_id)
             task = Task(
                 id=task_id,
                 user_id=user_id,
+                board_id=task_board_id,
                 title=t_data.get("title", ""),
                 notes=t_data.get("notes"),
                 state=t_data.get("state", "pending"),
@@ -151,6 +154,7 @@ def sync(
     for t in server_tasks:
         task_dicts.append({
             "id": t.id,
+            "board_id": t.board_id,
             "title": t.title,
             "notes": t.notes,
             "state": t.state.value if hasattr(t.state, "value") else t.state,
@@ -191,6 +195,22 @@ def sync(
             "updated_at": settings_obj.updated_at.isoformat(),
         }
 
+    server_boards = db.query(Board).filter(
+        Board.user_id == user_id,
+        Board.updated_at > last_synced_at,
+    ).all()
+    board_dicts = [
+        {
+            "id": b.id,
+            "name": b.name,
+            "is_default": b.is_default,
+            "is_deleted": b.is_deleted,
+            "created_at": b.created_at.isoformat(),
+            "updated_at": b.updated_at.isoformat(),
+        }
+        for b in server_boards
+    ]
+
     return SyncResponse(
         synced_at=now,
         changes=SyncChanges(
@@ -198,5 +218,6 @@ def sync(
             task_labels=task_label_list,
             beliefs=belief_dicts,
             settings=settings_dict,
+            boards=board_dicts,
         ),
     )

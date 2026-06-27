@@ -7,7 +7,7 @@ from ..database import get_db
 from ..dependencies import get_current_user
 from ..models import CategoryEnum, Label
 from ..schemas import LabelCreate, LabelOut, LabelUpdate
-from ..services.label_service import ensure_seeded
+from ..services import board_service as board_svc
 
 router = APIRouter(prefix="/labels", tags=["labels"])
 
@@ -17,12 +17,15 @@ _CONFIGURABLE = {CategoryEnum.mode, CategoryEnum.type}
 @router.get("", response_model=dict)
 def list_labels(
     category: Optional[str] = Query(None),
+    board_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    ensure_seeded(db, user_id)
+    effective_board_id = board_svc.ensure_board_seeded(db, user_id)
+    if board_id is not None:
+        effective_board_id = board_svc.resolve_board_id(db, user_id, board_id)
 
-    q = db.query(Label).filter(Label.user_id == user_id)
+    q = db.query(Label).filter(Label.board_id == effective_board_id)
     if category:
         try:
             cat = CategoryEnum(category)
@@ -50,15 +53,17 @@ def create_label(
     if not value:
         raise HTTPException(status_code=400, detail="Label value cannot be empty")
 
+    effective_board_id = board_svc.resolve_board_id(db, user_id, body.board_id)
+
     existing = (
         db.query(Label)
-        .filter(Label.category == cat, Label.user_id == user_id, Label.value == value)
+        .filter(Label.category == cat, Label.board_id == effective_board_id, Label.value == value)
         .first()
     )
     if existing:
         raise HTTPException(status_code=409, detail="Label already exists")
 
-    label = Label(category=cat, value=value, user_id=user_id)
+    label = Label(category=cat, value=value, user_id=user_id, board_id=effective_board_id)
     db.add(label)
     db.commit()
     db.refresh(label)
@@ -88,7 +93,7 @@ def update_label(
         db.query(Label)
         .filter(
             Label.category == label.category,
-            Label.user_id == user_id,
+            Label.board_id == label.board_id,
             Label.value == value,
             Label.id != label_id,
         )

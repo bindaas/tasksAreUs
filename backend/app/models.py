@@ -62,11 +62,24 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 
+class Board(Base):
+    __tablename__ = "boards"
+
+    id = Column(String, primary_key=True, default=_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    is_default = Column(Boolean, default=False, nullable=False)
+    is_deleted = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
 class Label(Base):
     __tablename__ = "labels"
 
     id = Column(String, primary_key=True, default=_uuid)
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    board_id = Column(String, ForeignKey("boards.id"), nullable=False, index=True)
     category = Column(Enum(CategoryEnum), nullable=False)
     value = Column(String, nullable=False)
 
@@ -83,6 +96,7 @@ class Task(Base):
 
     id = Column(String, primary_key=True, default=_uuid)
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    board_id = Column(String, ForeignKey("boards.id"), nullable=False, index=True)
     title = Column(String, nullable=False)
     notes = Column(Text, nullable=True)
     state = Column(Enum(StateEnum), default=StateEnum.pending, nullable=False)
@@ -118,6 +132,7 @@ class Conversation(Base):
 
     id = Column(String, primary_key=True, default=_uuid)
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    board_id = Column(String, ForeignKey("boards.id"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
 
 

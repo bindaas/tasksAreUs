@@ -11,6 +11,7 @@ from ..schemas import (
     CompleteTaskRequest, CompleteTaskResponse,
     TaskCreate, TaskOut, TaskUpdate,
 )
+from ..services import board_service as board_svc
 from ..services import task_service as svc
 from ..services.task_service import _get_high_priority_limit
 
@@ -25,10 +26,12 @@ def list_tasks(
     due_after: Optional[date] = Query(None),
     include_deleted: bool = Query(False),
     updated_after: Optional[str] = Query(None),
+    board_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    q = db.query(Task).filter(Task.user_id == user_id)
+    effective_board_id = board_svc.resolve_board_id(db, user_id, board_id)
+    q = db.query(Task).filter(Task.user_id == user_id, Task.board_id == effective_board_id)
 
     if not include_deleted:
         q = q.filter(Task.is_deleted == False)
@@ -57,9 +60,11 @@ def create_task(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
+    effective_board_id = board_svc.resolve_board_id(db, user_id, body.board_id)
     task = svc.create_task(
         db=db,
         user_id=user_id,
+        board_id=effective_board_id,
         title=body.title,
         notes=body.notes,
         must_do_by=body.must_do_by,

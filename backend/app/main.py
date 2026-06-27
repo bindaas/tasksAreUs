@@ -16,8 +16,8 @@ from sqlalchemy.orm import Session
 
 from .config import settings as app_settings
 from .database import SessionLocal, engine
-from .models import Base, Label, User
-from .routers import beliefs, conversations, labels, reports, settings, sync, tasks
+from .models import Base, Board, Conversation, Label, Task, User
+from .routers import beliefs, boards, conversations, labels, reports, settings, sync, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +51,51 @@ def _seed_system_user(db: Session) -> None:
         db.commit()
 
 
+def _migrate_boards(db: Session) -> None:
+    """Create 'General tasks' board for all existing users who have none.
+
+    Runs after DDL adds board_id columns as nullable. Assigns all existing
+    labels/tasks/conversations to the new board, then seeds any missing
+    LABEL_SEED entries. Idempotent — skips users who already have a board.
+    """
+    from .services.board_service import _seed_board_labels
+    users_without_boards = (
+        db.query(User)
+        .filter(
+            User.id != _SYSTEM_UUID,
+            ~db.query(Board).filter(Board.user_id == User.id).exists(),
+        )
+        .all()
+    )
+    for user in users_without_boards:
+        board = Board(
+            user_id=user.id,
+            name="General tasks",
+            is_default=True,
+            is_deleted=False,
+        )
+        db.add(board)
+        db.flush()
+        db.query(Label).filter(
+            Label.user_id == user.id, Label.board_id == None
+        ).update({"board_id": board.id})
+        db.query(Task).filter(
+            Task.user_id == user.id, Task.board_id == None
+        ).update({"board_id": board.id})
+        db.query(Conversation).filter(
+            Conversation.user_id == user.id, Conversation.board_id == None
+        ).update({"board_id": board.id})
+        db.commit()
+        _seed_board_labels(db, board.id, user.id)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _init_firebase()
+    # Step 1: create new tables (boards) from ORM models; existing tables are untouched
     Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
+        # ── Legacy migrations ──────────────────────────────────────────────────
         conn.execute(text(
             "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS "
             "is_high_priority BOOLEAN NOT NULL DEFAULT false"
@@ -79,21 +119,56 @@ async def lifespan(app: FastAPI):
         conn.execute(text(
             "ALTER TABLE tasks DROP COLUMN IF EXISTS recurrence_group_id"
         ))
-        # Enforce per-user label model: user_id NOT NULL, unique per user+category+value
         conn.execute(text("ALTER TABLE labels ALTER COLUMN user_id SET NOT NULL"))
-        conn.execute(text(
-            "CREATE UNIQUE INDEX IF NOT EXISTS labels_user_id_category_value_key "
-            "ON labels (user_id, category, value)"
-        ))
-        # Clean up old partial indexes replaced by the per-user unique constraint
         conn.execute(text("DROP INDEX IF EXISTS uq_global_label"))
         conn.execute(text("DROP INDEX IF EXISTS uq_user_label"))
+
+        # ── Board migration — Step A: add board_id columns as nullable ─────────
+        conn.execute(text(
+            "ALTER TABLE labels ADD COLUMN IF NOT EXISTS board_id VARCHAR"
+        ))
+        conn.execute(text(
+            "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS board_id VARCHAR"
+        ))
+        conn.execute(text(
+            "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS board_id VARCHAR"
+        ))
+
+        # ── Board migration — Step B: indexes ─────────────────────────────────
+        # Partial unique index for default board — not expressible via SQLAlchemy create_all
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS boards_user_id_default_key "
+            "ON boards (user_id) WHERE is_default = true AND is_deleted = false"
+        ))
+        # Swap label uniqueness from (user_id, category, value) to (board_id, category, value)
+        conn.execute(text("DROP INDEX IF EXISTS labels_user_id_category_value_key"))
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS labels_board_id_category_value_key "
+            "ON labels (board_id, category, value)"
+        ))
         conn.commit()
+
+    # ── Board migration — Step C: DML — create boards for existing users ───────
     db = SessionLocal()
     try:
         _seed_system_user(db)
+        _migrate_boards(db)
     finally:
         db.close()
+
+    # ── Board migration — Step D: tighten board_id columns to NOT NULL ─────────
+    with engine.connect() as conn:
+        conn.execute(text(
+            "ALTER TABLE labels ALTER COLUMN board_id SET NOT NULL"
+        ))
+        conn.execute(text(
+            "ALTER TABLE tasks ALTER COLUMN board_id SET NOT NULL"
+        ))
+        conn.execute(text(
+            "ALTER TABLE conversations ALTER COLUMN board_id SET NOT NULL"
+        ))
+        conn.commit()
+
     yield
 
 
@@ -101,6 +176,7 @@ app = FastAPI(title="tasksAreUs API", version="1.0.0", lifespan=lifespan)
 
 PREFIX = "/api/v1"
 
+app.include_router(boards.router, prefix=PREFIX)
 app.include_router(labels.router, prefix=PREFIX)
 app.include_router(tasks.router, prefix=PREFIX)
 app.include_router(beliefs.router, prefix=PREFIX)

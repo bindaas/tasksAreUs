@@ -1,0 +1,195 @@
+"""Board CRUD, seeding, and board-cap enforcement."""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Optional
+
+from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from ..models import Board, CategoryEnum, Conversation, Label, LABEL_SEED, Task
+
+MAX_BOARDS_PER_USER = 5
+
+
+def get_default_board_id(db: Session, user_id: str) -> str:
+    board = db.query(Board).filter(
+        Board.user_id == user_id,
+        Board.is_default == True,
+        Board.is_deleted == False,
+    ).first()
+    if not board:
+        raise HTTPException(status_code=500, detail="No default board found for user")
+    return board.id
+
+
+def resolve_board_id(db: Session, user_id: str, board_id: Optional[str]) -> str:
+    """Return board_id after validating ownership, or the default board if board_id is None."""
+    if board_id is None:
+        return get_default_board_id(db, user_id)
+    board = db.query(Board).filter(
+        Board.id == board_id,
+        Board.user_id == user_id,
+        Board.is_deleted == False,
+    ).first()
+    if not board:
+        raise HTTPException(status_code=404, detail="Board not found")
+    return board.id
+
+
+def _seed_board_labels(db: Session, board_id: str, user_id: str) -> None:
+    existing = {
+        (l.category.value, l.value)
+        for l in db.query(Label).filter(Label.board_id == board_id).all()
+    }
+    for category, value in LABEL_SEED:
+        if (category, value) not in existing:
+            db.add(Label(
+                category=CategoryEnum(category),
+                value=value,
+                user_id=user_id,
+                board_id=board_id,
+            ))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+
+
+def ensure_board_seeded(db: Session, user_id: str) -> str:
+    """Ensure the user has a default board with seeded labels. Returns the default board ID.
+
+    Sentinel: user has 0 non-deleted boards → create "General tasks" + seed its labels.
+    Idempotent — concurrent races are swallowed via IntegrityError rollback.
+    """
+    board_count = db.query(Board).filter(
+        Board.user_id == user_id,
+        Board.is_deleted == False,
+    ).count()
+
+    if board_count == 0:
+        board = Board(
+            user_id=user_id,
+            name="General tasks",
+            is_default=True,
+            is_deleted=False,
+        )
+        db.add(board)
+        try:
+            db.commit()
+            db.refresh(board)
+        except IntegrityError:
+            db.rollback()
+            board = db.query(Board).filter(
+                Board.user_id == user_id,
+                Board.is_default == True,
+                Board.is_deleted == False,
+            ).first()
+        _seed_board_labels(db, board.id, user_id)
+
+    return get_default_board_id(db, user_id)
+
+
+def get_board_or_404(db: Session, board_id: str, user_id: str) -> Board:
+    board = db.query(Board).filter(
+        Board.id == board_id,
+        Board.user_id == user_id,
+        Board.is_deleted == False,
+    ).first()
+    if not board:
+        raise HTTPException(status_code=404, detail="Board not found")
+    return board
+
+
+def create_board(db: Session, user_id: str, name: str) -> Board:
+    name = name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Board name cannot be empty")
+
+    count = db.query(Board).filter(
+        Board.user_id == user_id,
+        Board.is_deleted == False,
+    ).count()
+    if count >= MAX_BOARDS_PER_USER:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Board limit reached. Maximum {MAX_BOARDS_PER_USER} boards allowed.",
+        )
+
+    board = Board(user_id=user_id, name=name, is_default=False)
+    db.add(board)
+    db.commit()
+    db.refresh(board)
+    return board
+
+
+def update_board(
+    db: Session,
+    board: Board,
+    name: Optional[str],
+    is_default: Optional[bool],
+) -> Board:
+    if name is not None:
+        name = name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Board name cannot be empty")
+        board.name = name
+
+    if is_default is False and board.is_default:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot demote the default board — set another board as default first",
+        )
+
+    if is_default is True and not board.is_default:
+        old_default = db.query(Board).filter(
+            Board.user_id == board.user_id,
+            Board.is_default == True,
+            Board.id != board.id,
+        ).first()
+        if old_default:
+            old_default.is_default = False
+            old_default.updated_at = datetime.now(timezone.utc)
+        board.is_default = True
+
+    board.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(board)
+    return board
+
+
+def delete_board(db: Session, board: Board) -> None:
+    total = db.query(Board).filter(
+        Board.user_id == board.user_id,
+        Board.is_deleted == False,
+    ).count()
+    if total <= 1:
+        raise HTTPException(status_code=400, detail="Cannot delete the only board")
+
+    if board.is_default:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete the default board — set another board as default first",
+        )
+
+    has_tasks = db.query(Task).filter(
+        Task.board_id == board.id,
+        Task.is_deleted == False,
+    ).first()
+    if has_tasks:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete a board that has tasks — delete the tasks first",
+        )
+
+    has_labels = db.query(Label).filter(Label.board_id == board.id).first()
+    if has_labels:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete a board that has labels — delete the labels first",
+        )
+
+    board.is_deleted = True
+    board.updated_at = datetime.now(timezone.utc)
+    db.commit()
