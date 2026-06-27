@@ -18,7 +18,7 @@
 ```
 backend/
   app/
-    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name + labels.user_id SET NOT NULL + labels_user_id_category_value_key UNIQUE, drop old uq_global_label + uq_user_label partial indices, DROP COLUMN device_uuid)
+    main.py          # FastAPI + lifespan (Firebase Admin SDK init, create_all, ALTER TABLE for is_high_priority + high_priority_daily_limit + firebase_uid + email + display_name + labels.user_id SET NOT NULL + labels_user_id_category_value_key UNIQUE, drop old uq_global_label + uq_user_label partial indices, DROP COLUMN device_uuid, DROP COLUMN recurrence_group_id)
     config.py        # pydantic-settings (DATABASE_URL, ANTHROPIC_API_KEY, CLAUDE_MODEL, cost rates, FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID)
     database.py      # engine, SessionLocal, get_db()
     models.py        # ORM models + LABEL_SEED
@@ -36,7 +36,7 @@ backend/
     services/
       task_service.py  # create_task(), update_task(), complete_task(); high-priority limit; _get_high_priority_limit() reads user settings; _resolve_labels() calls ensure_seeded() then queries user_id only; recurrence logic removed in PR #30
       ai_service.py    # Claude calls (beliefs + conversations); _format_task_line() helper; label queries scoped to user_id only; calls ensure_seeded() in handle_conversation_message
-      label_service.py # seed_user_labels(db, user_id): seeds mode+type labels from LABEL_SEED (9 entries; frequency entries removed in PR #30); ensure_seeded(db, user_id): no-op if user has any labels (zero-count sentinel); imported by labels router, task_service, and ai_service
+      label_service.py # seed_user_labels(db, user_id): seeds mode+type labels from LABEL_SEED (9 entries; frequency entries removed in PR #30; CategoryEnum.frequency removed in PR #31); ensure_seeded(db, user_id): no-op if user has any labels (zero-count sentinel); imported by labels router, task_service, and ai_service
   tests/
     test_api.py      # standalone integration test: creates data, tests all endpoints, cleans up
     unit/
@@ -45,7 +45,8 @@ backend/
       test_dependencies.py   # pytest unit tests for auth dependencies (Firebase Bearer auth, token expiry/invalidity)
       test_labels_router.py  # pytest unit tests for labels router (no DB — mocked): seed, create, update, delete
   scripts/
-    purge_test_data.py  # DB maintenance: remove test-generated rows
+    purge_test_data.py               # DB maintenance: remove test-generated rows
+    migrate_drop_frequency_labels.sql  # One-time production SQL migration (PR #31): deletes all frequency label rows, drops recurrence_group_id column, and removes the 'frequency' value from the categoryenum Postgres type. Must be run against the production DB before deploying this PR.
 
 frontend/
   src/
@@ -205,7 +206,7 @@ cd mobile && npm install && npx expo start
 
 ## Testing
 
-**API integration tests** (`tests/test_api.py`): standalone Python script; creates its own test data, exercises all endpoints (CRUD, label assignment, state transitions, recurring logic, high-priority limit, conversational endpoints), deletes all created data at the end. Run with:
+**API integration tests** (`tests/test_api.py`): standalone Python script; creates its own test data, exercises all endpoints (CRUD, label assignment, state transitions, high-priority limit, conversational endpoints), deletes all created data at the end. Run with:
 ```bash
 cd backend && DATABASE_URL=... python3 tests/test_api.py
 ```

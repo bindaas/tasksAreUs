@@ -34,7 +34,7 @@ Every non-trivial feature or bug fix follows this four-step sequence before any 
 
 2. **Run Sneezy.** Grumpy spawns the `plan-review` agent (Sneezy) on the plan file. Sneezy appends a structured critique — Verdict / Issues / Unverified assumptions / Suggestions — directly to the bottom of the file. Grumpy does not proceed until Sneezy finishes.
 
-3. **Present and wait.** Grumpy surfaces Sneezy's findings to the user and ends with "Shall I proceed?" No implementation begins until the user explicitly approves.
+3. **Present and wait.** Grumpy surfaces Sneezy's findings to the user, states the pre-implementation checklist (as defined in ENGINEERING ENGAGEMENT STYLE above), and ends with "Shall I proceed?" No implementation begins until the user explicitly approves.
 
 4. **Address the critique, then implement.** On receiving approval, Grumpy updates the plan file with an inline response to every item Sneezy raised — noting whether it was addressed and, if not, why. Implementation begins only after the plan file is updated. The plan file must be included in the PR.
 

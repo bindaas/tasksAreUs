@@ -76,6 +76,9 @@ async def lifespan(app: FastAPI):
         conn.execute(text(
             "ALTER TABLE users DROP COLUMN IF EXISTS device_uuid"
         ))
+        conn.execute(text(
+            "ALTER TABLE tasks DROP COLUMN IF EXISTS recurrence_group_id"
+        ))
         # Enforce per-user label model: user_id NOT NULL, unique per user+category+value
         conn.execute(text("ALTER TABLE labels ALTER COLUMN user_id SET NOT NULL"))
         conn.execute(text(

@@ -141,12 +141,10 @@ def main():
     assert_in("child label seeded (renamed from raghav)", "child", type_labels)
     assert_true("raghav label no longer exists", "raghav" not in type_labels)
 
+    # PR #31: CategoryEnum.frequency removed from Python — GET /labels?category=frequency now
+    # returns 400 (unknown category) rather than 200 with an empty or partial list.
     r = client.get("/labels?category=frequency", headers=H)
-    freq_only = r.json()["labels"]
-    assert_true("category filter works (frequency returns only frequency items)",
-                all(l["category"] == "frequency" for l in freq_only))
-    # PR #30: frequency labels no longer seeded for new users — existing DB rows may remain
-    # (freq_only may be 0 for a fresh test user; this is correct and expected)
+    assert_eq("GET /labels?category=frequency → 400 (PR #31: unknown category)", r.status_code, 400)
 
     # All label categories are per-user (PR #16) — verify mode and type are returned for this user
     r = client.get("/labels?category=mode", headers=H)
@@ -165,19 +163,19 @@ def main():
     r = client.get("/labels?category=bogus", headers=H)
     assert_eq("GET /labels?category=bogus → 400", r.status_code, 400)
 
-    # ── Labels: Per-User Model (PR #16, updated PR #30) ───────────────────────
-    print("\n── Labels: Per-User Model (PR #16, updated PR #30) ─────")
-    # PR #30: LABEL_SEED now contains 9 entries (4 mode + 5 type); frequency entries removed.
-    # Fresh users (never seeded before) get 9 labels.
-    # The system test user is persistent and may have frequency labels from before PR #30
-    # (existing DB rows are NOT removed until PR 3 — the DB migration). So we check that
-    # at minimum 9 labels are present (the new seed set) and that mode + type are present.
+    # ── Labels: Per-User Model (PR #16, updated PR #31) ───────────────────────
+    print("\n── Labels: Per-User Model (PR #16, updated PR #31) ─────")
+    # PR #30: LABEL_SEED contains 9 entries (4 mode + 5 type); frequency entries removed.
+    # PR #31: SQL migration deletes all remaining frequency rows from the DB.
+    # All users (including the persistent system test user) now have exactly mode + type labels.
     assert_true("GET /labels returns at least 9 seeded labels (PR #30)", len(labels) >= 9)
 
-    # mode and type categories must be present for all users (seeded by PR #30 LABEL_SEED)
+    # Only mode and type categories must be present — frequency is fully gone (PR #31)
     all_categories = {l["category"] for l in labels}
-    assert_true("mode and type categories present in GET /labels (PR #30)",
+    assert_true("mode and type categories present in GET /labels (PR #31)",
                 {"mode", "type"}.issubset(all_categories))
+    assert_true("frequency category absent from GET /labels (PR #31)",
+                "frequency" not in all_categories)
 
     # Verify that label IDs from GET /labels can be used to create tasks (the core
     # bug fixed in PR #16 — per-user IDs were not matching global IDs on task creation)
@@ -193,28 +191,30 @@ def main():
     # Clean up
     client.delete(f"/tasks/{pr16_task_id}", headers=H)
 
-    # ── Labels: Frequency seeding removed (PR #30) ────────────────────────────
+    # ── Labels: Frequency fully removed (PR #31) ─────────────────────────────
     # PR #29 removed frequency from all client UI surfaces.
     # PR #30 removed frequency entries from LABEL_SEED and recurrence logic from the backend.
-    # New users are no longer seeded with frequency labels.
-    # IMPORTANT: Existing DB rows for frequency labels are NOT removed until PR 3 (DB migration).
-    # The system test user is persistent and carries pre-existing frequency labels from before
-    # PR #30. So this section verifies the API contract, not an exact count.
-    print("\n── Labels: Frequency seeding removed (PR #30) ──────────")
-    # GET /labels?category=frequency must still return 200 (endpoint not removed)
+    # PR #31 (this PR) runs the SQL migration and removes CategoryEnum.frequency from Python.
+    # After PR #31:
+    #   - All frequency label rows are deleted from the DB (SQL migration).
+    #   - CategoryEnum.frequency no longer exists in Python.
+    #   - GET /labels?category=frequency returns 400 (unknown category), not 200.
+    #   - POST /labels with category=frequency returns 400 (unknown category).
+    print("\n── Labels: Frequency fully removed (PR #31) ────────────")
+    # GET /labels?category=frequency must return 400 (unknown category) — CategoryEnum.frequency gone
     r = client.get("/labels?category=frequency", headers=H)
-    assert_eq("GET /labels?category=frequency → 200 (PR #30)", r.status_code, 200)
-    # The endpoint still works and returns whatever frequency rows exist in the DB.
-    # For the system test user (pre-existing), this will be 5. For a brand-new user it will be 0.
-    # We only assert the response shape is correct.
-    freq_check = r.json()["labels"]
-    assert_true("GET /labels?category=frequency returns a list (PR #30)", isinstance(freq_check, list))
-    assert_true("all returned rows are category=frequency",
-                all(l["category"] == "frequency" for l in freq_check))
+    assert_eq("GET /labels?category=frequency → 400 (PR #31: CategoryEnum.frequency removed)",
+              r.status_code, 400)
 
-    # POST /labels — frequency category is still rejected (enforcement unchanged in PR #30)
+    # GET /labels must not include any frequency rows (all deleted by SQL migration)
+    r = client.get("/labels", headers=H)
+    all_labels_pr31 = r.json()["labels"]
+    freq_rows = [l for l in all_labels_pr31 if l["category"] == "frequency"]
+    assert_eq("no frequency label rows remain after PR #31 SQL migration", freq_rows, [])
+
+    # POST /labels — frequency category must still be rejected (now: unknown category 400)
     r = client.post("/labels", headers=H, json={"category": "frequency", "value": "hourly"})
-    assert_eq("POST /labels frequency category → 400 (enforcement still active, PR #30)",
+    assert_eq("POST /labels frequency category → 400 (PR #31: unknown category)",
               r.status_code, 400)
 
     # ── Labels: Create / Update / Delete (PR #15) ─────────────────────────────
@@ -334,6 +334,9 @@ def main():
     assert_in("task has must_do_by field", "must_do_by", task)
     assert_eq("task target_date round-trips", task["target_date"], tomorrow)
     assert_eq("task must_do_by round-trips", task["must_do_by"], next_week)
+    # PR #31: recurrence_group_id column dropped — must not appear in API response
+    assert_true("task response has no recurrence_group_id field (PR #31)",
+                "recurrence_group_id" not in task)
 
     r = client.get(f"/tasks/{task_id}", headers=H)
     assert_eq("GET /tasks/:id → 200", r.status_code, 200)
@@ -1096,11 +1099,17 @@ def main():
     assert_true("sync returns tasks", isinstance(sync_result["changes"]["tasks"], list))
     assert_true("completed tasks in sync response", len(sync_result["changes"]["tasks"]) >= 2)
     # Verify is_high_priority field is included in sync task objects (PR #6)
+    # PR #31: recurrence_group_id column dropped — must not appear in sync task objects
     if sync_result["changes"]["tasks"]:
         first_sync_task = sync_result["changes"]["tasks"][0]
         assert_in("sync task object includes is_high_priority field", "is_high_priority", first_sync_task)
+        assert_true("sync task object has no recurrence_group_id field (PR #31)",
+                    "recurrence_group_id" not in first_sync_task)
 
-    # Verify sync push: sending a task with is_high_priority=true round-trips correctly
+    # Verify sync push: sending a task with is_high_priority=true round-trips correctly.
+    # PR #31: recurrence_group_id is omitted from the push payload (column dropped).
+    # Old mobile clients that still send recurrence_group_id should be handled gracefully —
+    # the sync router silently ignores unknown fields (SyncChanges uses Dict[str, Any]).
     hp_sync_task_id = str(uuid.uuid4())
     r = client.post("/sync", headers=H, json={
         "last_synced_at": "2020-01-01T00:00:00Z",
@@ -1115,7 +1124,6 @@ def main():
                 "notes": None,
                 "is_high_priority": True,
                 "is_deleted": False,
-                "recurrence_group_id": None,
                 "completed_at": None,
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -1126,12 +1134,49 @@ def main():
         },
     })
     assert_eq("POST /sync with is_high_priority task → 200", r.status_code, 200)
-    # Read it back to confirm the field was stored
+    # Read it back to confirm the field was stored and recurrence_group_id is absent
     r = client.get(f"/tasks/{hp_sync_task_id}", headers=H)
     assert_eq("GET synced HP task → 200", r.status_code, 200)
     assert_eq("synced task is_high_priority persisted", r.json()["is_high_priority"], True)
+    assert_true("synced task response has no recurrence_group_id field (PR #31)",
+                "recurrence_group_id" not in r.json())
     # Clean up the sync test task
     client.delete(f"/tasks/{hp_sync_task_id}", headers=H)
+
+    # PR #31: backward-compat check — old mobile clients may still send recurrence_group_id
+    # in their sync payload. The server must accept (200) and silently discard the field.
+    stale_sync_task_id = str(uuid.uuid4())
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": stale_sync_task_id,
+                "user_id": test_user_id,
+                "title": "Stale client sync task (with legacy recurrence_group_id)",
+                "state": "pending",
+                "must_do_by": None,
+                "target_date": None,
+                "notes": None,
+                "is_high_priority": False,
+                "is_deleted": False,
+                "recurrence_group_id": None,  # old clients still send this; must be ignored
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+            "beliefs": [],
+            "settings": None,
+        },
+    })
+    assert_eq("POST /sync with stale recurrence_group_id field → 200 (PR #31 backward compat)",
+              r.status_code, 200)
+    r = client.get(f"/tasks/{stale_sync_task_id}", headers=H)
+    assert_eq("GET stale-sync task → 200", r.status_code, 200)
+    assert_true("stale-sync task response has no recurrence_group_id (PR #31)",
+                "recurrence_group_id" not in r.json())
+    # Clean up
+    client.delete(f"/tasks/{stale_sync_task_id}", headers=H)
 
     # ── Summary ────────────────────────────────────────────────────────────────
     print(f"\n── Results ─────────────────────────────────────────────")

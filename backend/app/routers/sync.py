@@ -55,7 +55,6 @@ def sync(
                 state=t_data.get("state", "pending"),
                 is_deleted=t_data.get("is_deleted", False),
                 is_high_priority=t_data.get("is_high_priority", False),
-                recurrence_group_id=t_data.get("recurrence_group_id"),
                 updated_at=client_updated_at,
                 created_at=_parse_dt(t_data.get("created_at")) or now,
             )
@@ -158,7 +157,6 @@ def sync(
             "must_do_by": t.must_do_by.isoformat() if t.must_do_by else None,
             "target_date": t.target_date.isoformat() if t.target_date else None,
             "completed_at": t.completed_at.isoformat() if t.completed_at else None,
-            "recurrence_group_id": t.recurrence_group_id,
             "is_high_priority": t.is_high_priority,
             "is_deleted": t.is_deleted,
             "created_at": t.created_at.isoformat(),

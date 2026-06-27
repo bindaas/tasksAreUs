@@ -87,7 +87,6 @@ def create_task(
     must_do_by: Optional[date],
     target_date: Optional[date],
     label_ids: List[str],
-    recurrence_group_id: Optional[str] = None,
     is_high_priority: bool = False,
     high_priority_limit: int = HIGH_PRIORITY_DAILY_LIMIT,
 ) -> Task:
@@ -108,7 +107,6 @@ def create_task(
         notes=notes,
         must_do_by=must_do_by,
         target_date=target_date,
-        recurrence_group_id=recurrence_group_id,
         is_high_priority=final_priority,
     )
     db.add(task)

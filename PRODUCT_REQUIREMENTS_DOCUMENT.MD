@@ -21,28 +21,28 @@ A task can have zero or more labels in fixed system-defined categories. A task m
 
 | Category | Values | Editable? | UI Visible? |
 |---|---|---|---|
-| Frequency | one-time, daily, weekly, monthly, annual | No — per-user but fixed; users cannot add, rename, or delete | **No** — hidden from all UI surfaces as of PR #29; no longer seeded for new users as of PR #30; existing DB rows persist until PR 3 (DB migration) |
+| Frequency | one-time, daily, weekly, monthly, annual | No — Frequency is no longer a valid category in the API (PR #31); all DB rows deleted by SQL migration | **No** — hidden from all UI surfaces as of PR #29; no longer seeded as of PR #30; all DB rows deleted and enum value dropped as of PR #31 |
 | Mode | online, phone, outdoor, email (defaults) | Yes — per-user; users can add, rename, and delete | Yes |
 | Type | household, financial, child, trip, medical (defaults) | Yes — per-user; users can add, rename, and delete | Yes |
 
-**Label ownership rules (shipped — PR #15, corrected in PR #16, updated PR #30):**
+**Label ownership rules (shipped — PR #15, corrected in PR #16, updated PR #30, updated PR #31):**
 - **All labels are per-user** — `labels.user_id` is `NOT NULL`. There are no global seed rows in the DB. New users are seeded with **Mode and Type labels only** (9 entries total) on first access, as of PR #30.
-- **Frequency** labels are no longer seeded for new users (PR #30 removed them from `LABEL_SEED`). Existing users retain their frequency label rows in the DB until PR 3 (the DB migration). Frequency labels cannot be created, edited, or deleted via the API and are not shown in Settings.
+- **Frequency** labels have been fully removed (PR #31): all frequency label rows were deleted from the DB by the SQL migration, `CategoryEnum.frequency` was removed from Python, and `GET /labels?category=frequency` now returns 400 (unknown category). Frequency labels cannot be created, edited, or deleted via the API and are not shown in Settings.
 - **Mode** and **Type** labels are per-user and fully configurable: users can add, rename, and delete them.
-- Users cannot create or modify label *categories* — the three categories (Frequency, Mode, Type) are fixed.
+- Users cannot create or modify label *categories* — the two active categories (Mode, Type) are fixed.
 - The default Type value was renamed from `raghav` to `child` (applied via startup migration in PR #15).
-- Seeding is driven by the `LABEL_SEED` constant in `models.py`; the `ensure_seeded()` / `seed_user_labels()` helpers live in `services/label_service.py`. The seeding sentinel checks for any existing labels (zero labels = new user); existing users always have at least their frequency or mode labels so the sentinel is correct across both pre- and post-PR #30 windows.
+- Seeding is driven by the `LABEL_SEED` constant in `models.py`; the `ensure_seeded()` / `seed_user_labels()` helpers live in `services/label_service.py`. The seeding sentinel checks for any existing labels (zero labels = new user).
 
-**Frequency label UI removal (shipped — PR #29):**
-- `frequency` has been removed from the `LabelCategory` TypeScript union in both the frontend (`frontend/src/api/labels.ts`) and mobile (`mobile/src/types/index.ts`).
-- All label filter panels, label pickers (TaskForm / TaskFormScreen), label ordering arrays, color maps, and grouped-state initializers on both web and mobile no longer include `frequency`.
-- Existing tasks that have frequency labels continue to load and function. Tasks with frequency labels render without a frequency badge (the color map falls through to the `bg-gray-100` default on web; no badge is shown on mobile).
-- **Backend serves but no longer seeds frequency labels (updated — PR #30)** — `GET /labels?category=frequency` still returns 200 and any existing frequency rows for a user; new users are no longer seeded with frequency labels. The backend migration to drop frequency data from the DB is a separate, future PR (PR 3).
+**Frequency label removal — fully complete (PR #29 + PR #30 + PR #31):**
+- `frequency` has been removed from the `LabelCategory` TypeScript union in both the frontend (`frontend/src/api/labels.ts`) and mobile (`mobile/src/types/index.ts`) (PR #29).
+- All label filter panels, label pickers (TaskForm / TaskFormScreen), label ordering arrays, color maps, and grouped-state initializers on both web and mobile no longer include `frequency` (PR #29).
+- Backend recurrence logic removed (PR #30): `FREQUENCY_VALUES`, `_get_frequency_label()`, and `_next_due_date()` deleted from `task_service.py`; frequency labels no longer seeded for new users.
+- **DB migration complete (PR #31)**: All frequency label rows deleted from the `labels` table (beliefs FK references nulled; `task_labels` join rows deleted). `frequency` dropped from the Postgres `categoryenum` enum type. `CategoryEnum.frequency` removed from Python. `GET /labels?category=frequency` returns 400 (unknown category). `POST /labels` with `category=frequency` returns 400. No frequency data remains in the DB.
 
-**New label management API endpoints (shipped — PR #15):**
-- `POST /api/v1/labels` — create a new Mode or Type label for the current user (400 if Frequency, 409 if duplicate, strips whitespace)
-- `PUT /api/v1/labels/{id}` — rename a Mode or Type label owned by the current user (403 if wrong owner, 400 if Frequency, 409 if duplicate name)
-- `DELETE /api/v1/labels/{id}` — delete a Mode or Type label owned by the current user (403 if wrong owner, 400 if Frequency)
+**New label management API endpoints (shipped — PR #15, updated PR #31):**
+- `POST /api/v1/labels` — create a new Mode or Type label for the current user (400 if unknown/non-configurable category, 409 if duplicate, strips whitespace)
+- `PUT /api/v1/labels/{id}` — rename a Mode or Type label owned by the current user (403 if wrong owner, 400 if non-configurable category, 409 if duplicate name)
+- `DELETE /api/v1/labels/{id}` — delete a Mode or Type label owned by the current user (403 if wrong owner, 400 if non-configurable category)
 
 ### Task Lifecycle
 
@@ -50,7 +50,7 @@ All tasks follow a single lifecycle: Pending → Done. Completing a task via `PO
 
 **Recurrence logic removed (PR #30):** The backend no longer creates follow-on tasks when a task is marked done. `FREQUENCY_VALUES`, `_get_frequency_label()`, and `_next_due_date()` have been deleted from `task_service.py`. This makes recurrence behavior consistent with the UI-level removal of the Frequency label category (PR #29).
 
-> **[ASPIRATIONAL]** — Not yet shipped. PR 3 will complete the Frequency label removal by running a DB migration to delete all existing frequency label rows from the `labels` table, null out any FK references, and drop the `frequency` value from the Postgres `category` enum. Until that migration ships, existing users retain frequency label rows in the DB, `CategoryEnum.frequency` remains in the SQLAlchemy model, and `GET /labels?category=frequency` continues to return existing rows.
+**DB migration complete (PR #31):** All frequency label rows have been deleted from the DB, `CategoryEnum.frequency` removed from Python, and `frequency` dropped from the Postgres enum. The `recurrence_group_id` column has also been dropped from the `tasks` table — it is absent from `TaskOut` schema, `GET /tasks` responses, `POST /sync` push and pull payloads, and the `GET /tasks` query parameter list. Stale mobile clients that still send `recurrence_group_id` in sync payloads are handled gracefully (the field is silently ignored).
 
 ---
 
@@ -294,13 +294,12 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ## Out of Scope (initial build)
 
-- Custom label *categories* (the three categories — Frequency, Mode, Type — are fixed for all users)
-- Editing or deleting Frequency label values (one-time, daily, weekly, monthly, annual are fixed globally)
-- **Aspirational — DB migration to complete Frequency label removal (PR 3)**: PR #29 removed frequency from all client UI surfaces. PR #30 removed backend seeding and recurrence logic. The remaining step is a DB migration to delete all frequency label rows, null out any FK references, and drop the `frequency` value from the Postgres `category` enum. Until PR 3 ships, `CategoryEnum.frequency` remains in the SQLAlchemy model and existing frequency label rows persist in the DB.
+- Custom label *categories* (the two active categories — Mode, Type — are fixed for all users; Frequency has been fully removed as of PR #31)
+- Editing or deleting Frequency label values — moot; all frequency data has been removed from the DB (PR #31)
 - Trip as a separate entity (trip is a Type label value)
 - Admin dashboard for cost tracking (note: per-call AI cost logging to the `ai_cost_log` table is implemented in the backend; only the admin-facing dashboard surface is out of scope)
 - ~~Native mobile app (iOS/Android)~~ — **now in scope**: React Native + Expo mobile client is being built (PR #18 scaffolded the project; feature screens follow in subsequent PRs)
 
 ---
 
-*Last updated by — *Bashful* after PR #30 (Remove frequency label seeding and recurrence logic from backend)*
+*Last updated by — *Bashful* after PR #31 (Remove CategoryEnum.frequency and recurrence_group_id — DB migration complete)*

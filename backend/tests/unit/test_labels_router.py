@@ -76,6 +76,7 @@ class TestCreateLabel:
         assert added.category == CategoryEnum.mode
 
     def test_rejects_frequency_category(self):
+        # 'frequency' is no longer a valid CategoryEnum value — triggers 400 as unknown category
         db = MagicMock()
         with pytest.raises(HTTPException) as exc:
             create_label(LabelCreate(category="frequency", value="hourly"), db, "user-1")
@@ -126,15 +127,6 @@ class TestUpdateLabel:
             update_label("l1", LabelUpdate(value="new"), db, "user-1")
         assert exc.value.status_code == 403
 
-    def test_rejects_frequency_label(self):
-        label = _make_label("l1", CategoryEnum.frequency, "daily", "user-1")
-        db = MagicMock()
-        db.query.return_value.filter.return_value.first.return_value = label
-
-        with pytest.raises(HTTPException) as exc:
-            update_label("l1", LabelUpdate(value="hourly"), db, "user-1")
-        assert exc.value.status_code == 400  # category guard fires first
-
     def test_rejects_not_found(self):
         db = MagicMock()
         db.query.return_value.filter.return_value.first.return_value = None
@@ -175,15 +167,6 @@ class TestDeleteLabel:
         with pytest.raises(HTTPException) as exc:
             delete_label("l1", db, "user-1")
         assert exc.value.status_code == 403
-
-    def test_rejects_frequency_label(self):
-        label = _make_label("l1", CategoryEnum.frequency, "daily", "user-1")
-        db = MagicMock()
-        db.query.return_value.filter.return_value.first.return_value = label
-
-        with pytest.raises(HTTPException) as exc:
-            delete_label("l1", db, "user-1")
-        assert exc.value.status_code == 400  # category guard fires first
 
     def test_rejects_not_found(self):
         db = MagicMock()

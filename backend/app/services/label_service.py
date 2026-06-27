@@ -24,9 +24,7 @@ def ensure_seeded(db: Session, user_id: str) -> None:
     """Seed labels for the user if they have not been seeded yet.
 
     Uses total label count as the sentinel — zero labels means a brand-new
-    user. Existing users always have at least their frequency labels (until
-    PR 3 removes them), so any_count == 0 reliably identifies new users
-    across both the pre- and post-PR-3 windows.
+    user, so any_count == 0 reliably identifies new users.
     """
     any_count = db.query(Label).filter(
         Label.user_id == user_id,
