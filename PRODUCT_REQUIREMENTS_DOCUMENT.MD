@@ -33,11 +33,12 @@ A task can have zero or more labels in fixed system-defined categories. A task m
 - The default Type value was renamed from `raghav` to `child` (applied via startup migration in PR #15).
 - Seeding is driven by the `LABEL_SEED` constant in `models.py`; the `ensure_seeded()` / `seed_user_labels()` helpers live in `services/label_service.py`. The seeding sentinel checks for any existing labels (zero labels = new user).
 
-**Frequency label removal — fully complete (PR #29 + PR #30 + PR #31):**
-- `frequency` has been removed from the `LabelCategory` TypeScript union in both the frontend (`frontend/src/api/labels.ts`) and mobile (`mobile/src/types/index.ts`) (PR #29).
+**Frequency label removal — fully complete (PR #29 + PR #30 + PR #31 + PR #32):**
+- `frequency` has been removed from all TypeScript `Label.category` unions in the frontend (`frontend/src/api/tasks.ts`) and mobile (`mobile/src/types/index.ts`) (PR #29 for UI surfaces, PR #32 for the `Label` interface itself).
 - All label filter panels, label pickers (TaskForm / TaskFormScreen), label ordering arrays, color maps, and grouped-state initializers on both web and mobile no longer include `frequency` (PR #29).
 - Backend recurrence logic removed (PR #30): `FREQUENCY_VALUES`, `_get_frequency_label()`, and `_next_due_date()` deleted from `task_service.py`; frequency labels no longer seeded for new users.
 - **DB migration complete (PR #31)**: All frequency label rows deleted from the `labels` table (beliefs FK references nulled; `task_labels` join rows deleted). `frequency` dropped from the Postgres `categoryenum` enum type. `CategoryEnum.frequency` removed from Python. `GET /labels?category=frequency` returns 400 (unknown category). `POST /labels` with `category=frequency` returns 400. No frequency data remains in the DB.
+- **Type cleanup complete (PR #32)**: `recurrence_group_id` removed from the `Task` TypeScript interface in both frontend (`frontend/src/api/tasks.ts`) and mobile (`mobile/src/types/index.ts`). The dead `.filter((l) => l.category !== 'frequency')` guard removed from `TaskCard.tsx`. Test fixture factories updated accordingly. `Label.category` union is now `'mode' | 'type'` throughout the TypeScript codebase.
 
 **New label management API endpoints (shipped — PR #15, updated PR #31):**
 - `POST /api/v1/labels` — create a new Mode or Type label for the current user (400 if unknown/non-configurable category, 409 if duplicate, strips whitespace)
@@ -51,6 +52,8 @@ All tasks follow a single lifecycle: Pending → Done. Completing a task via `PO
 **Recurrence logic removed (PR #30):** The backend no longer creates follow-on tasks when a task is marked done. `FREQUENCY_VALUES`, `_get_frequency_label()`, and `_next_due_date()` have been deleted from `task_service.py`. This makes recurrence behavior consistent with the UI-level removal of the Frequency label category (PR #29).
 
 **DB migration complete (PR #31):** All frequency label rows have been deleted from the DB, `CategoryEnum.frequency` removed from Python, and `frequency` dropped from the Postgres enum. The `recurrence_group_id` column has also been dropped from the `tasks` table — it is absent from `TaskOut` schema, `GET /tasks` responses, `POST /sync` push and pull payloads, and the `GET /tasks` query parameter list. Stale mobile clients that still send `recurrence_group_id` in sync payloads are handled gracefully (the field is silently ignored).
+
+**Type cleanup complete (PR #32):** `recurrence_group_id` has been removed from the `Task` TypeScript interface in both frontend and mobile clients, matching the backend schema. `Label.category` is now narrowed to `'mode' | 'type'` (the `'frequency'` variant has been removed from all TypeScript type declarations).
 
 ---
 
@@ -302,4 +305,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #31 (Remove CategoryEnum.frequency and recurrence_group_id — DB migration complete)*
+*Last updated by — *Bashful* after PR #32 (Type cleanup: narrow Label.category and drop recurrence_group_id from frontend/mobile TypeScript interfaces)*

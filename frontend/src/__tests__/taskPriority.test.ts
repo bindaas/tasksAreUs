@@ -11,7 +11,6 @@ function makeTask(id: string, is_high_priority: boolean): Task {
     must_do_by: null,
     target_date: null,
     completed_at: null,
-    recurrence_group_id: null,
     labels: [],
     is_high_priority,
     is_deleted: false,
