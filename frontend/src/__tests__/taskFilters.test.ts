@@ -5,6 +5,7 @@ import type { Task } from '../api/tasks';
 function makeTask(overrides: Partial<Task>): Task {
   return {
     id: 'task-1',
+    board_id: 'board-1',
     title: 'Test task',
     notes: null,
     state: 'pending',

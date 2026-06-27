@@ -3,8 +3,181 @@ import { getSettings, updateSettings } from '../api/settings';
 import { listLabels, createLabel, updateLabel, deleteLabel } from '../api/labels';
 import type { Label } from '../api/tasks';
 import { useAuth } from '../hooks/useAuth';
+import { useBoard } from '../context/BoardContext';
+import type { Board } from '../api/boards';
 
 const MAX_QUESTIONS = 5;
+
+function BoardEditor({
+  boards,
+  activeBoard,
+  onRename,
+  onSetDefault,
+  onDelete,
+  onAdd,
+}: {
+  boards: Board[];
+  activeBoard: Board | null;
+  onRename: (id: string, name: string) => Promise<void>;
+  onSetDefault: (id: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onAdd: (name: string) => Promise<Board>;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [addingNew, setAddingNew] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function handleRename(id: string) {
+    const trimmed = editName.trim();
+    if (!trimmed || trimmed === boards.find((b) => b.id === id)?.name) {
+      setEditingId(null);
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      await onRename(id, trimmed);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to rename board');
+    } finally {
+      setBusy(false);
+      setEditingId(null);
+    }
+  }
+
+  async function handleSetDefault(id: string) {
+    setBusy(true);
+    setErr(null);
+    try {
+      await onSetDefault(id);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to set default board');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setBusy(true);
+    setErr(null);
+    try {
+      await onDelete(id);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to delete board');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleAdd() {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await onAdd(trimmed);
+      setNewName('');
+      setAddingNew(false);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to create board');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-5">
+      {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+      <div className="space-y-1.5">
+        {boards.map((board) => (
+          <div key={board.id} className="flex items-center gap-2">
+            <button
+              onClick={() => !board.is_default && handleSetDefault(board.id)}
+              disabled={busy || board.is_default}
+              title={board.is_default ? 'Default board' : 'Set as default'}
+              className={`shrink-0 ${board.is_default ? 'text-amber-400 cursor-default' : 'text-gray-300 hover:text-amber-400'} disabled:opacity-50`}
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </button>
+
+            {editingId === board.id ? (
+              <>
+                <input
+                  autoFocus
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleRename(board.id);
+                    if (e.key === 'Escape') setEditingId(null);
+                  }}
+                  className="flex-1 border border-indigo-400 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={busy}
+                />
+                <button onClick={() => handleRename(board.id)} disabled={busy} className="text-xs text-indigo-600 font-medium disabled:opacity-40">Save</button>
+                <button onClick={() => setEditingId(null)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+              </>
+            ) : (
+              <>
+                <span className={`flex-1 text-sm ${board.id === activeBoard?.id ? 'font-medium text-indigo-700' : 'text-gray-700'}`}>
+                  {board.name}
+                </span>
+                <button
+                  onClick={() => { setEditingId(board.id); setEditName(board.name); setErr(null); }}
+                  disabled={busy}
+                  className="text-xs text-gray-400 hover:text-indigo-600 disabled:opacity-40"
+                >
+                  Rename
+                </button>
+                <button
+                  onClick={() => handleDelete(board.id)}
+                  disabled={busy || board.is_default || boards.length <= 1}
+                  title={board.is_default ? 'Cannot delete the default board' : boards.length <= 1 ? 'Cannot delete the only board' : undefined}
+                  className="text-xs text-red-400 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+
+        {addingNew ? (
+          <div className="flex items-center gap-2 mt-1">
+            <input
+              autoFocus
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAdd();
+                if (e.key === 'Escape') { setAddingNew(false); setNewName(''); }
+              }}
+              placeholder="Board name"
+              className="flex-1 border border-indigo-400 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              disabled={busy}
+            />
+            <button onClick={handleAdd} disabled={busy || !newName.trim()} className="text-xs text-indigo-600 font-medium disabled:opacity-40">Add</button>
+            <button onClick={() => { setAddingNew(false); setNewName(''); }} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setAddingNew(true); setErr(null); }}
+            disabled={busy}
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-40 mt-1"
+          >
+            + Add board
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 type ConfigurableCategory = 'mode' | 'type';
 
@@ -185,6 +358,7 @@ function LabelEditor({
 
 export function SettingsPage() {
   const { user, signInWithGoogle, sendMagicLink, signOut } = useAuth();
+  const { boards, activeBoard, renameBoard, setDefaultBoard, deleteBoard, createBoard } = useBoard();
   const isAnonymous = user?.isAnonymous === true;
 
   const [questions, setQuestions] = useState<string[]>([]);
@@ -231,10 +405,11 @@ export function SettingsPage() {
       setLoading(true);
       setError(null);
       try {
+        const boardId = activeBoard?.id;
         const [s, modeRes, typeRes] = await Promise.all([
           getSettings(),
-          listLabels('mode'),
-          listLabels('type'),
+          listLabels('mode', boardId),
+          listLabels('type', boardId),
         ]);
         setQuestions(s.starter_questions ?? []);
         setHighPriorityLimit(s.high_priority_daily_limit ?? 3);
@@ -247,10 +422,10 @@ export function SettingsPage() {
       }
     }
     fetch();
-  }, []);
+  }, [activeBoard?.id]);
 
   async function handleAddLabel(category: 'mode' | 'type', value: string) {
-    const label = await createLabel(category, value);
+    const label = await createLabel(category, value, activeBoard?.id);
     if (category === 'mode') setModeLabels((prev) => [...prev, label]);
     else setTypeLabels((prev) => [...prev, label]);
   }
@@ -370,11 +545,32 @@ export function SettingsPage() {
         </div>
       ) : (
         <>
+          {/* Boards */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">Boards</h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Manage your boards. The starred board is your default — you return to it on every app open.
+            </p>
+            <div className="border border-gray-200 rounded-lg p-3">
+              <BoardEditor
+                boards={boards}
+                activeBoard={activeBoard}
+                onRename={renameBoard}
+                onSetDefault={setDefaultBoard}
+                onDelete={deleteBoard}
+                onAdd={createBoard}
+              />
+            </div>
+          </div>
+
           {/* Labels */}
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-1">Labels</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">
+              Labels
+              {activeBoard && <span className="ml-1 text-gray-400 font-normal">— {activeBoard.name}</span>}
+            </h3>
             <p className="text-xs text-gray-500 mb-3">
-              Customise Mode and Type labels. Frequency labels are fixed.
+              Customise Mode and Type labels for the active board.
             </p>
             <div className="border border-gray-200 rounded-lg p-3 space-y-1">
               <LabelEditor

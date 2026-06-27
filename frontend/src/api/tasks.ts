@@ -8,6 +8,7 @@ export interface Label {
 
 export interface Task {
   id: string;
+  board_id: string;
   title: string;
   notes: string | null;
   state: 'pending' | 'done';
@@ -48,8 +49,11 @@ export interface CompleteTaskResponse {
   next_task: Task | null;
 }
 
-export async function listTasks(state?: 'pending' | 'done'): Promise<{ tasks: Task[] }> {
-  const query = state ? `?state=${state}` : '';
+export async function listTasks(state?: 'pending' | 'done', boardId?: string): Promise<{ tasks: Task[] }> {
+  const params = new URLSearchParams();
+  if (state) params.set('state', state);
+  if (boardId) params.set('board_id', boardId);
+  const query = params.size ? `?${params}` : '';
   return apiFetch<{ tasks: Task[] }>(`/tasks${query}`);
 }
 
@@ -57,10 +61,10 @@ export async function getTask(id: string): Promise<Task> {
   return apiFetch<Task>(`/tasks/${id}`);
 }
 
-export async function createTask(body: CreateTaskBody): Promise<Task> {
+export async function createTask(body: CreateTaskBody, boardId?: string): Promise<Task> {
   return apiFetch<Task>('/tasks', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify(boardId ? { ...body, board_id: boardId } : body),
   });
 }
 

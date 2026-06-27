@@ -10,6 +10,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { FilterProvider } from './context/FilterContext';
+import { BoardProvider } from './context/BoardContext';
 
 function EmailConfirmationPage() {
   const { confirmEmailSignIn } = useAuth();
@@ -85,6 +86,7 @@ function AppRoutes() {
 
   return (
     <FilterProvider>
+      <BoardProvider>
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
@@ -97,6 +99,7 @@ function AppRoutes() {
           </Route>
         </Routes>
       </BrowserRouter>
+      </BoardProvider>
     </FilterProvider>
   );
 }

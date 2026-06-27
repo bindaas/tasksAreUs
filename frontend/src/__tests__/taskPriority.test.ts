@@ -5,6 +5,7 @@ import type { Task } from '../api/tasks';
 function makeTask(id: string, is_high_priority: boolean): Task {
   return {
     id,
+    board_id: 'board-1',
     title: `Task ${id}`,
     notes: null,
     state: 'pending',
