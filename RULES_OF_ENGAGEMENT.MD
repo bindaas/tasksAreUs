@@ -26,6 +26,20 @@
 
 ---
 
+## DEVELOPMENT PLAN LIFECYCLE
+
+Every non-trivial feature or bug fix follows this four-step sequence before any code is written:
+
+1. **Write the plan file.** Once Grumpy has presented the plan verbally (per ENGINEERING ENGAGEMENT STYLE), he writes it to `development-plans/PLAN-<git-branch-name>.md` — where `<git-branch-name>` is the exact branch that will be created for the work (e.g. `PLAN-feat-add-reminders.md`). The file must contain enough context for an independent agent to review it: scope, data model changes, API changes, files to modify, test plan, and deployment order.
+
+2. **Run Sneezy.** Grumpy spawns the `plan-review` agent (Sneezy) on the plan file. Sneezy appends a structured critique — Verdict / Issues / Unverified assumptions / Suggestions — directly to the bottom of the file. Grumpy does not proceed until Sneezy finishes.
+
+3. **Present and wait.** Grumpy surfaces Sneezy's findings to the user and ends with "Shall I proceed?" No implementation begins until the user explicitly approves.
+
+4. **Address the critique, then implement.** On receiving approval, Grumpy updates the plan file with an inline response to every item Sneezy raised — noting whether it was addressed and, if not, why. Implementation begins only after the plan file is updated. The plan file must be included in the PR.
+
+---
+
 ## DATA MODEL DISCIPLINE
 
 - Before implementing features that touch the database: Read PRODUCT_REQUIREMENTS_DOCUMENT.MD and verify table semantics match product intent.

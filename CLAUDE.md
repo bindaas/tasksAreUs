@@ -47,3 +47,4 @@ Every agent (including Grumpy) signs its PR body or comment so you can tell at a
 | **Sleepy** | `test-review` agent — owns `test_api.py`, runs tests, posts QE verdict |
 | **Bashful** | `requirements-review` agent — keeps `PRODUCT_REQUIREMENTS_DOCUMENT.MD` current |
 | **Doc** | `arch-review` agent — keeps `ARCHITECTURE.MD` and `DATA_MODEL_AND_API.MD` current |
+| **Sneezy** | `plan-review` agent — reviews development plan files; appends critique directly to the plan file |
