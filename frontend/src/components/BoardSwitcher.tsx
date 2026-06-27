@@ -28,6 +28,19 @@ export function BoardSwitcher() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        setAdding(false);
+        setNewName('');
+        setErr(null);
+      }
+    }
+    if (open) document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open]);
+
   async function handleCreate() {
     const trimmed = newName.trim();
     if (!trimmed) return;

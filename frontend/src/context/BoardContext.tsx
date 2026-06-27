@@ -25,13 +25,19 @@ export function BoardProvider({ children }: { children: ReactNode }) {
   const { clearLabels } = useFilter();
 
   const fetchBoards = useCallback(async () => {
+    setLoading(true);
     setError(null);
     try {
       const result = await getBoards();
       setBoards(result.boards);
-      // Always reset active board to the default on fetch (handles app open)
-      const defaultBoard = result.boards.find((b) => b.is_default) ?? result.boards[0] ?? null;
-      setActiveBoardState(defaultBoard);
+      setActiveBoardState((prev) => {
+        // Preserve the current board if it still exists after the refresh
+        if (prev) {
+          const stillExists = result.boards.find((b) => b.id === prev.id);
+          if (stillExists) return stillExists;
+        }
+        return result.boards.find((b) => b.is_default) ?? result.boards[0] ?? null;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load boards');
     } finally {

@@ -48,7 +48,7 @@ export function TaskDetailPage() {
     }
     fetch();
     return () => { cancelled = true; };
-  }, [id, isNew]);
+  }, [id, isNew, activeBoard?.id]);
 
   const highPriorityWarning = useMemo(() => {
     if (!task?.is_high_priority) return null;
