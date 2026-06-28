@@ -695,6 +695,45 @@ def main():
     task_ids = [t["id"] for t in r.json()["tasks"]]
     assert_in("task in list", task_id, task_ids)
 
+    # ── Tasks: board_id scoping on GET /tasks (PR #35) ────────────────────────
+    # PR #35 (mobile multi-board): the mobile client now always passes board_id
+    # when listing tasks. Verify that GET /tasks?board_id=<id> correctly scopes
+    # results to the requested board and excludes tasks from other boards.
+    print("\n── Tasks: board_id filter on GET /tasks (PR #35) ──────")
+    # Create a second board and put a task on it
+    r = client.post("/boards", headers=H, json={"name": "Board filter test board"})
+    assert_eq("POST /boards for board_id filter test → 201", r.status_code, 201)
+    filter_board_id = r.json()["id"]
+
+    r = client.post("/tasks", headers=H, json={
+        "title": "Task on filter test board",
+        "label_ids": [],
+        "board_id": filter_board_id,
+    })
+    assert_eq("POST /tasks on filter test board → 201", r.status_code, 201)
+    filter_board_task_id = r.json()["id"]
+    assert_eq("filter board task board_id matches", r.json()["board_id"], filter_board_id)
+
+    # GET /tasks?board_id=default_board must include the main task_id but NOT the filter board task
+    r = client.get("/tasks", headers=H, params={"board_id": default_board_id})
+    assert_eq("GET /tasks?board_id=default → 200", r.status_code, 200)
+    default_board_task_ids = [t["id"] for t in r.json()["tasks"]]
+    assert_in("main task appears in default board GET /tasks", task_id, default_board_task_ids)
+    assert_true("filter board task excluded from default board GET /tasks",
+                filter_board_task_id not in default_board_task_ids)
+
+    # GET /tasks?board_id=filter_board must include filter board task but NOT the main task
+    r = client.get("/tasks", headers=H, params={"board_id": filter_board_id})
+    assert_eq("GET /tasks?board_id=filter_board → 200", r.status_code, 200)
+    filter_board_task_ids = [t["id"] for t in r.json()["tasks"]]
+    assert_in("filter board task appears in its own board GET /tasks", filter_board_task_id, filter_board_task_ids)
+    assert_true("main task excluded from filter board GET /tasks",
+                task_id not in filter_board_task_ids)
+
+    # Clean up
+    client.delete(f"/tasks/{filter_board_task_id}", headers=H)
+    client.delete(f"/boards/{filter_board_id}", headers=H)
+
     # ── Due-date filter params ─────────────────────────────────────────────────
     print("\n── Tasks: Due-date filter params ───────────────────────")
     # Create a task due far in the future to use as a control
@@ -1204,6 +1243,34 @@ def main():
     nonmatch_ids = [c["task_id"] for c in nonmatch_report["completions"]]
     assert_true("completed task excluded by non-matching label_ids filter",
                 task_id not in nonmatch_ids)
+
+    # board_id filter on reports (PR #35): mobile client now always passes board_id.
+    # The completed task (task_id) is on default_board_id. Filtering by default board
+    # should include it; filtering by a different board should exclude it.
+    print("\n── Reports: board_id filter on GET /reports/completions (PR #35) ─")
+    # task_id is on default_board_id — it should appear when scoped to that board
+    r = client.get("/reports/completions", headers=H,
+                   params={"from": from_date, "to": to_date, "board_id": default_board_id})
+    assert_eq("GET /reports/completions?board_id=default → 200", r.status_code, 200)
+    board_report_default = r.json()
+    board_report_default_ids = [c["task_id"] for c in board_report_default["completions"]]
+    assert_in("completed task appears in default board report", task_id, board_report_default_ids)
+
+    # Create a second board to use as a control — the completed task must NOT appear there
+    r = client.post("/boards", headers=H, json={"name": "Reports filter test board"})
+    assert_eq("POST /boards for reports board_id filter test → 201", r.status_code, 201)
+    reports_filter_board_id = r.json()["id"]
+
+    r = client.get("/reports/completions", headers=H,
+                   params={"from": from_date, "to": to_date, "board_id": reports_filter_board_id})
+    assert_eq("GET /reports/completions?board_id=other_board → 200", r.status_code, 200)
+    board_report_other = r.json()
+    board_report_other_ids = [c["task_id"] for c in board_report_other["completions"]]
+    assert_true("completed task excluded from other board report",
+                task_id not in board_report_other_ids)
+
+    # Clean up the board created for this test
+    client.delete(f"/boards/{reports_filter_board_id}", headers=H)
 
     # ── Settings ───────────────────────────────────────────────────────────────
     print("\n── Settings ────────────────────────────────────────────")
