@@ -21,7 +21,7 @@ import { useBoard } from '../context/BoardContext';
 import type { Label } from '../types';
 
 const MAX_QUESTIONS = 5;
-const MAX_BOARDS = 5;
+const MAX_BOARDS = 10;
 
 type StarterQuestion = { id: string; text: string };
 

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from ..models import Board, Label, Task
 from .label_service import seed_board_labels as _seed_board_labels
 
-MAX_BOARDS_PER_USER = 5
+MAX_BOARDS_PER_USER = 10
 
 
 def get_default_board_id(db: Session, user_id: str) -> str:
