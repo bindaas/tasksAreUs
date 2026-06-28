@@ -60,8 +60,8 @@ function CompletionRow({ record }: { record: CompletionRecord }) {
 
 export function ReportsScreen() {
   const { activeBoard } = useBoard();
-  const [from, setFrom] = useState(sevenDaysAgoISO);
-  const [to, setTo] = useState(todayISO);
+  const [from, setFrom] = useState(sevenDaysAgoISO());
+  const [to, setTo] = useState(todayISO());
   const [records, setRecords] = useState<CompletionRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);

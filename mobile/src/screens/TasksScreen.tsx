@@ -607,7 +607,7 @@ export function TasksScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center px-8">
         <Text className="text-gray-500 text-center mb-4">{error}</Text>
-        <TouchableOpacity onPress={() => load()} className="bg-indigo-600 rounded-xl px-6 py-3">
+        <TouchableOpacity onPress={() => load(false, activeBoard?.id)} className="bg-indigo-600 rounded-xl px-6 py-3">
           <Text className="text-white font-semibold">Retry</Text>
         </TouchableOpacity>
       </SafeAreaView>

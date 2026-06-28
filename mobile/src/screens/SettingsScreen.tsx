@@ -29,7 +29,6 @@ function BoardSection() {
   const {
     boards,
     activeBoard,
-    setActiveBoard,
     createBoard,
     renameBoard,
     setDefaultBoard,
@@ -84,10 +83,6 @@ function BoardSection() {
           setError(null);
           try {
             await deleteBoard(id);
-            if (activeBoard?.id === id) {
-              const next = boards.find((b) => b.id !== id);
-              if (next) setActiveBoard(next);
-            }
           } catch (e) {
             setError(e instanceof Error ? e.message : 'Delete failed');
           } finally {
