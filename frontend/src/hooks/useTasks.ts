@@ -3,7 +3,7 @@ import { listTasks, type Task } from '../api/tasks';
 import { useBoard } from '../context/BoardContext';
 
 export function useTasks(state?: 'pending' | 'done') {
-  const { activeBoard } = useBoard();
+  const { activeBoard, loading: boardLoading, error: boardError } = useBoard();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,8 +23,13 @@ export function useTasks(state?: 'pending' | 'done') {
   }, [state, activeBoard?.id]);
 
   useEffect(() => {
+    if (!boardLoading && !activeBoard) {
+      setLoading(false);
+      setError(boardError ?? 'Could not load boards');
+      return;
+    }
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchTasks, boardLoading, activeBoard, boardError]);
 
   return { tasks, loading, error, refetch: fetchTasks };
 }

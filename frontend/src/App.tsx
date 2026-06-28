@@ -87,18 +87,18 @@ function AppRoutes() {
   return (
     <FilterProvider>
       <BoardProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<TasksPage />} />
-            <Route path="/tasks/:id" element={<TaskDetailPage />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<TasksPage />} />
+              <Route path="/tasks/:id" element={<TaskDetailPage />} />
+              <Route path="/chat" element={<ChatPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
       </BoardProvider>
     </FilterProvider>
   );
