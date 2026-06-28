@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getCompletions } from '../api/reports';
+import { useBoard } from '../context/BoardContext';
 import type { CompletionRecord } from '../types';
 
 function toLocalISO(d: Date): string {
@@ -58,6 +59,7 @@ function CompletionRow({ record }: { record: CompletionRecord }) {
 }
 
 export function ReportsScreen() {
+  const { activeBoard } = useBoard();
   const [from, setFrom] = useState(sevenDaysAgoISO);
   const [to, setTo] = useState(todayISO);
   const [records, setRecords] = useState<CompletionRecord[]>([]);
@@ -71,7 +73,7 @@ export function ReportsScreen() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getCompletions(from, to);
+      const data = await getCompletions(from, to, activeBoard?.id);
       setRecords(data.completions);
       setTotal(data.total);
       setFetched(true);
@@ -80,7 +82,7 @@ export function ReportsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [from, to]);
+  }, [from, to, activeBoard?.id]);
 
   const dateInputClass =
     'flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900 bg-white';

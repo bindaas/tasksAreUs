@@ -1,15 +1,18 @@
 import { apiFetch } from './client';
 import type { Label, LabelCategory } from '../types';
 
-export async function listLabels(category?: LabelCategory): Promise<{ labels: Label[] }> {
-  const query = category ? `?category=${category}` : '';
+export async function listLabels(category?: LabelCategory, boardId?: string): Promise<{ labels: Label[] }> {
+  const params = new URLSearchParams();
+  if (category) params.set('category', category);
+  if (boardId) params.set('board_id', boardId);
+  const query = params.toString() ? `?${params.toString()}` : '';
   return apiFetch<{ labels: Label[] }>(`/labels${query}`);
 }
 
-export async function createLabel(category: 'mode' | 'type', value: string): Promise<Label> {
+export async function createLabel(category: 'mode' | 'type', value: string, boardId?: string): Promise<Label> {
   return apiFetch<Label>('/labels', {
     method: 'POST',
-    body: JSON.stringify({ category, value }),
+    body: JSON.stringify(boardId ? { category, value, board_id: boardId } : { category, value }),
   });
 }
 

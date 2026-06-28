@@ -6,6 +6,7 @@ const REF_DATE = new Date('2026-06-07T12:00:00');
 function makeTask(overrides: Partial<Pick<Task, 'id' | 'target_date' | 'must_do_by'>> = {}): Task {
   return {
     id: 'task-' + Math.random(),
+    board_id: 'board-1',
     title: 'Test task',
     notes: null,
     state: 'pending',

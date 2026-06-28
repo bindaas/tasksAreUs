@@ -1,3 +1,12 @@
+export interface Board {
+  id: string;
+  name: string;
+  is_default: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Label {
   id: string;
   category: 'mode' | 'type';
@@ -8,6 +17,7 @@ export type LabelCategory = 'mode' | 'type';
 
 export interface Task {
   id: string;
+  board_id: string;
   title: string;
   notes: string | null;
   state: 'pending' | 'done';
@@ -50,6 +60,7 @@ export interface CompleteTaskResponse {
 
 export interface Conversation {
   id: string;
+  board_id: string;
   created_at: string;
 }
 

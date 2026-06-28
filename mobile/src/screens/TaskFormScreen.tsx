@@ -14,6 +14,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { getTask, createTask, updateTask } from '../api/tasks';
 import { ApiError } from '../api/client';
 import { listLabels } from '../api/labels';
+import { useBoard } from '../context/BoardContext';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
 import type { Task, Label, CreateTaskBody, UpdateTaskBody } from '../types';
@@ -40,6 +41,7 @@ interface Props {
 type DateField = 'mustDoBy' | 'targetDate' | null;
 
 export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Props) {
+  const { activeBoard } = useBoard();
   const isEditMode = !!taskId;
 
   const [title, setTitle] = useState('');
@@ -64,7 +66,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
   const loadData = useCallback(async () => {
     try {
       const [labelsResult, task] = await Promise.all([
-        listLabels(),
+        listLabels(undefined, activeBoard?.id),
         isEditMode ? getTask(taskId) : Promise.resolve(null),
       ]);
       setAllLabels(labelsResult.labels);
@@ -83,7 +85,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
     } finally {
       setLoadingInitial(false);
     }
-  }, [isEditMode, taskId, initialLabelIds]);
+  }, [isEditMode, taskId, initialLabelIds, activeBoard?.id]);
 
   useEffect(() => {
     loadData();
@@ -133,7 +135,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
         if (notes.trim()) body.notes = notes.trim();
         if (mustDoBy) body.must_do_by = mustDoBy;
         if (targetDate) body.target_date = targetDate;
-        await createTask(body);
+        await createTask(body, activeBoard?.id);
       }
       onSave();
     } catch (err: unknown) {

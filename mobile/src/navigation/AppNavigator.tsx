@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
+import { BoardProvider } from '../context/BoardContext';
 import { TasksScreen } from '../screens/TasksScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { ReportsScreen } from '../screens/ReportsScreen';
@@ -79,34 +80,36 @@ export function AppNavigator() {
 
   return (
     <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: '#4f46e5',
-          tabBarInactiveTintColor: '#9ca3af',
-          headerShown: false,
-        }}
-      >
-        <Tab.Screen
-          name="Tasks"
-          component={TasksScreen}
-          options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>✓</Text> }}
-        />
-        <Tab.Screen
-          name="Chat"
-          component={ChatScreen}
-          options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>💬</Text> }}
-        />
-        <Tab.Screen
-          name="Reports"
-          component={ReportsScreen}
-          options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>📊</Text> }}
-        />
-        <Tab.Screen
-          name="Settings"
-          component={SettingsScreen}
-          options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⚙️</Text> }}
-        />
-      </Tab.Navigator>
+      <BoardProvider>
+        <Tab.Navigator
+          screenOptions={{
+            tabBarActiveTintColor: '#4f46e5',
+            tabBarInactiveTintColor: '#9ca3af',
+            headerShown: false,
+          }}
+        >
+          <Tab.Screen
+            name="Tasks"
+            component={TasksScreen}
+            options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>✓</Text> }}
+          />
+          <Tab.Screen
+            name="Chat"
+            component={ChatScreen}
+            options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>💬</Text> }}
+          />
+          <Tab.Screen
+            name="Reports"
+            component={ReportsScreen}
+            options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>📊</Text> }}
+          />
+          <Tab.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⚙️</Text> }}
+          />
+        </Tab.Navigator>
+      </BoardProvider>
     </NavigationContainer>
   );
 }
