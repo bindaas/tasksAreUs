@@ -1,6 +1,5 @@
 
 
-Drop the frequency lables and any logic associated with them - completely
 
 ******
 
@@ -32,22 +31,6 @@ This should change teh view entirely - showing the tasks cards in two column dis
 *******
 
 
-Introduce the concept of multiple boards.
-A user can have multiple boards e.g. One is general tasks ; Second is job search ; Third is write a book
-Each board has tasks associated with it.
-Each board can have its own labels defined. 
-
-
-
-The system ships with a default baord - "General tasks".
-The default board has default labels - currently defined.
-The user can edit the name of the board
-The user can create new boards . Max number of boards allowed is 5. This number is confgigurable , though the user cant change it (can be done only from backend)
-There has to be atleast one board.
-There has to be a default board. If there is only one board , it has to be the default board.
-Any new board created besides the one that ships with system, will  have zero labels by default
-
-****
 
 Install androod emulator and test
 
