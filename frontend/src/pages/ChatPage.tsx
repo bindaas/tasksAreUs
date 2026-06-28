@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { createConversation, sendMessage, type Message } from '../api/conversations';
+import { useBoard } from '../context/BoardContext';
 
 interface DisplayMessage extends Message {
   pending?: boolean;
 }
 
 export function ChatPage() {
+  const { activeBoard } = useBoard();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState('');
@@ -17,9 +19,16 @@ export function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Reset conversation when the active board changes
+  useEffect(() => {
+    setConversationId(null);
+    setMessages([]);
+    setError(null);
+  }, [activeBoard?.id]);
+
   async function ensureConversation(): Promise<string> {
     if (conversationId) return conversationId;
-    const conv = await createConversation();
+    const conv = await createConversation(activeBoard?.id);
     setConversationId(conv.id);
     return conv.id;
   }

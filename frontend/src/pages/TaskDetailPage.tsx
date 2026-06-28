@@ -6,6 +6,7 @@ import { useLabels } from '../hooks/useLabels';
 import { useSettings } from '../hooks/useSettings';
 import { TaskForm } from '../components/TaskForm';
 import { useFilter } from '../context/FilterContext';
+import { useBoard } from '../context/BoardContext';
 import { dateOnly, getColumn } from '../utils/taskDateUtils';
 import { isHighPriorityEligible } from '../utils/taskPriority';
 
@@ -22,6 +23,7 @@ export function TaskDetailPage() {
   const { labels, loading: labelsLoading } = useLabels();
   const { selectedLabelIds } = useFilter();
   const { highPriorityDailyLimit } = useSettings();
+  const { activeBoard } = useBoard();
   const [allPendingTasks, setAllPendingTasks] = useState<Task[]>([]);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function TaskDetailPage() {
         const t = await getTask(id!);
         if (!cancelled) setTask(t);
         if (!cancelled && t.is_high_priority) {
-          const { tasks: pending } = await listTasks('pending');
+          const { tasks: pending } = await listTasks('pending', activeBoard?.id);
           if (!cancelled) setAllPendingTasks(pending);
         }
       } catch (err) {
@@ -46,7 +48,7 @@ export function TaskDetailPage() {
     }
     fetch();
     return () => { cancelled = true; };
-  }, [id, isNew]);
+  }, [id, isNew, activeBoard?.id]);
 
   const highPriorityWarning = useMemo(() => {
     if (!task?.is_high_priority) return null;
@@ -71,7 +73,7 @@ export function TaskDetailPage() {
     setError(null);
     try {
       if (isNew) {
-        await createTask(data as CreateTaskBody);
+        await createTask(data as CreateTaskBody, activeBoard?.id);
       } else {
         await updateTask(id!, data as UpdateTaskBody);
       }

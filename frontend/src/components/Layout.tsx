@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { BoardSwitcher } from './BoardSwitcher';
 
 interface NavItem {
   to: string;
@@ -74,8 +75,9 @@ export function Layout() {
     <div className="flex h-screen bg-gray-50">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-56 bg-white border-r border-gray-200 shrink-0">
-        <div className="px-4 py-5 border-b border-gray-200">
-          <h1 className="text-lg font-bold text-indigo-600">tasksAreUs</h1>
+        <div className="px-4 pt-5 pb-3 border-b border-gray-200">
+          <h1 className="text-lg font-bold text-indigo-600 mb-2">tasksAreUs</h1>
+          <BoardSwitcher />
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {NAV_ITEMS.map((item) => (
@@ -87,8 +89,11 @@ export function Layout() {
       {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Mobile header */}
-        <header className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
+        <header className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <h1 className="text-base font-bold text-indigo-600">tasksAreUs</h1>
+          <div className="w-40">
+            <BoardSwitcher />
+          </div>
         </header>
 
         {/* Page content */}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getCompletions, type CompletionRecord } from '../api/reports';
 import { LabelBadge } from '../components/LabelBadge';
+import { useBoard } from '../context/BoardContext';
 
 function toDateStr(date: Date): string {
   return date.toISOString().split('T')[0];
@@ -18,6 +19,7 @@ function formatDateTime(isoStr: string): string {
 }
 
 export function ReportsPage() {
+  const { activeBoard } = useBoard();
   const today = new Date();
   const thirtyDaysAgo = new Date(today);
   thirtyDaysAgo.setDate(today.getDate() - 30);
@@ -29,12 +31,12 @@ export function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function fetchReport() {
+  async function fetchReport(boardId?: string) {
     if (!from || !to) return;
     setLoading(true);
     setError(null);
     try {
-      const result = await getCompletions(from, to);
+      const result = await getCompletions(from, to, boardId);
       setCompletions(result.completions);
       setTotal(result.total);
     } catch (err) {
@@ -45,9 +47,10 @@ export function ReportsPage() {
   }
 
   useEffect(() => {
-    fetchReport();
+    if (!activeBoard) return;
+    fetchReport(activeBoard.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeBoard?.id]);
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
@@ -75,7 +78,7 @@ export function ReportsPage() {
             />
           </div>
           <button
-            onClick={fetchReport}
+            onClick={() => fetchReport(activeBoard?.id)}
             disabled={loading}
             className="bg-indigo-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
           >

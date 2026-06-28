@@ -2,6 +2,7 @@ import { apiFetch } from './client';
 
 export interface Conversation {
   id: string;
+  board_id: string;
   created_at: string;
 }
 
@@ -18,8 +19,11 @@ export interface SendMessageResponse {
   actions: unknown[];
 }
 
-export async function createConversation(): Promise<Conversation> {
-  return apiFetch<Conversation>('/conversations', { method: 'POST' });
+export async function createConversation(boardId?: string): Promise<Conversation> {
+  return apiFetch<Conversation>('/conversations', {
+    method: 'POST',
+    body: boardId ? JSON.stringify({ board_id: boardId }) : undefined,
+  });
 }
 
 export async function sendMessage(

@@ -52,37 +52,41 @@ backend/
     migrate_drop_frequency_labels.sql  # One-time production SQL migration (PR #31): deletes all frequency label rows, drops recurrence_group_id column, and removes the 'frequency' value from the categoryenum Postgres type. Must be run against the production DB before deploying this PR.
 
 development-plans/
-  PLAN-feat-multi-board.md  # Development plan for multi-board feature (PR #33); includes Sneezy's review and Grumpy's inline responses
+  PLAN-feat-multi-board.md           # Development plan for multi-board backend (PR #33); includes Sneezy's review and Grumpy's inline responses
+  PLAN-feat-multi-board-frontend.md  # Development plan for multi-board web frontend (PR #34); includes Sneezy's review and Grumpy's inline responses
 
 frontend/
   src/
     firebase.ts          # Firebase app + auth initialisation from VITE_FIREBASE_* env vars
     api/
       client.ts        # base fetch wrapper — attaches Authorization: Bearer <firebase_id_token> via auth.currentUser?.getIdToken(); parses FastAPI error detail
-      tasks.ts         # CRUD, complete; Task interface includes is_high_priority
-      labels.ts        # listLabels(); createLabel(), updateLabel(), deleteLabel() for configurable mode/type labels
-      conversations.ts
+      boards.ts        # Board type + getBoards, createBoard, updateBoard, deleteBoard
+      tasks.ts         # CRUD, complete; Task interface includes is_high_priority and board_id; listTasks/createTask accept optional boardId
+      labels.ts        # listLabels(category?, boardId?); createLabel(category, value, boardId?), updateLabel(), deleteLabel()
+      conversations.ts # createConversation(boardId?); Conversation type includes board_id
       settings.ts
-      reports.ts
+      reports.ts       # getCompletions(from, to, boardId?) — boardId scopes results to a specific board
     components/
-      Layout.tsx        # nav shell: sidebar on desktop, bottom bar on mobile
+      Layout.tsx        # nav shell: sidebar on desktop, bottom bar on mobile; embeds BoardSwitcher in desktop sidebar header and mobile top header
+      BoardSwitcher.tsx # dropdown for switching boards and creating new boards (inline text input); renders in both desktop and mobile layouts; calls setActiveBoard on selection
       LabelBadge.tsx    # colored chip by category (mode/type)
       TaskCard.tsx      # task card with inline complete/delete; shows "High" badge when is_high_priority
       TaskForm.tsx      # create/edit form with label picker and high-priority checkbox; no label pre-selection (web derives context from column)
     context/
-      FilterContext.tsx  # React context holding selected label IDs; persists across navigation
+      FilterContext.tsx  # React context holding selected label IDs; persists across navigation; exposes clearLabels() — called by BoardContext on board switch
       AuthContext.tsx   # Firebase auth state via onAuthStateChanged; auto-signs in anonymously on first load; handles magic-link callbacks (same-device and cross-device); exposes signInWithGoogle, sendMagicLink, signOut, confirmEmailSignIn
+      BoardContext.tsx  # tracks all boards + activeBoard (initialised to default board on app open, never persisted); exposes setActiveBoard (clears label filters on switch), createBoard, renameBoard, setDefaultBoard, deleteBoard, refetch; wraps children inside FilterProvider so clearLabels is accessible
     hooks/
       useAuth.ts        # thin re-export of useAuthContext — primary auth hook for all components
-      useTasks.ts
-      useLabels.ts
+      useTasks.ts       # fetches tasks for activeBoard from BoardContext; bails early when activeBoard is null (initial load); re-fetches when board changes
+      useLabels.ts      # fetches labels for activeBoard from BoardContext; cancellation token prevents stale updates on rapid board switches; re-fetches when board changes
       useSettings.ts    # fetches GET /settings; exposes highPriorityDailyLimit (default 3)
     pages/
       TasksPage.tsx     # 6-column kanban (Overdue/Today/Tomorrow/Day After Tomorrow/Upcoming/No Date) with drag-drop, search, label filters; Overdue column hidden when empty; Upcoming and Overdue columns are read-only drop targets (dropping blocked, "Read-only" placeholder shown)
-      TaskDetailPage.tsx  # create (/tasks/new) and edit (/tasks/:id)
-      ChatPage.tsx      # AI conversation with suggested-question chips
-      ReportsPage.tsx   # completions by date range
-      SettingsPage.tsx  # Labels section (LabelEditor component for mode/type, add/rename/delete) + High Priority Daily Limit numeric input + starter questions editor + Connection section (environment badge — green Production / yellow Development based on Vite's import.meta.env.PROD, resolved API base URL with "(proxied via Vite)" note in dev, Test Connection button pings GET /health unauthenticated and reports latency or error) + Account section (anonymous: Google/email upgrade; named: display name/email + Sign out)
+      TaskDetailPage.tsx  # create (/tasks/new) and edit (/tasks/:id); passes activeBoard.id to createTask and listTasks (HP pending-tasks fetch)
+      ChatPage.tsx      # AI conversation with suggested-question chips; resets conversationId and messages when activeBoard changes; passes boardId to createConversation
+      ReportsPage.tsx   # completions by date range; guards mount fetch until activeBoard is resolved; re-fetches and passes boardId on board switch
+      SettingsPage.tsx  # Boards section (BoardEditor component — inline rename/set-default/delete/add) at top; Labels section (LabelEditor for mode/type) scoped to activeBoard.id; High Priority Daily Limit numeric input; starter questions editor; Connection section; Account section
       LoginPage.tsx     # shown only after deliberate sign-out; Google + magic-link sign-in options
     utils/
       taskDateUtils.ts  # date helpers: getColumn(), getDropDate(), getEffectiveDate(), getEffectiveDateField(), formatDate(); ColumnKey covers 'overdue'|'today'|'tomorrow'|'day_after_tomorrow'|'upcoming'|'nodate'; getEffectiveDate() returns earliest of must_do_by / target_date when both are set
@@ -93,7 +97,8 @@ frontend/
       taskFilters.test.ts
       taskPriority.test.ts
       client.test.ts    # 6 unit tests for apiFetch: Bearer header presence/absence, Content-Type, URL construction, error handling, 204 No Content
-    App.tsx             # wraps AppRoutes in AuthProvider; AppRoutes renders EmailConfirmationPage (cross-device magic link), LoginPage (post-sign-out), or the main Layout
+      boards.api.test.ts  # 7 unit tests for boards API (getBoards, createBoard, updateBoard, deleteBoard) with mocked apiFetch
+    App.tsx             # wraps AppRoutes in AuthProvider; AppRoutes renders EmailConfirmationPage (cross-device magic link), LoginPage (post-sign-out), or FilterProvider → BoardProvider → BrowserRouter → Layout
     main.tsx
   .env.example          # VITE_FIREBASE_* env var template
   vite.config.ts        # proxies /api → http://localhost:8000 in dev; VITE_API_TARGET for Docker
@@ -151,6 +156,8 @@ mobile/                 # React Native + Expo SDK 54 managed workflow
 **Schema management**: `Base.metadata.create_all()` on startup. No migrations file — all schema changes run as idempotent `ALTER TABLE` / `CREATE INDEX IF NOT EXISTS` / `DROP INDEX IF EXISTS` statements in `main.py`'s lifespan block. The `boards` table is created by `create_all()` on first run; the partial unique index on `(user_id) WHERE is_default = true AND is_deleted = false` is created separately via raw SQL because SQLAlchemy `UniqueConstraint` does not support partial indexes.
 
 **Board scoping**: All resources (tasks, labels, conversations) belong to exactly one board. `board_service.resolve_board_id(db, user_id, board_id?)` is the single entry point for board resolution in all routers — it validates ownership when `board_id` is supplied and calls `ensure_board_seeded()` when it is omitted, returning the user's default board and lazily creating "General tasks" + seeding 9 default labels for brand-new users. New boards created by users via `POST /boards` start empty (no label seeding). `MAX_BOARDS_PER_USER = 5` is enforced by `board_service.create_board()`.
+
+**Active board (web frontend)**: `BoardContext` tracks the user's currently selected board in React state. On mount, `BoardProvider` calls `GET /boards` and sets `activeBoard` to the board with `is_default === true`. Active board is never persisted to `localStorage` — every app open resets to the default board. `setActiveBoard` calls `FilterContext.clearLabels()` when the board actually changes (labels from one board are not valid in another). All data-fetching hooks (`useTasks`, `useLabels`) and direct API calls in pages (`TaskDetailPage`, `ChatPage`, `ReportsPage`, `SettingsPage`) read `activeBoard.id` and pass it as `board_id` to their API calls. Every `BoardContext` mutation (create, rename, set-default, delete) awaits `fetchBoards()` to refresh the full boards list — no local-state patching.
 
 **Label seeding (board-scoped)**: `label_service.seed_board_labels(db, board_id, user_id)` seeds the 9 LABEL_SEED entries into a specific board. It is called only during initial board creation (via `ensure_board_seeded` in `board_service`). New boards created by users are NOT seeded. The sentinel is "this board has 0 labels" — checked per-board, not per-user.
 
@@ -226,7 +233,7 @@ cd backend && DATABASE_URL=... python3 tests/test_api.py
 cd backend && python3 -m pytest tests/unit/ -v
 ```
 
-**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils` (including overdue and day_after_tomorrow column logic), `taskFilters`, `taskPriority` utilities, and `client.ts` auth header behaviour (66 tests total). Run with:
+**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils` (including overdue and day_after_tomorrow column logic), `taskFilters`, `taskPriority` utilities, `client.ts` auth header behaviour, and `boards` API (73 tests total). Run with:
 ```bash
 cd frontend && npx vitest run
 ```
