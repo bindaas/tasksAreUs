@@ -13,9 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createConversation, sendMessage } from '../api/conversations';
 import { getSettings } from '../api/settings';
 import { buildOptimisticMessage, confirmMessages, rollbackMessage } from '../utils/chatUtils';
+import { useBoard } from '../context/BoardContext';
 import type { Message } from '../types';
 
 export function ChatScreen() {
+  const { activeBoard } = useBoard();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -31,9 +33,16 @@ export function ChatScreen() {
       .catch(() => {});
   }, []);
 
+  // Reset conversation when the active board changes
+  useEffect(() => {
+    conversationIdRef.current = null;
+    setMessages([]);
+    setError(null);
+  }, [activeBoard?.id]);
+
   async function ensureConversation(): Promise<string> {
     if (conversationIdRef.current) return conversationIdRef.current;
-    const conv = await createConversation();
+    const conv = await createConversation(activeBoard?.id);
     conversationIdRef.current = conv.id;
     return conv.id;
   }

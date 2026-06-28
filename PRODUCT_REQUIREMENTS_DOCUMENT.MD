@@ -35,7 +35,17 @@ Each user can have up to **5 boards** (server-side cap: `MAX_BOARDS_PER_USER = 5
 - **Reports re-fetch on board switch**: The Reports page re-fetches automatically when the active board changes.
 - **Settings — Boards section**: A new "Boards" section appears at the top of the Settings page (above Labels). It shows all boards with inline rename, set-default (star icon), and delete actions. Delete is disabled for the default board and for the only remaining board. Adding a new board is available via a "+ Add board" button. The Labels section heading shows the active board's name to make clear which board's labels are being managed.
 
-> **[ASPIRATIONAL]** — Not yet shipped. Board selection UI in the **mobile app** (React Native) — a board switcher visible to the user, board-scoped data fetches, and board management in SettingsScreen — is planned for PR 3/3 of the multi-board feature.
+### Board UI — Mobile app (shipped — PR #35)
+
+- **BoardContext**: `BoardProvider` + `useBoard()` added to the mobile app, mounted inside `AppNavigator`'s authenticated branch (wrapping the `Tab.Navigator`). Fetches boards via `GET /boards` once on mount and exposes `activeBoard`, `boards`, `setActiveBoard`, `createBoard`, `renameBoard`, `setDefaultBoard`, `deleteBoard`, and `refetch`. On fetch, `activeBoard` is preserved when the same board still exists after a mutation; otherwise it resets to the default board.
+- **Board switcher in Tasks header**: The active board name is shown as a tappable title in the `TasksScreen` header. When the user has more than one board, a "▾" chevron is shown. Tapping opens an inline dropdown overlay (absolute-positioned below the header, `zIndex: 50`) listing all boards — a checkmark marks the active board and a star marks the default. Tapping a board calls `setActiveBoard()` and closes the dropdown.
+- **Filter reset on board switch**: A `useEffect([activeBoard?.id])` in `TasksScreen` clears the label filter selection, text search query, and show-done toggle whenever the active board changes.
+- **Board-scoped data fetches (mobile)**: All API calls now pass `activeBoard?.id` as an optional `boardId` parameter: `listTasks`, `createTask`, `listLabels`, `createLabel`, `createConversation`, and `getCompletions`. Each API helper accepts an optional `boardId` param appended to the query string or included in the request body.
+- **Chat reset on board switch**: A `useEffect([activeBoard?.id])` in `ChatScreen` sets `conversationIdRef.current` to `null` and clears messages, so the next message creates a new conversation scoped to the newly active board.
+- **Reports board scoping**: `ReportsScreen` passes `activeBoard?.id` to `getCompletions`; the `getCompletions` helper accepts an optional `boardId` param.
+- **Settings — Boards section (mobile)**: A `BoardSection` card appears at the top of `SettingsScreen` (above Labels). It shows a board count badge (`N/5`), lists all boards with a default-star indicator, inline rename, set-default, and delete actions. Delete is guarded: the UI shows the Delete button only when more than one board exists; backend errors (e.g. board has tasks) are surfaced as inline error text. A "+ Add board" inline input (capped at 5 boards) allows creating new boards. The Labels section fetches labels scoped to the active board via `listLabels('mode', activeBoard?.id)` and `listLabels('type', activeBoard?.id)`. New labels created in Settings are created in the active board.
+- **Types updated**: `Board` interface added to `mobile/src/types/index.ts`. `Task.board_id: string` and `Conversation.board_id: string` added to match the API response shape.
+- **Tests**: 7 new Jest unit tests for the boards API (`mobile/src/__tests__/boards.api.test.ts`); `makeTask` factory updated in 3 existing test files to include `board_id: 'board-1'`. Total: 77 mobile unit tests pass.
 
 ---
 
@@ -290,6 +300,7 @@ New file shipped in PR #21:
 - **Error handling**: an inline dismissible error banner is shown on send failure; the optimistic message is removed (rolled back) on error.
 - **Auto-scroll**: `ScrollView.scrollToEnd` fires on `onContentSizeChange` to keep the latest message visible.
 - **Empty state**: a 💬 icon is shown before any messages exist. If the user has configured starter questions, they appear as indigo chips ("What would you like to know?") that can be tapped to send immediately; if no starter questions are configured, a plain "Ask me about your tasks" prompt is shown instead (shipped — PR #23).
+- **Board-scoped conversations (shipped — PR #35)**: `createConversation(boardId?)` passes the active board's ID when starting a new conversation. A `useEffect([activeBoard?.id])` resets `conversationIdRef` and clears messages whenever the active board changes, ensuring the next message creates a fresh conversation scoped to the new board.
 
 New files shipped in PR #22:
 - `mobile/src/utils/chatUtils.ts` — pure utility functions extracted for testability: `buildOptimisticMessage`, `confirmMessages`, `rollbackMessage`
@@ -305,7 +316,8 @@ New files shipped in PR #22:
 - **High Priority Daily Limit**: stepper with − and + buttons (clamped to minimum 1) showing the current limit numerically. Persisted server-side along with starter questions via the Save button.
 - **Starter Questions**: up to 5 text inputs. Questions can be added (up to 5), edited inline, and removed individually. A counter shows `(N/5)` in the section header. Saved server-side via `PUT /settings` when the user taps "Save Settings".
 - **Save Settings button**: persists High Priority Limit and Starter Questions together in a single `PUT /settings` call. Shows a "Settings saved" confirmation banner for 3 seconds on success.
-- **Connection section (shipped — PR #25)**: Shown at the top of the screen (above Labels). Displays an environment badge — green "Production" when `EXPO_PUBLIC_API_URL` starts with `https://`, yellow "Development" otherwise — and the resolved API base URL. A "Test Connection" button pings `GET /api/v1/health` (unauthenticated) and reports either "Connected Xms" or "Failed: <error message>".
+- **Boards section (shipped — PR #35)**: Inserted at the top of `SettingsScreen` (above Connection and Labels). See "Board UI — Mobile app" section above for full detail.
+- **Connection section (shipped — PR #25)**: Shown below Boards (above Labels). Displays an environment badge — green "Production" when `EXPO_PUBLIC_API_URL` starts with `https://`, yellow "Development" otherwise — and the resolved API base URL. A "Test Connection" button pings `GET /api/v1/health` (unauthenticated) and reports either "Connected Xms" or "Failed: <error message>".
 - **Account section**: see Authentication section above.
 
 ### Reports Screen (shipped — PR #24)
@@ -344,4 +356,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #34 (multi-board web frontend: BoardContext, BoardSwitcher, board-scoped API calls, Boards section in Settings)*
+*Last updated by — *Bashful* after PR #35 (multi-board mobile: BoardContext, board switcher in TasksScreen, board-scoped API calls, Boards section in SettingsScreen, filter/conversation reset on board switch)*

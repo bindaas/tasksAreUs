@@ -1,8 +1,11 @@
 import { apiFetch } from './client';
 import type { Conversation, Message, SendMessageResponse } from '../types';
 
-export async function createConversation(): Promise<Conversation> {
-  return apiFetch<Conversation>('/conversations', { method: 'POST' });
+export async function createConversation(boardId?: string): Promise<Conversation> {
+  return apiFetch<Conversation>('/conversations', {
+    method: 'POST',
+    body: boardId ? JSON.stringify({ board_id: boardId }) : undefined,
+  });
 }
 
 export async function sendMessage(

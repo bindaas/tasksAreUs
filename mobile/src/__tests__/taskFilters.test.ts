@@ -4,6 +4,7 @@ import type { Task } from '../types';
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {
     id: 'task-1',
+    board_id: 'board-1',
     title: 'Default task',
     notes: null,
     state: 'pending',

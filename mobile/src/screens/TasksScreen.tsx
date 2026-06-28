@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import {
   updateTask,
 } from '../api/tasks';
 import { listLabels } from '../api/labels';
+import { useBoard } from '../context/BoardContext';
 import { getSettings } from '../api/settings';
 import { groupTasksForList, type TaskSection } from '../utils/taskGrouping';
 import { filterTasks } from '../utils/taskFilters';
@@ -224,6 +225,9 @@ function DraggableTaskRow({
 type DisplaySection = TaskSection & { totalCount: number };
 
 export function TasksScreen() {
+  const { boards, activeBoard, setActiveBoard } = useBoard();
+  const [boardSwitcherOpen, setBoardSwitcherOpen] = useState(false);
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -269,11 +273,11 @@ export function TasksScreen() {
     zIndex: 999,
   }));
 
-  const load = useCallback(async (silent = false) => {
+  const load = useCallback(async (silent = false, boardId?: string) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const { tasks: fetched } = await listTasks(showDoneRef.current ? undefined : 'pending');
+      const { tasks: fetched } = await listTasks(showDoneRef.current ? undefined : 'pending', boardId);
       setTasks(fetched);
     } catch {
       if (!silent) setError('Failed to load tasks.');
@@ -283,17 +287,28 @@ export function TasksScreen() {
     }
   }, []);
 
+  // Clear label filters when the active board changes
+  useEffect(() => {
+    setSelectedLabelIds(new Set());
+    setSearchQuery('');
+    if (showDoneRef.current) {
+      showDoneRef.current = false;
+      setShowDone(false);
+    }
+  }, [activeBoard?.id]);
+
   useFocusEffect(
     useCallback(() => {
-      load();
+      if (!activeBoard) return;
+      load(false, activeBoard.id);
       // Re-fetch labels on every focus so chips stay current after Settings changes
-      listLabels()
+      listLabels(undefined, activeBoard.id)
         .then(({ labels }) => setAllLabels(labels))
         .catch(() => {});
       getSettings()
         .then((s) => setHighPriorityLimit(s.high_priority_daily_limit))
         .catch(() => {});
-    }, [load]),
+    }, [load, activeBoard?.id]),
   );
 
   const allFilteredSections = useMemo(() => {
@@ -332,7 +347,7 @@ export function TasksScreen() {
     try {
       await apiCompleteTask(id);
       setTasks((prev) => prev.filter((t) => t.id !== id));
-      load(true);
+      load(true, activeBoard?.id);
     } catch {
       Alert.alert('Error', 'Could not complete task. Please try again.');
     }
@@ -350,7 +365,7 @@ export function TasksScreen() {
 
   function handleFormSave() {
     setFormVisible(false);
-    load(true);
+    load(true, activeBoard?.id);
   }
 
   function handleFormCancel() {
@@ -367,6 +382,7 @@ export function TasksScreen() {
           try {
             await apiDeleteTask(id);
             setTasks((prev) => prev.filter((t) => t.id !== id));
+            load(true, activeBoard?.id);
           } catch {
             Alert.alert('Error', 'Could not delete task. Please try again.');
           }
@@ -407,7 +423,7 @@ export function TasksScreen() {
     const next = !showDone;
     showDoneRef.current = next;
     setShowDone(next);
-    load(true);
+    load(true, activeBoard?.id);
   }
 
   function clearFilters() {
@@ -416,7 +432,7 @@ export function TasksScreen() {
     if (showDone) {
       showDoneRef.current = false;
       setShowDone(false);
-      load(true);
+      load(true, activeBoard?.id);
     }
   }
 
@@ -591,7 +607,7 @@ export function TasksScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center px-8">
         <Text className="text-gray-500 text-center mb-4">{error}</Text>
-        <TouchableOpacity onPress={() => load()} className="bg-indigo-600 rounded-xl px-6 py-3">
+        <TouchableOpacity onPress={() => load(false, activeBoard?.id)} className="bg-indigo-600 rounded-xl px-6 py-3">
           <Text className="text-white font-semibold">Retry</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -601,9 +617,21 @@ export function TasksScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 pt-2 pb-2">
-        <Text className="text-2xl font-bold text-gray-900">Tasks</Text>
-        <View className="flex-row items-center" style={{ gap: 8 }}>
+      <View className="px-4 pt-2 pb-2">
+        <View className="flex-row items-center justify-between">
+          <TouchableOpacity
+            onPress={() => setBoardSwitcherOpen((o) => !o)}
+            className="flex-row items-center"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text className="text-2xl font-bold text-gray-900">
+              {activeBoard?.name ?? 'Tasks'}
+            </Text>
+            {boards.length > 1 && (
+              <Text className="text-gray-400 ml-1 text-base">▾</Text>
+            )}
+          </TouchableOpacity>
+          <View className="flex-row items-center" style={{ gap: 8 }}>
           <TouchableOpacity
             onPress={handleToggleAllSections}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -630,6 +658,34 @@ export function TasksScreen() {
             <Text className="text-white text-xl font-light leading-none">+</Text>
           </TouchableOpacity>
         </View>
+        </View>
+
+        {/* Board switcher dropdown */}
+        {boardSwitcherOpen && (
+          <View
+            className="bg-white rounded-xl border border-gray-200 mt-1"
+            style={{ zIndex: 50, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}
+          >
+            {boards.map((board) => (
+              <TouchableOpacity
+                key={board.id}
+                onPress={() => {
+                  setActiveBoard(board);
+                  setBoardSwitcherOpen(false);
+                }}
+                className="flex-row items-center px-4 py-3 border-b border-gray-50"
+              >
+                <Text className="flex-1 text-sm text-gray-800">{board.name}</Text>
+                {board.is_default && (
+                  <Text className="text-amber-400 mr-2 text-xs">★</Text>
+                )}
+                {board.id === activeBoard?.id && (
+                  <Text className="text-indigo-600 text-sm font-semibold">✓</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Filter panel */}
@@ -785,7 +841,7 @@ export function TasksScreen() {
               refreshing={refreshing}
               onRefresh={() => {
                 setRefreshing(true);
-                load(true);
+                load(true, activeBoard?.id);
               }}
               tintColor="#4f46e5"
             />
