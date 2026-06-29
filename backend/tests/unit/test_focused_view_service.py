@@ -1,7 +1,7 @@
 """Unit tests for focused_view_service — no database required."""
 
 from datetime import date, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi import HTTPException
@@ -282,3 +282,27 @@ class TestGetFocusedTasks:
         result = get_focused_tasks(db, "user-1", config, self.TODAY)
 
         assert result[0]["board_color"] is None
+
+    def test_selected_board_selection_filters_to_given_boards(self):
+        board_a = _make_board("ba", name="Alpha")
+        board_b = _make_board("bb", name="Beta")
+        task_a = _make_task("t1", "ba", target_date=self.TODAY)
+        # board_b has no tasks — should be omitted
+        db = self._setup_db(boards=[board_a], tasks=[task_a])
+
+        config = _make_config(board_selection="selected", selected_board_ids=["ba"])
+        result = get_focused_tasks(db, "user-1", config, self.TODAY)
+
+        assert len(result) == 1
+        assert result[0]["board_id"] == "ba"
+
+    def test_selected_board_selection_with_empty_list_returns_nothing(self):
+        db = MagicMock()
+        board_mock = MagicMock()
+        board_mock.filter.return_value.order_by.return_value.all.return_value = []
+        db.query.return_value = board_mock
+
+        config = _make_config(board_selection="selected", selected_board_ids=[])
+        result = get_focused_tasks(db, "user-1", config, self.TODAY)
+
+        assert result == []

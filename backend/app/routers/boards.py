@@ -40,7 +40,8 @@ def update_board(
     user_id: str = Depends(get_current_user),
 ):
     board = svc.get_board_or_404(db, board_id, user_id)
-    board = svc.update_board(db, board, body.name, body.is_default, color=body.color)
+    color_kwarg = {"color": body.color} if "color" in body.model_fields_set else {}
+    board = svc.update_board(db, board, body.name, body.is_default, **color_kwarg)
     return BoardOut.model_validate(board)
 
 

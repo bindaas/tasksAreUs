@@ -204,6 +204,38 @@ class TestUpdateBoard:
         assert board.is_default is False
         db.commit.assert_called_once()
 
+    def test_sets_color_when_provided(self):
+        db = MagicMock()
+        board = _make_board("b1", "user-1")
+        board.color = None
+        db.refresh.side_effect = lambda b: None
+
+        update_board(db, board, name=None, is_default=None, color="#aabbcc")
+
+        assert board.color == "#aabbcc"
+        db.commit.assert_called_once()
+
+    def test_clears_color_when_none_passed_explicitly(self):
+        db = MagicMock()
+        board = _make_board("b1", "user-1")
+        board.color = "#aabbcc"
+        db.refresh.side_effect = lambda b: None
+
+        update_board(db, board, name=None, is_default=None, color=None)
+
+        assert board.color is None
+        db.commit.assert_called_once()
+
+    def test_color_unchanged_when_not_provided(self):
+        db = MagicMock()
+        board = _make_board("b1", "user-1")
+        board.color = "#aabbcc"
+        db.refresh.side_effect = lambda b: None
+
+        update_board(db, board, name=None, is_default=None)  # no color kwarg
+
+        assert board.color == "#aabbcc"
+
 
 # ── delete_board ──────────────────────────────────────────────────────────────
 
