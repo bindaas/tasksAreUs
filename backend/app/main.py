@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from .config import settings as app_settings
 from .database import SessionLocal, engine
 from .models import Base, Board, Conversation, Label, Task, User
-from .routers import beliefs, boards, conversations, labels, reports, settings, sync, tasks
+from .routers import beliefs, boards, conversations, focused_view, labels, reports, settings, sync, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +118,9 @@ async def lifespan(app: FastAPI):
         ))
         conn.execute(text(
             "ALTER TABLE tasks DROP COLUMN IF EXISTS recurrence_group_id"
+        ))
+        conn.execute(text(
+            "ALTER TABLE boards ADD COLUMN IF NOT EXISTS color VARCHAR(7)"
         ))
         conn.execute(text("ALTER TABLE labels ALTER COLUMN user_id SET NOT NULL"))
         conn.execute(text("DROP INDEX IF EXISTS uq_global_label"))
@@ -220,6 +223,7 @@ app.include_router(conversations.router, prefix=PREFIX)
 app.include_router(reports.router, prefix=PREFIX)
 app.include_router(settings.router, prefix=PREFIX)
 app.include_router(sync.router, prefix=PREFIX)
+app.include_router(focused_view.router, prefix=PREFIX)
 
 
 def _git_hash() -> str:

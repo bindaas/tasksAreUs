@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # ── Boards ────────────────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ class BoardOut(BaseModel):
     name: str
     is_default: bool
     is_deleted: bool
+    color: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -25,6 +27,14 @@ class BoardCreate(BaseModel):
 class BoardUpdate(BaseModel):
     name: Optional[str] = None
     is_default: Optional[bool] = None
+    color: Optional[str] = None
+
+    @field_validator("color")
+    @classmethod
+    def validate_color(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not re.fullmatch(r"#[0-9a-fA-F]{6}", v):
+            raise ValueError("color must be a 7-character hex string (e.g. #6366f1)")
+        return v
 
 
 # ── Labels ────────────────────────────────────────────────────────────────────
@@ -195,3 +205,30 @@ class SyncRequest(BaseModel):
 class SyncResponse(BaseModel):
     synced_at: datetime
     changes: SyncChanges
+
+
+# ── Focused View ───────────────────────────────────────────────────────────────
+
+class FocusedViewConfigOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    board_selection: str
+    selected_board_ids: List[str] = []
+    day_range: str
+
+
+class FocusedViewConfigUpdate(BaseModel):
+    board_selection: str
+    selected_board_ids: List[str] = []
+    day_range: str
+
+
+class FocusedViewBoardGroup(BaseModel):
+    board_id: str
+    board_name: str
+    board_color: Optional[str] = None
+    tasks: List[TaskOut]
+
+
+class FocusedViewTasksOut(BaseModel):
+    boards: List[FocusedViewBoardGroup]

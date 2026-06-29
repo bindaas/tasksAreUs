@@ -126,6 +126,7 @@ def update_board(
     board: Board,
     name: Optional[str],
     is_default: Optional[bool],
+    color: Optional[str] = None,
 ) -> Board:
     if name is not None:
         name = name.strip()
@@ -150,6 +151,9 @@ def update_board(
             old_default.updated_at = datetime.now(timezone.utc)
             db.flush()  # clear old default before setting new one — avoids partial-index IntegrityError
         board.is_default = True
+
+    if color is not None:
+        board.color = color
 
     board.updated_at = datetime.now(timezone.utc)
     db.commit()

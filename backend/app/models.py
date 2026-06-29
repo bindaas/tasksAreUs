@@ -70,6 +70,7 @@ class Board(Base):
     name = Column(String, nullable=False)
     is_default = Column(Boolean, default=False, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
+    color = Column(String(7), nullable=True)
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
@@ -155,6 +156,19 @@ class UserSettings(Base):
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     starter_questions = Column(JSONB, nullable=True)
     high_priority_daily_limit = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class FocusedViewConfig(Base):
+    __tablename__ = "focused_view_configs"
+    __table_args__ = (UniqueConstraint("user_id", name="focused_view_configs_user_id_key"),)
+
+    id = Column(String, primary_key=True, default=_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    board_selection = Column(String, nullable=False, default="all")
+    selected_board_ids = Column(JSONB, nullable=False, default=list)
+    day_range = Column(String, nullable=False, default="today_tomorrow")
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

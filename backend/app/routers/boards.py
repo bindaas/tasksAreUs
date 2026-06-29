@@ -40,7 +40,7 @@ def update_board(
     user_id: str = Depends(get_current_user),
 ):
     board = svc.get_board_or_404(db, board_id, user_id)
-    board = svc.update_board(db, board, body.name, body.is_default)
+    board = svc.update_board(db, board, body.name, body.is_default, color=body.color)
     return BoardOut.model_validate(board)
 
 
