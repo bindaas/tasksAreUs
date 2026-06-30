@@ -15,6 +15,7 @@ def list_boards(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
+    svc.ensure_board_seeded(db, user_id)
     boards = db.query(Board).filter(
         Board.user_id == user_id,
         Board.is_deleted == False,
