@@ -4,6 +4,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
+_UNSET = object()  # sentinel: distinguishes "color not provided" from "color=None (clear)"
+
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -126,6 +128,7 @@ def update_board(
     board: Board,
     name: Optional[str],
     is_default: Optional[bool],
+    color: object = _UNSET,
 ) -> Board:
     if name is not None:
         name = name.strip()
@@ -150,6 +153,9 @@ def update_board(
             old_default.updated_at = datetime.now(timezone.utc)
             db.flush()  # clear old default before setting new one — avoids partial-index IntegrityError
         board.is_default = True
+
+    if color is not _UNSET:
+        board.color = color  # None clears the color; a hex string sets it
 
     board.updated_at = datetime.now(timezone.utc)
     db.commit()

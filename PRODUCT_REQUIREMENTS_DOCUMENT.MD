@@ -8,7 +8,7 @@ tasksAreUs is a task management app with a Python/FastAPI/PostgreSQL backend, a 
 
 ## Boards
 
-Each user can have up to **5 boards** (server-side cap: `MAX_BOARDS_PER_USER = 5`). Boards are the top-level organizational unit — tasks, labels, and conversations each belong to exactly one board.
+Each user can have up to **10 boards** (server-side cap: `MAX_BOARDS_PER_USER = 10`). Boards are the top-level organizational unit — tasks, labels, and conversations each belong to exactly one board.
 
 **Default board**: Every user has exactly one default board. For new users it is created automatically on first access (any endpoint hit) and named **"General tasks"**. Existing users received a "General tasks" board via startup migration (PR #33) — all their existing tasks, labels, and conversations were assigned to it.
 
@@ -21,8 +21,8 @@ Each user can have up to **5 boards** (server-side cap: `MAX_BOARDS_PER_USER = 5
 ### Board API (shipped — PR #33)
 
 - `GET /api/v1/boards` — list the current user's non-deleted boards, ordered default-first then by creation time. Returns a `boards` array.
-- `POST /api/v1/boards` — create a new board for the current user. `422` if the 5-board cap would be exceeded. `400` if the name is empty.
-- `PUT /api/v1/boards/{id}` — rename a board or change its default status. Setting `is_default: true` atomically demotes the previously-default board. Setting `is_default: false` on the current default returns `400` — promote another board first.
+- `POST /api/v1/boards` — create a new board for the current user. `422` if the 10-board cap would be exceeded. `400` if the name is empty.
+- `PUT /api/v1/boards/{id}` — rename a board, change its default status, or set/clear its color. Setting `is_default: true` atomically demotes the previously-default board. Setting `is_default: false` on the current default returns `400` — promote another board first. The `color` field accepts a 7-character hex string (e.g. `#6366f1`) or `null` to clear; omitting `color` entirely leaves the existing value unchanged (sentinel logic via `model_fields_set`). `BoardOut` now includes `color: Optional[str]`.
 - `DELETE /api/v1/boards/{id}` — soft-delete a board. Returns `400` if it is the only board, the default board, or still has tasks or labels.
 
 ### Board UI — Web frontend (shipped — PR #34)
@@ -43,9 +43,56 @@ Each user can have up to **5 boards** (server-side cap: `MAX_BOARDS_PER_USER = 5
 - **Board-scoped data fetches (mobile)**: All API calls now pass `activeBoard?.id` as an optional `boardId` parameter: `listTasks`, `createTask`, `listLabels`, `createLabel`, `createConversation`, and `getCompletions`. Each API helper accepts an optional `boardId` param appended to the query string or included in the request body.
 - **Chat reset on board switch**: A `useEffect([activeBoard?.id])` in `ChatScreen` sets `conversationIdRef.current` to `null` and clears messages, so the next message creates a new conversation scoped to the newly active board.
 - **Reports board scoping**: `ReportsScreen` passes `activeBoard?.id` to `getCompletions`; the `getCompletions` helper accepts an optional `boardId` param.
-- **Settings — Boards section (mobile)**: A `BoardSection` card appears at the top of `SettingsScreen` (above Labels). It shows a board count badge (`N/5`), lists all boards with a default-star indicator, inline rename, set-default, and delete actions. Delete is guarded: the UI shows the Delete button only when more than one board exists; backend errors (e.g. board has tasks) are surfaced as inline error text. A "+ Add board" inline input (capped at 5 boards) allows creating new boards. The Labels section fetches labels scoped to the active board via `listLabels('mode', activeBoard?.id)` and `listLabels('type', activeBoard?.id)`. New labels created in Settings are created in the active board.
+- **Settings — Boards section (mobile)**: A `BoardSection` card appears at the top of `SettingsScreen` (above Labels). It shows a board count badge (`N/10`), lists all boards with a default-star indicator, inline rename, set-default, and delete actions. Delete is guarded: the UI shows the Delete button only when more than one board exists; backend errors (e.g. board has tasks) are surfaced as inline error text. A "+ Add board" inline input (capped at 10 boards) allows creating new boards. The Labels section fetches labels scoped to the active board via `listLabels('mode', activeBoard?.id)` and `listLabels('type', activeBoard?.id)`. New labels created in Settings are created in the active board.
 - **Types updated**: `Board` interface added to `mobile/src/types/index.ts`. `Task.board_id: string` and `Conversation.board_id: string` added to match the API response shape.
 - **Tests**: 7 new Jest unit tests for the boards API (`mobile/src/__tests__/boards.api.test.ts`); `makeTask` factory updated in 3 existing test files to include `board_id: 'board-1'`. Total: 77 mobile unit tests pass.
+
+---
+
+## Focused View
+
+The Focused View shows only high-priority tasks from a user-configured set of boards and day range, presented as a card grid grouped by board. It is a session-only toggle alongside the existing Detailed View (kanban) — the toggle resets to Detailed on next load.
+
+### Behavior
+
+- Shows tasks where `is_high_priority = true` AND (`must_do_by` OR `target_date`) falls within the configured day range.
+- Overdue tasks are **not** shown — the Focused View is forward-looking only. Overdue tasks remain visible in Detailed View.
+- Tasks are grouped alphabetically by board name. Within each board group, tasks are sorted by `updated_at` descending.
+- Boards with zero qualifying tasks are silently omitted from the response.
+- Each board group is color-coordinated using the user-configurable `boards.color` hex value (null = UI assigns a default from a fixed palette).
+- Cards are tap-to-open only — no drag-and-drop.
+
+### Data Model (shipped — PR #36)
+
+**New table: `focused_view_configs`** — one row per user, enforced by `UNIQUE(user_id)`.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | PK |
+| `user_id` | UUID | FK → users (CASCADE), indexed, UNIQUE |
+| `board_selection` | VARCHAR | `all` or `selected` |
+| `selected_board_ids` | JSONB | Array of board UUID strings; ignored when `board_selection = all` |
+| `day_range` | VARCHAR | `today`, `today_tomorrow`, or `today_plus_two` |
+| `created_at` | TIMESTAMP | |
+| `updated_at` | TIMESTAMP | |
+
+Default config (created lazily on first GET, upsert-safe): `board_selection = all`, `day_range = today_tomorrow`, `selected_board_ids = []`.
+
+**Modified table: `boards`** — `color VARCHAR(7)` column added via startup migration `ALTER TABLE boards ADD COLUMN IF NOT EXISTS color VARCHAR(7)`.
+
+### Focused View API (shipped — PR #36, backend only)
+
+- `GET /api/v1/focused-view/config` — returns the user's config, creating the default lazily via upsert if none exists.
+- `PUT /api/v1/focused-view/config` — updates `board_selection`, `day_range`, and optionally `selected_board_ids`. Validates: `board_selection` must be `all` or `selected`; `day_range` must be one of the three valid values; when `board_selection = selected`, `selected_board_ids` must be non-empty and all IDs must belong to the caller. Returns `400` for any violation.
+- `GET /api/v1/focused-view/tasks` — returns `is_high_priority=true` pending tasks grouped by board, filtered to the configured day range. Accepts optional `?reference_date=YYYY-MM-DD` query parameter (avoids server-side timezone issues; defaults to `date.today()` when omitted). Response shape: `{ "boards": [{ "board_id", "board_name", "board_color", "tasks": [TaskOut, ...] }, ...] }`.
+
+### Focused View UI — Web frontend (aspirational — PR 2 not yet shipped)
+
+Configuration UI in Settings (below the default board picker). Session toggle between Detailed and Focused view. Responsive card grid layout.
+
+### Focused View UI — Mobile app (aspirational — PR 3 not yet shipped)
+
+Settings configuration and a Focused View screen. Delivered as OTA update (JS/TS only).
 
 ---
 
@@ -356,4 +403,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #35 (multi-board mobile: BoardContext, board switcher in TasksScreen, board-scoped API calls, Boards section in SettingsScreen, filter/conversation reset on board switch)*
+*Last updated by — *Bashful* after PR #36 (focused view backend PR 1/3: focused_view_configs table, board color field, GET/PUT /focused-view/config, GET /focused-view/tasks; also corrected MAX_BOARDS_PER_USER from 5 to 10 per commit 72fd1b3)*

@@ -31,7 +31,7 @@ The `device_uuid` column was removed at startup via `ALTER TABLE users DROP COLU
 ---
 
 ### Table: `boards`
-Top-level organizational unit. Each user has up to `MAX_BOARDS_PER_USER = 5` boards. Tasks, labels, and conversations each belong to exactly one board. A default board named "General tasks" is created automatically for new users on first access (via `board_service.ensure_board_seeded`). Existing users received a "General tasks" board via the startup migration in PR #33.
+Top-level organizational unit. Each user has up to `MAX_BOARDS_PER_USER = 10` boards. Tasks, labels, and conversations each belong to exactly one board. A default board named "General tasks" is created automatically for new users on first access (via `board_service.ensure_board_seeded`). Existing users received a "General tasks" board via the startup migration in PR #33.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -40,6 +40,7 @@ Top-level organizational unit. Each user has up to `MAX_BOARDS_PER_USER = 5` boa
 | `name` | VARCHAR | NOT NULL. |
 | `is_default` | BOOLEAN | NOT NULL. Exactly one non-deleted board per user has `is_default = true`. |
 | `is_deleted` | BOOLEAN | NOT NULL. Default false. Soft-delete. |
+| `color` | VARCHAR(7) | Nullable. User-configurable hex color string (e.g. `#6366f1`). Added via `ALTER TABLE boards ADD COLUMN IF NOT EXISTS color VARCHAR(7)` in PR #36. |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | |
 
@@ -183,6 +184,25 @@ Individual turns within a conversation.
 
 ---
 
+### Table: `focused_view_configs`
+Per-user focused view configuration. One row per user, enforced by `UNIQUE(user_id)` (`focused_view_configs_user_id_key`). Created lazily on first `GET /focused-view/config` via insert + `IntegrityError` rollback-and-re-fetch (race-safe). Added in PR #36.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | VARCHAR | PK (UUID string) |
+| `user_id` | VARCHAR | NOT NULL. FK → users (CASCADE). Indexed. UNIQUE. |
+| `board_selection` | VARCHAR | NOT NULL. `all` or `selected`. |
+| `selected_board_ids` | JSONB | NOT NULL. Array of board UUID strings. Populated when `board_selection = selected`; set to `[]` when `board_selection = all`. |
+| `day_range` | VARCHAR | NOT NULL. `today`, `today_tomorrow`, or `today_plus_two`. |
+| `created_at` | TIMESTAMP | |
+| `updated_at` | TIMESTAMP | |
+
+**Default config** (created lazily on first GET): `board_selection = all`, `day_range = today_tomorrow`, `selected_board_ids = []`.
+
+**Table creation**: handled by `Base.metadata.create_all()` on startup — no separate raw SQL needed.
+
+---
+
 ### Table: `user_settings`
 Per-user configuration. One row per user.
 
@@ -233,11 +253,12 @@ Returns all non-deleted boards for the current user, ordered default-first then 
 ```json
 {
   "boards": [
-    { "id": "uuid", "name": "General tasks", "is_default": true, "is_deleted": false, "created_at": "...", "updated_at": "..." },
-    { "id": "uuid", "name": "Job search", "is_default": false, "is_deleted": false, "created_at": "...", "updated_at": "..." }
+    { "id": "uuid", "name": "General tasks", "is_default": true, "is_deleted": false, "color": null, "created_at": "...", "updated_at": "..." },
+    { "id": "uuid", "name": "Job search", "is_default": false, "is_deleted": false, "color": "#6366f1", "created_at": "...", "updated_at": "..." }
   ]
 }
 ```
+`color` is `null` when the user has not set a custom color; clients should assign a default from a fixed palette when `null`.
 
 ---
 
@@ -253,25 +274,28 @@ Create a new board for the current user. New boards always start with `is_defaul
 
 **Error cases**
 - `400` — name is empty/whitespace
-- `422` — user already has `MAX_BOARDS_PER_USER` (5) non-deleted boards
+- `422` — user already has `MAX_BOARDS_PER_USER` (10) non-deleted boards
 
 ---
 
 #### `PUT /boards/{board_id}`
-Rename a board and/or change its default status. The caller must own the board.
+Rename a board, change its default status, and/or set its color. The caller must own the board.
 
 **Request** (all fields optional)
 ```json
-{ "name": "Personal tasks", "is_default": true }
+{ "name": "Personal tasks", "is_default": true, "color": "#6366f1" }
 ```
 
 Setting `is_default: true` atomically demotes the previously-default board and promotes this one (single DB transaction). Setting `is_default: false` on the current default returns `400`. Setting `is_default: false` on a non-default board is a no-op.
 
-**Response** — updated board object
+The `color` field accepts a 7-character hex string (e.g. `#6366f1`) or `null` to clear the color. Omitting `color` entirely leaves the existing value unchanged (sentinel logic via `model_fields_set` in the router + `_UNSET` sentinel in `board_service.update_board()`). Validated by a Pydantic `field_validator` on `BoardUpdate` (regex `^#[0-9a-fA-F]{6}$`).
+
+**Response** — updated board object (includes `color` field)
 
 **Error cases**
 - `400` — name is empty/whitespace
 - `400` — `is_default: false` sent on the current default board
+- `400` — `color` provided but not a valid 7-character hex string
 - `404` — board not found or not owned by caller
 
 ---
@@ -689,6 +713,76 @@ Update user settings.
 `high_priority_daily_limit` is clamped to a minimum of 1 server-side. Reducing below the current count is allowed (no retroactive enforcement — warnings are shown but no tasks are auto-demoted).
 
 **Response**: updated settings object
+
+---
+
+### Focused View
+
+New in PR #36 (backend only). The Focused View shows high-priority pending tasks falling within a user-configured day range, grouped alphabetically by board.
+
+#### `GET /focused-view/config`
+Returns the current user's focused view configuration, creating it with defaults lazily if it does not yet exist. Race-safe via `UNIQUE(user_id)` + `IntegrityError` rollback.
+
+**Response**
+```json
+{
+  "id": "uuid",
+  "board_selection": "all",
+  "selected_board_ids": [],
+  "day_range": "today_tomorrow"
+}
+```
+
+---
+
+#### `PUT /focused-view/config`
+Update the user's focused view configuration.
+
+**Request**
+```json
+{
+  "board_selection": "selected",
+  "selected_board_ids": ["uuid-board-1", "uuid-board-2"],
+  "day_range": "today"
+}
+```
+
+`board_selection` must be `all` or `selected`. `day_range` must be `today`, `today_tomorrow`, or `today_plus_two`. When `board_selection = selected`, `selected_board_ids` must be non-empty and all IDs must belong to the caller. When `board_selection = all`, `selected_board_ids` is ignored and saved as `[]`.
+
+**Response** — updated config object (same shape as GET)
+
+**Error cases**
+- `400` — invalid `board_selection` value
+- `400` — invalid `day_range` value
+- `400` — `board_selection = selected` with empty `selected_board_ids`
+- `400` — one or more `selected_board_ids` not found or not owned by caller
+
+---
+
+#### `GET /focused-view/tasks`
+Returns `is_high_priority = true` pending tasks that have `must_do_by` or `target_date` falling within the configured day range, grouped alphabetically by board. Overdue tasks are excluded — this view is forward-looking only.
+
+**Query params**
+- `reference_date=YYYY-MM-DD` (optional) — client-supplied date anchor to avoid server-timezone issues. Defaults to `date.today()` (server UTC) when omitted.
+
+**Response**
+```json
+{
+  "boards": [
+    {
+      "board_id": "uuid",
+      "board_name": "Alpha",
+      "board_color": "#6366f1",
+      "tasks": [ { ...full TaskOut object including labels... } ]
+    }
+  ]
+}
+```
+
+- Boards with zero qualifying tasks are omitted from the response.
+- Boards are ordered alphabetically by name.
+- Within each board group, tasks are sorted by `updated_at` DESC.
+- `board_color` is `null` when the user has not configured a color; clients should substitute a default from a fixed palette.
 
 ---
 
