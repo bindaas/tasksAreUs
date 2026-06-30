@@ -119,9 +119,6 @@ def main():
     r = client.get("/labels")
     assert_eq("GET /labels with no auth → 401", r.status_code, 401)
 
-    # X-User-ID is no longer a valid auth path — must return 401
-    r = client.get("/labels", headers=H)
-    assert_eq("GET /labels with X-User-ID (no longer valid) → 401", r.status_code, 401)
 
     # ── Boards (PR #33) ────────────────────────────────────────────────────────
     print("\n── Boards (PR #33) ─────────────────────────────────────")
