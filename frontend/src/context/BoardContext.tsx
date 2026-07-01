@@ -9,6 +9,7 @@ interface BoardContextValue {
   createBoard: (name: string) => Promise<Board>;
   renameBoard: (id: string, name: string) => Promise<void>;
   setDefaultBoard: (id: string) => Promise<void>;
+  setColorBoard: (id: string, color: string | null) => Promise<void>;
   deleteBoard: (id: string) => Promise<void>;
   loading: boolean;
   error: string | null;
@@ -72,6 +73,11 @@ export function BoardProvider({ children }: { children: ReactNode }) {
     await fetchBoards();
   }
 
+  async function setColorBoard(id: string, color: string | null): Promise<void> {
+    await updateBoard(id, { color });
+    await fetchBoards();
+  }
+
   async function deleteBoard(id: string): Promise<void> {
     await apiDeleteBoard(id);
     // If deleting the active board, fetchBoards will reset to the new default
@@ -87,6 +93,7 @@ export function BoardProvider({ children }: { children: ReactNode }) {
         createBoard,
         renameBoard,
         setDefaultBoard,
+        setColorBoard,
         deleteBoard,
         loading,
         error,

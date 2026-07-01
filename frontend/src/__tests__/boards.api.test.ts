@@ -66,6 +66,24 @@ describe('boards API', () => {
         body: JSON.stringify({ is_default: true }),
       });
     });
+
+    it('calls PUT /boards/{id} with a hex color', async () => {
+      mockApiFetch.mockResolvedValue({ id: 'b1', name: 'General tasks', is_default: true, is_deleted: false, color: '#6366f1', created_at: '', updated_at: '' });
+      await updateBoard('b1', { color: '#6366f1' });
+      expect(mockApiFetch).toHaveBeenCalledWith('/boards/b1', {
+        method: 'PUT',
+        body: JSON.stringify({ color: '#6366f1' }),
+      });
+    });
+
+    it('calls PUT /boards/{id} with null to clear the color', async () => {
+      mockApiFetch.mockResolvedValue({ id: 'b1', name: 'General tasks', is_default: true, is_deleted: false, color: null, created_at: '', updated_at: '' });
+      await updateBoard('b1', { color: null });
+      expect(mockApiFetch).toHaveBeenCalledWith('/boards/b1', {
+        method: 'PUT',
+        body: JSON.stringify({ color: null }),
+      });
+    });
   });
 
   describe('deleteBoard', () => {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { useLabels } from '../hooks/useLabels';
 import { TaskCard } from '../components/TaskCard';
+import { FocusedView } from '../components/FocusedView';
 import { updateTask } from '../api/tasks';
 import { useFilter } from '../context/FilterContext';
 import type { Label, Task } from '../api/tasks';
@@ -44,6 +45,7 @@ export function TasksPage() {
   const navigate = useNavigate();
   const { selectedLabelIds, toggleLabel, clearLabels } = useFilter();
   const [showDone, setShowDone] = useState(false);
+  const [viewMode, setViewMode] = useState<'detailed' | 'focused'>('detailed');
   const [searchQuery, setSearchQuery] = useState('');
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
   const [dragOverPriority, setDragOverPriority] = useState<'high' | 'normal' | null>(null);
@@ -145,11 +147,36 @@ export function TasksPage() {
   return (
     <div className="p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 max-w-full">
+      <div className="flex items-center justify-between mb-4 max-w-full gap-3 flex-wrap">
         <h2 className="text-xl font-bold text-gray-900">
           {showDone ? 'Completed Tasks' : 'My Tasks'}
         </h2>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* View toggle — only shown in pending mode */}
+          {!showDone && (
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+              <button
+                onClick={() => setViewMode('detailed')}
+                className={`px-3 py-1.5 transition-colors ${
+                  viewMode === 'detailed'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                Detailed
+              </button>
+              <button
+                onClick={() => setViewMode('focused')}
+                className={`px-3 py-1.5 transition-colors border-l border-gray-200 ${
+                  viewMode === 'focused'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                Focused
+              </button>
+            </div>
+          )}
           <div className="relative">
             <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
@@ -163,7 +190,7 @@ export function TasksPage() {
             />
           </div>
           <button
-            onClick={() => setShowDone((v) => !v)}
+            onClick={() => { setShowDone((v) => !v); setViewMode('detailed'); }}
             className="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap"
           >
             {showDone ? 'Show pending' : 'Show done'}
@@ -171,8 +198,8 @@ export function TasksPage() {
         </div>
       </div>
 
-      {/* Label filter chips — only shown for pending (kanban) view */}
-      {!showDone && (
+      {/* Label filter chips — only shown for pending (kanban) detailed view */}
+      {!showDone && viewMode !== 'focused' && (
         <div className="mb-4 space-y-2">
           {CATEGORIES.map((cat) => {
             const catLabels = (labelsByCategory[cat] ?? []) as Label[];
@@ -223,7 +250,10 @@ export function TasksPage() {
         </div>
       )}
 
-      {!loading && !error && (
+      {/* Focused view */}
+      {!showDone && viewMode === 'focused' && <FocusedView />}
+
+      {!loading && !error && viewMode === 'detailed' && (
         showDone ? (
           /* Done tasks: flat list */
           <div className="space-y-2 max-w-2xl mx-auto">
