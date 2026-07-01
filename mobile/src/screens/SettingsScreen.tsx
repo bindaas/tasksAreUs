@@ -16,12 +16,19 @@ import Constants from 'expo-constants';
 import { useAuth } from '../hooks/useAuth';
 import { getSettings, updateSettings } from '../api/settings';
 import { listLabels, createLabel, updateLabel, deleteLabel } from '../api/labels';
+import {
+  getFocusedViewConfig,
+  updateFocusedViewConfig,
+  type FocusedViewConfig,
+} from '../api/focusedView';
 import { API_BASE_URL, API_V1_URL } from '../api/client';
 import { useBoard } from '../context/BoardContext';
 import type { Label } from '../types';
 
 const MAX_QUESTIONS = 5;
 const MAX_BOARDS = 10;
+
+const COLOR_PALETTE = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 type StarterQuestion = { id: string; text: string };
 
@@ -32,6 +39,7 @@ function BoardSection() {
     createBoard,
     renameBoard,
     setDefaultBoard,
+    setColorBoard,
     deleteBoard,
   } = useBoard();
 
@@ -109,6 +117,18 @@ function BoardSection() {
     }
   }
 
+  async function handleSetColor(id: string, color: string | null) {
+    setBusy(true);
+    setError(null);
+    try {
+      await setColorBoard(id, color);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to set board color');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <View className="bg-white rounded-xl border border-gray-200 px-4 pt-4 pb-2 mb-4">
       <View className="flex-row items-center justify-between mb-0.5">
@@ -122,7 +142,7 @@ function BoardSection() {
       {error && <Text className="text-xs text-red-600 mb-2">{error}</Text>}
 
       {boards.map((board) => (
-        <View key={board.id} className="mb-2">
+        <View key={board.id} className="mb-3">
           {editingId === board.id ? (
             <View className="flex-row items-center" style={{ gap: 8 }}>
               <TextInput
@@ -139,37 +159,81 @@ function BoardSection() {
               </TouchableOpacity>
             </View>
           ) : (
-            <View className="flex-row items-center" style={{ gap: 8 }}>
-              {board.is_default && (
-                <Text className="text-amber-400 text-xs">★</Text>
-              )}
-              <Text className="flex-1 text-sm text-gray-700">{board.name}</Text>
-              {!board.is_default && (
+            <>
+              <View className="flex-row items-center" style={{ gap: 8 }}>
+                {board.is_default && (
+                  <Text className="text-amber-400 text-xs">★</Text>
+                )}
+                <Text className="flex-1 text-sm text-gray-700">{board.name}</Text>
+                {!board.is_default && (
+                  <TouchableOpacity
+                    onPress={() => handleSetDefault(board.id)}
+                    disabled={busy}
+                    style={{ opacity: busy ? 0.4 : 1 }}
+                  >
+                    <Text className="text-xs text-gray-400">Default</Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                  onPress={() => handleSetDefault(board.id)}
+                  onPress={() => { setEditingId(board.id); setEditValue(board.name); setError(null); }}
                   disabled={busy}
                   style={{ opacity: busy ? 0.4 : 1 }}
                 >
-                  <Text className="text-xs text-gray-400">Default</Text>
+                  <Text className="text-xs text-gray-400">Edit</Text>
                 </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onPress={() => { setEditingId(board.id); setEditValue(board.name); setError(null); }}
-                disabled={busy}
-                style={{ opacity: busy ? 0.4 : 1 }}
-              >
-                <Text className="text-xs text-gray-400">Edit</Text>
-              </TouchableOpacity>
-              {boards.length > 1 && (
+                {boards.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => confirmDelete(board.id, board.name)}
+                    disabled={busy}
+                    style={{ opacity: busy ? 0.4 : 1 }}
+                  >
+                    <Text className="text-xs text-red-400">Delete</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {/* Color swatches */}
+              <View className="flex-row flex-wrap mt-1.5" style={{ gap: 6 }}>
+                {/* None swatch */}
                 <TouchableOpacity
-                  onPress={() => confirmDelete(board.id, board.name)}
+                  onPress={() => handleSetColor(board.id, null)}
                   disabled={busy}
-                  style={{ opacity: busy ? 0.4 : 1 }}
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    backgroundColor: '#e5e7eb',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: board.color == null ? 2 : 1,
+                    borderColor: board.color == null ? '#6366f1' : '#d1d5db',
+                    opacity: busy ? 0.4 : 1,
+                  }}
                 >
-                  <Text className="text-xs text-red-400">Delete</Text>
+                  <Text style={{ fontSize: 10, color: '#9ca3af', lineHeight: 14 }}>✕</Text>
                 </TouchableOpacity>
-              )}
-            </View>
+                {COLOR_PALETTE.map((hex) => (
+                  <TouchableOpacity
+                    key={hex}
+                    onPress={() => handleSetColor(board.id, board.color === hex ? null : hex)}
+                    disabled={busy}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 11,
+                      backgroundColor: hex,
+                      borderWidth: board.color === hex ? 2.5 : 0,
+                      borderColor: '#ffffff',
+                      shadowColor: board.color === hex ? hex : 'transparent',
+                      shadowOpacity: board.color === hex ? 0.7 : 0,
+                      shadowRadius: 3,
+                      shadowOffset: { width: 0, height: 0 },
+                      elevation: board.color === hex ? 3 : 0,
+                      opacity: busy ? 0.4 : 1,
+                    }}
+                  />
+                ))}
+              </View>
+            </>
           )}
         </View>
       ))}
@@ -208,6 +272,175 @@ function BoardSection() {
           <Text className="text-xs text-indigo-600 font-medium">+ Add board</Text>
         </TouchableOpacity>
       ) : null}
+    </View>
+  );
+}
+
+function FocusedViewConfigSection() {
+  const { boards } = useBoard();
+  const [config, setConfig] = useState<FocusedViewConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getFocusedViewConfig()
+      .then(setConfig)
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load focused view config'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleSave() {
+    if (!config) return;
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const updated = await updateFocusedViewConfig({
+        board_selection: config.board_selection,
+        selected_board_ids: config.selected_board_ids,
+        day_range: config.day_range,
+      });
+      setConfig(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function toggleBoard(id: string) {
+    if (!config) return;
+    const next = config.selected_board_ids.includes(id)
+      ? config.selected_board_ids.filter((b) => b !== id)
+      : [...config.selected_board_ids, id];
+    setConfig({ ...config, selected_board_ids: next });
+  }
+
+  const DAY_RANGE_LABELS: Record<FocusedViewConfig['day_range'], string> = {
+    today: 'Today only',
+    today_tomorrow: 'Today + tomorrow',
+    today_plus_two: 'Today + 2 days',
+  };
+
+  return (
+    <View className="bg-white rounded-xl border border-gray-200 px-4 pt-4 pb-3 mb-4">
+      <Text className="text-sm font-semibold text-gray-700 mb-0.5">Focused View</Text>
+      <Text className="text-xs text-gray-400 mb-3">
+        Configure which boards and date range appear in focused mode.
+      </Text>
+
+      {loading ? (
+        <ActivityIndicator color="#6366f1" size="small" />
+      ) : (
+        <>
+          {error && (
+            <Text className="text-xs text-red-600 mb-2">{error}</Text>
+          )}
+
+          {config && (
+            <>
+              {/* Board selection */}
+              <Text className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Board selection
+              </Text>
+              {(['all', 'selected'] as const).map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  onPress={() => setConfig({ ...config, board_selection: option })}
+                  disabled={busy}
+                  className="flex-row items-center mb-2"
+                  style={{ gap: 8, opacity: busy ? 0.4 : 1 }}
+                >
+                  <View
+                    className="w-4 h-4 rounded-full border-2 items-center justify-center"
+                    style={{ borderColor: config.board_selection === option ? '#6366f1' : '#d1d5db' }}
+                  >
+                    {config.board_selection === option && (
+                      <View className="w-2 h-2 rounded-full bg-indigo-600" />
+                    )}
+                  </View>
+                  <Text className="text-sm text-gray-700">
+                    {option === 'all' ? 'All boards' : 'Selected boards'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              {config.board_selection === 'selected' && (
+                <View className="ml-6 mb-2" style={{ gap: 4 }}>
+                  {boards.map((board) => {
+                    const checked = config.selected_board_ids.includes(board.id);
+                    return (
+                      <TouchableOpacity
+                        key={board.id}
+                        onPress={() => toggleBoard(board.id)}
+                        disabled={busy}
+                        className="flex-row items-center"
+                        style={{ gap: 8, opacity: busy ? 0.4 : 1 }}
+                      >
+                        <View
+                          className="w-4 h-4 rounded border-2 items-center justify-center"
+                          style={{
+                            borderColor: checked ? '#6366f1' : '#d1d5db',
+                            backgroundColor: checked ? '#6366f1' : 'transparent',
+                          }}
+                        >
+                          {checked && (
+                            <Text style={{ color: '#fff', fontSize: 9, lineHeight: 12 }}>✓</Text>
+                          )}
+                        </View>
+                        <Text className="text-sm text-gray-700">{board.name}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Day range */}
+              <Text className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-1">
+                Day range
+              </Text>
+              {(Object.keys(DAY_RANGE_LABELS) as FocusedViewConfig['day_range'][]).map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  onPress={() => setConfig({ ...config, day_range: option })}
+                  disabled={busy}
+                  className="flex-row items-center mb-2"
+                  style={{ gap: 8, opacity: busy ? 0.4 : 1 }}
+                >
+                  <View
+                    className="w-4 h-4 rounded-full border-2 items-center justify-center"
+                    style={{ borderColor: config.day_range === option ? '#6366f1' : '#d1d5db' }}
+                  >
+                    {config.day_range === option && (
+                      <View className="w-2 h-2 rounded-full bg-indigo-600" />
+                    )}
+                  </View>
+                  <Text className="text-sm text-gray-700">{DAY_RANGE_LABELS[option]}</Text>
+                </TouchableOpacity>
+              ))}
+
+              {saved && (
+                <Text className="text-xs text-green-600 mb-2">Saved</Text>
+              )}
+
+              <TouchableOpacity
+                onPress={handleSave}
+                disabled={busy}
+                className="mt-1 bg-indigo-600 rounded-lg py-2 items-center"
+                style={{ opacity: busy ? 0.5 : 1 }}
+              >
+                <Text className="text-white text-xs font-semibold">
+                  {busy ? 'Saving…' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </>
+      )}
     </View>
   );
 }
@@ -589,6 +822,9 @@ export function SettingsScreen() {
 
               {/* Boards */}
               <BoardSection />
+
+              {/* Focused View config */}
+              <FocusedViewConfigSection />
 
               {/* Labels */}
               <View className="bg-white rounded-xl border border-gray-200 px-4 pt-4 pb-2 mb-4">

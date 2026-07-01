@@ -36,6 +36,7 @@ import {
   type ColumnKey,
 } from '../utils/taskDateUtils';
 import { TaskFormScreen } from './TaskFormScreen';
+import { FocusedView } from '../components/FocusedView';
 import type { Task, Label, LabelCategory, UpdateTaskBody } from '../types';
 
 const LABEL_BG: Record<string, string> = {
@@ -245,6 +246,9 @@ export function TasksScreen() {
   // Ref lets load() read the latest showDone without being in its dep array
   const showDoneRef = useRef(false);
 
+  const [viewMode, setViewMode] = useState<'detailed' | 'focused'>('detailed');
+  const [focusedViewKey, setFocusedViewKey] = useState(0);
+
   const [highPriorityLimit, setHighPriorityLimit] = useState(3);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragTargetSection, setDragTargetSection] = useState<ColumnKey | null>(null);
@@ -308,6 +312,9 @@ export function TasksScreen() {
       getSettings()
         .then((s) => setHighPriorityLimit(s.high_priority_daily_limit))
         .catch(() => {});
+      // Force FocusedView remount on every tab re-focus so config changes in Settings
+      // are reflected without needing a manual Retry.
+      setFocusedViewKey((k) => k + 1);
     }, [load, activeBoard?.id]),
   );
 
@@ -423,6 +430,7 @@ export function TasksScreen() {
     const next = !showDone;
     showDoneRef.current = next;
     setShowDone(next);
+    if (next) setViewMode('detailed');
     load(true, activeBoard?.id);
   }
 
@@ -632,24 +640,56 @@ export function TasksScreen() {
             )}
           </TouchableOpacity>
           <View className="flex-row items-center" style={{ gap: 8 }}>
-          <TouchableOpacity
-            onPress={handleToggleAllSections}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text className="text-xs font-medium" style={{ color: '#6b7280' }}>
-              {allSectionsExpanded ? 'Collapse' : 'Expand'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setFilterOpen((o) => !o)}
-            className="w-9 h-9 rounded-full items-center justify-center"
-            style={{ backgroundColor: hasActiveFilters ? '#eef2ff' : '#f3f4f6' }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text className="text-base" style={{ color: hasActiveFilters ? '#4f46e5' : '#9ca3af' }}>
-              ☰
-            </Text>
-          </TouchableOpacity>
+          {viewMode === 'detailed' && (
+            <TouchableOpacity
+              onPress={handleToggleAllSections}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text className="text-xs font-medium" style={{ color: '#6b7280' }}>
+                {allSectionsExpanded ? 'Collapse' : 'Expand'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {!showDone && (
+            <View
+              className="flex-row rounded-full overflow-hidden"
+              style={{ backgroundColor: '#f3f4f6' }}
+            >
+              {(['detailed', 'focused'] as const).map((mode) => (
+                <TouchableOpacity
+                  key={mode}
+                  onPress={() => {
+                    setViewMode(mode);
+                    if (mode === 'focused') setFilterOpen(false);
+                  }}
+                  className="px-3 py-1.5"
+                  style={{
+                    backgroundColor: viewMode === mode ? '#6366f1' : 'transparent',
+                  }}
+                  hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                >
+                  <Text
+                    className="text-xs font-medium"
+                    style={{ color: viewMode === mode ? '#ffffff' : '#6b7280' }}
+                  >
+                    {mode === 'detailed' ? 'All' : 'Focus'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          {viewMode === 'detailed' && (
+            <TouchableOpacity
+              onPress={() => setFilterOpen((o) => !o)}
+              className="w-9 h-9 rounded-full items-center justify-center"
+              style={{ backgroundColor: hasActiveFilters ? '#eef2ff' : '#f3f4f6' }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text className="text-base" style={{ color: hasActiveFilters ? '#4f46e5' : '#9ca3af' }}>
+                ☰
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={handleCreatePress}
             className="w-9 h-9 rounded-full bg-indigo-600 items-center justify-center"
@@ -760,8 +800,13 @@ export function TasksScreen() {
         />
       </Modal>
 
+      {/* Focused view */}
+      {!showDone && viewMode === 'focused' && (
+        <FocusedView key={focusedViewKey} onEditPress={handleEditPress} />
+      )}
+
       {/* List + ghost container */}
-      <View ref={listContainerRef} style={{ flex: 1 }}>
+      <View ref={listContainerRef} style={{ flex: 1, display: viewMode === 'focused' ? 'none' : 'flex' }}>
         <SectionList<Task, DisplaySection>
           ref={listRef}
           sections={displaySections}
