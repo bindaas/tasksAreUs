@@ -3,7 +3,6 @@ import type { Task } from './tasks';
 
 export interface FocusedViewConfig {
   id: string;
-  user_id: string;
   board_selection: 'all' | 'selected';
   selected_board_ids: string[];
   day_range: 'today' | 'today_tomorrow' | 'today_plus_two';

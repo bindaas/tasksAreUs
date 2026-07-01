@@ -42,11 +42,13 @@ export function FocusedView({ onEditPress }: { onEditPress: (id: string) => void
 
   if (error) {
     return (
-      <View className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex-row items-center justify-between">
-        <Text className="text-red-700 text-sm flex-1 mr-3">{error}</Text>
-        <TouchableOpacity onPress={load}>
-          <Text className="text-red-700 text-sm font-semibold">Retry</Text>
-        </TouchableOpacity>
+      <View className="flex-1">
+        <View className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex-row items-center justify-between">
+          <Text className="text-red-700 text-sm flex-1 mr-3">{error}</Text>
+          <TouchableOpacity onPress={load}>
+            <Text className="text-red-700 text-sm font-semibold">Retry</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }

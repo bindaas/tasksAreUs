@@ -429,9 +429,9 @@ function FocusedViewConfigSection() {
 
               <TouchableOpacity
                 onPress={handleSave}
-                disabled={busy}
+                disabled={busy || (config?.board_selection === 'selected' && config.selected_board_ids.length === 0)}
                 className="mt-1 bg-indigo-600 rounded-lg py-2 items-center"
-                style={{ opacity: busy ? 0.5 : 1 }}
+                style={{ opacity: (busy || (config?.board_selection === 'selected' && config.selected_board_ids.length === 0)) ? 0.5 : 1 }}
               >
                 <Text className="text-white text-xs font-semibold">
                   {busy ? 'Saving…' : 'Save'}
