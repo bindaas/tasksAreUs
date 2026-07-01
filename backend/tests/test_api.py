@@ -120,16 +120,24 @@ def main():
     assert_eq("GET /labels with no auth → 401", r.status_code, 401)
 
 
-    # ── Boards (PR #33) ────────────────────────────────────────────────────────
-    print("\n── Boards (PR #33) ─────────────────────────────────────")
+    # ── Boards (PR #33, PR #37) ────────────────────────────────────────────────
+    print("\n── Boards (PR #33, PR #37) ─────────────────────────────────────")
 
-    # GET /boards — must return at least the default "General tasks" board
+    # GET /boards — PR #37: svc.ensure_board_seeded() is now called at the top of
+    # list_boards(), making GET /boards a board-creation entry point.  A brand-new
+    # user (or a user whose boards were cleaned up) gets their "General tasks" board
+    # and 9 default labels created on the very first GET /boards call — not only on
+    # task/label endpoints that go through resolve_board_id().  This is important
+    # for the web frontend's BoardContext, which calls GET /boards on mount before
+    # any task or label endpoint is touched.
     r = client.get("/boards", headers=H)
     assert_eq("GET /boards → 200", r.status_code, 200)
     boards_body = r.json()
     assert_in("GET /boards response has boards key", "boards", boards_body)
     boards_list = boards_body["boards"]
-    assert_true("GET /boards returns at least 1 board (General tasks)", len(boards_list) >= 1)
+    # After cleanup all boards are deleted.  GET /boards must still return the seeded
+    # default board because PR #37 added ensure_board_seeded() to list_boards().
+    assert_true("GET /boards returns at least 1 board after cleanup (PR #37: seed-on-GET)", len(boards_list) >= 1)
 
     # The default board must be first in the list (ordered is_default DESC, created_at ASC)
     default_board = boards_list[0]
