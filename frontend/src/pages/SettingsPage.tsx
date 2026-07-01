@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getSettings, updateSettings } from '../api/settings';
 import { listLabels, createLabel, updateLabel, deleteLabel } from '../api/labels';
 import type { Label } from '../api/tasks';
 import { useAuth } from '../hooks/useAuth';
 import { useBoard } from '../context/BoardContext';
 import type { Board } from '../api/boards';
+import {
+  getFocusedViewConfig,
+  updateFocusedViewConfig,
+  type FocusedViewConfig,
+} from '../api/focusedView';
 
 const MAX_QUESTIONS = 5;
 
@@ -13,6 +18,7 @@ function BoardEditor({
   activeBoard,
   onRename,
   onSetDefault,
+  onSetColor,
   onDelete,
   onAdd,
 }: {
@@ -20,6 +26,7 @@ function BoardEditor({
   activeBoard: Board | null;
   onRename: (id: string, name: string) => Promise<void>;
   onSetDefault: (id: string) => Promise<void>;
+  onSetColor: (id: string, color: string | null) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onAdd: (name: string) => Promise<Board>;
 }) {
@@ -29,6 +36,23 @@ function BoardEditor({
   const [newName, setNewName] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const colorInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const colorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleSetColor(id: string, color: string | null) {
+    if (colorDebounceRef.current) clearTimeout(colorDebounceRef.current);
+    colorDebounceRef.current = setTimeout(async () => {
+      setBusy(true);
+      setErr(null);
+      try {
+        await onSetColor(id, color);
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : 'Failed to set board color');
+      } finally {
+        setBusy(false);
+      }
+    }, 300);
+  }
 
   async function handleRename(id: string) {
     const trimmed = editName.trim();
@@ -127,6 +151,35 @@ function BoardEditor({
                 <span className={`flex-1 text-sm ${board.id === activeBoard?.id ? 'font-medium text-indigo-700' : 'text-gray-700'}`}>
                   {board.name}
                 </span>
+
+                {/* Color swatch */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => colorInputRefs.current[board.id]?.click()}
+                    disabled={busy}
+                    title="Set board color"
+                    className="w-5 h-5 rounded-full border border-gray-300 shrink-0 disabled:opacity-40"
+                    style={{ backgroundColor: board.color ?? '#e5e7eb' }}
+                  />
+                  <input
+                    ref={(el) => { colorInputRefs.current[board.id] = el; }}
+                    type="color"
+                    className="sr-only"
+                    value={board.color ?? '#6366f1'}
+                    onChange={(e) => handleSetColor(board.id, e.target.value)}
+                  />
+                  {board.color && (
+                    <button
+                      onClick={() => handleSetColor(board.id, null)}
+                      disabled={busy}
+                      title="Clear color"
+                      className="text-gray-300 hover:text-gray-500 disabled:opacity-40 leading-none"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+
                 <button
                   onClick={() => { setEditingId(board.id); setEditName(board.name); setErr(null); }}
                   disabled={busy}
@@ -175,6 +228,122 @@ function BoardEditor({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+const DAY_RANGE_LABELS: Record<FocusedViewConfig['day_range'], string> = {
+  today: 'Today only',
+  today_tomorrow: 'Today + tomorrow',
+  today_plus_two: 'Today + 2 days',
+};
+
+function FocusedViewConfigEditor({
+  config,
+  boards,
+  onSave,
+}: {
+  config: FocusedViewConfig;
+  boards: Board[];
+  onSave: (updated: FocusedViewConfig) => Promise<void>;
+}) {
+  const [boardSelection, setBoardSelection] = useState<'all' | 'selected'>(config.board_selection);
+  const [selectedBoardIds, setSelectedBoardIds] = useState<string[]>(config.selected_board_ids);
+  const [dayRange, setDayRange] = useState<FocusedViewConfig['day_range']>(config.day_range);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  function toggleBoardId(id: string) {
+    setSelectedBoardIds((prev) =>
+      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
+    );
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setErr(null);
+    setSuccess(false);
+    try {
+      await onSave(
+        await updateFocusedViewConfig({
+          board_selection: boardSelection,
+          day_range: dayRange,
+          selected_board_ids: boardSelection === 'all' ? [] : selectedBoardIds,
+        })
+      );
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to save focused view config');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+      {success && <p className="text-xs text-green-600 mb-2">Saved</p>}
+
+      {/* Board selection */}
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Boards</p>
+      <div className="flex gap-4 mb-3">
+        {(['all', 'selected'] as const).map((val) => (
+          <label key={val} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+            <input
+              type="radio"
+              name="board_selection"
+              value={val}
+              checked={boardSelection === val}
+              onChange={() => setBoardSelection(val)}
+              className="accent-indigo-600"
+            />
+            {val === 'all' ? 'All boards' : 'Selected boards'}
+          </label>
+        ))}
+      </div>
+      {boardSelection === 'selected' && (
+        <div className="ml-4 space-y-1 mb-3">
+          {boards.map((board) => (
+            <label key={board.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedBoardIds.includes(board.id)}
+                onChange={() => toggleBoardId(board.id)}
+                className="accent-indigo-600"
+              />
+              {board.name}
+            </label>
+          ))}
+        </div>
+      )}
+
+      {/* Day range */}
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Day range</p>
+      <div className="flex flex-col gap-1.5 mb-4">
+        {(Object.entries(DAY_RANGE_LABELS) as [FocusedViewConfig['day_range'], string][]).map(([val, label]) => (
+          <label key={val} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+            <input
+              type="radio"
+              name="day_range"
+              value={val}
+              checked={dayRange === val}
+              onChange={() => setDayRange(val)}
+              className="accent-indigo-600"
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+
+      <button
+        onClick={handleSave}
+        disabled={saving || (boardSelection === 'selected' && selectedBoardIds.length === 0)}
+        className="text-sm bg-indigo-600 text-white rounded-lg px-4 py-2 font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        {saving ? 'Saving…' : 'Save focused view config'}
+      </button>
     </div>
   );
 }
@@ -358,7 +527,7 @@ function LabelEditor({
 
 export function SettingsPage() {
   const { user, signInWithGoogle, sendMagicLink, signOut } = useAuth();
-  const { boards, activeBoard, renameBoard, setDefaultBoard, deleteBoard, createBoard } = useBoard();
+  const { boards, activeBoard, renameBoard, setDefaultBoard, setColorBoard, deleteBoard, createBoard } = useBoard();
   const isAnonymous = user?.isAnonymous === true;
 
   const [questions, setQuestions] = useState<string[]>([]);
@@ -367,6 +536,7 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [focusedConfig, setFocusedConfig] = useState<FocusedViewConfig | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
   const [magicLinkEmail, setMagicLinkEmail] = useState('');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -406,15 +576,17 @@ export function SettingsPage() {
       setError(null);
       try {
         const boardId = activeBoard?.id;
-        const [s, modeRes, typeRes] = await Promise.all([
+        const [s, modeRes, typeRes, cfg] = await Promise.all([
           getSettings(),
           listLabels('mode', boardId),
           listLabels('type', boardId),
+          getFocusedViewConfig(),
         ]);
         setQuestions(s.starter_questions ?? []);
         setHighPriorityLimit(s.high_priority_daily_limit ?? 3);
         setModeLabels(modeRes.labels);
         setTypeLabels(typeRes.labels);
+        setFocusedConfig(cfg);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load settings');
       } finally {
@@ -557,11 +729,29 @@ export function SettingsPage() {
                 activeBoard={activeBoard}
                 onRename={renameBoard}
                 onSetDefault={setDefaultBoard}
+                onSetColor={setColorBoard}
                 onDelete={deleteBoard}
                 onAdd={createBoard}
               />
             </div>
           </div>
+
+          {/* Focused View */}
+          {focusedConfig && (
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">Focused View</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Configure which boards and date range appear in the Focused View on the Tasks page.
+              </p>
+              <div className="border border-gray-200 rounded-lg p-3">
+                <FocusedViewConfigEditor
+                  config={focusedConfig}
+                  boards={boards}
+                  onSave={(updated) => { setFocusedConfig(updated); return Promise.resolve(); }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Labels */}
           <div className="mb-6">

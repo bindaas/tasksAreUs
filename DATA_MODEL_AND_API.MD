@@ -247,7 +247,7 @@ Tracks every Claude API call for cost monitoring.
 ### Boards
 
 #### `GET /boards`
-Returns all non-deleted boards for the current user, ordered default-first then by creation time.
+Returns all non-deleted boards for the current user, ordered default-first then by creation time. Calls `ensure_board_seeded()` before querying — lazily creates the "General tasks" default board (and seeds its 9 default labels) for brand-new users who have not yet hit any other endpoint. This makes `GET /boards` a reliable board-initialisation entry point regardless of call order.
 
 **Response**
 ```json

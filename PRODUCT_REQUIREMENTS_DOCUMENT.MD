@@ -20,7 +20,7 @@ Each user can have up to **10 boards** (server-side cap: `MAX_BOARDS_PER_USER = 
 
 ### Board API (shipped — PR #33)
 
-- `GET /api/v1/boards` — list the current user's non-deleted boards, ordered default-first then by creation time. Returns a `boards` array.
+- `GET /api/v1/boards` — list the current user's non-deleted boards, ordered default-first then by creation time. Returns a `boards` array. As of PR #37, `ensure_board_seeded()` is called at the top of this endpoint — a brand-new user gets their default "General tasks" board and 9 default labels created on the first `GET /boards` call (previously seeding was only triggered by task/label endpoints via `resolve_board_id`).
 - `POST /api/v1/boards` — create a new board for the current user. `422` if the 10-board cap would be exceeded. `400` if the name is empty.
 - `PUT /api/v1/boards/{id}` — rename a board, change its default status, or set/clear its color. Setting `is_default: true` atomically demotes the previously-default board. Setting `is_default: false` on the current default returns `400` — promote another board first. The `color` field accepts a 7-character hex string (e.g. `#6366f1`) or `null` to clear; omitting `color` entirely leaves the existing value unchanged (sentinel logic via `model_fields_set`). `BoardOut` now includes `color: Optional[str]`.
 - `DELETE /api/v1/boards/{id}` — soft-delete a board. Returns `400` if it is the only board, the default board, or still has tasks or labels.
@@ -86,9 +86,23 @@ Default config (created lazily on first GET, upsert-safe): `board_selection = al
 - `PUT /api/v1/focused-view/config` — updates `board_selection`, `day_range`, and optionally `selected_board_ids`. Validates: `board_selection` must be `all` or `selected`; `day_range` must be one of the three valid values; when `board_selection = selected`, `selected_board_ids` must be non-empty and all IDs must belong to the caller. Returns `400` for any violation.
 - `GET /api/v1/focused-view/tasks` — returns `is_high_priority=true` pending tasks grouped by board, filtered to the configured day range. Accepts optional `?reference_date=YYYY-MM-DD` query parameter (avoids server-side timezone issues; defaults to `date.today()` when omitted). Response shape: `{ "boards": [{ "board_id", "board_name", "board_color", "tasks": [TaskOut, ...] }, ...] }`.
 
-### Focused View UI — Web frontend (aspirational — PR 2 not yet shipped)
+### Focused View UI — Web frontend (shipped — PR #37)
 
-Configuration UI in Settings (below the default board picker). Session toggle between Detailed and Focused view. Responsive card grid layout.
+**Color picker in Board settings**: Each board row in Settings → Boards gets a color swatch (a circle showing the current hex color, gray if unset). Clicking it opens a hidden native `<input type="color">`. Changes auto-save with a 300ms debounce via `setColorBoard` in `BoardContext`, which calls `PUT /boards/{id}` with the hex value and re-fetches boards. A `×` button (visible only when a color is set) calls `setColorBoard(id, null)` to clear it. `BoardContext` now exposes `setColorBoard(id: string, color: string | null): Promise<void>` (analogous to `renameBoard`).
+
+**Focused View config section in Settings**: A "Focused View" section appears below Boards and above Labels. Loads config via `getFocusedViewConfig()` in parallel with other settings on mount. Fields: board selection radio (All boards / Selected boards); board checkboxes (visible only when "Selected boards" chosen); day range radio (Today only / Today + tomorrow / Today + 2 days). Has its own Save button that calls `updateFocusedViewConfig`. Save is disabled when "Selected boards" is chosen and no boards are checked. Inline error and success banners.
+
+**Detailed/Focused toggle in TasksPage header**: A session-only pill toggle ("Detailed" | "Focused") in the task list header, visible only in pending mode. Toggling to "Show done" resets the view to Detailed. Toggle is not persisted — resets to Detailed on page reload.
+
+**FocusedView component** (`frontend/src/components/FocusedView.tsx`): Rendered in place of the kanban board when view mode is "focused" and pending mode is active. Fetches `GET /focused-view/tasks?reference_date=YYYY-MM-DD` on mount only (`useEffect(() => { ... }, [])`), using `dateOnly(new Date())` for the local-timezone date. Does not refetch on active-board change (focused view is config-driven server-side). Shows loading spinner while fetching; inline error banner with Retry button on failure; empty state ("No focused tasks for this period") when no qualifying tasks exist. Tasks displayed as a responsive card grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`) grouped by board, each group headed by a color-coded row using `board_color` from the API or a fixed 8-color palette (`['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6']`) indexed by board position.
+
+**FocusedTaskCard component** (`frontend/src/components/FocusedTaskCard.tsx`): Compact card with a 4px left colored border (`boardColor`). Displays: title (up to 2 lines, ellipsis), high-priority badge (amber "★ High"), date chip using `getEffectiveDate` (red if overdue), label badges from `task.labels` (mode=green, type=purple). Click navigates to `/tasks/${task.id}`. No drag-and-drop. Labels are rendered directly from `task.labels` — no separate label prop needed.
+
+**Label filter chips hidden in focused mode**: The chip block guard is extended to `{!showDone && viewMode !== 'focused' && (...)}` so label filter chips are hidden when focused view is active.
+
+**New frontend API module** (`frontend/src/api/focusedView.ts`): Exports `FocusedViewConfig` and `FocusedBoard` interfaces plus `getFocusedViewConfig()`, `updateFocusedViewConfig()`, and `getFocusedViewTasks(referenceDate?)`.
+
+**New unit tests**: 2 new tests in `frontend/src/__tests__/boards.api.test.ts` covering `updateBoard` with a hex color and with `null` (clear).
 
 ### Focused View UI — Mobile app (aspirational — PR 3 not yet shipped)
 
@@ -116,7 +130,7 @@ A task can have zero or more labels in fixed system-defined categories. A task m
 | Type | household, financial, child, trip, medical (defaults) | Yes — per-user; users can add, rename, and delete | Yes |
 
 **Label ownership rules (shipped — PR #15, corrected in PR #16, updated PR #30, updated PR #31, updated PR #33):**
-- **All labels are per-board** — `labels.user_id` and `labels.board_id` are both `NOT NULL`. There are no global seed rows in the DB. A user's default board is seeded with **Mode and Type labels only** (9 entries total) on first access to any endpoint (as of PR #33, seeding is triggered by `resolve_board_id`/`ensure_board_seeded`, not only by `GET /labels`).
+- **All labels are per-board** — `labels.user_id` and `labels.board_id` are both `NOT NULL`. There are no global seed rows in the DB. A user's default board is seeded with **Mode and Type labels only** (9 entries total) on first access (as of PR #33, seeding is triggered by `resolve_board_id`/`ensure_board_seeded`; as of PR #37, also triggered by `GET /boards` directly — so the web frontend's `BoardContext`, which calls `GET /boards` on mount before any task or label endpoint, now creates the default board and labels for new users).
 - **Label uniqueness is per-board**: the constraint is `(board_id, category, value)` — the same label value can exist independently in two different boards belonging to the same user.
 - **Frequency** labels have been fully removed (PR #31): all frequency label rows were deleted from the DB by the SQL migration, `CategoryEnum.frequency` was removed from Python, and `GET /labels?category=frequency` now returns 400 (unknown category). Frequency labels cannot be created, edited, or deleted via the API and are not shown in Settings.
 - **Mode** and **Type** labels are per-user, per-board, and fully configurable: users can add, rename, and delete them.
@@ -213,7 +227,8 @@ The primary interaction mode. Each conversation is tied to a specific board (via
 
 ### Settings Page
 
-- **Boards section (shipped — PR #34)**: Appears at the top of Settings, above Labels. Shows all boards with: inline rename; a star icon to set the default board (the current default's star is amber and non-clickable); a Delete button (disabled for the default board or the only board — server errors such as "board has tasks" are surfaced inline); and a "+ Add board" button to create a new board. The Labels section heading shows the active board name to make clear which board's labels are being managed.
+- **Boards section (shipped — PR #34, updated PR #37)**: Appears at the top of Settings, above Labels. Shows all boards with: a color swatch (a circle showing the current hex color, or gray if unset — clicking opens a hidden native `<input type="color">`; color auto-saves with a 300ms debounce via `setColorBoard` in `BoardContext`; a `×` button (visible only when a color is set) clears the color); inline rename; a star icon to set the default board (the current default's star is amber and non-clickable); a Delete button (disabled for the default board or the only board — server errors such as "board has tasks" are surfaced inline); and a "+ Add board" button to create a new board. The Labels section heading shows the active board name to make clear which board's labels are being managed.
+- **Focused View config section (shipped — PR #37)**: Appears below Boards and above Labels. Loaded on mount in parallel with other settings. Fields: board selection radio (All boards / Selected boards); board checkboxes (visible only when "Selected boards" is chosen); day range radio (Today only / Today + tomorrow / Today + 2 days). Has its own Save button (disabled when "Selected boards" is chosen and no boards are checked). Inline error and success banners. See the Focused View UI — Web frontend section for full detail.
 - **Labels section (shipped — PR #15, updated PR #34)**: Appears below Boards, above High Priority Limit and Starter Questions. Shows **Mode** and **Type** subsections scoped to the **active board**. Each label has Edit and Delete buttons; each subsection has an Add button to create new values. Labels created here are added to the active board. Frequency labels are not shown here (they are not editable). Changes take effect immediately in TaskForm label pickers and on task cards.
 - **High Priority Daily Limit**: numeric input (min 1) that sets the per-day cap for high-priority tasks in Today and Tomorrow columns. Defaults to 3 when unset. Reducing the limit below the current count is allowed — a warning is shown but no retroactive removal occurs. Persisted server-side via `user_settings.high_priority_daily_limit`.
 - Configure up to 5 starter questions saved server-side. Questions can be added, removed, and reordered.
@@ -403,4 +418,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #36 (focused view backend PR 1/3: focused_view_configs table, board color field, GET/PUT /focused-view/config, GET /focused-view/tasks; also corrected MAX_BOARDS_PER_USER from 5 to 10 per commit 72fd1b3)*
+*Last updated by — *Bashful* after PR #37 (focused view web frontend PR 2/3: board color picker in Settings/Boards, Focused View config section in Settings, Detailed/Focused session toggle in TasksPage, FocusedView and FocusedTaskCard components, focusedView.ts API module, 2 new unit tests; backend: ensure_board_seeded() added to list_boards() making GET /boards a seeding entry point)*
