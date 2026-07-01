@@ -26,7 +26,7 @@ backend/
     dependencies.py  # get_current_user() — Bearer token (Firebase); get_firebase_claims() — token-only, no DB
     routers/         # one file per resource, mounted at /api/v1
       users.py       # (no public endpoints — user rows are auto-created by get_current_user())
-      boards.py      # GET /boards; POST /boards; PUT /boards/{id} (rename/set-default/set-color — sentinel via model_fields_set + _UNSET); DELETE /boards/{id} (soft-delete, guarded)
+      boards.py      # GET /boards (calls ensure_board_seeded first — seeds default board for brand-new users who have never hit any other endpoint); POST /boards; PUT /boards/{id} (rename/set-default/set-color — sentinel via model_fields_set + _UNSET); DELETE /boards/{id} (soft-delete, guarded)
       focused_view.py  # GET /focused-view/config; PUT /focused-view/config; GET /focused-view/tasks?reference_date=YYYY-MM-DD
       labels.py      # GET /labels (board-scoped); POST /labels (create mode/type label, board-scoped); PUT /labels/{id} (rename, owner only); DELETE /labels/{id} (delete, owner only)
       tasks.py       # CRUD + complete endpoint
@@ -58,40 +58,44 @@ development-plans/
   PLAN-feat-multi-board.md           # Development plan for multi-board backend (PR #33); includes Sneezy's review and Grumpy's inline responses
   PLAN-feat-multi-board-frontend.md  # Development plan for multi-board web frontend (PR #34); includes Sneezy's review and Grumpy's inline responses
   PLAN-feat-multi-board-mobile.md    # Development plan for multi-board mobile (PR #35); includes Sneezy's review and Grumpy's inline responses
-  PLAN-feat-focused-view.md          # Development plan for focused view (backend PR #36, web frontend PR TBD, mobile PR TBD); includes Sneezy's review and Grumpy's inline responses
+  PLAN-feat-focused-view.md          # Development plan for focused view (backend PR #36, web frontend PR #37, mobile PR TBD); includes Sneezy's review and Grumpy's inline responses
+  PLAN-feat-focused-view-web.md      # Development plan for focused view web frontend (PR #37 — board color picker, FocusedViewConfigEditor in Settings, Detailed/Focused toggle in TasksPage, FocusedView component)
 
 frontend/
   src/
     firebase.ts          # Firebase app + auth initialisation from VITE_FIREBASE_* env vars
     api/
       client.ts        # base fetch wrapper — attaches Authorization: Bearer <firebase_id_token> via auth.currentUser?.getIdToken(); parses FastAPI error detail
-      boards.ts        # Board type + getBoards, createBoard, updateBoard, deleteBoard
+      boards.ts        # Board interface (includes color?: string | null added in PR #37) + getBoards, createBoard, updateBoard (body accepts color?: string | null), deleteBoard
       tasks.ts         # CRUD, complete; Task interface includes is_high_priority and board_id; listTasks/createTask accept optional boardId
       labels.ts        # listLabels(category?, boardId?); createLabel(category, value, boardId?), updateLabel(), deleteLabel()
       conversations.ts # createConversation(boardId?); Conversation type includes board_id
       settings.ts
       reports.ts       # getCompletions(from, to, boardId?) — boardId scopes results to a specific board
+      focusedView.ts   # FocusedViewConfig + FocusedBoard interfaces; getFocusedViewConfig(), updateFocusedViewConfig(), getFocusedViewTasks(referenceDate?) — wrappers for GET/PUT /focused-view/config and GET /focused-view/tasks
     components/
       Layout.tsx        # nav shell: sidebar on desktop, bottom bar on mobile; embeds BoardSwitcher in desktop sidebar header and mobile top header
       BoardSwitcher.tsx # dropdown for switching boards and creating new boards (inline text input); renders in both desktop and mobile layouts; calls setActiveBoard on selection
       LabelBadge.tsx    # colored chip by category (mode/type)
       TaskCard.tsx      # task card with inline complete/delete; shows "High" badge when is_high_priority
       TaskForm.tsx      # create/edit form with label picker and high-priority checkbox; no label pre-selection (web derives context from column)
+      FocusedView.tsx   # fetches GET /focused-view/tasks on mount (passes dateOnly(new Date()) as reference_date for local-timezone correctness); renders a card grid grouped by board with color-coded board headers (board_color or 8-color fallback palette); empty state + error/Retry handling; board color from board_color or PALETTE[index % 8]
+      FocusedTaskCard.tsx  # compact task card with colored left border (boardColor prop), ★ High badge (is_high_priority), date chip (red tint when overdue, gray otherwise), label badges (green for mode, purple for type); click navigates to /tasks/:id
     context/
       FilterContext.tsx  # React context holding selected label IDs; persists across navigation; exposes clearLabels() — called by BoardContext on board switch
       AuthContext.tsx   # Firebase auth state via onAuthStateChanged; auto-signs in anonymously on first load; handles magic-link callbacks (same-device and cross-device); exposes signInWithGoogle, sendMagicLink, signOut, confirmEmailSignIn
-      BoardContext.tsx  # tracks all boards + activeBoard (initialised to default board on app open, never persisted); exposes setActiveBoard (clears label filters on switch), createBoard, renameBoard, setDefaultBoard, deleteBoard, refetch; wraps children inside FilterProvider so clearLabels is accessible
+      BoardContext.tsx  # tracks all boards + activeBoard (initialised to default board on app open, never persisted); exposes setActiveBoard (clears label filters on switch), createBoard, renameBoard, setDefaultBoard, setColorBoard (calls updateBoard({color}) then fetchBoards), deleteBoard, refetch; wraps children inside FilterProvider so clearLabels is accessible
     hooks/
       useAuth.ts        # thin re-export of useAuthContext — primary auth hook for all components
       useTasks.ts       # fetches tasks for activeBoard from BoardContext; bails early when activeBoard is null (initial load); re-fetches when board changes
       useLabels.ts      # fetches labels for activeBoard from BoardContext; cancellation token prevents stale updates on rapid board switches; re-fetches when board changes
       useSettings.ts    # fetches GET /settings; exposes highPriorityDailyLimit (default 3)
     pages/
-      TasksPage.tsx     # 6-column kanban (Overdue/Today/Tomorrow/Day After Tomorrow/Upcoming/No Date) with drag-drop, search, label filters; Overdue column hidden when empty; Upcoming and Overdue columns are read-only drop targets (dropping blocked, "Read-only" placeholder shown)
+      TasksPage.tsx     # 6-column kanban (Overdue/Today/Tomorrow/Day After Tomorrow/Upcoming/No Date) with drag-drop, search, label filters; Overdue column hidden when empty; Upcoming and Overdue columns are read-only drop targets (dropping blocked, "Read-only" placeholder shown); Detailed/Focused session-only pill toggle in header (visible when !showDone, resets to Detailed when switching to "Show done"); label filter chips hidden in focused mode (viewMode !== 'focused' guard); loading spinner and error banner also gated on viewMode !== 'focused'; renders <FocusedView /> when !showDone && viewMode === 'focused'
       TaskDetailPage.tsx  # create (/tasks/new) and edit (/tasks/:id); passes activeBoard.id to createTask and listTasks (HP pending-tasks fetch)
       ChatPage.tsx      # AI conversation with suggested-question chips; resets conversationId and messages when activeBoard changes; passes boardId to createConversation
       ReportsPage.tsx   # completions by date range; guards mount fetch until activeBoard is resolved; re-fetches and passes boardId on board switch
-      SettingsPage.tsx  # Boards section (BoardEditor component — inline rename/set-default/delete/add) at top; Labels section (LabelEditor for mode/type) scoped to activeBoard.id; High Priority Daily Limit numeric input; starter questions editor; Connection section; Account section
+      SettingsPage.tsx  # Boards section (BoardEditor component — inline rename/set-default/delete/add; each board row includes an inline color swatch: hidden <input type="color"> triggered by a visible swatch button, auto-saves via 300ms debounced handleSetColor, × button clears the color) at top; Focused View section (FocusedViewConfigEditor component — board selection radio All/Selected + checkboxes, day range radio, dedicated Save button; loaded via getFocusedViewConfig() in parallel with other settings on mount) between Boards and Labels; Labels section (LabelEditor for mode/type) scoped to activeBoard.id; High Priority Daily Limit numeric input; starter questions editor; Connection section; Account section
       LoginPage.tsx     # shown only after deliberate sign-out; Google + magic-link sign-in options
     utils/
       taskDateUtils.ts  # date helpers: getColumn(), getDropDate(), getEffectiveDate(), getEffectiveDateField(), formatDate(); ColumnKey covers 'overdue'|'today'|'tomorrow'|'day_after_tomorrow'|'upcoming'|'nodate'; getEffectiveDate() returns earliest of must_do_by / target_date when both are set
@@ -102,7 +106,7 @@ frontend/
       taskFilters.test.ts
       taskPriority.test.ts
       client.test.ts    # 6 unit tests for apiFetch: Bearer header presence/absence, Content-Type, URL construction, error handling, 204 No Content
-      boards.api.test.ts  # 7 unit tests for boards API (getBoards, createBoard, updateBoard, deleteBoard) with mocked apiFetch
+      boards.api.test.ts  # 9 unit tests for boards API (getBoards, createBoard, updateBoard, deleteBoard) with mocked apiFetch; includes 2 tests for updateBoard color (hex string and null clear) added in PR #37
     App.tsx             # wraps AppRoutes in AuthProvider; AppRoutes renders EmailConfirmationPage (cross-device magic link), LoginPage (post-sign-out), or FilterProvider → BoardProvider → BrowserRouter → Layout
     main.tsx
   .env.example          # VITE_FIREBASE_* env var template
@@ -165,7 +169,7 @@ mobile/                 # React Native + Expo SDK 54 managed workflow
 
 **Board scoping**: All resources (tasks, labels, conversations) belong to exactly one board. `board_service.resolve_board_id(db, user_id, board_id?)` is the single entry point for board resolution in all routers — it validates ownership when `board_id` is supplied and calls `ensure_board_seeded()` when it is omitted, returning the user's default board and lazily creating "General tasks" + seeding 9 default labels for brand-new users. New boards created by users via `POST /boards` start empty (no label seeding). `MAX_BOARDS_PER_USER = 10` is enforced by `board_service.create_board()`.
 
-**Active board (web frontend)**: `BoardContext` tracks the user's currently selected board in React state. On mount, `BoardProvider` calls `GET /boards` and sets `activeBoard` to the board with `is_default === true`. Active board is never persisted to `localStorage` — every app open resets to the default board. `setActiveBoard` calls `FilterContext.clearLabels()` when the board actually changes (labels from one board are not valid in another). All data-fetching hooks (`useTasks`, `useLabels`) and direct API calls in pages (`TaskDetailPage`, `ChatPage`, `ReportsPage`, `SettingsPage`) read `activeBoard.id` and pass it as `board_id` to their API calls. Every `BoardContext` mutation (create, rename, set-default, delete) awaits `fetchBoards()` to refresh the full boards list — no local-state patching.
+**Active board (web frontend)**: `BoardContext` tracks the user's currently selected board in React state. On mount, `BoardProvider` calls `GET /boards` and sets `activeBoard` to the board with `is_default === true`. Active board is never persisted to `localStorage` — every app open resets to the default board. `setActiveBoard` calls `FilterContext.clearLabels()` when the board actually changes (labels from one board are not valid in another). All data-fetching hooks (`useTasks`, `useLabels`) and direct API calls in pages (`TaskDetailPage`, `ChatPage`, `ReportsPage`, `SettingsPage`) read `activeBoard.id` and pass it as `board_id` to their API calls. Every `BoardContext` mutation (create, rename, set-default, set-color, delete) awaits `fetchBoards()` to refresh the full boards list — no local-state patching. `setColorBoard(id, color)` calls `updateBoard(id, { color })` then `fetchBoards()` so the board list (and swatches) reflect the new color immediately.
 
 **Label seeding (board-scoped)**: `label_service.seed_board_labels(db, board_id, user_id)` seeds the 9 LABEL_SEED entries into a specific board. It is called only during initial board creation (via `ensure_board_seeded` in `board_service`). New boards created by users are NOT seeded. The sentinel is "this board has 0 labels" — checked per-board, not per-user.
 
@@ -243,7 +247,7 @@ cd backend && DATABASE_URL=... python3 tests/test_api.py
 cd backend && python3 -m pytest tests/unit/ -v
 ```
 
-**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils` (including overdue and day_after_tomorrow column logic), `taskFilters`, `taskPriority` utilities, `client.ts` auth header behaviour, and `boards` API (73 tests total). Run with:
+**Frontend unit tests** (`src/__tests__/`): Vitest. Cover `taskDateUtils` (including overdue and day_after_tomorrow column logic), `taskFilters`, `taskPriority` utilities, `client.ts` auth header behaviour, and `boards` API (75 tests total). Run with:
 ```bash
 cd frontend && npx vitest run
 ```
