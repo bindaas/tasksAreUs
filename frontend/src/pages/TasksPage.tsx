@@ -238,13 +238,13 @@ export function TasksPage() {
         </div>
       )}
 
-      {loading && (
+      {loading && viewMode !== 'focused' && (
         <div className="flex justify-center py-12">
           <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
         </div>
       )}
 
-      {(error || dropError) && (
+      {(error || dropError) && viewMode !== 'focused' && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
           {error ?? dropError}
         </div>

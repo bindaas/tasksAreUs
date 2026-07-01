@@ -37,14 +37,21 @@ function BoardEditor({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const colorInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const colorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function handleSetColor(id: string, color: string | null) {
-    setErr(null);
-    try {
-      await onSetColor(id, color);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to set board color');
-    }
+  function handleSetColor(id: string, color: string | null) {
+    if (colorDebounceRef.current) clearTimeout(colorDebounceRef.current);
+    colorDebounceRef.current = setTimeout(async () => {
+      setBusy(true);
+      setErr(null);
+      try {
+        await onSetColor(id, color);
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : 'Failed to set board color');
+      } finally {
+        setBusy(false);
+      }
+    }, 300);
   }
 
   async function handleRename(id: string) {
