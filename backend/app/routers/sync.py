@@ -4,11 +4,38 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from pydantic import ValidationError
+
 from ..database import get_db
 from ..dependencies import get_current_user
 from ..models import Belief, Board, Label, Task, TaskLabel, UserSettings
-from ..schemas import SyncChanges, SyncRequest, SyncResponse, TaskLabelSync
+from ..schemas import MAX_TASK_LINKS, SyncChanges, SyncRequest, SyncResponse, TaskLabelSync, TaskLink
 from ..services import board_service as board_svc
+
+
+def _validate_sync_links(raw_links: Any) -> List[Dict[str, Any]]:
+    """Validate a sync client's raw links payload, keeping whatever is valid.
+
+    Sync push payloads are raw dicts (SyncChanges.tasks bypasses TaskCreate/TaskUpdate
+    Pydantic validation), so the max-3/scheme/length checks that POST/PUT /tasks get
+    for free via Pydantic must be re-applied here explicitly. Unlike POST/PUT (where an
+    invalid link fails the whole request), a sync push has no way to surface a per-field
+    error back to the client, so an item-level failure here (or being out of sync with a
+    validation rule change) shouldn't silently discard every other valid link — each item
+    is validated independently, invalid ones are dropped, and the result is capped at
+    MAX_TASK_LINKS.
+    """
+    if not raw_links or not isinstance(raw_links, list):
+        return []
+    valid: List[Dict[str, Any]] = []
+    for item in raw_links:
+        try:
+            valid.append(TaskLink.model_validate(item).model_dump())
+        except ValidationError:
+            continue
+        if len(valid) == MAX_TASK_LINKS:
+            break
+    return valid
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 
@@ -58,6 +85,7 @@ def sync(
                 state=t_data.get("state", "pending"),
                 is_deleted=t_data.get("is_deleted", False),
                 is_high_priority=t_data.get("is_high_priority", False),
+                links=_validate_sync_links(t_data.get("links")),
                 updated_at=client_updated_at,
                 created_at=_parse_dt(t_data.get("created_at")) or now,
             )
@@ -83,6 +111,8 @@ def sync(
                 server_task.state = t_data.get("state", server_task.state)
                 server_task.is_deleted = t_data.get("is_deleted", server_task.is_deleted)
                 server_task.is_high_priority = t_data.get("is_high_priority", server_task.is_high_priority)
+                if "links" in t_data:
+                    server_task.links = _validate_sync_links(t_data.get("links"))
                 server_task.updated_at = client_updated_at
                 if "must_do_by" in t_data:
                     from datetime import date
@@ -170,6 +200,7 @@ def sync(
             "completed_at": t.completed_at.isoformat() if t.completed_at else None,
             "is_high_priority": t.is_high_priority,
             "is_deleted": t.is_deleted,
+            "links": t.links or [],
             "created_at": t.created_at.isoformat(),
             "updated_at": t.updated_at.isoformat(),
             "label_ids": [l.id for l in t.labels],

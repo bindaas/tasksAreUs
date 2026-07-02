@@ -15,6 +15,7 @@ from app.services.task_service import (
     _get_high_priority_limit,
     _is_hp_eligible_date,
     complete_task,
+    create_task,
     update_task,
 )
 
@@ -406,3 +407,83 @@ class TestCountHighPriorityForDate:
         count = _count_high_priority_for_date(db, "user-1", None)
         assert count == 0
         db.query.assert_not_called()
+
+
+# ── create_task links ──────────────────────────────────────────────────────────
+
+class TestCreateTaskLinks:
+    def _make_db(self):
+        db = MagicMock()
+        db.add = MagicMock()
+        db.flush = MagicMock()
+        db.commit = MagicMock()
+        db.refresh = MagicMock()
+        return db
+
+    def test_defaults_to_empty_list_when_omitted(self):
+        db = self._make_db()
+        task = create_task(
+            db, user_id="user-1", board_id="board-1", title="Test",
+            notes=None, must_do_by=None, target_date=None, label_ids=[],
+        )
+        assert task.links == []
+
+    def test_defaults_to_empty_list_when_none(self):
+        db = self._make_db()
+        task = create_task(
+            db, user_id="user-1", board_id="board-1", title="Test",
+            notes=None, must_do_by=None, target_date=None, label_ids=[], links=None,
+        )
+        assert task.links == []
+
+    def test_stores_provided_links(self):
+        db = self._make_db()
+        links = [{"id": "l1", "url": "https://example.com", "description": "Example"}]
+        task = create_task(
+            db, user_id="user-1", board_id="board-1", title="Test",
+            notes=None, must_do_by=None, target_date=None, label_ids=[], links=links,
+        )
+        assert task.links == links
+
+
+# ── update_task links (full-replace semantics, matching label_ids) ─────────────
+
+class TestUpdateTaskLinks:
+    def _make_task(self):
+        task = MagicMock()
+        task.id = "task-1"
+        task.must_do_by = None
+        task.target_date = None
+        task.labels = []
+        task.links = [{"id": "l1", "url": "https://example.com", "description": "Existing"}]
+        return task
+
+    def _make_db(self):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.delete.return_value = None
+        db.commit.return_value = None
+        db.refresh.side_effect = lambda t: None
+        return db
+
+    def test_replaces_links_when_provided(self):
+        task = self._make_task()
+        db = self._make_db()
+        new_links = [{"id": "l2", "url": "https://new.example.com", "description": "New"}]
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, links=new_links)
+        assert task.links == new_links
+
+    def test_empty_list_clears_all_links(self):
+        task = self._make_task()
+        db = self._make_db()
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, links=[])
+        assert task.links == []
+
+    def test_omitted_links_preserves_existing(self):
+        task = self._make_task()
+        original = task.links
+        db = self._make_db()
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None)
+        assert task.links == original

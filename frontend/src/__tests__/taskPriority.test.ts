@@ -15,6 +15,7 @@ function makeTask(id: string, is_high_priority: boolean): Task {
     labels: [],
     is_high_priority,
     is_deleted: false,
+    links: [],
     created_at: '2026-05-26T00:00:00Z',
     updated_at: '2026-05-26T00:00:00Z',
   };

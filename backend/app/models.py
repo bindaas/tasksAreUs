@@ -106,6 +106,7 @@ class Task(Base):
     completed_at = Column(DateTime(timezone=True), nullable=True)
     is_high_priority = Column(Boolean, default=False, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
+    links = Column(JSONB, nullable=False, default=list)
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

@@ -134,6 +134,15 @@ Default config (created lazily on first GET, upsert-safe): `board_selection = al
 - **State**: Pending or Done
 - **High priority**: boolean flag. High priority is only meaningful for tasks whose effective date (earliest of `must_do_by` and `target_date`) falls on today or tomorrow. **`getEffectiveDate` correctly returns the minimum of the two dates when both are set (fixed in PR #20 for both web and mobile clients).** The backend auto-resets it to `false` whenever the effective date falls outside that window. At most **N high-priority tasks** are allowed per day (where N is the user-configured **High Priority Daily Limit**, defaulting to 3, minimum 1); the API returns 422 when the limit would be exceeded.
 
+### Links (shipped — PR #39)
+
+A task can have up to **3 links**, each with a required URL and a required short description (up to 200 characters). A URL must start with `http://` or `https://` (up to 2048 characters) — other schemes (e.g. `javascript:`, `data:`, `mailto:`) are rejected, both by client-side validation before submit and by the API.
+
+- **Task Form**: an "+ Add link" control adds a description + URL row pair (disabled once 3 links are present); each row can be removed independently. Saving is blocked with an inline error if a row has only one of URL/description filled in, or if a URL doesn't start with `http://`/`https://`; fully-blank rows are silently skipped. Saving a task always sends the full current link list to the API — removing all links and saving clears them.
+- **Task cards / rows** show each link by its description, not the raw URL. On web, hovering over a link reveals the full URL via a native tooltip and clicking opens it in a new tab. On mobile, tapping a link chip opens the URL directly — there is no hover step on touch, so the description is the only text shown.
+- Links are **not yet supported by the AI conversational interface or belief generation** — tasks created via chat always have an empty links list; the AI does not read, suggest, or manage links.
+- Links round-trip through offline sync on both platforms.
+
 ### Labels
 A task can have zero or more labels in fixed system-defined categories. A task may have **multiple labels within the same category** (e.g. both `online` and `email` under Mode).
 
@@ -227,13 +236,14 @@ The primary interaction mode. Each conversation is tied to a specific board (via
 - **Label filter chips** are shown above the board (Mode / Type categories only — Frequency category hidden as of PR #29). Filter state persists across navigation via React context.
 - **Text search** filters tasks by title and notes simultaneously (case-insensitive). Search and label filters compose with AND semantics.
 - When navigating to New Task while a label filter is active, those labels are pre-checked in the form.
-- **Task cards** show: title, high-priority badge (orange "High") when applicable, `must_do_by` date in red with "Overdue ·" prefix when past, `target_date` in gray (hidden when equal to `must_do_by`), and label badges in Mode → Type order (Frequency badges removed from UI as of PR #29; tasks with existing frequency labels render without a frequency badge). Inline edit (title + labels), inline complete, and inline delete are available directly on cards.
+- **Task cards** show: title, high-priority badge (orange "High") when applicable, `must_do_by` date in red with "Overdue ·" prefix when past, `target_date` in gray (hidden when equal to `must_do_by`), label badges in Mode → Type order (Frequency badges removed from UI as of PR #29; tasks with existing frequency labels render without a frequency badge), and up to 3 links (shipped — PR #39; shown as their description — hovering reveals the full URL via a native tooltip, clicking opens it in a new tab). Inline edit (title + labels), inline complete, and inline delete are available directly on cards.
 
 ### Task Form (Create / Edit)
 
-- Fields: Title (required), Notes, Must do by (date), Target date (date), High priority checkbox (visible only when at least one date field is set to today or tomorrow), Labels.
+- Fields: Title (required), Notes, Must do by (date), Target date (date), High priority checkbox (visible only when at least one date field is set to today or tomorrow), Labels, Links (up to 3, shipped — PR #39).
 - High priority checkbox disappears and submits as `false` for all other dates.
 - Both date fields show an **× clear button** when a date is set, allowing one-click removal. In edit mode, clearing a date sends an explicit `null` to the backend so the field is actually cleared (not silently omitted).
+- **Links (shipped — PR #39)**: an "+ Add link" control (disabled at 3 links) adds a description + URL row; each row has its own remove button. See "Links" under Task Model for validation rules.
 
 ### Chat Page
 
@@ -317,7 +327,7 @@ The Tasks tab is fully implemented as a `SectionList` grouped by date proximity:
 
 - **Grouped sections**: Overdue (red header) → Today → Tomorrow → Day After Tomorrow → Upcoming → No Date; empty sections are hidden.
 - **Collapse / expand sections (shipped — PR #26)**: Each section header is tappable to collapse or expand it. Today and Overdue start expanded on first load; all other sections start collapsed. When collapsed, the task count is shown in parentheses after the section title (e.g. "Tomorrow (3)"). An "Expand" / "Collapse" text button in the screen header toggles all sections at once.
-- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (mode=green, type=purple — frequency badges removed from UI as of PR #29). Tapping a task row opens it in the task form in edit mode. Completed tasks shown via the filter panel appear faded (reduced opacity) with a strikethrough title and without the high-priority bar or star.
+- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (mode=green, type=purple — frequency badges removed from UI as of PR #29), and up to 3 link chips (shipped — PR #39; shown as their description — tapping a chip opens the URL directly, no hover step on touch). Tapping a task row opens it in the task form in edit mode; tapping a link chip opens the link instead. Completed tasks shown via the filter panel appear faded (reduced opacity) with a strikethrough title and without the high-priority bar or star.
 - **Filter panel (shipped — PR #26)**: A `☰` icon in the screen header opens a collapsible filter panel. The icon turns indigo when any filter is active. The panel provides:
   - **Text search**: filters tasks by title and notes simultaneously (case-insensitive, live filtering) — same AND semantics as the web client.
   - **Label chips**: grouped by category (Mode / Type — Frequency chips removed as of PR #29) with the same category colors as task badges; tap to toggle; multiple selections compose with AND logic.
@@ -348,6 +358,7 @@ New files shipped in PR #20:
 - **Target date** — date picker field with × clear button
 - **High priority** — checkbox visible only when at least one date is set to today or tomorrow (same eligibility rule as the web form). The checkbox is hidden and submits as `false` for all other dates. `isFormHighPriorityEligible` guards against overdue dates: both conditions must hold — the date must be `>= today` **and** `<= tomorrow`.
 - **Labels** — grouped by Mode → Type (Frequency section removed as of PR #29); tap to toggle; matches web form colour coding (mode=green, type=purple)
+- **Links (shipped — PR #39)** — up to 3 description + URL row pairs; an "+ Add link" button (disabled at 3) adds a row, each row has its own remove button. Same validation as web: both fields required per non-blank row, URL must start with `http://` or `https://`. See "Links" under Task Model for full rules.
 
 **Behaviour:**
 - **Create mode** ("New Task" header): opened by the "+" button; title field is auto-focused; saves via `POST /api/v1/tasks`.
@@ -432,4 +443,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #38 (focused view mobile PR 3/3: color swatches in Settings/Boards, FocusedViewConfigSection in SettingsScreen, All/Focus view toggle in TasksScreen, FocusedView and FocusedTaskCard components, focusedView.ts mobile API module, 9 mobile tests in boards.api.test.ts + 7 new in focusedView.api.test.ts = 86 total; color field on Board interface + setColorBoard in BoardContext; previously aspirational mobile section is now shipped)*
+*Last updated by — *Bashful* after PR #39 (task links: up to 3 URL + description links per task, added to Task Model and to the web/mobile Task Form and Task card/row display sections; full-replace semantics on save; AI conversational interface explicitly out of scope — chat-created tasks always have an empty links list)*

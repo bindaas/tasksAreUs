@@ -17,7 +17,12 @@ import { listLabels } from '../api/labels';
 import { useBoard } from '../context/BoardContext';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
-import type { Task, Label, CreateTaskBody, UpdateTaskBody } from '../types';
+import { isValidLinkUrl, MAX_TASK_LINKS } from '../utils/taskLinks';
+import type { Task, Label, TaskLink, CreateTaskBody, UpdateTaskBody } from '../types';
+
+function newLinkId(): string {
+  return `link-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 const LABEL_BG: Record<string, string> = {
   mode: '#dcfce7',
@@ -51,6 +56,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
   const [isHighPriority, setIsHighPriority] = useState(false);
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
   const [allLabels, setAllLabels] = useState<Label[]>([]);
+  const [links, setLinks] = useState<TaskLink[]>([]);
 
   const [activeDatePicker, setActiveDatePicker] = useState<DateField>(null);
   const [loadingInitial, setLoadingInitial] = useState(isEditMode);
@@ -77,6 +83,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
         setTargetDate(task.target_date ?? '');
         setIsHighPriority(task.is_high_priority);
         setSelectedLabelIds(new Set(task.labels.map((l) => l.id)));
+        setLinks(task.links ?? []);
       } else {
         setSelectedLabelIds(new Set(initialLabelIds ?? []));
       }
@@ -100,6 +107,19 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
     });
   }
 
+  function addLinkRow() {
+    if (links.length >= MAX_TASK_LINKS) return;
+    setLinks((prev) => [...prev, { id: newLinkId(), url: '', description: '' }]);
+  }
+
+  function removeLinkRow(id: string) {
+    setLinks((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  function updateLinkRow(id: string, field: 'url' | 'description', value: string) {
+    setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
+  }
+
   function handleDateChange(_event: unknown, selected?: Date) {
     if (Platform.OS === 'android') setActiveDatePicker(null);
     if (!selected) return;
@@ -113,6 +133,23 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
       setError('Title is required.');
       return;
     }
+
+    const validLinks: TaskLink[] = [];
+    for (const link of links) {
+      const url = link.url.trim();
+      const description = link.description.trim();
+      if (!url && !description) continue; // skip fully-blank rows
+      if (!url || !description) {
+        setError('Each link needs both a URL and a description.');
+        return;
+      }
+      if (!isValidLinkUrl(url)) {
+        setError('Links must start with http:// or https://');
+        return;
+      }
+      validLinks.push({ id: link.id, url, description });
+    }
+
     setError(null);
     setSaving(true);
     try {
@@ -123,6 +160,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
           is_high_priority: highPriorityEligible && isHighPriority,
           must_do_by: mustDoBy || null,
           target_date: targetDate || null,
+          links: validLinks,
         };
         if (notes.trim()) body.notes = notes.trim();
         await updateTask(taskId, body);
@@ -131,6 +169,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
           title: title.trim(),
           label_ids: Array.from(selectedLabelIds),
           is_high_priority: highPriorityEligible && isHighPriority,
+          links: validLinks,
         };
         if (notes.trim()) body.notes = notes.trim();
         if (mustDoBy) body.must_do_by = mustDoBy;
@@ -377,6 +416,54 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
             </View>
           </View>
         )}
+
+        {/* Links */}
+        <View className="mb-5">
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-sm font-medium text-gray-700">Links</Text>
+            <TouchableOpacity
+              onPress={addLinkRow}
+              disabled={links.length >= MAX_TASK_LINKS}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text className={`text-xs font-medium ${links.length >= MAX_TASK_LINKS ? 'text-gray-300' : 'text-indigo-600'}`}>
+                + Add link
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View className="gap-2">
+            {links.map((link) => (
+              <View key={link.id} className="flex-row items-start gap-2">
+                <View className="flex-1 gap-1.5">
+                  <TextInput
+                    value={link.description}
+                    onChangeText={(v) => updateLinkRow(link.id, 'description', v)}
+                    placeholder="Description"
+                    placeholderTextColor="#9ca3af"
+                    className="border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900"
+                  />
+                  <TextInput
+                    value={link.url}
+                    onChangeText={(v) => updateLinkRow(link.id, 'url', v)}
+                    placeholder="https://..."
+                    placeholderTextColor="#9ca3af"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="url"
+                    className="border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900"
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={() => removeLinkRow(link.id)}
+                  className="p-2"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text className="text-gray-400 text-base">×</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

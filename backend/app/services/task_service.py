@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from dateutil.relativedelta import relativedelta
 from fastapi import HTTPException
@@ -89,6 +89,7 @@ def create_task(
     label_ids: List[str],
     is_high_priority: bool = False,
     high_priority_limit: int = HIGH_PRIORITY_DAILY_LIMIT,
+    links: Optional[List[Dict[str, Any]]] = None,
 ) -> Task:
     labels = _resolve_labels(db, label_ids, user_id, board_id)
     effective = _effective_date(must_do_by, target_date)
@@ -109,6 +110,7 @@ def create_task(
         must_do_by=must_do_by,
         target_date=target_date,
         is_high_priority=final_priority,
+        links=links or [],
     )
     db.add(task)
     db.flush()
@@ -131,7 +133,10 @@ def update_task(
     clear_target_date: bool = False,
     is_high_priority: Optional[bool] = None,
     high_priority_limit: int = HIGH_PRIORITY_DAILY_LIMIT,
+    links: Optional[List[Dict[str, Any]]] = None,
 ) -> Task:
+    if links is not None:
+        task.links = links
     if title is not None:
         task.title = title
     if notes is not None:

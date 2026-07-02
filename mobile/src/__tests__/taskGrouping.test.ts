@@ -16,6 +16,7 @@ function makeTask(overrides: Partial<Pick<Task, 'id' | 'target_date' | 'must_do_
     labels: [],
     is_high_priority: false,
     is_deleted: false,
+    links: [],
     created_at: '2026-06-01T00:00:00',
     updated_at: '2026-06-01T00:00:00',
     ...overrides,

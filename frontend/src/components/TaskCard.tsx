@@ -196,6 +196,23 @@ export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = fal
                 ))}
               </div>
             )}
+            {task.links.length > 0 && (
+              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                {task.links.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    title={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline truncate max-w-[10rem]"
+                  >
+                    🔗 {link.description}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {task.state === 'pending' && (

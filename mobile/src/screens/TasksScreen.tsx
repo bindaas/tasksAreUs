@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   Switch,
+  Linking,
 } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -37,7 +38,13 @@ import {
 } from '../utils/taskDateUtils';
 import { TaskFormScreen } from './TaskFormScreen';
 import { FocusedView } from '../components/FocusedView';
+import { isValidLinkUrl } from '../utils/taskLinks';
 import type { Task, Label, LabelCategory, UpdateTaskBody } from '../types';
+
+function openTaskLink(url: string) {
+  if (!isValidLinkUrl(url)) return;
+  Linking.openURL(url);
+}
 
 const LABEL_BG: Record<string, string> = {
   mode: '#dcfce7',
@@ -103,6 +110,22 @@ function TaskRow({
             <View className="flex-row flex-wrap">
               {task.labels.map((label) => (
                 <LabelBadge key={label.id} label={label} />
+              ))}
+            </View>
+          )}
+          {task.links.length > 0 && (
+            <View className="flex-row flex-wrap mt-1">
+              {task.links.map((link) => (
+                <TouchableOpacity
+                  key={link.id}
+                  onPress={() => openTaskLink(link.url)}
+                  className="mr-3 mb-1 max-w-[45%]"
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Text className="text-indigo-600 text-xs" numberOfLines={1}>
+                    🔗 {link.description}
+                  </Text>
+                </TouchableOpacity>
               ))}
             </View>
           )}

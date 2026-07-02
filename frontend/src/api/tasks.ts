@@ -6,6 +6,12 @@ export interface Label {
   value: string;
 }
 
+export interface TaskLink {
+  id: string;
+  url: string;
+  description: string;
+}
+
 export interface Task {
   id: string;
   board_id: string;
@@ -18,6 +24,7 @@ export interface Task {
   labels: Label[];
   is_high_priority: boolean;
   is_deleted: boolean;
+  links: TaskLink[];
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +36,7 @@ export interface CreateTaskBody {
   target_date?: string;
   label_ids: string[];
   is_high_priority?: boolean;
+  links: TaskLink[];
 }
 
 export interface UpdateTaskBody {
@@ -38,6 +46,11 @@ export interface UpdateTaskBody {
   target_date?: string | null;
   label_ids?: string[];
   is_high_priority?: boolean;
+  // Omit entirely to leave links unchanged (full-replace semantics — the backend
+  // treats "field absent" as unchanged and any list, including [], as a replace).
+  // TaskForm (full save) must always include this; partial updates (drag-drop,
+  // quick-edit, priority toggle) should omit it.
+  links?: TaskLink[];
 }
 
 export interface CompleteTaskBody {

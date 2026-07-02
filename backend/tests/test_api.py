@@ -636,6 +636,150 @@ def main():
     assert_eq("PUT /tasks/:id target_date update → 200", r.status_code, 200)
     assert_eq("target_date updated via PUT", r.json()["target_date"], next_week)
 
+    # ── Tasks: Links (PR #39) ──────────────────────────────────────────────────
+    print("\n── Tasks: Links (PR #39) ────────────────────────────────")
+
+    # POST /tasks — task without links defaults to an empty list
+    r = client.post("/tasks", headers=H, json={"title": "Links default test task", "label_ids": []})
+    assert_eq("POST /tasks without links → 201", r.status_code, 201)
+    links_default_task = r.json()
+    links_default_task_id = links_default_task["id"]
+    assert_in("task response has links field", "links", links_default_task)
+    assert_eq("task links defaults to empty list when omitted", links_default_task["links"], [])
+    client.delete(f"/tasks/{links_default_task_id}", headers=H)
+
+    # POST /tasks — create with up to MAX_TASK_LINKS (3) valid links
+    link_a = {"id": str(uuid.uuid4()), "url": "https://example.com/a", "description": "Link A"}
+    link_b = {"id": str(uuid.uuid4()), "url": "http://example.com/b", "description": "Link B"}
+    link_c = {"id": str(uuid.uuid4()), "url": "https://example.com/c", "description": "Link C"}
+    r = client.post("/tasks", headers=H, json={
+        "title": "Task with 3 links",
+        "label_ids": [],
+        "links": [link_a, link_b, link_c],
+    })
+    assert_eq("POST /tasks with 3 links → 201", r.status_code, 201)
+    links_task = r.json()
+    links_task_id = links_task["id"]
+    assert_eq("task has 3 links", len(links_task["links"]), 3)
+    returned_link_ids = {l["id"] for l in links_task["links"]}
+    assert_eq("returned link ids match submitted ids",
+              returned_link_ids, {link_a["id"], link_b["id"], link_c["id"]})
+    returned_urls = {l["url"] for l in links_task["links"]}
+    assert_eq("returned link urls match submitted urls",
+              returned_urls, {link_a["url"], link_b["url"], link_c["url"]})
+
+    # GET /tasks/:id round-trips links
+    r = client.get(f"/tasks/{links_task_id}", headers=H)
+    assert_eq("GET /tasks/:id with links → 200", r.status_code, 200)
+    assert_eq("GET /tasks/:id links count round-trips", len(r.json()["links"]), 3)
+
+    # GET /tasks list includes the links field on each task
+    r = client.get("/tasks", headers=H, params={"state": "pending"})
+    links_task_in_list = next((t for t in r.json()["tasks"] if t["id"] == links_task_id), None)
+    assert_true("links task found in GET /tasks list", links_task_in_list is not None)
+    if links_task_in_list:
+        assert_in("task in GET /tasks list has links field", "links", links_task_in_list)
+        assert_eq("task in GET /tasks list has 3 links", len(links_task_in_list["links"]), 3)
+
+    # POST /tasks — a 4th link exceeds MAX_TASK_LINKS (3) → 422
+    link_d = {"id": str(uuid.uuid4()), "url": "https://example.com/d", "description": "Link D"}
+    r = client.post("/tasks", headers=H, json={
+        "title": "Task with 4 links (should fail)",
+        "label_ids": [],
+        "links": [link_a, link_b, link_c, link_d],
+    })
+    assert_eq("POST /tasks with 4 links → 422 (max 3)", r.status_code, 422)
+
+    # POST /tasks — non-http(s) URL schemes are rejected
+    for bad_scheme_url in [
+        "javascript:alert(1)",
+        "data:text/html,<script>alert(1)</script>",
+        "mailto:test@example.com",
+        "ftp://example.com/file",
+    ]:
+        r = client.post("/tasks", headers=H, json={
+            "title": "Task with bad link scheme",
+            "label_ids": [],
+            "links": [{"id": str(uuid.uuid4()), "url": bad_scheme_url, "description": "Bad link"}],
+        })
+        assert_eq(f"POST /tasks with url scheme '{bad_scheme_url.split(':')[0]}:' → 422", r.status_code, 422)
+
+    # POST /tasks — schemeless URL rejected
+    r = client.post("/tasks", headers=H, json={
+        "title": "Task with schemeless link",
+        "label_ids": [],
+        "links": [{"id": str(uuid.uuid4()), "url": "example.com", "description": "No scheme"}],
+    })
+    assert_eq("POST /tasks with schemeless url → 422", r.status_code, 422)
+
+    # POST /tasks — empty/whitespace-only description rejected
+    r = client.post("/tasks", headers=H, json={
+        "title": "Task with empty link description",
+        "label_ids": [],
+        "links": [{"id": str(uuid.uuid4()), "url": "https://example.com", "description": "   "}],
+    })
+    assert_eq("POST /tasks with whitespace-only link description → 422", r.status_code, 422)
+
+    # POST /tasks — missing id rejected
+    r = client.post("/tasks", headers=H, json={
+        "title": "Task with link missing id",
+        "label_ids": [],
+        "links": [{"url": "https://example.com", "description": "No id"}],
+    })
+    assert_eq("POST /tasks with link missing id → 422", r.status_code, 422)
+
+    # POST /tasks — oversized description rejected (max 200 chars)
+    r = client.post("/tasks", headers=H, json={
+        "title": "Task with oversized link description",
+        "label_ids": [],
+        "links": [{"id": str(uuid.uuid4()), "url": "https://example.com", "description": "x" * 201}],
+    })
+    assert_eq("POST /tasks with oversized link description → 422", r.status_code, 422)
+
+    # POST /tasks — oversized url rejected (max 2048 chars)
+    r = client.post("/tasks", headers=H, json={
+        "title": "Task with oversized link url",
+        "label_ids": [],
+        "links": [{"id": str(uuid.uuid4()), "url": "https://example.com/" + "x" * 2048, "description": "Big"}],
+    })
+    assert_eq("POST /tasks with oversized link url → 422", r.status_code, 422)
+
+    # PUT /tasks/:id — full-replace semantics: providing links replaces the whole array
+    new_link = {"id": str(uuid.uuid4()), "url": "https://example.com/replaced", "description": "Replaced link"}
+    r = client.put(f"/tasks/{links_task_id}", headers=H, json={"links": [new_link]})
+    assert_eq("PUT /tasks/:id replace links → 200", r.status_code, 200)
+    replaced_result = r.json()
+    assert_eq("links replaced to 1 item", len(replaced_result["links"]), 1)
+    assert_eq("replaced link id matches", replaced_result["links"][0]["id"], new_link["id"])
+
+    # PUT /tasks/:id — omitting links entirely preserves existing links (does not clear them)
+    r = client.put(f"/tasks/{links_task_id}", headers=H, json={"title": "Task with 3 links (renamed)"})
+    assert_eq("PUT /tasks/:id omitting links → 200", r.status_code, 200)
+    omit_links_result = r.json()
+    assert_eq("links preserved when omitted from PUT body", len(omit_links_result["links"]), 1)
+    assert_eq("preserved link id matches previous replace",
+              omit_links_result["links"][0]["id"], new_link["id"])
+
+    # PUT /tasks/:id — explicit empty list clears all links
+    r = client.put(f"/tasks/{links_task_id}", headers=H, json={"links": []})
+    assert_eq("PUT /tasks/:id links=[] → 200", r.status_code, 200)
+    assert_eq("links cleared to empty list", r.json()["links"], [])
+
+    # PUT /tasks/:id — a 4th link exceeds MAX_TASK_LINKS (3) → 422
+    r = client.put(f"/tasks/{links_task_id}", headers=H, json={
+        "links": [link_a, link_b, link_c, link_d],
+    })
+    assert_eq("PUT /tasks/:id with 4 links → 422 (max 3)", r.status_code, 422)
+
+    # PUT /tasks/:id — bad url scheme rejected
+    r = client.put(f"/tasks/{links_task_id}", headers=H, json={
+        "links": [{"id": str(uuid.uuid4()), "url": "javascript:alert(1)", "description": "Bad"}],
+    })
+    assert_eq("PUT /tasks/:id with bad url scheme → 422", r.status_code, 422)
+
+    # Clean up
+    client.delete(f"/tasks/{links_task_id}", headers=H)
+
     # ── Date-clearing via PUT (PR #3 fix) ─────────────────────────────────────
     # Create a task that has both dates set so we can verify clearing them.
     print("\n── Tasks: Clear dates via PUT (null vs omit) ───────────")
@@ -1540,6 +1684,159 @@ def main():
               r.json()["board_id"], default_board_id)
     # Clean up
     client.delete(f"/tasks/{stale_sync_task_id}", headers=H)
+
+    # ── Sync: task links (PR #39) ─────────────────────────────────────────────
+    # sync.py bypasses TaskCreate/TaskUpdate Pydantic validation for task fields
+    # (SyncChanges.tasks is a list of raw dicts), so links must be explicitly
+    # threaded through both the push-apply and pull-response code paths, and
+    # re-validated manually on push (max-3 / scheme / length) since Pydantic
+    # validation doesn't run automatically on that path.
+    print("\n── Sync: task links (PR #39) ────────────────────────────")
+
+    # Push a new task via sync with a valid link — must be stored and round-trip on GET
+    sync_links_task_id = str(uuid.uuid4())
+    sync_link = {"id": str(uuid.uuid4()), "url": "https://example.com/sync", "description": "Sync link"}
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_links_task_id,
+                "user_id": test_user_id,
+                "title": "Sync task with links",
+                "state": "pending",
+                "must_do_by": None,
+                "target_date": None,
+                "notes": None,
+                "is_high_priority": False,
+                "is_deleted": False,
+                "links": [sync_link],
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+            "beliefs": [],
+            "settings": None,
+        },
+    })
+    assert_eq("POST /sync push new task with links → 200", r.status_code, 200)
+    r = client.get(f"/tasks/{sync_links_task_id}", headers=H)
+    assert_eq("GET synced task with links → 200", r.status_code, 200)
+    assert_eq("synced task links persisted", len(r.json()["links"]), 1)
+    assert_eq("synced task link id matches", r.json()["links"][0]["id"], sync_link["id"])
+
+    # Push a task with an invalid-scheme link — sync ingestion re-validates each item
+    # independently (bypasses Pydantic on the raw-dict path); the invalid link must be
+    # dropped but the push itself must still succeed (200), not be rejected outright.
+    sync_bad_link_task_id = str(uuid.uuid4())
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_bad_link_task_id,
+                "user_id": test_user_id,
+                "title": "Sync task with bad-scheme link",
+                "state": "pending",
+                "must_do_by": None,
+                "target_date": None,
+                "notes": None,
+                "is_high_priority": False,
+                "is_deleted": False,
+                "links": [{"id": str(uuid.uuid4()), "url": "javascript:alert(1)", "description": "Bad"}],
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+            "beliefs": [],
+            "settings": None,
+        },
+    })
+    assert_eq("POST /sync push task with bad-scheme link → 200 (push succeeds)", r.status_code, 200)
+    r = client.get(f"/tasks/{sync_bad_link_task_id}", headers=H)
+    assert_eq("GET synced task with bad-scheme link → 200", r.status_code, 200)
+    assert_eq("invalid-scheme link dropped, not persisted", r.json()["links"], [])
+
+    # Push a task with more than MAX_TASK_LINKS (3) links — must be truncated to 3,
+    # not rejected outright (sync has no per-field error channel back to the client).
+    sync_overcap_task_id = str(uuid.uuid4())
+    overcap_links = [
+        {"id": str(uuid.uuid4()), "url": f"https://example.com/{i}", "description": f"Link {i}"}
+        for i in range(5)
+    ]
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_overcap_task_id,
+                "user_id": test_user_id,
+                "title": "Sync task with over-cap links",
+                "state": "pending",
+                "must_do_by": None,
+                "target_date": None,
+                "notes": None,
+                "is_high_priority": False,
+                "is_deleted": False,
+                "links": overcap_links,
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+            "beliefs": [],
+            "settings": None,
+        },
+    })
+    assert_eq("POST /sync push task with 5 links → 200 (truncates, doesn't reject)", r.status_code, 200)
+    r = client.get(f"/tasks/{sync_overcap_task_id}", headers=H)
+    assert_eq("GET synced task with over-cap links → 200", r.status_code, 200)
+    assert_eq("over-cap links truncated to MAX_TASK_LINKS (3)", len(r.json()["links"]), 3)
+
+    # Push an update to the first synced task (client wins via a newer updated_at)
+    # that omits the links field entirely — existing links must be preserved, not cleared.
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_links_task_id,
+                "user_id": test_user_id,
+                "title": "Sync task with links (renamed, links field omitted)",
+                "state": "pending",
+                "must_do_by": None,
+                "target_date": None,
+                "notes": None,
+                "is_high_priority": False,
+                "is_deleted": False,
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+            "beliefs": [],
+            "settings": None,
+        },
+    })
+    assert_eq("POST /sync push update omitting links field → 200", r.status_code, 200)
+    r = client.get(f"/tasks/{sync_links_task_id}", headers=H)
+    assert_eq("GET task after sync update omitting links → 200", r.status_code, 200)
+    assert_eq("links preserved when sync push omits the field", len(r.json()["links"]), 1)
+    assert_eq("preserved link id matches original sync link", r.json()["links"][0]["id"], sync_link["id"])
+
+    # Pull: the sync response includes links for tasks updated since last_synced_at
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {"tasks": [], "task_labels": [], "beliefs": [], "settings": None},
+    })
+    assert_eq("POST /sync pull after link pushes → 200", r.status_code, 200)
+    pulled_tasks = {t["id"]: t for t in r.json()["changes"]["tasks"]}
+    assert_true("sync pull includes the links task", sync_links_task_id in pulled_tasks)
+    if sync_links_task_id in pulled_tasks:
+        assert_in("pulled sync task has links field", "links", pulled_tasks[sync_links_task_id])
+        assert_eq("pulled sync task links match", len(pulled_tasks[sync_links_task_id]["links"]), 1)
+
+    # Clean up sync links test tasks
+    for tid in [sync_links_task_id, sync_bad_link_task_id, sync_overcap_task_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
 
     # ── Focused View: config (PR #36) ─────────────────────────────────────────
     print("\n── Focused View: config (PR #36) ────────────────────────────────")
