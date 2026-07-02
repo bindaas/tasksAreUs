@@ -6,7 +6,6 @@ users already get the new default via get_or_create_config().
 Run: DATABASE_URL=postgresql://... python3 scripts/reset_focused_view_config_default.py
 """
 import os
-import sys
 
 import psycopg2
 
