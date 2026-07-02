@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from app.models import Board, FocusedViewConfig, StateEnum, Task
 from app.services.focused_view_service import (
     date_window,
+    get_day_view_tasks,
     get_focused_tasks,
     get_or_create_config,
     update_config,
@@ -111,7 +112,7 @@ class TestGetOrCreateConfig:
         db.add.assert_called_once()
         db.commit.assert_called_once()
         assert result.board_selection == "all"
-        assert result.day_range == "today_tomorrow"
+        assert result.day_range == "today"
         assert result.selected_board_ids == []
 
     def test_handles_race_condition_via_integrity_error(self):
@@ -306,3 +307,69 @@ class TestGetFocusedTasks:
         result = get_focused_tasks(db, "user-1", config, self.TODAY)
 
         assert result == []
+
+
+# ── get_day_view_tasks ────────────────────────────────────────────────────────
+
+class TestGetDayViewTasks:
+    TODAY = date(2026, 6, 28)
+
+    def _setup_db(self, boards, tasks):
+        db = MagicMock()
+        board_mock = MagicMock()
+        board_mock.filter.return_value.order_by.return_value.all.return_value = boards
+        task_mock = MagicMock()
+        task_mock.filter.return_value.order_by.return_value.all.return_value = tasks
+        db.query.side_effect = [board_mock, task_mock]
+        return db
+
+    def test_returns_empty_when_no_boards(self):
+        db = MagicMock()
+        board_mock = MagicMock()
+        board_mock.filter.return_value.order_by.return_value.all.return_value = []
+        db.query.return_value = board_mock
+
+        result = get_day_view_tasks(db, "user-1", self.TODAY)
+
+        assert result == []
+
+    def test_includes_any_priority_tasks(self):
+        board = _make_board("b1", name="Alpha")
+        hp_task = _make_task("t1", "b1", is_high_priority=True, target_date=self.TODAY)
+        normal_task = _make_task("t2", "b1", is_high_priority=False, target_date=self.TODAY)
+        db = self._setup_db(boards=[board], tasks=[hp_task, normal_task])
+
+        result = get_day_view_tasks(db, "user-1", self.TODAY)
+
+        assert len(result) == 1
+        assert result[0]["tasks"] == [hp_task, normal_task]
+
+    def test_all_boards_included_regardless_of_config(self):
+        board_a = _make_board("ba", name="Alpha")
+        board_b = _make_board("bb", name="Beta")
+        task_a = _make_task("t1", "ba", target_date=self.TODAY)
+        task_b = _make_task("t2", "bb", target_date=self.TODAY)
+        db = self._setup_db(boards=[board_a, board_b], tasks=[task_a, task_b])
+
+        result = get_day_view_tasks(db, "user-1", self.TODAY)
+
+        assert {r["board_id"] for r in result} == {"ba", "bb"}
+
+    def test_omits_board_with_no_qualifying_tasks(self):
+        board = _make_board("b1", name="Alpha")
+        db = self._setup_db(boards=[board], tasks=[])
+
+        result = get_day_view_tasks(db, "user-1", self.TODAY)
+
+        assert result == []
+
+    def test_boards_ordered_alphabetically(self):
+        board_z = _make_board("bz", name="Zebra")
+        board_a = _make_board("ba", name="Alpha")
+        task_z = _make_task("t1", "bz", target_date=self.TODAY)
+        task_a = _make_task("t2", "ba", target_date=self.TODAY)
+        db = self._setup_db(boards=[board_a, board_z], tasks=[task_z, task_a])
+
+        result = get_day_view_tasks(db, "user-1", self.TODAY)
+
+        assert [r["board_name"] for r in result] == ["Alpha", "Zebra"]

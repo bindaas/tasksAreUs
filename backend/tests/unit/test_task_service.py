@@ -487,3 +487,80 @@ class TestUpdateTaskLinks:
         update_task(db, task, title=None, notes=None, must_do_by=None,
                     target_date=None, label_ids=None)
         assert task.links == original
+
+
+# ── update_task board_id (move task between boards) ─────────────────────────────
+
+class TestUpdateTaskBoardId:
+    def _make_task(self, board_id="board-1"):
+        task = MagicMock()
+        task.id = "task-1"
+        task.user_id = "user-1"
+        task.board_id = board_id
+        task.must_do_by = None
+        task.target_date = None
+        task.labels = []
+        return task
+
+    def _make_db(self):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.delete.return_value = None
+        db.commit.return_value = None
+        db.refresh.side_effect = lambda t: None
+        return db
+
+    @patch("app.services.task_service.board_svc")
+    def test_moving_board_clears_labels_even_without_label_ids(self, mock_board_svc):
+        task = self._make_task(board_id="board-1")
+        db = self._make_db()
+
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, board_id="board-2")
+
+        assert task.board_id == "board-2"
+        mock_board_svc.get_board_or_404.assert_called_once_with(db, "board-2", "user-1")
+        db.query.return_value.filter.return_value.delete.assert_called()
+
+    @patch("app.services.task_service.board_svc")
+    def test_moving_to_board_not_owned_raises_404(self, mock_board_svc):
+        mock_board_svc.get_board_or_404.side_effect = HTTPException(status_code=404, detail="Board not found")
+        task = self._make_task(board_id="board-1")
+        db = self._make_db()
+
+        with pytest.raises(HTTPException) as exc:
+            update_task(db, task, title=None, notes=None, must_do_by=None,
+                        target_date=None, label_ids=None, board_id="board-other-user")
+        assert exc.value.status_code == 404
+
+    @patch("app.services.task_service._resolve_labels", return_value=[])
+    @patch("app.services.task_service.board_svc")
+    def test_moving_board_with_new_label_ids_resolves_against_new_board(self, mock_board_svc, mock_resolve):
+        task = self._make_task(board_id="board-1")
+        db = self._make_db()
+
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=["l1"], board_id="board-2")
+
+        mock_resolve.assert_called_once_with(db, ["l1"], "user-1", "board-2")
+
+    @patch("app.services.task_service.board_svc")
+    def test_board_id_unchanged_when_omitted(self, mock_board_svc):
+        task = self._make_task(board_id="board-1")
+        db = self._make_db()
+
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, board_id=None)
+
+        assert task.board_id == "board-1"
+        mock_board_svc.get_board_or_404.assert_not_called()
+
+    @patch("app.services.task_service.board_svc")
+    def test_board_id_same_as_current_is_noop(self, mock_board_svc):
+        task = self._make_task(board_id="board-1")
+        db = self._make_db()
+
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, board_id="board-1")
+
+        assert task.board_id == "board-1"
+        mock_board_svc.get_board_or_404.assert_not_called()

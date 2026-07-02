@@ -80,9 +80,9 @@ Default config (created lazily on first GET, upsert-safe): `board_selection = al
 
 **Modified table: `boards`** — `color VARCHAR(7)` column added via startup migration `ALTER TABLE boards ADD COLUMN IF NOT EXISTS color VARCHAR(7)`.
 
-### Focused View API (shipped — PR #36, backend only)
+### Focused View API (shipped — PR #36, backend only; default changed in PR #40)
 
-- `GET /api/v1/focused-view/config` — returns the user's config, creating the default lazily via upsert if none exists.
+- `GET /api/v1/focused-view/config` — returns the user's config, creating the default lazily via upsert if none exists. **Default config (PR #40 change)**: `board_selection = all`, `day_range = "today"` (changed from `"today_tomorrow"` in PR #40; existing users migrated via one-off script), `selected_board_ids = []`.
 - `PUT /api/v1/focused-view/config` — updates `board_selection`, `day_range`, and optionally `selected_board_ids`. Validates: `board_selection` must be `all` or `selected`; `day_range` must be one of the three valid values; when `board_selection = selected`, `selected_board_ids` must be non-empty and all IDs must belong to the caller. Returns `400` for any violation.
 - `GET /api/v1/focused-view/tasks` — returns `is_high_priority=true` pending tasks grouped by board, filtered to the configured day range. Accepts optional `?reference_date=YYYY-MM-DD` query parameter (avoids server-side timezone issues; defaults to `date.today()` when omitted). Response shape: `{ "boards": [{ "board_id", "board_name", "board_color", "tasks": [TaskOut, ...] }, ...] }`.
 
@@ -124,6 +124,20 @@ Default config (created lazily on first GET, upsert-safe): `board_selection = al
 
 ---
 
+## Day View
+
+The Day View shows all pending tasks (any priority, not just high-priority) across all boards for a single calendar day. It is used as the backing data for Today and Tomorrow views (PR 2-3 of the 3-PR epic). Unlike Focused View, there is no configuration — Day View simply returns tasks due on the specified date.
+
+### Data Model
+
+Day View uses the same `focused_view_configs` table for its future per-view configuration (when views expand beyond just Focused and Day). Currently, only Focused View configuration is stored.
+
+### Day View API (shipped — PR #40, backend only)
+
+- `GET /api/v1/day-view/tasks?reference_date=YYYY-MM-DD` — returns all pending tasks (any `is_high_priority` value) with `must_do_by` or `target_date` equal to the specified `reference_date`, grouped by board (same response shape as Focused View: `{ "boards": [{ "board_id", "board_name", "board_color", "tasks": [TaskOut, ...] }, ...] }`). Boards are ordered alphabetically by name; within each board, tasks are sorted by `updated_at` descending. Boards with zero qualifying tasks are omitted. The `reference_date` query parameter is required (no default); omitting it returns `422`.
+
+---
+
 ## Task Model
 
 ### Core Fields
@@ -142,6 +156,15 @@ A task can have up to **3 links**, each with a required URL and a required short
 - **Task cards / rows** show each link by its description, not the raw URL. On web, hovering over a link reveals the full URL via a native tooltip and clicking opens it in a new tab. On mobile, tapping a link chip opens the URL directly — there is no hover step on touch, so the description is the only text shown.
 - Links are **not yet supported by the AI conversational interface or belief generation** — tasks created via chat always have an empty links list; the AI does not read, suggest, or manage links.
 - Links round-trip through offline sync on both platforms.
+
+### Move Task Between Boards (shipped — PR #40)
+
+A task can be moved from one board to another via `PUT /tasks/{id}` by providing a `board_id` field. **When a task is moved to a different board, its labels are unconditionally cleared** — this is necessary because labels are strictly board-scoped (a label from Board A has no meaning in Board B). The `board_id` field uses full-replace semantics: omitting it leaves the task's board unchanged (matching the behavior of `label_ids` and `links`); providing any value — including the current board — triggers the move logic. When `board_id` equals the task's current board, no change occurs and labels are preserved.
+
+- **Label clearing behavior**: When a task moves to a new board, all labels are deleted server-side regardless of whether `label_ids` is included in the same request. If `label_ids` is also provided in the request, they are resolved against the **destination board's** labels (not the origin board). If none of the provided label IDs exist on the destination board, the request returns `422`.
+- **API**: `PUT /tasks/{id}` with body `{ "board_id": "new-board-uuid" }` (and optionally other fields).
+- **Sync**: Tasks pushed to `/sync` with a `board_id` that differs from their current board undergo the same move + label-clear logic.
+- **Backward compat**: Stale clients that omit `board_id` in sync payloads continue to work — tasks stay on their current board.
 
 ### Labels
 A task can have zero or more labels in fixed system-defined categories. A task may have **multiple labels within the same category** (e.g. both `online` and `email` under Mode).

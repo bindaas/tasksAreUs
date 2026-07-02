@@ -122,6 +122,7 @@ class TaskUpdate(BaseModel):
     label_ids: Optional[List[str]] = None
     is_high_priority: Optional[bool] = None
     links: Optional[List[TaskLink]] = None  # None = unchanged; any list (incl. []) fully replaces
+    board_id: Optional[str] = None  # None = unchanged; moves the task to a different board
 
     @field_validator("links")
     @classmethod

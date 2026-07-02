@@ -108,6 +108,7 @@ def update_task(
         is_high_priority=body.is_high_priority,
         high_priority_limit=_get_high_priority_limit(db, user_id),
         links=[l.model_dump() for l in body.links] if body.links is not None else None,
+        board_id=body.board_id,
     )
     return TaskOut.model_validate(task)
 
