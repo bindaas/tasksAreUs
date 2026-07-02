@@ -103,6 +103,7 @@ Core entity. One-time and recurring task instances are both stored here.
 | `completed_at` | TIMESTAMP | Nullable. Set when state → done |
 | `is_high_priority` | BOOLEAN | Default false. Only meaningful when effective date (earliest of `must_do_by` / `target_date`) is overdue, today, or tomorrow |
 | `is_deleted` | BOOLEAN | Default false. Soft delete |
+| `links` | JSONB | NOT NULL. Default `[]`. Array of up to `MAX_TASK_LINKS = 3` objects: `{"id": string, "url": string, "description": string}`. Added via `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS links JSONB NOT NULL DEFAULT '[]'::jsonb` in PR #39. |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | Used for last-write-wins conflict resolution |
 
@@ -121,6 +122,13 @@ The `recurrence_group_id` column was dropped from the `tasks` table and the `Tas
 - Attempting to set a task high-priority when the cap is reached raises HTTP 422. The error message includes the live limit value
 - The daily limit is checked against the effective date of the task, not `must_do_by` alone
 - Overdue tasks retain their existing priority; the cap re-engages only when the task is moved to a current or future date
+
+**Link rules (enforced by the API):**
+- Up to `MAX_TASK_LINKS = 3` links per task. Each link has `id` (client-generated string — no server-side non-empty or uniqueness check), `url` (must start with `http://` or `https://`, max 2048 chars — other schemes such as `javascript:`, `data:`, `mailto:` are rejected), and `description` (non-empty after trim, max 200 chars)
+- On `POST /tasks`, `links` defaults to `[]` if omitted
+- On `PUT /tasks/{id}`, `links` uses full-replace semantics matching `label_ids`: omitting the field leaves existing links unchanged; providing any list — including `[]` — fully replaces the set
+- Exceeding the cap or failing field validation on `POST`/`PUT /tasks` returns `422` (Pydantic-level validation error)
+- The `/sync` push path re-validates each link independently (`SyncChanges.tasks` are raw dicts and bypass Pydantic validation) — an invalid item is dropped rather than failing the whole array, and the result is capped at `MAX_TASK_LINKS`
 
 ---
 
@@ -442,6 +450,9 @@ List tasks for the current user.
       ],
       "is_high_priority": false,
       "is_deleted": false,
+      "links": [
+        { "id": "link-uuid", "url": "https://library.example.com/account", "description": "Library account" }
+      ],
       "created_at": "2026-05-06T10:00:00Z",
       "updated_at": "2026-05-06T10:00:00Z"
     }
@@ -463,10 +474,13 @@ Create a new task.
   "target_date": "2026-05-09",
   "label_ids": ["uuid-outdoor", "uuid-child"],
   "is_high_priority": false,
-  "board_id": "uuid"
+  "board_id": "uuid",
+  "links": [
+    { "id": "link-uuid", "url": "https://library.example.com/account", "description": "Library account" }
+  ]
 }
 ```
-`board_id` is optional; omitting it creates the task in the user's default board. `label_ids` must all belong to the same board as the task — cross-board label assignment returns `422`.
+`board_id` is optional; omitting it creates the task in the user's default board. `label_ids` must all belong to the same board as the task — cross-board label assignment returns `422`. `links` is optional and defaults to `[]` (see Link rules under Table: `tasks`); a payload with more than `MAX_TASK_LINKS` (3) items, a non-`http(s)` URL, or an empty description returns `422`.
 
 **Response**: the created task object (same shape as GET /tasks item, including `board_id`)
 
@@ -490,11 +504,16 @@ Update a task's fields or labels.
   "must_do_by": "2026-05-11",
   "target_date": "2026-05-09",
   "label_ids": ["uuid-outdoor", "uuid-raghav", "uuid-email"],
-  "is_high_priority": false
+  "is_high_priority": false,
+  "links": [
+    { "id": "link-uuid", "url": "https://library.example.com/account", "description": "Library account" }
+  ]
 }
 ```
 
 To clear a date field to null, include the field explicitly as `null` in the JSON body. Omitting the field leaves the existing value unchanged. The frontend `TaskForm` × button clears the local state and sends `null` for any date that was previously set but is now empty, ensuring the backend receives an explicit clear signal.
+
+`links` uses full-replace semantics: omitting it leaves the task's existing links unchanged; providing any list — including `[]` — fully replaces the set. Both `TaskForm` (web) and `TaskFormScreen` (mobile) always include `links` in the update payload so that removing the last link actually clears it.
 
 **Response**: updated task object
 
@@ -796,7 +815,7 @@ Push local changes to the server and pull server changes since last sync. Uses l
 {
   "last_synced_at": "2026-05-06T08:00:00Z",
   "changes": {
-    "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board)... ],
+    "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board); links optional (omitted = unchanged on update, present = replace, including [])... ],
     "task_labels": [ ...task_label objects... ],
     "beliefs": [ ...belief objects... ],
     "settings": { ...settings object... },
@@ -810,7 +829,7 @@ Push local changes to the server and pull server changes since last sync. Uses l
 {
   "synced_at": "2026-05-06T10:05:00Z",
   "changes": {
-    "tasks": [ ...server-side task objects updated since last_synced_at, each including board_id... ],
+    "tasks": [ ...server-side task objects updated since last_synced_at, each including board_id and links... ],
     "task_labels": [ ... ],
     "beliefs": [ ... ],
     "settings": { ... },
@@ -820,3 +839,5 @@ Push local changes to the server and pull server changes since last sync. Uses l
 ```
 
 **Board sync notes**: Task objects in the pull response always include `board_id`. Stale clients that push tasks without `board_id` have them assigned to the user's default board. Cross-board label assignments in sync push payloads are silently dropped (only labels matching the task's board are applied). The pull response includes a `boards` array of boards updated since `last_synced_at`; clients that do not yet support boards can ignore this field.
+
+**Link sync notes**: Task objects in the pull response always include `links`. Push payloads are raw dicts and bypass the `TaskCreate`/`TaskUpdate` Pydantic validation that `POST`/`PUT /tasks` get for free, so each pushed task's `links` array is re-validated server-side (see Link rules under Table: `tasks`) — unlike the REST endpoints, an individually invalid link (bad scheme, empty description, oversized field) is dropped rather than rejecting the whole push, and the result is capped at `MAX_TASK_LINKS`. On update, `links` follows the same full-replace convention as the REST endpoints: the key must be present in the pushed task dict to change the stored links (its absence means unchanged), not merely non-empty.
