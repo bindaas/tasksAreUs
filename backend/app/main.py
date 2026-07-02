@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from .config import settings as app_settings
 from .database import SessionLocal, engine
 from .models import Base, Board, Conversation, Label, Task, User
-from .routers import beliefs, boards, conversations, focused_view, labels, reports, settings, sync, tasks
+from .routers import beliefs, boards, conversations, day_view, focused_view, labels, reports, settings, sync, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -227,6 +227,7 @@ app.include_router(reports.router, prefix=PREFIX)
 app.include_router(settings.router, prefix=PREFIX)
 app.include_router(sync.router, prefix=PREFIX)
 app.include_router(focused_view.router, prefix=PREFIX)
+app.include_router(day_view.router, prefix=PREFIX)
 
 
 def _git_hash() -> str:

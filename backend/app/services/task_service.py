@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 
 from ..models import Label, StateEnum, Task, TaskLabel, UserSettings
+from . import board_service as board_svc
 
 
 HIGH_PRIORITY_DAILY_LIMIT = 3  # fallback when user has no setting
@@ -134,7 +135,12 @@ def update_task(
     is_high_priority: Optional[bool] = None,
     high_priority_limit: int = HIGH_PRIORITY_DAILY_LIMIT,
     links: Optional[List[Dict[str, Any]]] = None,
+    board_id: Optional[str] = None,
 ) -> Task:
+    if board_id is not None and board_id != task.board_id:
+        board_svc.get_board_or_404(db, board_id, task.user_id)
+        task.board_id = board_id
+        db.query(TaskLabel).filter(TaskLabel.task_id == task.id).delete()
     if links is not None:
         task.links = links
     if title is not None:

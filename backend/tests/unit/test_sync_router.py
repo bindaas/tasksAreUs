@@ -147,6 +147,51 @@ class TestSyncPushLinks:
         assert existing.links == original_links
 
 
+class TestSyncPushBoardId:
+    def test_existing_task_moves_board_when_client_wins(self):
+        existing = _make_task(board_id="board-1", updated_at=datetime.now(timezone.utc) - timedelta(days=2))
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing",
+            "board_id": "board-2",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.board_id == "board-2"
+
+    def test_omitted_board_id_preserves_existing_board(self):
+        existing = _make_task(board_id="board-1", updated_at=datetime.now(timezone.utc) - timedelta(days=2))
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing, retitled",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.board_id == "board-1"
+
+    def test_moving_board_drops_labels_not_valid_for_new_board(self):
+        existing = _make_task(board_id="board-1", updated_at=datetime.now(timezone.utc) - timedelta(days=2))
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing",
+            "board_id": "board-2",
+            "label_ids": ["label-from-old-board"],
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        # Mocked Label query returns no matches — simulates the label being invalid
+        # for the new board. Verify no TaskLabel row is (re)added for it.
+        assert not any(
+            isinstance(c.args[0], TaskLabel) for c in db.add.call_args_list
+        )
+
+
 class TestSyncPullLinks:
     def test_pull_response_includes_links(self):
         task = _make_task()

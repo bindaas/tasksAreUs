@@ -25,7 +25,7 @@ def get_or_create_config(db: Session, user_id: str) -> FocusedViewConfig:
         user_id=user_id,
         board_selection="all",
         selected_board_ids=[],
-        day_range="today_tomorrow",
+        day_range="today",
     )
     db.add(config)
     try:
@@ -100,41 +100,37 @@ def date_window(day_range: str, reference_date: date) -> List[date]:
         return [reference_date, tomorrow, day_after]
 
 
-def get_focused_tasks(
+def _query_board_grouped_tasks(
     db: Session,
     user_id: str,
-    config: FocusedViewConfig,
-    reference_date: date,
+    boards: List[Board],
+    window: List[date],
+    high_priority_only: bool,
 ) -> List[dict]:
-    if config.board_selection == "all":
-        boards = db.query(Board).filter(
-            Board.user_id == user_id,
-            Board.is_deleted == False,
-        ).order_by(Board.name.asc()).all()
-    else:
-        boards = db.query(Board).filter(
-            Board.id.in_(config.selected_board_ids or []),
-            Board.user_id == user_id,
-            Board.is_deleted == False,
-        ).order_by(Board.name.asc()).all()
+    """Query pending tasks due within `window`, grouped by the given (already-ordered) boards.
 
+    Callers are responsible for resolving and ordering `boards` before calling this —
+    ordering here follows whatever order `boards` was passed in.
+    """
     if not boards:
         return []
 
     board_ids = [b.id for b in boards]
-    window = date_window(config.day_range, reference_date)
 
-    tasks = db.query(Task).filter(
+    filters = [
         Task.user_id == user_id,
         Task.board_id.in_(board_ids),
         Task.is_deleted == False,
         Task.state == StateEnum.pending,
-        Task.is_high_priority == True,
         or_(
             Task.must_do_by.in_(window),
             Task.target_date.in_(window),
         ),
-    ).order_by(Task.updated_at.desc()).all()
+    ]
+    if high_priority_only:
+        filters.append(Task.is_high_priority == True)
+
+    tasks = db.query(Task).filter(*filters).order_by(Task.updated_at.desc()).all()
 
     tasks_by_board: dict[str, list] = {b.id: [] for b in boards}
     for task in tasks:
@@ -153,3 +149,38 @@ def get_focused_tasks(
         })
 
     return result
+
+
+def get_focused_tasks(
+    db: Session,
+    user_id: str,
+    config: FocusedViewConfig,
+    reference_date: date,
+) -> List[dict]:
+    if config.board_selection == "all":
+        boards = db.query(Board).filter(
+            Board.user_id == user_id,
+            Board.is_deleted == False,
+        ).order_by(Board.name.asc()).all()
+    else:
+        boards = db.query(Board).filter(
+            Board.id.in_(config.selected_board_ids or []),
+            Board.user_id == user_id,
+            Board.is_deleted == False,
+        ).order_by(Board.name.asc()).all()
+
+    window = date_window(config.day_range, reference_date)
+    return _query_board_grouped_tasks(db, user_id, boards, window, high_priority_only=True)
+
+
+def get_day_view_tasks(
+    db: Session,
+    user_id: str,
+    reference_date: date,
+) -> List[dict]:
+    boards = db.query(Board).filter(
+        Board.user_id == user_id,
+        Board.is_deleted == False,
+    ).order_by(Board.name.asc()).all()
+
+    return _query_board_grouped_tasks(db, user_id, boards, [reference_date], high_priority_only=False)

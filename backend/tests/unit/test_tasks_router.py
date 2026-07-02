@@ -97,3 +97,29 @@ class TestUpdateTaskLinksWiring:
 
         _, kwargs = mock_svc.update_task.call_args
         assert kwargs["links"] is None
+
+
+class TestUpdateTaskBoardIdWiring:
+    @patch("app.routers.tasks._get_high_priority_limit", return_value=3)
+    @patch("app.routers.tasks.svc")
+    def test_provided_board_id_reaches_task_service(self, mock_svc, _limit):
+        mock_svc.get_task_or_404.return_value = _make_task()
+        mock_svc.update_task.return_value = _make_task()
+        body = TaskUpdate(board_id="board-2")
+
+        update_task(task_id="task-1", body=body, db=MagicMock(), user_id="user-1")
+
+        _, kwargs = mock_svc.update_task.call_args
+        assert kwargs["board_id"] == "board-2"
+
+    @patch("app.routers.tasks._get_high_priority_limit", return_value=3)
+    @patch("app.routers.tasks.svc")
+    def test_omitted_board_id_passes_none(self, mock_svc, _limit):
+        mock_svc.get_task_or_404.return_value = _make_task()
+        mock_svc.update_task.return_value = _make_task()
+        body = TaskUpdate(title="New title")
+
+        update_task(task_id="task-1", body=body, db=MagicMock(), user_id="user-1")
+
+        _, kwargs = mock_svc.update_task.call_args
+        assert kwargs["board_id"] is None

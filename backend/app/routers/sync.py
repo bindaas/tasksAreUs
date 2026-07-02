@@ -122,6 +122,8 @@ def sync(
                     server_task.target_date = date.fromisoformat(t_data["target_date"]) if t_data["target_date"] else None
                 if "completed_at" in t_data:
                     server_task.completed_at = _parse_dt(t_data["completed_at"])
+                if t_data.get("board_id"):
+                    server_task.board_id = t_data["board_id"]
                 label_updates[task_id] = t_data.get("label_ids", [])
 
     db.flush()
