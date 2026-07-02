@@ -140,7 +140,10 @@ def update_task(
     if board_id is not None and board_id != task.board_id:
         board_svc.get_board_or_404(db, board_id, task.user_id)
         task.board_id = board_id
-        db.query(TaskLabel).filter(TaskLabel.task_id == task.id).delete()
+        if label_ids is None:
+            # Labels are board-scoped, so a move always invalidates the old ones.
+            # If label_ids was also sent, the block below already replaces them.
+            db.query(TaskLabel).filter(TaskLabel.task_id == task.id).delete()
     if links is not None:
         task.links = links
     if title is not None:

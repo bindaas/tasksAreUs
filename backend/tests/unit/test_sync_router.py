@@ -14,8 +14,12 @@ from app.routers.sync import sync
 from app.schemas import SyncChanges, SyncRequest
 
 
-def _make_db(task_first=None, task_all=None):
-    """A db mock that no-ops for every model except Task, which is configurable."""
+def _make_db(task_first=None, task_all=None, board_exists=True):
+    """A db mock that no-ops for every model except Task, which is configurable.
+
+    board_exists controls whether a pushed board_id passes the sync router's
+    ownership/existence check (`db.query(Board.id).filter(...).first()`).
+    """
     db = MagicMock()
 
     def _query(model):
@@ -31,6 +35,8 @@ def _make_db(task_first=None, task_all=None):
             q.first.return_value = None
         elif model is Board:
             q.all.return_value = []
+        elif model is Board.id:
+            q.first.return_value = "board-owned" if board_exists else None
         else:
             q.first.return_value = None
             q.all.return_value = []
@@ -190,6 +196,32 @@ class TestSyncPushBoardId:
         assert not any(
             isinstance(c.args[0], TaskLabel) for c in db.add.call_args_list
         )
+
+    def test_board_id_not_owned_by_user_is_rejected(self):
+        existing = _make_task(board_id="board-1", updated_at=datetime.now(timezone.utc) - timedelta(days=2))
+        db = _make_db(task_first=existing, board_exists=False)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing",
+            "board_id": "someone-elses-board",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.board_id == "board-1"
+
+    def test_new_task_with_unowned_board_id_falls_back_to_default_board(self):
+        db = _make_db(task_first=None, board_exists=False)
+        payload = [{
+            "id": "task-new",
+            "title": "New task",
+            "board_id": "someone-elses-board",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        added_task = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], Task))
+        assert added_task.board_id != "someone-elses-board"
 
 
 class TestSyncPullLinks:

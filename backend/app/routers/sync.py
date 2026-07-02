@@ -37,6 +37,23 @@ def _validate_sync_links(raw_links: Any) -> List[Dict[str, Any]]:
             break
     return valid
 
+def _owned_board_id(db: Session, board_id: Any, user_id: str) -> str | None:
+    """Return board_id if it's a real, non-deleted board owned by user_id, else None.
+
+    Sync push payloads bypass get_board_or_404 (raising mid-batch would fail every
+    other change in the push), so board_id needs the same ownership/existence check
+    applied item-by-item, same as links and labels elsewhere in this router.
+    """
+    if not board_id:
+        return None
+    exists = db.query(Board.id).filter(
+        Board.id == board_id,
+        Board.user_id == user_id,
+        Board.is_deleted == False,
+    ).first()
+    return board_id if exists else None
+
+
 router = APIRouter(prefix="/sync", tags=["sync"])
 
 
@@ -74,8 +91,10 @@ def sync(
         ).first()
 
         if server_task is None:
-            # New task from client — resolve board_id (missing = default board)
-            task_board_id = t_data.get("board_id") or board_svc.get_default_board_id(db, user_id)
+            # New task from client — resolve board_id (missing/invalid = default board)
+            task_board_id = _owned_board_id(db, t_data.get("board_id"), user_id) or (
+                board_svc.get_default_board_id(db, user_id)
+            )
             task = Task(
                 id=task_id,
                 user_id=user_id,
@@ -123,7 +142,9 @@ def sync(
                 if "completed_at" in t_data:
                     server_task.completed_at = _parse_dt(t_data["completed_at"])
                 if t_data.get("board_id"):
-                    server_task.board_id = t_data["board_id"]
+                    new_board_id = _owned_board_id(db, t_data["board_id"], user_id)
+                    if new_board_id:
+                        server_task.board_id = new_board_id
                 label_updates[task_id] = t_data.get("label_ids", [])
 
     db.flush()
