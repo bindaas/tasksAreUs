@@ -16,7 +16,9 @@ Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`.
 
 See `ARCHITECTURE.MD` for code structure, implementation patterns, and dev/prod config.
 See `DATA_MODEL_AND_API.MD` for data model, API contracts, auth, soft deletes, recurring task rules, beliefs, sync, and cost tracking.
-See `PRODUCT_REQUIREMENTS_DOCUMENT.MD` for product requirements and out-of-scope features.
+See `PRODUCT_REQUIREMENTS_DOCUMENT.MD` for product requirements, feature status, and out-of-scope features.
+
+---
 
 ## Project Conventions
 
@@ -36,9 +38,11 @@ Any commit with no backend application changes must include `[skip deploy]` in t
 ### PR signature
 - **Always** end every PR body with a horizontal rule and signature: `— *Grumpy*`
 
+---
+
 ## Agent Roster
 
-Every agent (including Grumpy) signs its PR body or comment so you can tell at a glance who said what. All posts are made under your GitHub account — the signature is the only way to distinguish them. Every PR body must end with `— *Grumpy*`; every agent comment must end with its own signature.
+Every agent signs its PR body or comment. All posts are made under your GitHub account — the signature is the only way to distinguish them.
 
 | Name | Role |
 |------|------|

@@ -1,6 +1,6 @@
 # PREFERENCES.md — Global Collaboration Rules
 <!-- Maintained by human only. Claude may edit this file only when explicitly instructed by the user in the current conversation. -->
-<!-- GLOBAL: applies to all projects. Lives here temporarily; will move to ~/projects/_claude-global/ -->
+<!-- GLOBAL: applies to all projects. Lives here temporarily; will move to ~/projects/claude-global-tools/ -->
 
 
 ---
@@ -101,5 +101,3 @@ Agents (`.claude/agents/`) and commands (`.claude/commands/`) must be project-ne
 - **CI/CD deploy tagging**: consult `CLAUDE.md` for which commit paths trigger a deployment and what tag to include to skip it.
 - **The integration test file belongs on the feature branch**: changes made by Sleepy during a full-review must be committed to the PR branch and merged via PR — never committed directly to main.
 - **Claude config changes belong on the feature branch**: Changes to `.claude/` files made as part of implementing a specific PR (new skills, agent tweaks, permission rules) must be committed to that PR's branch and merged with it. Cross-cutting process improvements unrelated to any specific PR may be committed directly to main.
-
-
