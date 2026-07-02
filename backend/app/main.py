@@ -122,6 +122,9 @@ async def lifespan(app: FastAPI):
         conn.execute(text(
             "ALTER TABLE boards ADD COLUMN IF NOT EXISTS color VARCHAR(7)"
         ))
+        conn.execute(text(
+            "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS links JSONB NOT NULL DEFAULT '[]'::jsonb"
+        ))
         conn.execute(text("ALTER TABLE labels ALTER COLUMN user_id SET NOT NULL"))
         conn.execute(text("DROP INDEX IF EXISTS uq_global_label"))
         conn.execute(text("DROP INDEX IF EXISTS uq_user_label"))

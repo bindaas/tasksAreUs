@@ -1,9 +1,16 @@
 import { useState } from 'react';
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
-import type { Label } from '../api/tasks';
+import type { Label, TaskLink } from '../api/tasks';
 import { LabelBadge } from './LabelBadge';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
+import { isValidLinkUrl, MAX_TASK_LINKS } from '../utils/taskLinks';
+
+function newLinkId(): string {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `link-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 interface TaskFormProps {
   initialValues?: Partial<Task>;
@@ -34,7 +41,21 @@ export function TaskForm({
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(
     new Set(initialValues?.labels?.map((l) => l.id) ?? [])
   );
+  const [links, setLinks] = useState<TaskLink[]>(initialValues?.links ?? []);
   const [error, setError] = useState<string | null>(null);
+
+  function addLinkRow() {
+    if (links.length >= MAX_TASK_LINKS) return;
+    setLinks((prev) => [...prev, { id: newLinkId(), url: '', description: '' }]);
+  }
+
+  function removeLinkRow(id: string) {
+    setLinks((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  function updateLinkRow(id: string, field: 'url' | 'description', value: string) {
+    setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
+  }
 
   const _tom = new Date();
   _tom.setDate(_tom.getDate() + 1);
@@ -69,6 +90,23 @@ export function TaskForm({
       setError('Title is required');
       return;
     }
+
+    const validLinks: TaskLink[] = [];
+    for (const link of links) {
+      const url = link.url.trim();
+      const description = link.description.trim();
+      if (!url && !description) continue; // skip fully-blank rows
+      if (!url || !description) {
+        setError('Each link needs both a URL and a description');
+        return;
+      }
+      if (!isValidLinkUrl(url)) {
+        setError('Links must start with http:// or https://');
+        return;
+      }
+      validLinks.push({ id: link.id, url, description });
+    }
+
     setError(null);
 
     const isEditMode = !!initialValues;
@@ -77,6 +115,7 @@ export function TaskForm({
       title: title.trim(),
       label_ids: Array.from(selectedLabelIds),
       is_high_priority: highPriorityEligible && isHighPriority,
+      links: validLinks,
     };
     if (notes.trim()) data.notes = notes.trim();
 
@@ -234,6 +273,50 @@ export function TaskForm({
             })}
           </div>
         )}
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-sm font-medium text-gray-700">Links</label>
+          <button
+            type="button"
+            onClick={addLinkRow}
+            disabled={links.length >= MAX_TASK_LINKS}
+            className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            + Add link
+          </button>
+        </div>
+        <div className="space-y-2">
+          {links.map((link) => (
+            <div key={link.id} className="flex gap-2 items-start">
+              <div className="flex-1 space-y-1.5">
+                <input
+                  type="text"
+                  value={link.description}
+                  onChange={(e) => updateLinkRow(link.id, 'description', e.target.value)}
+                  placeholder="Description"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+                <input
+                  type="text"
+                  value={link.url}
+                  onChange={(e) => updateLinkRow(link.id, 'url', e.target.value)}
+                  placeholder="https://..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeLinkRow(link.id)}
+                className="p-1.5 rounded-full bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shrink-0"
+                aria-label="Remove link"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="flex gap-3 pt-2">

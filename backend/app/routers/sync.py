@@ -4,11 +4,26 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from pydantic import ValidationError
+
 from ..database import get_db
 from ..dependencies import get_current_user
 from ..models import Belief, Board, Label, Task, TaskLabel, UserSettings
-from ..schemas import SyncChanges, SyncRequest, SyncResponse, TaskLabelSync
+from ..schemas import SyncChanges, SyncRequest, SyncResponse, TaskLabelSync, validate_task_links
 from ..services import board_service as board_svc
+
+
+def _validate_sync_links(raw_links: Any) -> List[Dict[str, Any]]:
+    """Validate a sync client's raw links payload; invalid input is dropped (empty list).
+
+    Sync push payloads are raw dicts (SyncChanges.tasks bypasses TaskCreate/TaskUpdate
+    Pydantic validation), so the max-3/scheme/length checks that POST/PUT /tasks get
+    for free via Pydantic must be re-applied here explicitly.
+    """
+    try:
+        return [l.model_dump() for l in validate_task_links(raw_links)]
+    except (ValueError, ValidationError):
+        return []
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 
@@ -58,6 +73,7 @@ def sync(
                 state=t_data.get("state", "pending"),
                 is_deleted=t_data.get("is_deleted", False),
                 is_high_priority=t_data.get("is_high_priority", False),
+                links=_validate_sync_links(t_data.get("links")),
                 updated_at=client_updated_at,
                 created_at=_parse_dt(t_data.get("created_at")) or now,
             )
@@ -83,6 +99,8 @@ def sync(
                 server_task.state = t_data.get("state", server_task.state)
                 server_task.is_deleted = t_data.get("is_deleted", server_task.is_deleted)
                 server_task.is_high_priority = t_data.get("is_high_priority", server_task.is_high_priority)
+                if "links" in t_data:
+                    server_task.links = _validate_sync_links(t_data.get("links"))
                 server_task.updated_at = client_updated_at
                 if "must_do_by" in t_data:
                     from datetime import date
@@ -170,6 +188,7 @@ def sync(
             "completed_at": t.completed_at.isoformat() if t.completed_at else None,
             "is_high_priority": t.is_high_priority,
             "is_deleted": t.is_deleted,
+            "links": t.links or [],
             "created_at": t.created_at.isoformat(),
             "updated_at": t.updated_at.isoformat(),
             "label_ids": [l.id for l in t.labels],

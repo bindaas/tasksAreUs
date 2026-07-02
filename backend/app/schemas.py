@@ -58,6 +58,44 @@ class LabelUpdate(BaseModel):
 
 # ── Tasks ─────────────────────────────────────────────────────────────────────
 
+MAX_TASK_LINKS = 3
+_URL_SCHEME_RE = re.compile(r"^https?://", re.IGNORECASE)
+
+
+class TaskLink(BaseModel):
+    id: str
+    url: str = Field(max_length=2048)
+    description: str = Field(max_length=200)
+
+    @field_validator("url")
+    @classmethod
+    def validate_url_scheme(cls, v: str) -> str:
+        if not _URL_SCHEME_RE.match(v):
+            raise ValueError("url must start with http:// or https://")
+        return v
+
+    @field_validator("description")
+    @classmethod
+    def validate_description_non_empty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("description must not be empty")
+        return v
+
+
+def validate_task_links(raw_links: Optional[List[Dict[str, Any]]]) -> List[TaskLink]:
+    """Validate a raw list of link dicts against TaskLink rules.
+
+    Shared between Pydantic validation (POST/PUT /tasks) and the sync router,
+    which ingests raw dicts and bypasses Pydantic model validation entirely.
+    """
+    if not raw_links:
+        return []
+    if len(raw_links) > MAX_TASK_LINKS:
+        raise ValueError(f"A task may have at most {MAX_TASK_LINKS} links")
+    return [TaskLink.model_validate(item) for item in raw_links]
+
+
 class TaskCreate(BaseModel):
     title: str
     notes: Optional[str] = None
@@ -66,6 +104,14 @@ class TaskCreate(BaseModel):
     label_ids: List[str] = []
     is_high_priority: bool = False
     board_id: Optional[str] = None  # resolved to default board if omitted
+    links: List[TaskLink] = []
+
+    @field_validator("links")
+    @classmethod
+    def validate_links_cap(cls, v: List[TaskLink]) -> List[TaskLink]:
+        if len(v) > MAX_TASK_LINKS:
+            raise ValueError(f"A task may have at most {MAX_TASK_LINKS} links")
+        return v
 
 
 class TaskUpdate(BaseModel):
@@ -75,6 +121,14 @@ class TaskUpdate(BaseModel):
     target_date: Optional[date] = None
     label_ids: Optional[List[str]] = None
     is_high_priority: Optional[bool] = None
+    links: Optional[List[TaskLink]] = None  # None = unchanged; any list (incl. []) fully replaces
+
+    @field_validator("links")
+    @classmethod
+    def validate_links_cap(cls, v: Optional[List[TaskLink]]) -> Optional[List[TaskLink]]:
+        if v is not None and len(v) > MAX_TASK_LINKS:
+            raise ValueError(f"A task may have at most {MAX_TASK_LINKS} links")
+        return v
 
 
 class TaskOut(BaseModel):
@@ -90,6 +144,7 @@ class TaskOut(BaseModel):
     labels: List[LabelOut] = []
     is_high_priority: bool = False
     is_deleted: bool
+    links: List[TaskLink] = []
     created_at: datetime
     updated_at: datetime
 
