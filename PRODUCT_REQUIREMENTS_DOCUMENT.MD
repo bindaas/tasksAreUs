@@ -37,15 +37,15 @@ Each user can have up to **10 boards** (server-side cap: `MAX_BOARDS_PER_USER = 
 
 ### Board UI — Mobile app (shipped — PR #35)
 
-- **BoardContext**: `BoardProvider` + `useBoard()` added to the mobile app, mounted inside `AppNavigator`'s authenticated branch (wrapping the `Tab.Navigator`). Fetches boards via `GET /boards` once on mount and exposes `activeBoard`, `boards`, `setActiveBoard`, `createBoard`, `renameBoard`, `setDefaultBoard`, `deleteBoard`, and `refetch`. On fetch, `activeBoard` is preserved when the same board still exists after a mutation; otherwise it resets to the default board.
+- **BoardContext**: `BoardProvider` + `useBoard()` added to the mobile app, mounted inside `AppNavigator`'s authenticated branch (wrapping the `Tab.Navigator`). Fetches boards via `GET /boards` once on mount and exposes `activeBoard`, `boards`, `setActiveBoard`, `createBoard`, `renameBoard`, `setDefaultBoard`, `deleteBoard`, `refetch`, and `setColorBoard` (calls `updateBoard(id, { color })` then `fetchBoards()` — added in PR #38). On fetch, `activeBoard` is preserved when the same board still exists after a mutation; otherwise it resets to the default board.
 - **Board switcher in Tasks header**: The active board name is shown as a tappable title in the `TasksScreen` header. When the user has more than one board, a "▾" chevron is shown. Tapping opens an inline dropdown overlay (absolute-positioned below the header, `zIndex: 50`) listing all boards — a checkmark marks the active board and a star marks the default. Tapping a board calls `setActiveBoard()` and closes the dropdown.
 - **Filter reset on board switch**: A `useEffect([activeBoard?.id])` in `TasksScreen` clears the label filter selection, text search query, and show-done toggle whenever the active board changes.
 - **Board-scoped data fetches (mobile)**: All API calls now pass `activeBoard?.id` as an optional `boardId` parameter: `listTasks`, `createTask`, `listLabels`, `createLabel`, `createConversation`, and `getCompletions`. Each API helper accepts an optional `boardId` param appended to the query string or included in the request body.
 - **Chat reset on board switch**: A `useEffect([activeBoard?.id])` in `ChatScreen` sets `conversationIdRef.current` to `null` and clears messages, so the next message creates a new conversation scoped to the newly active board.
 - **Reports board scoping**: `ReportsScreen` passes `activeBoard?.id` to `getCompletions`; the `getCompletions` helper accepts an optional `boardId` param.
 - **Settings — Boards section (mobile)**: A `BoardSection` card appears at the top of `SettingsScreen` (above Labels). It shows a board count badge (`N/10`), lists all boards with a default-star indicator, inline rename, set-default, and delete actions. Delete is guarded: the UI shows the Delete button only when more than one board exists; backend errors (e.g. board has tasks) are surfaced as inline error text. A "+ Add board" inline input (capped at 10 boards) allows creating new boards. The Labels section fetches labels scoped to the active board via `listLabels('mode', activeBoard?.id)` and `listLabels('type', activeBoard?.id)`. New labels created in Settings are created in the active board.
-- **Types updated**: `Board` interface added to `mobile/src/types/index.ts`. `Task.board_id: string` and `Conversation.board_id: string` added to match the API response shape.
-- **Tests**: 7 new Jest unit tests for the boards API (`mobile/src/__tests__/boards.api.test.ts`); `makeTask` factory updated in 3 existing test files to include `board_id: 'board-1'`. Total: 77 mobile unit tests pass.
+- **Types updated**: `Board` interface added to `mobile/src/types/index.ts`. `Task.board_id: string` and `Conversation.board_id: string` added to match the API response shape. `color: string | null` added to the `Board` interface (PR #38).
+- **Tests**: 7 new Jest unit tests for the boards API (`mobile/src/__tests__/boards.api.test.ts`); `makeTask` factory updated in 3 existing test files to include `board_id: 'board-1'`. Total: 77 mobile unit tests pass (86 as of PR #38).
 
 ---
 
@@ -104,9 +104,23 @@ Default config (created lazily on first GET, upsert-safe): `board_selection = al
 
 **New unit tests**: 2 new tests in `frontend/src/__tests__/boards.api.test.ts` covering `updateBoard` with a hex color and with `null` (clear).
 
-### Focused View UI — Mobile app (aspirational — PR 3 not yet shipped)
+### Focused View UI — Mobile app (shipped — PR #38)
 
-Settings configuration and a Focused View screen. Delivered as OTA update (JS/TS only).
+**Color swatches in Settings → Boards**: Each board row in Settings → Boards gets a horizontal row of 8 pre-defined color swatches (20×20 circles from a fixed 8-color palette: `['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6']`) plus a "None" swatch (gray circle with ✕) at position 0. Tapping a swatch sets that board's color via `setColorBoard`; tapping the active swatch (or the "None" swatch) clears the color to `null`. The active swatch is highlighted with a border ring and shadow. No native color-picker module is required — the 8-swatch palette is OTA-deployable and uses the same palette as the web's `FocusedView.tsx` fallback.
+
+**Focused View config section in SettingsScreen**: A `FocusedViewConfigSection` component appears between the Boards section and the Labels section. Loads config via `getFocusedViewConfig()` on mount. Fields: board selection radio (All boards / Selected boards); board checkboxes visible only when "Selected boards" is chosen (sourced from `useBoard()` directly); day range radio (Today only / Today + tomorrow / Today + 2 days). Has its own Save button that calls `updateFocusedViewConfig` with all three fields required (`board_selection`, `selected_board_ids`, `day_range` — matching the backend contract). Inline error and success banners; independent `busy` and `error` state local to this component.
+
+**View mode toggle in TasksScreen header**: A two-button pill toggle ("All" | "Focus") appears in the TasksScreen header when "Show done" is off. The Collapse/Expand button and the filter (☰) button are hidden in focused mode. Switching to "Show done" resets the view mode to "All" (detailed). `filterOpen` is reset to `false` when switching to focused mode. A `focusedViewKey` counter is incremented on each `useFocusEffect` when `viewMode === 'focused'`, forcing `FocusedView` to remount and re-fetch fresh data on every tab re-focus (prevents stale data after changing focused view config in Settings).
+
+**`FocusedView` component** (inline in `TasksScreen`, rendered when view mode is "Focus" and "Show done" is off): Fetches `GET /focused-view/tasks?reference_date=YYYY-MM-DD` on mount using `dateOnly(new Date())` for local-timezone correctness. Shows a loading spinner while fetching; inline error banner with Retry on failure; empty state ("No focused tasks for this period") with a Refresh button when no qualifying tasks exist. Renders board sections in a `ScrollView` — tasks stacked vertically in a single column (appropriate for phone widths). Each board section header shows a colored dot (board color or palette fallback), board name, and task count badge. Board color comes from `board.board_color` or falls back to the 8-color palette indexed by board position.
+
+**`FocusedTaskCard` component**: Compact card with a 4px colored left border (`borderLeftColor: boardColor`). Displays: title (2-line clamp with ellipsis), high-priority "★ High" badge (amber) when `is_high_priority` is true, effective date chip using `getEffectiveDate` (red if overdue, gray otherwise), label badges from `task.labels` (mode=green, type=purple). Tapping the card calls `onPress(id)`, which opens `TaskFormScreen` in edit mode via the same `handleEditPress` handler used by `DraggableTaskRow`. No drag-and-drop.
+
+**New mobile API module** (`mobile/src/api/focusedView.ts`): Exports `FocusedViewConfig` and `FocusedBoard` interfaces plus `getFocusedViewConfig()`, `updateFocusedViewConfig()` (all three fields required), and `getFocusedViewTasks(referenceDate?)`.
+
+**Tests**: 2 new tests in `mobile/src/__tests__/boards.api.test.ts` for `updateBoard` with hex color and with `null` (9 tests total in that file); new `mobile/src/__tests__/focusedView.api.test.ts` with 7 tests covering all three API functions. Total: 86 mobile unit tests pass.
+
+**Deployment**: OTA only — all JS/TS changes, no native modules, no `app.json` or `eas.json` changes.
 
 ---
 
@@ -418,4 +432,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #37 (focused view web frontend PR 2/3: board color picker in Settings/Boards, Focused View config section in Settings, Detailed/Focused session toggle in TasksPage, FocusedView and FocusedTaskCard components, focusedView.ts API module, 2 new unit tests; backend: ensure_board_seeded() added to list_boards() making GET /boards a seeding entry point)*
+*Last updated by — *Bashful* after PR #38 (focused view mobile PR 3/3: color swatches in Settings/Boards, FocusedViewConfigSection in SettingsScreen, All/Focus view toggle in TasksScreen, FocusedView and FocusedTaskCard components, focusedView.ts mobile API module, 9 mobile tests in boards.api.test.ts + 7 new in focusedView.api.test.ts = 86 total; color field on Board interface + setColorBoard in BoardContext; previously aspirational mobile section is now shipped)*

@@ -3,6 +3,7 @@ export interface Board {
   name: string;
   is_default: boolean;
   is_deleted: boolean;
+  color: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { Task } from './tasks';
+import type { Task } from '../types';
 
 export interface FocusedViewConfig {
   id: string;
@@ -21,8 +21,8 @@ export async function getFocusedViewConfig(): Promise<FocusedViewConfig> {
 
 export async function updateFocusedViewConfig(body: {
   board_selection: 'all' | 'selected';
-  day_range: 'today' | 'today_tomorrow' | 'today_plus_two';
   selected_board_ids: string[];
+  day_range: 'today' | 'today_tomorrow' | 'today_plus_two';
 }): Promise<FocusedViewConfig> {
   return apiFetch<FocusedViewConfig>('/focused-view/config', {
     method: 'PUT',
@@ -31,6 +31,8 @@ export async function updateFocusedViewConfig(body: {
 }
 
 export async function getFocusedViewTasks(referenceDate?: string): Promise<{ boards: FocusedBoard[] }> {
-  const qs = referenceDate ? `?reference_date=${referenceDate}` : '';
-  return apiFetch<{ boards: FocusedBoard[] }>(`/focused-view/tasks${qs}`);
+  const url = referenceDate
+    ? `/focused-view/tasks?reference_date=${referenceDate}`
+    : '/focused-view/tasks';
+  return apiFetch<{ boards: FocusedBoard[] }>(url);
 }
