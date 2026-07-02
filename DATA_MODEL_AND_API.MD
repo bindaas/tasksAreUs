@@ -205,7 +205,7 @@ Per-user focused view configuration. One row per user, enforced by `UNIQUE(user_
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | |
 
-**Default config** (created lazily on first GET): `board_selection = all`, `day_range = today_tomorrow`, `selected_board_ids = []`.
+**Default config** (created lazily on first GET): `board_selection = all`, `day_range = today` (changed from `today_tomorrow` in PR #40 — applies to newly-created configs only; the one pre-existing user's saved config was migrated separately via `backend/scripts/reset_focused_view_config_default.py`), `selected_board_ids = []`.
 
 **Table creation**: handled by `Base.metadata.create_all()` on startup — no separate raw SQL needed.
 
@@ -507,13 +507,16 @@ Update a task's fields or labels.
   "is_high_priority": false,
   "links": [
     { "id": "link-uuid", "url": "https://library.example.com/account", "description": "Library account" }
-  ]
+  ],
+  "board_id": "uuid"
 }
 ```
 
 To clear a date field to null, include the field explicitly as `null` in the JSON body. Omitting the field leaves the existing value unchanged. The frontend `TaskForm` × button clears the local state and sends `null` for any date that was previously set but is now empty, ensuring the backend receives an explicit clear signal.
 
 `links` uses full-replace semantics: omitting it leaves the task's existing links unchanged; providing any list — including `[]` — fully replaces the set. Both `TaskForm` (web) and `TaskFormScreen` (mobile) always include `links` in the update payload so that removing the last link actually clears it.
+
+`board_id` (added PR #40) moves the task to a different board. `None`/omitted leaves the board unchanged (not full-replace like `links`). When `board_id` is provided and differs from the task's current board: the destination board must exist, be owned by the caller, and not be soft-deleted (`404` otherwise); the task's existing labels are unconditionally cleared (labels are board-scoped and not valid across boards); if `label_ids` is also present in the same request, it is resolved against the *new* board_id and applied after the move (`422` if any id doesn't belong to the destination board). Sending `board_id` equal to the task's current board is a no-op — labels are left untouched.
 
 **Response**: updated task object
 
@@ -748,7 +751,7 @@ Returns the current user's focused view configuration, creating it with defaults
   "id": "uuid",
   "board_selection": "all",
   "selected_board_ids": [],
-  "day_range": "today_tomorrow"
+  "day_range": "today"
 }
 ```
 
@@ -805,6 +808,37 @@ Returns `is_high_priority = true` pending tasks that have `must_do_by` or `targe
 
 ---
 
+### Day View
+
+New in PR #40 (backend only; part 1 of a 3-PR epic — web/mobile Today/Tomorrow views consume this endpoint in later PRs). Unlike Focused View, Day View has no per-user configuration — it always shows all pending tasks (any priority) across all boards for a single date.
+
+#### `GET /day-view/tasks`
+Returns pending tasks (any priority) whose `must_do_by` or `target_date` falls on `reference_date`, across all of the caller's boards, grouped alphabetically by board. This is the same OR-across-both-date-fields filter Focused View uses (not a computed "earliest effective date"). Ignores the user's Focused View config entirely — no `board_selection`/`day_range` concept applies here.
+
+**Query params**
+- `reference_date=YYYY-MM-DD` (required — no default; `422` if omitted)
+
+**Response** — same shape as `GET /focused-view/tasks`
+```json
+{
+  "boards": [
+    {
+      "board_id": "uuid",
+      "board_name": "Alpha",
+      "board_color": "#6366f1",
+      "tasks": [ { ...full TaskOut object including labels... } ]
+    }
+  ]
+}
+```
+
+- Boards with zero qualifying tasks are omitted from the response.
+- Boards are ordered alphabetically by name.
+- Within each board group, tasks are sorted by `updated_at` DESC.
+- Completed and soft-deleted tasks are excluded.
+
+---
+
 ### Sync
 
 #### `POST /sync`
@@ -815,7 +849,7 @@ Push local changes to the server and pull server changes since last sync. Uses l
 {
   "last_synced_at": "2026-05-06T08:00:00Z",
   "changes": {
-    "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board); links optional (omitted = unchanged on update, present = replace, including [])... ],
+    "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board on create, unchanged on update; present on update = move the task to that board and clear its labels); links optional (omitted = unchanged on update, present = replace, including [])... ],
     "task_labels": [ ...task_label objects... ],
     "beliefs": [ ...belief objects... ],
     "settings": { ...settings object... },
@@ -839,5 +873,7 @@ Push local changes to the server and pull server changes since last sync. Uses l
 ```
 
 **Board sync notes**: Task objects in the pull response always include `board_id`. Stale clients that push tasks without `board_id` have them assigned to the user's default board. Cross-board label assignments in sync push payloads are silently dropped (only labels matching the task's board are applied). The pull response includes a `boards` array of boards updated since `last_synced_at`; clients that do not yet support boards can ignore this field.
+
+**Board move via sync (PR #40)**: pushing an existing task with a `board_id` that differs from its current one moves the task to that board — mirroring `PUT /tasks/{id}`'s move behavior. Unlike the REST endpoint, the sync push path does not call `board_service.get_board_or_404()` before applying the write — it assigns `board_id` directly from the payload with no check that the destination board exists, is owned by the caller, or is not soft-deleted. Labels not valid for the new board are dropped by the existing label-reconciliation step (which runs after the board_id write and filters by `Label.board_id == task.board_id`), the same as a REST move.
 
 **Link sync notes**: Task objects in the pull response always include `links`. Push payloads are raw dicts and bypass the `TaskCreate`/`TaskUpdate` Pydantic validation that `POST`/`PUT /tasks` get for free, so each pushed task's `links` array is re-validated server-side (see Link rules under Table: `tasks`) — unlike the REST endpoints, an individually invalid link (bad scheme, empty description, oversized field) is dropped rather than rejecting the whole push, and the result is capped at `MAX_TASK_LINKS`. On update, `links` follows the same full-replace convention as the REST endpoints: the key must be present in the pushed task dict to change the stored links (its absence means unchanged), not merely non-empty.
