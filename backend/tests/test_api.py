@@ -920,6 +920,112 @@ def main():
     client.delete(f"/tasks/{filter_board_task_id}", headers=H)
     client.delete(f"/boards/{filter_board_id}", headers=H)
 
+    # ── Tasks: Move between boards (PR #40) ────────────────────────────────────
+    print("\n── Tasks: Move between boards (PR #40) ─────────────────")
+    # Create two boards to move a task between
+    r = client.post("/boards", headers=H, json={"name": "Move test board A"})
+    assert_eq("POST /boards move-test board A → 201", r.status_code, 201)
+    move_board_a_id = r.json()["id"]
+
+    r = client.post("/boards", headers=H, json={"name": "Move test board B"})
+    assert_eq("POST /boards move-test board B → 201", r.status_code, 201)
+    move_board_b_id = r.json()["id"]
+
+    # A label scoped to board A and a label scoped to board B
+    r = client.post("/labels", headers=H, json={"category": "mode", "value": "move-label-a", "board_id": move_board_a_id})
+    assert_eq("POST label on move-test board A → 201", r.status_code, 201)
+    move_label_a_id = r.json()["id"]
+
+    r = client.post("/labels", headers=H, json={"category": "mode", "value": "move-label-b", "board_id": move_board_b_id})
+    assert_eq("POST label on move-test board B → 201", r.status_code, 201)
+    move_label_b_id = r.json()["id"]
+
+    # Create a task on board A with board A's label attached
+    r = client.post("/tasks", headers=H, json={
+        "title": "Move-between-boards test task",
+        "label_ids": [move_label_a_id],
+        "board_id": move_board_a_id,
+    })
+    assert_eq("POST /tasks on move-test board A → 201", r.status_code, 201)
+    move_task = r.json()
+    move_task_id = move_task["id"]
+    assert_eq("move task starts on board A", move_task["board_id"], move_board_a_id)
+    assert_eq("move task starts with board A's label", len(move_task["labels"]), 1)
+
+    # PUT board_id to move the task to board B, WITHOUT sending label_ids — labels
+    # must be unconditionally cleared server-side (board A's label is invalid on board B)
+    r = client.put(f"/tasks/{move_task_id}", headers=H, json={"board_id": move_board_b_id})
+    assert_eq("PUT /tasks/:id board_id move (no label_ids sent) → 200", r.status_code, 200)
+    moved_task = r.json()
+    assert_eq("task board_id updated to board B", moved_task["board_id"], move_board_b_id)
+    assert_eq("labels cleared on board move even without label_ids in the request",
+              moved_task["labels"], [])
+
+    # GET /tasks?board_id=board_a must no longer include the moved task; board_b must
+    r = client.get("/tasks", headers=H, params={"board_id": move_board_a_id})
+    assert_true("moved task excluded from old board's GET /tasks",
+                move_task_id not in [t["id"] for t in r.json()["tasks"]])
+    r = client.get("/tasks", headers=H, params={"board_id": move_board_b_id})
+    assert_in("moved task appears in new board's GET /tasks",
+              move_task_id, [t["id"] for t in r.json()["tasks"]])
+
+    # Moving board_id back to board A while sending label_ids for board B (invalid on
+    # the destination) in the SAME request → 422, since labels are resolved against
+    # the NEW board_id, not the board the task is currently on
+    r = client.put(f"/tasks/{move_task_id}", headers=H, json={
+        "board_id": move_board_a_id,
+        "label_ids": [move_label_b_id],  # belongs to board B, task is moving to board A
+    })
+    assert_eq("PUT board_id move + label_ids invalid on destination board → 422",
+              r.status_code, 422)
+
+    # Moving board_id and sending label_ids that DO belong to the destination board
+    # succeeds and attaches them (resolved against the new board_id)
+    r = client.put(f"/tasks/{move_task_id}", headers=H, json={
+        "board_id": move_board_a_id,
+        "label_ids": [move_label_a_id],
+    })
+    assert_eq("PUT board_id move + matching new-board label_ids → 200", r.status_code, 200)
+    moved_back_task = r.json()
+    assert_eq("task board_id updated back to board A", moved_back_task["board_id"], move_board_a_id)
+    assert_eq("new label attached, resolved against destination board", len(moved_back_task["labels"]), 1)
+    if moved_back_task["labels"]:
+        assert_eq("attached label matches board A's label", moved_back_task["labels"][0]["id"], move_label_a_id)
+
+    # PUT with board_id equal to the task's current board is a no-op (labels untouched)
+    r = client.put(f"/tasks/{move_task_id}", headers=H, json={"board_id": move_board_a_id})
+    assert_eq("PUT board_id same as current board → 200 (no-op)", r.status_code, 200)
+    assert_eq("labels untouched when board_id equals current board", len(r.json()["labels"]), 1)
+
+    # Omitting board_id entirely leaves the task's board unchanged
+    r = client.put(f"/tasks/{move_task_id}", headers=H, json={"title": "Move-between-boards test task (renamed)"})
+    assert_eq("PUT omitting board_id → 200", r.status_code, 200)
+    assert_eq("board_id unchanged when omitted from PUT body", r.json()["board_id"], move_board_a_id)
+
+    # Moving to a board that doesn't exist → 404
+    r = client.put(f"/tasks/{move_task_id}", headers=H, json={"board_id": str(uuid.uuid4())})
+    assert_eq("PUT board_id to non-existent board → 404", r.status_code, 404)
+
+    # Moving to a soft-deleted board → 404. get_board_or_404 filters on
+    # (id, user_id, is_deleted=False) — the same ownership/existence check a board
+    # belonging to a different user would also fail; this test suite only has one
+    # user available (no real second Firebase identity to test against), so a
+    # deleted board exercises the identical code path.
+    r = client.post("/boards", headers=H, json={"name": "Move test board C (to be deleted)"})
+    assert_eq("POST /boards move-test board C → 201", r.status_code, 201)
+    move_board_c_id = r.json()["id"]
+    r = client.delete(f"/boards/{move_board_c_id}", headers=H)
+    assert_eq("DELETE move-test board C → 204", r.status_code, 204)
+    r = client.put(f"/tasks/{move_task_id}", headers=H, json={"board_id": move_board_c_id})
+    assert_eq("PUT board_id to soft-deleted board → 404", r.status_code, 404)
+
+    # Clean up (labels before boards — DELETE /boards/:id 400s if labels remain)
+    client.delete(f"/tasks/{move_task_id}", headers=H)
+    client.delete(f"/labels/{move_label_a_id}", headers=H)
+    client.delete(f"/labels/{move_label_b_id}", headers=H)
+    client.delete(f"/boards/{move_board_a_id}", headers=H)
+    client.delete(f"/boards/{move_board_b_id}", headers=H)
+
     # ── Due-date filter params ─────────────────────────────────────────────────
     print("\n── Tasks: Due-date filter params ───────────────────────")
     # Create a task due far in the future to use as a control
@@ -1860,7 +1966,12 @@ def main():
     assert_in("focused view config has selected_board_ids", "selected_board_ids", fv_config)
     assert_in("focused view config has day_range", "day_range", fv_config)
     assert_eq("default board_selection is all", fv_config.get("board_selection"), "all")
-    assert_eq("default day_range is today_tomorrow", fv_config.get("day_range"), "today_tomorrow")
+    # PR #40: get_or_create_config() now defaults new configs' day_range to "today"
+    # (was "today_tomorrow"). Existing users are migrated by a one-off script, not
+    # runtime behavior — this assertion covers the lazy-create path exercised here
+    # since cleanup() deletes focused_view_configs for the test user before this runs.
+    assert_eq("default day_range is today (PR #40: changed from today_tomorrow)",
+              fv_config.get("day_range"), "today")
     assert_eq("default selected_board_ids is empty list", fv_config.get("selected_board_ids"), [])
 
     # GET /focused-view/config — idempotent: second call returns same config row
@@ -2101,6 +2212,156 @@ def main():
     client.delete(f"/tasks/{fv_target_only_task_id}", headers=H)
     client.delete(f"/tasks/{fv_colored_board_task_id}", headers=H)
     client.delete(f"/boards/{fv_board_id}", headers=H)
+
+    # ── Day View (PR #40) ───────────────────────────────────────────────────────
+    # GET /day-view/tasks reuses the FocusedViewTasksOut response shape but, unlike
+    # Focused View, returns ALL pending tasks (any priority) across ALL boards for a
+    # single reference_date — no config, no board_selection, no day_range window.
+    print("\n── Day View (PR #40) ────────────────────────────────────")
+
+    # Auth required
+    r = client.get("/day-view/tasks", params={"reference_date": date.today().isoformat()})
+    assert_eq("GET /day-view/tasks with no auth → 401", r.status_code, 401)
+
+    # reference_date is a required query param (no default) → 422 when omitted
+    r = client.get("/day-view/tasks", headers=H)
+    assert_eq("GET /day-view/tasks without reference_date → 422", r.status_code, 422)
+
+    dv_today_str = date.today().isoformat()
+    dv_tomorrow_str = (date.today() + timedelta(days=1)).isoformat()
+
+    # HP task due today on the default board — must appear
+    r = client.post("/tasks", headers=H, json={
+        "title": "Day view HP task today",
+        "must_do_by": dv_today_str,
+        "label_ids": [],
+        "is_high_priority": True,
+        "board_id": default_board_id,
+    })
+    assert_eq("POST day view HP task (default board) → 201", r.status_code, 201)
+    dv_hp_task_id = r.json()["id"]
+
+    # Normal-priority task due today on the default board — must ALSO appear
+    # (day-view, unlike focused-view, is not filtered to is_high_priority)
+    r = client.post("/tasks", headers=H, json={
+        "title": "Day view normal-priority task today",
+        "must_do_by": dv_today_str,
+        "label_ids": [],
+        "is_high_priority": False,
+        "board_id": default_board_id,
+    })
+    assert_eq("POST day view normal-priority task (default board) → 201", r.status_code, 201)
+    dv_normal_task_id = r.json()["id"]
+
+    # A second board with its own qualifying task — must appear as its own group
+    r = client.post("/boards", headers=H, json={"name": "Day view test board"})
+    assert_eq("POST /boards for day view test → 201", r.status_code, 201)
+    dv_board_id = r.json()["id"]
+
+    r = client.post("/tasks", headers=H, json={
+        "title": "Day view task on second board",
+        "target_date": dv_today_str,
+        "label_ids": [],
+        "board_id": dv_board_id,
+    })
+    assert_eq("POST day view task (second board, target_date-only) → 201", r.status_code, 201)
+    dv_other_board_task_id = r.json()["id"]
+
+    # A task due tomorrow (not today) — must NOT appear when reference_date=today
+    r = client.post("/tasks", headers=H, json={
+        "title": "Day view task due tomorrow",
+        "must_do_by": dv_tomorrow_str,
+        "label_ids": [],
+        "board_id": default_board_id,
+    })
+    assert_eq("POST day view task due tomorrow → 201", r.status_code, 201)
+    dv_tomorrow_task_id = r.json()["id"]
+
+    # A task due today but already completed — must NOT appear (pending only)
+    r = client.post("/tasks", headers=H, json={
+        "title": "Day view task due today (will be completed)",
+        "must_do_by": dv_today_str,
+        "label_ids": [],
+        "board_id": default_board_id,
+    })
+    assert_eq("POST day view task to be completed → 201", r.status_code, 201)
+    dv_done_task_id = r.json()["id"]
+    r = client.post(f"/tasks/{dv_done_task_id}/complete", headers=H)
+    assert_eq("Complete day view done-task → 200", r.status_code, 200)
+
+    # Day view ignores the Focused View config entirely — set it to a restrictive
+    # "selected" board_selection that excludes dv_board_id, and confirm day-view
+    # still returns dv_board_id's task anyway.
+    r = client.put("/focused-view/config", headers=H, json={
+        "board_selection": "selected",
+        "selected_board_ids": [default_board_id],
+        "day_range": "today",
+    })
+    assert_eq("PUT /focused-view/config restrict to default board (day-view isolation setup) → 200",
+              r.status_code, 200)
+
+    r = client.get("/day-view/tasks", headers=H, params={"reference_date": dv_today_str})
+    assert_eq("GET /day-view/tasks → 200", r.status_code, 200)
+    dv_body = r.json()
+    assert_in("day view response has boards key", "boards", dv_body)
+    dv_boards_list = dv_body["boards"]
+
+    # Default board group: both the HP and normal-priority tasks due today must appear
+    dv_default_group = next((b for b in dv_boards_list if b["board_id"] == default_board_id), None)
+    assert_true("default board group appears in day view", dv_default_group is not None)
+    if dv_default_group is not None:
+        assert_in("day view board group has board_id", "board_id", dv_default_group)
+        assert_in("day view board group has board_name", "board_name", dv_default_group)
+        assert_in("day view board group has board_color", "board_color", dv_default_group)
+        assert_in("day view board group has tasks", "tasks", dv_default_group)
+        dv_default_task_ids = [t["id"] for t in dv_default_group["tasks"]]
+        assert_in("HP task appears in day view", dv_hp_task_id, dv_default_task_ids)
+        assert_in("normal-priority task appears in day view (all priorities, unlike focused view)",
+                  dv_normal_task_id, dv_default_task_ids)
+        assert_true("tomorrow's task excluded from day view for reference_date=today",
+                    dv_tomorrow_task_id not in dv_default_task_ids)
+        assert_true("completed task excluded from day view",
+                    dv_done_task_id not in dv_default_task_ids)
+
+    # Second board group must appear, even though Focused View config's
+    # board_selection=selected excludes it — day-view has no board_selection concept
+    dv_other_group = next((b for b in dv_boards_list if b["board_id"] == dv_board_id), None)
+    assert_true("day view is not scoped by the focused-view board_selection config",
+                dv_other_group is not None)
+    if dv_other_group is not None:
+        dv_other_task_ids = [t["id"] for t in dv_other_group["tasks"]]
+        assert_in("second board's target_date-only task appears in day view",
+                  dv_other_board_task_id, dv_other_task_ids)
+
+    # reference_date=tomorrow must include the tomorrow task and exclude today's tasks
+    r = client.get("/day-view/tasks", headers=H, params={"reference_date": dv_tomorrow_str})
+    assert_eq("GET /day-view/tasks?reference_date=tomorrow → 200", r.status_code, 200)
+    dv_tomorrow_boards = r.json()["boards"]
+    dv_tomorrow_default_group = next((b for b in dv_tomorrow_boards if b["board_id"] == default_board_id), None)
+    assert_true("default board group appears for tomorrow's reference_date",
+                dv_tomorrow_default_group is not None)
+    if dv_tomorrow_default_group is not None:
+        dv_tomorrow_ids = [t["id"] for t in dv_tomorrow_default_group["tasks"]]
+        assert_in("tomorrow's task appears when reference_date=tomorrow", dv_tomorrow_task_id, dv_tomorrow_ids)
+        assert_true("today's HP task excluded when reference_date=tomorrow",
+                    dv_hp_task_id not in dv_tomorrow_ids)
+
+    # Restore focused-view config to the default used by later assertions
+    r = client.put("/focused-view/config", headers=H, json={
+        "board_selection": "all",
+        "selected_board_ids": [],
+        "day_range": "today_tomorrow",
+    })
+    assert_eq("PUT /focused-view/config restore all/today_tomorrow after day view tests → 200",
+              r.status_code, 200)
+
+    # Clean up day view test tasks and board
+    client.delete(f"/tasks/{dv_hp_task_id}", headers=H)
+    client.delete(f"/tasks/{dv_normal_task_id}", headers=H)
+    client.delete(f"/tasks/{dv_other_board_task_id}", headers=H)
+    client.delete(f"/tasks/{dv_tomorrow_task_id}", headers=H)
+    client.delete(f"/tasks/{dv_done_task_id}", headers=H)
+    client.delete(f"/boards/{dv_board_id}", headers=H)
 
     # ── Summary ────────────────────────────────────────────────────────────────
     print(f"\n── Results ─────────────────────────────────────────────")
