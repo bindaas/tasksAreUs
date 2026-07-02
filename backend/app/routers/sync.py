@@ -9,21 +9,33 @@ from pydantic import ValidationError
 from ..database import get_db
 from ..dependencies import get_current_user
 from ..models import Belief, Board, Label, Task, TaskLabel, UserSettings
-from ..schemas import SyncChanges, SyncRequest, SyncResponse, TaskLabelSync, validate_task_links
+from ..schemas import MAX_TASK_LINKS, SyncChanges, SyncRequest, SyncResponse, TaskLabelSync, TaskLink
 from ..services import board_service as board_svc
 
 
 def _validate_sync_links(raw_links: Any) -> List[Dict[str, Any]]:
-    """Validate a sync client's raw links payload; invalid input is dropped (empty list).
+    """Validate a sync client's raw links payload, keeping whatever is valid.
 
     Sync push payloads are raw dicts (SyncChanges.tasks bypasses TaskCreate/TaskUpdate
     Pydantic validation), so the max-3/scheme/length checks that POST/PUT /tasks get
-    for free via Pydantic must be re-applied here explicitly.
+    for free via Pydantic must be re-applied here explicitly. Unlike POST/PUT (where an
+    invalid link fails the whole request), a sync push has no way to surface a per-field
+    error back to the client, so an item-level failure here (or being out of sync with a
+    validation rule change) shouldn't silently discard every other valid link — each item
+    is validated independently, invalid ones are dropped, and the result is capped at
+    MAX_TASK_LINKS.
     """
-    try:
-        return [l.model_dump() for l in validate_task_links(raw_links)]
-    except (ValueError, ValidationError):
+    if not raw_links or not isinstance(raw_links, list):
         return []
+    valid: List[Dict[str, Any]] = []
+    for item in raw_links:
+        try:
+            valid.append(TaskLink.model_validate(item).model_dump())
+        except ValidationError:
+            continue
+        if len(valid) == MAX_TASK_LINKS:
+            break
+    return valid
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 

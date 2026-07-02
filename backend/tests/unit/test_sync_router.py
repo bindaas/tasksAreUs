@@ -87,7 +87,7 @@ class TestSyncPushLinks:
         added_task = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], Task))
         assert added_task.links == []
 
-    def test_new_task_over_cap_drops_links(self):
+    def test_new_task_over_cap_truncates_to_max(self):
         db = _make_db(task_first=None)
         links = [{"id": f"l{i}", "url": "https://example.com", "description": "x"} for i in range(4)]
         payload = [{
@@ -99,7 +99,25 @@ class TestSyncPushLinks:
         sync(_sync_request(payload), db, "user-1")
 
         added_task = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], Task))
-        assert added_task.links == []
+        assert added_task.links == links[:3]
+
+    def test_new_task_drops_only_invalid_items(self):
+        db = _make_db(task_first=None)
+        links = [
+            {"id": "l1", "url": "https://example.com", "description": "Good"},
+            {"id": "l2", "url": "javascript:alert(1)", "description": "Bad"},
+            {"id": "l3", "url": "https://example.org", "description": "Also good"},
+        ]
+        payload = [{
+            "id": "task-new",
+            "title": "New task",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "links": links,
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        added_task = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], Task))
+        assert added_task.links == [links[0], links[2]]
 
     def test_existing_task_replaces_links_when_client_wins(self):
         existing = _make_task(updated_at=datetime.now(timezone.utc) - timedelta(days=2))
