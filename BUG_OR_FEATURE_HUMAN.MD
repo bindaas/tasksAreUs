@@ -11,16 +11,17 @@ Open items still worth a look (left as PR comments, not blockers):
 Drop "Show done/show pending"  link on the Web/Mobile.
 If there is API added specifically for this feature - it is probably not getting used anymore. Drop that code too
 
-We need to drop the "chat feature altogether. For now cleanup the UI - mobile and web. We will do the APi and beyond in a later PR
+We need to drop the "chat feature altogether. For now cleanup the UI - mobile and web. We will do the APi and databse and LLM  in a later PR
 
-Focussed view - change the default to be Today , and High and all boards. Keep everything else teh same, but remove the ability to edit from the UI. It remains in the database though
+Focussed view - change the default to be Today , and High and all boards. Keep everything else the same, but remove the ability to edit from the UI. It remains in the database though
 
 Add a new view "Today" this shows all the boards and only tasks which are due today.
-Thsi view will also be designed similar to Fiocussed view. Thsi too is not editable from Settings
+Thsi view will also be designed similar to Fiocussed view. This too is not editable from Settings
 
-On simialr lines - create a biew Tomorrow whhich is identical to Today except it shows tasks from Tomorrow
+On simialr lines - create a view Tomorrow whhich is identical to Today except it shows tasks from Tomorrow instead of Today
 
-We now have 4 tabs Focusses. Today.Tomorrow. All (detailed to be remaned as All)
+We now have 4 views -  Focused. Today.Tomorrow. All (detailed to be remaned as All)
+These should appear in the above mentioned order
 The default view is Focussed.
 
 We will drop the drop-down navigation of Boards from left nav. and instead create similar  tabbed buttons for boards right below the view buttons.
@@ -31,6 +32,9 @@ The header on top "My Tasks" to be renamed as "Tasks Are Us - <View name>>" or "
 When a task is edited , and I come back to Task list screen, I should get teh same view/board 
 
 I have given the feedback on Web interface mostly. Do a simailr flow on Mobile.
+
+Ask clarifying questions - one at a time
+Once done, create a plan for Sleepy to review
 
 
 

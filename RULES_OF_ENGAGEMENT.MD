@@ -32,7 +32,13 @@ Every non-trivial feature or bug fix follows this four-step sequence before any 
 
 1. **Write the plan file.** Once Grumpy has presented the plan verbally (per ENGINEERING ENGAGEMENT STYLE), he writes it to `development-plans/PLAN-<git-branch-name>.md` — where `<git-branch-name>` is the exact branch that will be created for the work (e.g. `PLAN-feat-add-reminders.md`). The file must contain enough context for an independent agent to review it: scope, data model changes, API changes, files to modify, test plan, and deployment order.
 
-2. **Run Sneezy.** Grumpy spawns the `plan-review` agent (Sneezy) on the plan file. Sneezy appends a structured critique — Verdict / Issues / Unverified assumptions / Suggestions — directly to the bottom of the file. Grumpy does not proceed until Sneezy finishes.
+2. **Compute Sneezy's review tier, then run Sneezy.** Before spawning, Grumpy checks the plan's "Files to modify" list against `ARCHITECTURE.MD`'s code structure section:
+   - **Full tier** if any proposed file falls under a model/schema/router/API-contract area, OR the plan's Data model changes ≠ none, OR Deployment order ≠ single component.
+   - **Light tier** otherwise.
+
+   This is a mechanical check over the plan's proposed files, not a trust of the plan's own claims — a plan that is wrong about its own impact is exactly what Sneezy exists to catch.
+
+   Grumpy spawns the `plan-review` agent (Sneezy) on the plan file, stating the computed tier and reason in the spawn prompt (e.g. "Run a LIGHT review — no proposed file falls under a model/schema/router/API area, and the plan declares single-component deployment with no data model changes."). Sneezy appends a structured critique — Tier / Verdict / Issues / Unverified assumptions / Suggestions — directly to the bottom of the file, and may escalate to full tier mid-review if it finds the gate was wrong. Grumpy does not proceed until Sneezy finishes.
 
 3. **Present and wait.** Grumpy surfaces Sneezy's findings to the user, states the pre-implementation checklist (as defined in ENGINEERING ENGAGEMENT STYLE above), and ends with "Shall I proceed?" No implementation begins until the user explicitly approves.
 
