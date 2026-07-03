@@ -1,7 +1,6 @@
 ---
 name: run
 description: Launch tasksAreUs (backend, frontend, and/or mobile) locally and verify it's up. Use when asked to run, start, or restart the app, check that a change works, or confirm a service is healthy.
-model: haiku
 user-invocable: true
 ---
 
