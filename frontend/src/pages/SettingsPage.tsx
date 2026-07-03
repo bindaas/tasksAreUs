@@ -414,7 +414,9 @@ export function SettingsPage() {
   // board selected elsewhere in the app (Settings is otherwise board-neutral).
   const [labelsBoardId, setLabelsBoardId] = useState<string | undefined>(undefined);
   useEffect(() => {
-    if (!labelsBoardId && boards.length > 0) {
+    if (boards.length === 0) return;
+    const stillExists = labelsBoardId && boards.some((b) => b.id === labelsBoardId);
+    if (!stillExists) {
       setLabelsBoardId(activeBoard?.id ?? boards[0].id);
     }
   }, [boards, activeBoard, labelsBoardId]);
