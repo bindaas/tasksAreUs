@@ -31,13 +31,17 @@ export function TaskDetailPage() {
     ? (boardParam ?? boards.find((b) => b.is_default)?.id)
     : undefined;
 
-  // Scoped to the task's own board (edit) or the target board (new) — Today/
-  // Tomorrow/Focused are cross-board, so the globally active board can easily
-  // differ from where this task actually lives.
-  const labelsBoardId = isNew ? defaultBoardId : task?.board_id;
+  // Scoped to whichever board is currently selected in the form — reported
+  // live via onBoardIdChange, since the user can switch boards mid-form and
+  // labels are board-scoped server-side (a stale scope here would let the
+  // user check labels that 422 on submit). Falls back to the task's own
+  // board (edit) or the target board (new) before the form reports in.
+  const [liveBoardId, setLiveBoardId] = useState<string | undefined>(undefined);
+  const labelsBoardId = liveBoardId ?? (isNew ? defaultBoardId : task?.board_id);
   const { labels, loading: labelsLoading } = useLabels(labelsBoardId);
 
   useEffect(() => {
+    setLiveBoardId(undefined);
     if (isNew) return;
     let cancelled = false;
 
@@ -171,6 +175,7 @@ export function TaskDetailPage() {
             labels={labels}
             boards={boards}
             defaultBoardId={defaultBoardId}
+            onBoardIdChange={setLiveBoardId}
             onSubmit={handleSubmit}
             onCancel={() => navigate(-1)}
             submitLabel={isNew ? 'Create Task' : 'Save Changes'}

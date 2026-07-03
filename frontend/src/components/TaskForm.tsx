@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
 import type { Label, TaskLink } from '../api/tasks';
 import type { Board } from '../api/boards';
@@ -18,6 +18,7 @@ interface TaskFormProps {
   labels: Label[];
   boards: Board[];
   defaultBoardId?: string;
+  onBoardIdChange?: (boardId: string) => void;
   onSubmit: (data: CreateTaskBody | UpdateTaskBody) => Promise<void>;
   onCancel: () => void;
   submitLabel?: string;
@@ -33,6 +34,7 @@ export function TaskForm({
   labels,
   boards,
   defaultBoardId,
+  onBoardIdChange,
   onSubmit,
   onCancel,
   submitLabel = 'Save',
@@ -61,6 +63,25 @@ export function TaskForm({
       setBoardId(defaultBoardId);
     }
   }, [defaultBoardId, initialValues?.board_id, boardId]);
+
+  // Let the parent rescope its labels fetch to whichever board is currently
+  // selected in this form (labels are board-scoped; the parent doesn't
+  // otherwise see live changes to this local boardId state).
+  useEffect(() => {
+    if (boardId) onBoardIdChange?.(boardId);
+  }, [boardId, onBoardIdChange]);
+
+  // Labels are board-scoped server-side — a genuine board switch (not the
+  // initial resolution above) invalidates whatever was previously selected,
+  // since those label ids won't exist on the new board and would 422 on submit.
+  const prevBoardIdRef = useRef(boardId);
+  useEffect(() => {
+    const prev = prevBoardIdRef.current;
+    prevBoardIdRef.current = boardId;
+    if (prev && boardId && prev !== boardId) {
+      setSelectedLabelIds(new Set());
+    }
+  }, [boardId]);
 
   function addLinkRow() {
     if (links.length >= MAX_TASK_LINKS) return;
