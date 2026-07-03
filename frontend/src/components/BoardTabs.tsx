@@ -7,7 +7,7 @@ export function BoardTabs({ onSelect }: { onSelect?: (board: Board) => void }) {
   if (boards.length === 0) return null;
 
   return (
-    <div className="flex gap-1.5 overflow-x-auto mb-4 -mx-1 px-1">
+    <div className="flex justify-end gap-1.5 overflow-x-auto mb-4 -mx-1 px-1">
       {boards.map((board) => {
         const active = board.id === activeBoard?.id;
         return (

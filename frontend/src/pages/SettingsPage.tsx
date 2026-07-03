@@ -409,6 +409,17 @@ export function SettingsPage() {
   const { boards, activeBoard, renameBoard, setDefaultBoard, setColorBoard, deleteBoard, createBoard } = useBoard();
   const isAnonymous = user?.isAnonymous === true;
 
+  // Local to Settings — deliberately not synced to BoardContext's activeBoard,
+  // so switching which board's labels you're editing here doesn't change the
+  // board selected elsewhere in the app (Settings is otherwise board-neutral).
+  const [labelsBoardId, setLabelsBoardId] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (!labelsBoardId && boards.length > 0) {
+      setLabelsBoardId(activeBoard?.id ?? boards[0].id);
+    }
+  }, [boards, activeBoard, labelsBoardId]);
+  const labelsBoard = boards.find((b) => b.id === labelsBoardId);
+
   const [questions, setQuestions] = useState<string[]>([]);
   const [highPriorityLimit, setHighPriorityLimit] = useState(3);
   const [loading, setLoading] = useState(true);
@@ -449,15 +460,15 @@ export function SettingsPage() {
   }
 
   useEffect(() => {
+    if (!labelsBoardId) return;
     async function fetch() {
       setLoading(true);
       setError(null);
       try {
-        const boardId = activeBoard?.id;
         const [s, modeRes, typeRes] = await Promise.all([
           getSettings(),
-          listLabels('mode', boardId),
-          listLabels('type', boardId),
+          listLabels('mode', labelsBoardId),
+          listLabels('type', labelsBoardId),
         ]);
         setQuestions(s.starter_questions ?? []);
         setHighPriorityLimit(s.high_priority_daily_limit ?? 3);
@@ -470,10 +481,10 @@ export function SettingsPage() {
       }
     }
     fetch();
-  }, [activeBoard?.id]);
+  }, [labelsBoardId]);
 
   async function handleAddLabel(category: 'mode' | 'type', value: string) {
-    const label = await createLabel(category, value, activeBoard?.id);
+    const label = await createLabel(category, value, labelsBoardId);
     if (category === 'mode') setModeLabels((prev) => [...prev, label]);
     else setTypeLabels((prev) => [...prev, label]);
   }
@@ -614,12 +625,24 @@ export function SettingsPage() {
 
           {/* Labels */}
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-1">
-              Labels
-              {activeBoard && <span className="ml-1 text-gray-400 font-normal">— {activeBoard.name}</span>}
-            </h3>
+            <div className="flex items-center justify-between gap-3 mb-1">
+              <h3 className="text-sm font-semibold text-gray-700">Labels</h3>
+              {boards.length > 1 && (
+                <select
+                  value={labelsBoardId ?? ''}
+                  onChange={(e) => setLabelsBoardId(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  {boards.map((board) => (
+                    <option key={board.id} value={board.id}>
+                      {board.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
             <p className="text-xs text-gray-500 mb-3">
-              Customise Mode and Type labels for the active board.
+              Customise Mode and Type labels for {labelsBoard ? <span className="font-medium">{labelsBoard.name}</span> : 'the selected board'}.
             </p>
             <div className="border border-gray-200 rounded-lg p-3 space-y-1">
               <LabelEditor

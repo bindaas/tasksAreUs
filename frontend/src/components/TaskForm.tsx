@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
 import type { Label, TaskLink } from '../api/tasks';
 import type { Board } from '../api/boards';
-import { LabelBadge } from './LabelBadge';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
 import { isValidLinkUrl, MAX_TASK_LINKS } from '../utils/taskLinks';
@@ -199,10 +198,54 @@ export function TaskForm({
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          rows={3}
+          rows={7}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
           placeholder="Any additional details..."
         />
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-sm font-medium text-gray-700">Links</label>
+          <button
+            type="button"
+            onClick={addLinkRow}
+            disabled={links.length >= MAX_TASK_LINKS}
+            className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            + Add link
+          </button>
+        </div>
+        <div className="space-y-2">
+          {links.map((link) => (
+            <div key={link.id} className="flex gap-2 items-start">
+              <div className="flex-1 space-y-1.5">
+                <input
+                  type="text"
+                  value={link.description}
+                  onChange={(e) => updateLinkRow(link.id, 'description', e.target.value)}
+                  placeholder="Description"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+                <input
+                  type="text"
+                  value={link.url}
+                  onChange={(e) => updateLinkRow(link.id, 'url', e.target.value)}
+                  placeholder="https://..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeLinkRow(link.id)}
+                className="p-1.5 rounded-full bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shrink-0"
+                aria-label="Remove link"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -322,60 +365,6 @@ export function TaskForm({
               </div>
             );
           })}
-        </div>
-
-        {selectedLabelIds.size > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1">
-            {Array.from(selectedLabelIds).map((id) => {
-              const label = labels.find((l) => l.id === id);
-              if (!label) return null;
-              return <LabelBadge key={id} label={label} />;
-            })}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-sm font-medium text-gray-700">Links</label>
-          <button
-            type="button"
-            onClick={addLinkRow}
-            disabled={links.length >= MAX_TASK_LINKS}
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            + Add link
-          </button>
-        </div>
-        <div className="space-y-2">
-          {links.map((link) => (
-            <div key={link.id} className="flex gap-2 items-start">
-              <div className="flex-1 space-y-1.5">
-                <input
-                  type="text"
-                  value={link.description}
-                  onChange={(e) => updateLinkRow(link.id, 'description', e.target.value)}
-                  placeholder="Description"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-                <input
-                  type="text"
-                  value={link.url}
-                  onChange={(e) => updateLinkRow(link.id, 'url', e.target.value)}
-                  placeholder="https://..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => removeLinkRow(link.id)}
-                className="p-1.5 rounded-full bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors shrink-0"
-                aria-label="Remove link"
-              >
-                ×
-              </button>
-            </div>
-          ))}
         </div>
       </div>
 

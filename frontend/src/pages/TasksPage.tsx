@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { useLabels } from '../hooks/useLabels';
 import { TaskCard } from '../components/TaskCard';
@@ -9,7 +9,7 @@ import { BoardTabs } from '../components/BoardTabs';
 import { updateTask } from '../api/tasks';
 import { useFilter } from '../context/FilterContext';
 import { useBoard } from '../context/BoardContext';
-import type { Board } from '../api/boards';
+import { useView } from '../context/ViewContext';
 import type { Label, Task } from '../api/tasks';
 import { filterTasks } from '../utils/taskFilters';
 import {
@@ -55,18 +55,12 @@ const VIEW_ORDER: { key: ViewMode; title: string }[] = [
 
 export function TasksPage() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { selectedLabelIds, toggleLabel, clearLabels } = useFilter();
-  const { boards, activeBoard, setActiveBoard } = useBoard();
+  const { boards, activeBoard } = useBoard();
+  const { viewMode, setViewMode } = useView();
   const [searchQuery, setSearchQuery] = useState('');
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
   const [dragOverPriority, setDragOverPriority] = useState<'high' | 'normal' | null>(null);
-
-  const viewModeParam = searchParams.get('view');
-  const viewMode: ViewMode =
-    viewModeParam === 'today' || viewModeParam === 'tomorrow' || viewModeParam === 'all'
-      ? viewModeParam
-      : 'focused';
 
   const { tasks, loading, error, refetch } = useTasks('pending');
   const { labels, labelsByCategory } = useLabels();
@@ -79,31 +73,6 @@ export function TasksPage() {
     tom.setDate(tom.getDate() + 1);
     return { today: dateOnly(now), tomorrow: dateOnly(tom) };
   }, []);
-
-  // Restore activeBoard from the URL's ?board= param once boards have loaded
-  // (BoardProvider's fetchBoards is async — boards starts as [] on mount).
-  useEffect(() => {
-    if (boards.length === 0) return;
-    const boardParam = searchParams.get('board');
-    if (!boardParam) return;
-    const found = boards.find((b) => b.id === boardParam);
-    if (found && found.id !== activeBoard?.id) {
-      setActiveBoard(found);
-    }
-  }, [boards, searchParams, activeBoard, setActiveBoard]);
-
-  function setView(v: ViewMode) {
-    const next = new URLSearchParams(searchParams);
-    next.set('view', v);
-    if (v === 'all' && activeBoard) next.set('board', activeBoard.id);
-    setSearchParams(next);
-  }
-
-  function handleBoardTabSelect(board: Board) {
-    const next = new URLSearchParams(searchParams);
-    next.set('board', board.id);
-    setSearchParams(next);
-  }
 
   function handleFabClick() {
     if (viewMode === 'all' && activeBoard) {
@@ -209,7 +178,7 @@ export function TasksPage() {
             {VIEW_ORDER.map((v, idx) => (
               <button
                 key={v.key}
-                onClick={() => setView(v.key)}
+                onClick={() => setViewMode(v.key)}
                 className={`px-3 py-1.5 transition-colors ${idx > 0 ? 'border-l border-gray-200' : ''} ${
                   viewMode === v.key
                     ? 'bg-indigo-600 text-white'
@@ -239,7 +208,7 @@ export function TasksPage() {
       </div>
 
       {/* Board tabs — only under All */}
-      {viewMode === 'all' && <BoardTabs onSelect={handleBoardTabSelect} />}
+      {viewMode === 'all' && <BoardTabs />}
 
       {/* Label filter chips — only shown for the All (kanban) view */}
       {viewMode === 'all' && (

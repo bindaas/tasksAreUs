@@ -7,7 +7,7 @@ function boardColor(board: FocusedBoard, index: number): string {
   return board.board_color ?? PALETTE[index % PALETTE.length];
 }
 
-export function BoardGroupedTasks({ boards }: { boards: FocusedBoard[] }) {
+export function BoardGroupedTasks({ boards, onRefresh }: { boards: FocusedBoard[]; onRefresh: () => void }) {
   return (
     <div className="space-y-6">
       {boards.map((board, idx) => {
@@ -23,7 +23,7 @@ export function BoardGroupedTasks({ boards }: { boards: FocusedBoard[] }) {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {board.tasks.map((task) => (
-                <FocusedTaskCard key={task.id} task={task} boardColor={color} />
+                <FocusedTaskCard key={task.id} task={task} boardColor={color} onRefresh={onRefresh} />
               ))}
             </div>
           </div>

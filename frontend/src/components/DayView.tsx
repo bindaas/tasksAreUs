@@ -59,5 +59,5 @@ export function DayView({ referenceDate }: { referenceDate: string }) {
     );
   }
 
-  return <BoardGroupedTasks boards={boards} />;
+  return <BoardGroupedTasks boards={boards} onRefresh={load} />;
 }
