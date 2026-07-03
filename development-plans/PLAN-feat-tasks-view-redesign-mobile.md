@@ -6,6 +6,8 @@ This is PR 3 of a 3-PR epic (backend → web → **mobile**). Depends on `feat-t
 
 Mirrors the web redesign on mobile: four views (Focused, Today, Tomorrow, All — default Focused), drops the Chat tab's UI, drops the "Show completed" toggle, replaces the board-switcher dropdown with board tabs (shown only under All), and replaces the board-name header with "Tasks Are Us - `<View>`" / "Tasks Are Us - `<Board>`".
 
+**Scope update (2026-07-03):** web shipped a follow-on PR (#42, "editable task details in all views, sticky nav state, board-neutral settings") on top of the redesign this plan already covers. Since mobile's PR 3/3 hasn't started implementation, PR #42's mobile equivalent is folded into this same plan rather than left for a separate follow-up — see the new "Mobile Equivalent of Web PR #42" section below, added after the original Files to Modify/Test Plan content.
+
 ## Requirements (from user Q&A this session, mobile-specific answer)
 
 Mobile has no literal "tasksAreUs" text anywhere except `LoginScreen.tsx` (out of scope — login is unaffected). The user confirmed mobile should **mirror web exactly**: the Tasks screen's current board-name-with-dropdown header (`activeBoard?.name ?? 'Tasks'` + `▾`) is replaced by "Tasks Are Us - `<View/Board>`", and board switching moves into tabs shown only under the All view — the dropdown arrow and its panel are removed entirely.
@@ -85,6 +87,54 @@ None — this PR is presentation-only. Consumes the existing `GET /focused-view/
 ## PR Structure
 
 Single PR, mobile only.
+
+---
+
+## Mobile Equivalent of Web PR #42 (added 2026-07-03)
+
+Web PR #42 shipped web-only. This section captures the mobile equivalent of each of its changes, folded into this plan since mobile PR 3/3 hasn't started implementation yet.
+
+### Inline quick-edit on Focused/Today/Tomorrow
+
+Web extracted its existing All-view inline editor (`TaskCard.tsx`) into a shared `TaskQuickEdit` component and reused it on `FocusedTaskCard.tsx` (Focused/Today/Tomorrow). Mobile has no inline editor anywhere yet — `DraggableTaskRow`'s edit button (`TasksScreen.tsx:853`, `onEditPress={handleEditPress}`) opens the full `TaskFormScreen` modal, and mobile's `FocusedTaskCard.tsx` currently has no edit affordance at all.
+
+**Scope decision (unconfirmed — asked the user, no response received, proceeding with the recommended default): add inline quick-edit to Focused/Today/Tomorrow only**, mirroring exactly what PR #42 changed on web. All view keeps its existing modal-based edit — that web/mobile divergence predates PR #42 and isn't its job to fix. Revisit if full parity across all four views is wanted instead.
+
+- New: `src/components/TaskQuickEdit.tsx` — RN port of the web component: title `TextInput`, mode/type label toggle chips (reuses this plan's existing `labelsByCategory` grouping pattern), Save/Cancel row calling `updateTask(task.id, { title, label_ids })`. Accepts an optional `labels` prop (board-scoped labels already on hand); when omitted, fetches via `listLabels(undefined, task.board_id)` — needed because `FocusedTaskCard`/`DayView` group tasks across boards and don't hold one board-scoped label list.
+- `src/components/FocusedTaskCard.tsx` — add `isEditing` state and a pencil-icon button; swap the card body for `<TaskQuickEdit>` when editing. Gains an `onRefresh: () => void` prop so `FocusedView.tsx`/`DayView.tsx` can pass their existing refetch callback through (both already refetch after other mutations — this is prop-threading, not new fetch logic). Tap-to-open-detail must be suppressed while `isEditing` (mirrors web's `onClick={() => { if (!isEditing) navigate(...) }}` — RN equivalent: guard the row's `onPress`).
+- `src/components/BoardGroupedTasks.tsx` (new, per this plan's existing "Extract shared rendering" bullet) — thread `onRefresh` down to each `FocusedTaskCard`.
+
+### Sticky view/board state across tabs
+
+Web PR #42 added `ViewContext` + URL-param sync so the selected view/board survives navigating to Reports/Settings/Task Detail and back — needed because React Router unmounts route components on navigation. **Mobile needs no equivalent change.** `AppNavigator.tsx`'s `Tab.Navigator` (bottom tabs) does not unmount inactive tab screens by default, so `TasksScreen`'s local `viewMode`/`activeBoard` (from `BoardContext`, mounted above the tab navigator per this plan's existing State Persistence note) already survive switching to Reports/Settings and back — same reasoning as the existing note about the edit Modal, extended to tab navigation. No code changes needed; add a verification bullet to the Test Plan.
+
+### Board-scoped Settings Labels picker
+
+Web replaced Settings' implicit `activeBoard`-driven Labels section with a local `labelsBoardId` dropdown, decoupled from the app-wide active board (self-heals to `activeBoard ?? boards[0]` if the previously-selected board is deleted or otherwise no longer present). Mobile's `SettingsScreen.tsx` currently drives its Labels section directly off `activeBoard` (`SettingsScreen.tsx:613, 665-666, 682`) — the same pre-PR42 pattern web had.
+
+- `src/screens/SettingsScreen.tsx`:
+  - Add local `labelsBoardId` state, self-healing whenever it's `undefined` or no longer present in `boards` (set to `activeBoard?.id ?? boards[0].id`) — same self-heal condition as the web fix
+  - Replace the three `activeBoard?.id` reads (labels fetch ×2, `createLabel`) with `labelsBoardId`
+  - Add a board picker for the Labels section, shown only when `boards.length > 1` (matches web). RN has no native `<select>` — reuse this codebase's existing open/close panel-of-buttons pattern already used for the board-switcher dropdown being removed from `TasksScreen.tsx:726-751`, rather than introducing a new picker paradigm.
+
+### TaskForm cleanup
+
+Web reordered `TaskForm.tsx` (Notes → Links → Dates → ... → Labels, dropping a duplicate labels-summary block) and enlarged the Notes textarea (`rows={3}` → `rows={7}`). Mobile's `TaskFormScreen.tsx` has no duplicate-labels-summary to remove (never had one), but needs the same reordering and Notes sizing:
+
+- `src/screens/TaskFormScreen.tsx`:
+  - Move the "Links" block (currently after Labels, `TaskFormScreen.tsx:420-458`) to directly follow the "Notes" block (currently `TaskFormScreen.tsx:263-275`), before the "Dates" row
+  - Notes `TextInput`: `numberOfLines={3}` → `numberOfLines={6}`, `minHeight: 80` → `minHeight: 160` (proportional to web's `rows={3}`→`rows={7}`)
+
+### Not ported
+
+- Web's board-tabs right-alignment (`BoardTabs.tsx`, CSS-only `justify-end`) — cosmetic, no RN layout equivalent called for. Mobile's new `BoardTabs.tsx` (per this plan's existing Files to Modify) can use whatever alignment fits the RN layout.
+
+### Test Plan additions
+
+- Tapping the pencil icon on a Focused/Today/Tomorrow card opens inline quick-edit; Save persists title/label changes and refreshes the list; Cancel discards; tapping elsewhere on the card while editing does not navigate away
+- Switching to the Reports or Settings tab and back to Tasks preserves the previously selected view and board (sticky-nav regression check, extending this plan's existing Modal-based check to tab navigation)
+- Settings' Labels board picker only appears with 2+ boards; changing it does not change the app-wide active board (Tasks screen's board tabs stay unaffected); deleting the board currently selected in the picker falls back to the default/first board without erroring
+- Notes field is visibly taller (6 lines) and Links appears directly below Notes, above Must-do-by/Target date
 
 ---
 
