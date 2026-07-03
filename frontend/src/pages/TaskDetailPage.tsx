@@ -21,7 +21,6 @@ export function TaskDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { labels, loading: labelsLoading } = useLabels();
   const { selectedLabelIds } = useFilter();
   const { highPriorityDailyLimit } = useSettings();
   const { boards } = useBoard();
@@ -31,6 +30,12 @@ export function TaskDetailPage() {
   const defaultBoardId = isNew
     ? (boardParam ?? boards.find((b) => b.is_default)?.id)
     : undefined;
+
+  // Scoped to the task's own board (edit) or the target board (new) — Today/
+  // Tomorrow/Focused are cross-board, so the globally active board can easily
+  // differ from where this task actually lives.
+  const labelsBoardId = isNew ? defaultBoardId : task?.board_id;
+  const { labels, loading: labelsLoading } = useLabels(labelsBoardId);
 
   useEffect(() => {
     if (isNew) return;

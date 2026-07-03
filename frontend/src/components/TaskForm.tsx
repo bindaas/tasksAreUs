@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
 import type { Label, TaskLink } from '../api/tasks';
 import type { Board } from '../api/boards';
@@ -52,6 +52,15 @@ export function TaskForm({
 
   const isEditMode = !!initialValues;
   const movingBoard = isEditMode && !!initialValues?.board_id && boardId !== initialValues.board_id;
+
+  // defaultBoardId can arrive after mount (BoardContext loads asynchronously) —
+  // pick it up once it's available if the form hasn't already been given a
+  // board (initialValues) or had one chosen by the user.
+  useEffect(() => {
+    if (!initialValues?.board_id && !boardId && defaultBoardId) {
+      setBoardId(defaultBoardId);
+    }
+  }, [defaultBoardId, initialValues?.board_id, boardId]);
 
   function addLinkRow() {
     if (links.length >= MAX_TASK_LINKS) return;
