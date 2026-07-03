@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Task, Label } from '../api/tasks';
-import { completeTask, deleteTask, updateTask } from '../api/tasks';
+import { completeTask, deleteTask } from '../api/tasks';
 import { LabelBadge } from './LabelBadge';
+import { TaskQuickEdit } from './TaskQuickEdit';
 import { formatDate, isOverdue } from '../utils/taskDateUtils';
 
 interface TaskCardProps {
@@ -14,66 +15,19 @@ interface TaskCardProps {
 }
 
 const LABEL_CATEGORY_ORDER: Record<string, number> = { mode: 0, type: 1 };
-const EDIT_CATEGORY_ORDER = ['mode', 'type'] as const;
 
 export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = false, onTogglePriority }: TaskCardProps) {
   const navigate = useNavigate();
   const mustOverdue = isOverdue(task.must_do_by);
   const [dragging, setDragging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-  const [editLabelIds, setEditLabelIds] = useState<Set<string>>(new Set());
-  const [saving, setSaving] = useState(false);
 
   const sortedLabels = [...task.labels]
     .sort((a, b) => (LABEL_CATEGORY_ORDER[a.category] ?? 3) - (LABEL_CATEGORY_ORDER[b.category] ?? 3));
 
-  const labelsByCategory = useMemo(
-    () => labels.reduce<Record<string, Label[]>>((acc, label) => {
-      if (!acc[label.category]) acc[label.category] = [];
-      acc[label.category].push(label);
-      return acc;
-    }, {}),
-    [labels]
-  );
-
   function startEdit(e: React.MouseEvent) {
     e.stopPropagation();
-    setEditTitle(task.title);
-    setEditLabelIds(new Set(task.labels.map((l) => l.id)));
     setIsEditing(true);
-  }
-
-  function cancelEdit(e: React.MouseEvent) {
-    e.stopPropagation();
-    setIsEditing(false);
-  }
-
-  async function saveEdit(e: React.MouseEvent | React.KeyboardEvent) {
-    e.stopPropagation();
-    if (!editTitle.trim()) return;
-    setSaving(true);
-    try {
-      await updateTask(task.id, {
-        title: editTitle.trim(),
-        label_ids: Array.from(editLabelIds),
-      });
-      onRefresh();
-      setIsEditing(false);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to save');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function toggleEditLabel(id: string) {
-    setEditLabelIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   }
 
   async function handleComplete(e: React.MouseEvent) {
@@ -112,61 +66,12 @@ export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = fal
       onClick={() => { if (!isEditing) navigate(`/tasks/${task.id}`); }}
     >
       {isEditing ? (
-        <div onClick={(e) => e.stopPropagation()}>
-          <input
-            autoFocus
-            type="text"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') saveEdit(e);
-              if (e.key === 'Escape') cancelEdit(e as unknown as React.MouseEvent);
-            }}
-            className="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <div className="space-y-1.5 mb-3">
-            {EDIT_CATEGORY_ORDER.map((cat) => {
-              const catLabels = labelsByCategory[cat] ?? [];
-              if (!catLabels.length) return null;
-              return (
-                <div key={cat} className="flex flex-wrap gap-1">
-                  {catLabels.map((label) => {
-                    const selected = editLabelIds.has(label.id);
-                    return (
-                      <button
-                        key={label.id}
-                        type="button"
-                        onClick={() => toggleEditLabel(label.id)}
-                        className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
-                          selected
-                            ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
-                        }`}
-                      >
-                        {label.value}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={saveEdit}
-              disabled={saving || !editTitle.trim()}
-              className="flex-1 bg-indigo-600 text-white rounded px-2 py-1 text-xs font-medium hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-            <button
-              onClick={cancelEdit}
-              className="flex-1 bg-white text-gray-700 border border-gray-300 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <TaskQuickEdit
+          task={task}
+          labels={labels}
+          onSaved={() => { onRefresh(); setIsEditing(false); }}
+          onCancel={() => setIsEditing(false)}
+        />
       ) : (
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">

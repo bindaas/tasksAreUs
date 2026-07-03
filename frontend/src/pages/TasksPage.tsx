@@ -9,6 +9,7 @@ import { BoardTabs } from '../components/BoardTabs';
 import { updateTask } from '../api/tasks';
 import { useFilter } from '../context/FilterContext';
 import { useBoard } from '../context/BoardContext';
+import { useView } from '../context/ViewContext';
 import type { Board } from '../api/boards';
 import type { Label, Task } from '../api/tasks';
 import { filterTasks } from '../utils/taskFilters';
@@ -58,15 +59,10 @@ export function TasksPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { selectedLabelIds, toggleLabel, clearLabels } = useFilter();
   const { boards, activeBoard, setActiveBoard } = useBoard();
+  const { viewMode, setViewMode } = useView();
   const [searchQuery, setSearchQuery] = useState('');
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
   const [dragOverPriority, setDragOverPriority] = useState<'high' | 'normal' | null>(null);
-
-  const viewModeParam = searchParams.get('view');
-  const viewMode: ViewMode =
-    viewModeParam === 'today' || viewModeParam === 'tomorrow' || viewModeParam === 'all'
-      ? viewModeParam
-      : 'focused';
 
   const { tasks, loading, error, refetch } = useTasks('pending');
   const { labels, labelsByCategory } = useLabels();
@@ -79,6 +75,18 @@ export function TasksPage() {
     tom.setDate(tom.getDate() + 1);
     return { today: dateOnly(now), tomorrow: dateOnly(tom) };
   }, []);
+
+  // Restore viewMode from the URL's ?view= param (hard reload / shared link).
+  // No-ops once the context already matches, so it doesn't fight in-app view changes.
+  useEffect(() => {
+    const viewParam = searchParams.get('view');
+    if (
+      (viewParam === 'today' || viewParam === 'tomorrow' || viewParam === 'all') &&
+      viewParam !== viewMode
+    ) {
+      setViewMode(viewParam);
+    }
+  }, [searchParams, viewMode, setViewMode]);
 
   // Restore activeBoard from the URL's ?board= param once boards have loaded
   // (BoardProvider's fetchBoards is async — boards starts as [] on mount).
@@ -93,6 +101,7 @@ export function TasksPage() {
   }, [boards, searchParams, activeBoard, setActiveBoard]);
 
   function setView(v: ViewMode) {
+    setViewMode(v);
     const next = new URLSearchParams(searchParams);
     next.set('view', v);
     if (v === 'all' && activeBoard) next.set('board', activeBoard.id);
