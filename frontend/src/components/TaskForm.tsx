@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
 import type { Label, TaskLink } from '../api/tasks';
+import type { Board } from '../api/boards';
 import { LabelBadge } from './LabelBadge';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
@@ -15,6 +16,9 @@ function newLinkId(): string {
 interface TaskFormProps {
   initialValues?: Partial<Task>;
   labels: Label[];
+  boards: Board[];
+  defaultBoardId?: string;
+  onBoardIdChange?: (boardId: string) => void;
   onSubmit: (data: CreateTaskBody | UpdateTaskBody) => Promise<void>;
   onCancel: () => void;
   submitLabel?: string;
@@ -28,6 +32,9 @@ const CATEGORY_ORDER: LabelCategory[] = ['mode', 'type'];
 export function TaskForm({
   initialValues,
   labels,
+  boards,
+  defaultBoardId,
+  onBoardIdChange,
   onSubmit,
   onCancel,
   submitLabel = 'Save',
@@ -42,7 +49,39 @@ export function TaskForm({
     new Set(initialValues?.labels?.map((l) => l.id) ?? [])
   );
   const [links, setLinks] = useState<TaskLink[]>(initialValues?.links ?? []);
+  const [boardId, setBoardId] = useState(initialValues?.board_id ?? defaultBoardId ?? '');
   const [error, setError] = useState<string | null>(null);
+
+  const isEditMode = !!initialValues;
+  const movingBoard = isEditMode && !!initialValues?.board_id && boardId !== initialValues.board_id;
+
+  // defaultBoardId can arrive after mount (BoardContext loads asynchronously) —
+  // pick it up once it's available if the form hasn't already been given a
+  // board (initialValues) or had one chosen by the user.
+  useEffect(() => {
+    if (!initialValues?.board_id && !boardId && defaultBoardId) {
+      setBoardId(defaultBoardId);
+    }
+  }, [defaultBoardId, initialValues?.board_id, boardId]);
+
+  // Let the parent rescope its labels fetch to whichever board is currently
+  // selected in this form (labels are board-scoped; the parent doesn't
+  // otherwise see live changes to this local boardId state).
+  useEffect(() => {
+    if (boardId) onBoardIdChange?.(boardId);
+  }, [boardId, onBoardIdChange]);
+
+  // Labels are board-scoped server-side — a genuine board switch (not the
+  // initial resolution above) invalidates whatever was previously selected,
+  // since those label ids won't exist on the new board and would 422 on submit.
+  const prevBoardIdRef = useRef(boardId);
+  useEffect(() => {
+    const prev = prevBoardIdRef.current;
+    prevBoardIdRef.current = boardId;
+    if (prev && boardId && prev !== boardId) {
+      setSelectedLabelIds(new Set());
+    }
+  }, [boardId]);
 
   function addLinkRow() {
     if (links.length >= MAX_TASK_LINKS) return;
@@ -109,14 +148,13 @@ export function TaskForm({
 
     setError(null);
 
-    const isEditMode = !!initialValues;
-
     const data: CreateTaskBody | UpdateTaskBody = {
       title: title.trim(),
       label_ids: Array.from(selectedLabelIds),
       is_high_priority: highPriorityEligible && isHighPriority,
       links: validLinks,
     };
+    if (boardId) data.board_id = boardId;
     if (notes.trim()) data.notes = notes.trim();
 
     if (mustDoBy !== '') {
@@ -226,6 +264,28 @@ export function TaskForm({
           <span className="text-xs text-orange-500 font-medium">
             ↑ shown above the line in Overdue / Today / Tomorrow
           </span>
+        </div>
+      )}
+
+      {boards.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Board</label>
+          <select
+            value={boardId}
+            onChange={(e) => setBoardId(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            {boards.map((board) => (
+              <option key={board.id} value={board.id}>
+                {board.name}
+              </option>
+            ))}
+          </select>
+          {movingBoard && (
+            <p className="mt-1.5 text-xs text-amber-600">
+              Moving to a different board will clear this task's labels.
+            </p>
+          )}
         </div>
       )}
 

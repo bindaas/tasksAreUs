@@ -1,11 +1,15 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { useLabels } from '../hooks/useLabels';
 import { TaskCard } from '../components/TaskCard';
 import { FocusedView } from '../components/FocusedView';
+import { DayView } from '../components/DayView';
+import { BoardTabs } from '../components/BoardTabs';
 import { updateTask } from '../api/tasks';
 import { useFilter } from '../context/FilterContext';
+import { useBoard } from '../context/BoardContext';
+import type { Board } from '../api/boards';
 import type { Label, Task } from '../api/tasks';
 import { filterTasks } from '../utils/taskFilters';
 import {
@@ -17,6 +21,7 @@ import {
 } from '../utils/taskDateUtils';
 import { isHighPriorityEligible, splitByPriority, canAddHighPriority } from '../utils/taskPriority';
 import { useSettings } from '../hooks/useSettings';
+import { viewLabel, type ViewMode } from '../utils/viewLabel';
 
 type LabelCategory = 'mode' | 'type';
 const CATEGORIES: LabelCategory[] = ['mode', 'type'];
@@ -41,16 +46,29 @@ const COLUMNS: { key: ColumnKey; title: string }[] = [
   { key: 'nodate', title: 'No Date' },
 ];
 
+const VIEW_ORDER: { key: ViewMode; title: string }[] = [
+  { key: 'focused', title: 'Focused' },
+  { key: 'today', title: 'Today' },
+  { key: 'tomorrow', title: 'Tomorrow' },
+  { key: 'all', title: 'All' },
+];
+
 export function TasksPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { selectedLabelIds, toggleLabel, clearLabels } = useFilter();
-  const [showDone, setShowDone] = useState(false);
-  const [viewMode, setViewMode] = useState<'detailed' | 'focused'>('detailed');
+  const { boards, activeBoard, setActiveBoard } = useBoard();
   const [searchQuery, setSearchQuery] = useState('');
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
   const [dragOverPriority, setDragOverPriority] = useState<'high' | 'normal' | null>(null);
 
-  const { tasks, loading, error, refetch } = useTasks(showDone ? 'done' : 'pending');
+  const viewModeParam = searchParams.get('view');
+  const viewMode: ViewMode =
+    viewModeParam === 'today' || viewModeParam === 'tomorrow' || viewModeParam === 'all'
+      ? viewModeParam
+      : 'focused';
+
+  const { tasks, loading, error, refetch } = useTasks('pending');
   const { labels, labelsByCategory } = useLabels();
   const { highPriorityDailyLimit } = useSettings();
   const [dropError, setDropError] = useState<string | null>(null);
@@ -61,6 +79,40 @@ export function TasksPage() {
     tom.setDate(tom.getDate() + 1);
     return { today: dateOnly(now), tomorrow: dateOnly(tom) };
   }, []);
+
+  // Restore activeBoard from the URL's ?board= param once boards have loaded
+  // (BoardProvider's fetchBoards is async — boards starts as [] on mount).
+  useEffect(() => {
+    if (boards.length === 0) return;
+    const boardParam = searchParams.get('board');
+    if (!boardParam) return;
+    const found = boards.find((b) => b.id === boardParam);
+    if (found && found.id !== activeBoard?.id) {
+      setActiveBoard(found);
+    }
+  }, [boards, searchParams, activeBoard, setActiveBoard]);
+
+  function setView(v: ViewMode) {
+    const next = new URLSearchParams(searchParams);
+    next.set('view', v);
+    if (v === 'all' && activeBoard) next.set('board', activeBoard.id);
+    setSearchParams(next);
+  }
+
+  function handleBoardTabSelect(board: Board) {
+    const next = new URLSearchParams(searchParams);
+    next.set('board', board.id);
+    setSearchParams(next);
+  }
+
+  function handleFabClick() {
+    if (viewMode === 'all' && activeBoard) {
+      navigate(`/tasks/new?board=${activeBoard.id}`);
+      return;
+    }
+    const defaultBoard = boards.find((b) => b.is_default);
+    navigate(defaultBoard ? `/tasks/new?board=${defaultBoard.id}` : '/tasks/new');
+  }
 
   const filteredTasks = useMemo(
     () => filterTasks(tasks, selectedLabelIds, searchQuery),
@@ -149,57 +201,48 @@ export function TasksPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 max-w-full gap-3 flex-wrap">
         <h2 className="text-xl font-bold text-gray-900">
-          {showDone ? 'Completed Tasks' : 'My Tasks'}
+          Tasks Are Us - {viewLabel(viewMode, activeBoard?.name)}
         </h2>
         <div className="flex items-center gap-3 flex-wrap">
-          {/* View toggle — only shown in pending mode */}
-          {!showDone && (
-            <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+          {/* 4-way view toggle */}
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+            {VIEW_ORDER.map((v, idx) => (
               <button
-                onClick={() => setViewMode('detailed')}
-                className={`px-3 py-1.5 transition-colors ${
-                  viewMode === 'detailed'
+                key={v.key}
+                onClick={() => setView(v.key)}
+                className={`px-3 py-1.5 transition-colors ${idx > 0 ? 'border-l border-gray-200' : ''} ${
+                  viewMode === v.key
                     ? 'bg-indigo-600 text-white'
                     : 'bg-white text-gray-500 hover:bg-gray-50'
                 }`}
               >
-                Detailed
+                {v.title}
               </button>
-              <button
-                onClick={() => setViewMode('focused')}
-                className={`px-3 py-1.5 transition-colors border-l border-gray-200 ${
-                  viewMode === 'focused'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                Focused
-              </button>
+            ))}
+          </div>
+
+          {viewMode === 'all' && (
+            <div className="relative">
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+              </svg>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tasks…"
+                className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
+              />
             </div>
           )}
-          <div className="relative">
-            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks…"
-              className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
-            />
-          </div>
-          <button
-            onClick={() => { setShowDone((v) => !v); setViewMode('detailed'); }}
-            className="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap"
-          >
-            {showDone ? 'Show pending' : 'Show done'}
-          </button>
         </div>
       </div>
 
-      {/* Label filter chips — only shown for pending (kanban) detailed view */}
-      {!showDone && viewMode !== 'focused' && (
+      {/* Board tabs — only under All */}
+      {viewMode === 'all' && <BoardTabs onSelect={handleBoardTabSelect} />}
+
+      {/* Label filter chips — only shown for the All (kanban) view */}
+      {viewMode === 'all' && (
         <div className="mb-4 space-y-2">
           {CATEGORIES.map((cat) => {
             const catLabels = (labelsByCategory[cat] ?? []) as Label[];
@@ -238,34 +281,24 @@ export function TasksPage() {
         </div>
       )}
 
-      {loading && viewMode !== 'focused' && (
+      {loading && viewMode === 'all' && (
         <div className="flex justify-center py-12">
           <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
         </div>
       )}
 
-      {(error || dropError) && viewMode !== 'focused' && (
+      {(error || dropError) && viewMode === 'all' && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
           {error ?? dropError}
         </div>
       )}
 
-      {/* Focused view */}
-      {!showDone && viewMode === 'focused' && <FocusedView />}
+      {viewMode === 'focused' && <FocusedView />}
+      {viewMode === 'today' && <DayView referenceDate={today} />}
+      {viewMode === 'tomorrow' && <DayView referenceDate={tomorrow} />}
 
-      {!loading && !error && viewMode === 'detailed' && (
-        showDone ? (
-          /* Done tasks: flat list */
-          <div className="space-y-2 max-w-2xl mx-auto">
-            {filteredTasks.length === 0 ? (
-              <EmptyState msg={searchQuery.trim() || selectedLabelIds.size > 0 ? 'No completed tasks match this filter' : 'No completed tasks yet'} />
-            ) : (
-              filteredTasks.map((task) => (
-                <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} />
-              ))
-            )}
-          </div>
-        ) : filteredTasks.length === 0 ? (
+      {!loading && !error && viewMode === 'all' && (
+        filteredTasks.length === 0 ? (
           <EmptyState msg={selectedLabelIds.size > 0 || searchQuery.trim() ? 'No tasks match this filter' : 'No pending tasks'} />
         ) : (
           /* Pending tasks: 6-column kanban board */
@@ -440,17 +473,15 @@ export function TasksPage() {
       )}
 
       {/* FAB */}
-      {!showDone && (
-        <button
-          onClick={() => navigate('/tasks/new')}
-          className="fixed bottom-20 right-4 md:bottom-8 md:right-8 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors z-10"
-          title="New task"
-        >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
-      )}
+      <button
+        onClick={handleFabClick}
+        className="fixed bottom-20 right-4 md:bottom-8 md:right-8 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors z-10"
+        title="New task"
+      >
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
     </div>
   );
 }

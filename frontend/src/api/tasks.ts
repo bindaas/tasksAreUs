@@ -37,6 +37,7 @@ export interface CreateTaskBody {
   label_ids: string[];
   is_high_priority?: boolean;
   links: TaskLink[];
+  board_id?: string;
 }
 
 export interface UpdateTaskBody {
@@ -51,6 +52,9 @@ export interface UpdateTaskBody {
   // TaskForm (full save) must always include this; partial updates (drag-drop,
   // quick-edit, priority toggle) should omit it.
   links?: TaskLink[];
+  // Omitting leaves the task's board unchanged; any value (including the current
+  // board) triggers the backend's move logic, which clears labels on an actual move.
+  board_id?: string;
 }
 
 export interface CompleteTaskBody {
@@ -74,10 +78,10 @@ export async function getTask(id: string): Promise<Task> {
   return apiFetch<Task>(`/tasks/${id}`);
 }
 
-export async function createTask(body: CreateTaskBody, boardId?: string): Promise<Task> {
+export async function createTask(body: CreateTaskBody): Promise<Task> {
   return apiFetch<Task>('/tasks', {
     method: 'POST',
-    body: JSON.stringify(boardId ? { ...body, board_id: boardId } : body),
+    body: JSON.stringify(body),
   });
 }
 

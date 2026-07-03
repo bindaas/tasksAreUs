@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getTask, updateTask, deleteTask, completeTask, createTask, listTasks } from '../api/tasks';
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
 import { useLabels } from '../hooks/useLabels';
@@ -13,6 +13,7 @@ import { isHighPriorityEligible } from '../utils/taskPriority';
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isNew = id === 'new';
 
   const [task, setTask] = useState<Task | null>(null);
@@ -20,13 +21,27 @@ export function TaskDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { labels, loading: labelsLoading } = useLabels();
   const { selectedLabelIds } = useFilter();
   const { highPriorityDailyLimit } = useSettings();
-  const { activeBoard } = useBoard();
+  const { boards } = useBoard();
   const [allPendingTasks, setAllPendingTasks] = useState<Task[]>([]);
 
+  const boardParam = searchParams.get('board');
+  const defaultBoardId = isNew
+    ? (boardParam ?? boards.find((b) => b.is_default)?.id)
+    : undefined;
+
+  // Scoped to whichever board is currently selected in the form — reported
+  // live via onBoardIdChange, since the user can switch boards mid-form and
+  // labels are board-scoped server-side (a stale scope here would let the
+  // user check labels that 422 on submit). Falls back to the task's own
+  // board (edit) or the target board (new) before the form reports in.
+  const [liveBoardId, setLiveBoardId] = useState<string | undefined>(undefined);
+  const labelsBoardId = liveBoardId ?? (isNew ? defaultBoardId : task?.board_id);
+  const { labels, loading: labelsLoading } = useLabels(labelsBoardId);
+
   useEffect(() => {
+    setLiveBoardId(undefined);
     if (isNew) return;
     let cancelled = false;
 
@@ -37,7 +52,9 @@ export function TaskDetailPage() {
         const t = await getTask(id!);
         if (!cancelled) setTask(t);
         if (!cancelled && t.is_high_priority) {
-          const { tasks: pending } = await listTasks('pending', activeBoard?.id);
+          // Scoped to the task's own board — Today/Tomorrow are cross-board, so
+          // activeBoard can easily differ from where this task actually lives.
+          const { tasks: pending } = await listTasks('pending', t.board_id);
           if (!cancelled) setAllPendingTasks(pending);
         }
       } catch (err) {
@@ -48,7 +65,7 @@ export function TaskDetailPage() {
     }
     fetch();
     return () => { cancelled = true; };
-  }, [id, isNew, activeBoard?.id]);
+  }, [id, isNew]);
 
   const highPriorityWarning = useMemo(() => {
     if (!task?.is_high_priority) return null;
@@ -73,11 +90,11 @@ export function TaskDetailPage() {
     setError(null);
     try {
       if (isNew) {
-        await createTask(data as CreateTaskBody, activeBoard?.id);
+        await createTask(data as CreateTaskBody);
       } else {
         await updateTask(id!, data as UpdateTaskBody);
       }
-      navigate('/');
+      navigate(-1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save task');
       setSaving(false);
@@ -89,7 +106,7 @@ export function TaskDetailPage() {
     setSaving(true);
     try {
       await completeTask(task.id);
-      navigate('/');
+      navigate(-1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete task');
       setSaving(false);
@@ -102,7 +119,7 @@ export function TaskDetailPage() {
     setSaving(true);
     try {
       await deleteTask(task.id);
-      navigate('/');
+      navigate(-1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete task');
       setSaving(false);
@@ -156,6 +173,9 @@ export function TaskDetailPage() {
                 : task ?? undefined
             }
             labels={labels}
+            boards={boards}
+            defaultBoardId={defaultBoardId}
+            onBoardIdChange={setLiveBoardId}
             onSubmit={handleSubmit}
             onCancel={() => navigate(-1)}
             submitLabel={isNew ? 'Create Task' : 'Save Changes'}
