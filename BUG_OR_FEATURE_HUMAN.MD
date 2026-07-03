@@ -1,3 +1,33 @@
+Editable Task details-
+Make the task details editable from the Focussed , Today and tomorrow view as well. Just like its in the "all" view
+
+Sticky Boards and view
+If I navigate out  to reports, settings , task details, when I come back I want the same view and board selected
+
+Task details
+Labels appear twice in task details. Remove the read-only ones
+Move the Add Link right below notes
+Make the Notes section bigger
+
+Board tabs- positioning
+Make them right aligned. Right below the view buttons
+
+
+Settings- 
+Settings page to be board neutral.
+For the board specific sections  add a dropdown to select the board
+
+Reports -
+To be board neutral.
+The results should show across all boards
+
+
+******
+
+
+
+
+
 Good — backend API is on port 8000. Let's start the Vite dev server for the frontend.
 
   Ran 7 shell commands
