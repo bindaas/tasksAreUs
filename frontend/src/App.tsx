@@ -5,7 +5,6 @@ import { useAuth } from './hooks/useAuth';
 import { Layout } from './components/Layout';
 import { TasksPage } from './pages/TasksPage';
 import { TaskDetailPage } from './pages/TaskDetailPage';
-import { ChatPage } from './pages/ChatPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
@@ -92,7 +91,6 @@ function AppRoutes() {
             <Route element={<Layout />}>
               <Route path="/" element={<TasksPage />} />
               <Route path="/tasks/:id" element={<TaskDetailPage />} />
-              <Route path="/chat" element={<ChatPage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
