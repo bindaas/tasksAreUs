@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { getBoards, createBoard as apiCreateBoard, updateBoard, deleteBoard as apiDeleteBoard, type Board } from '../api/boards';
 import { useFilter } from './FilterContext';
+import { useAuthContext } from './AuthContext';
 
 interface BoardContextValue {
   boards: Board[];
@@ -24,6 +25,7 @@ export function BoardProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { clearLabels } = useFilter();
+  const { user } = useAuthContext();
 
   const fetchBoards = useCallback(async () => {
     setLoading(true);
@@ -47,8 +49,13 @@ export function BoardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Re-run on uid change (e.g. anon -> authenticated upgrade) so board state
+    // never leaks across identities. Reset first so a stale board isn't briefly
+    // shown while the new identity's boards are in flight.
+    setBoards([]);
+    setActiveBoardState(null);
     fetchBoards();
-  }, [fetchBoards]);
+  }, [user?.uid, fetchBoards]);
 
   function setActiveBoard(board: Board) {
     if (board.id !== activeBoard?.id) {
