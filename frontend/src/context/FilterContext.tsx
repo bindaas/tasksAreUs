@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useAuthContext } from './AuthContext';
 
 interface FilterContextValue {
   selectedLabelIds: Set<string>;
@@ -11,6 +12,13 @@ const FilterContext = createContext<FilterContextValue | null>(null);
 
 export function FilterProvider({ children }: { children: ReactNode }) {
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
+  const { user } = useAuthContext();
+
+  useEffect(() => {
+    // Clear on uid change (e.g. anon -> authenticated upgrade) so a label filter
+    // scoped to the previous identity's board doesn't leak into the new one.
+    setSelectedLabelIds(new Set());
+  }, [user?.uid]);
 
   function toggleLabel(id: string) {
     setSelectedLabelIds((prev) => {

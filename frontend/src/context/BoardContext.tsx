@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
 import { getBoards, createBoard as apiCreateBoard, updateBoard, deleteBoard as apiDeleteBoard, type Board } from '../api/boards';
 import { useFilter } from './FilterContext';
+import { useAuthContext } from './AuthContext';
 
 interface BoardContextValue {
   boards: Board[];
@@ -24,12 +25,19 @@ export function BoardProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { clearLabels } = useFilter();
+  const { user } = useAuthContext();
+  // Guards against overlapping fetchBoards() calls (e.g. a uid change firing
+  // while a create/rename/etc. triggered refetch is still in flight) so a
+  // slower, superseded response can't clobber a newer one.
+  const fetchEpoch = useRef(0);
 
   const fetchBoards = useCallback(async () => {
+    const epoch = ++fetchEpoch.current;
     setLoading(true);
     setError(null);
     try {
       const result = await getBoards();
+      if (fetchEpoch.current !== epoch) return;
       setBoards(result.boards);
       setActiveBoardState((prev) => {
         // Preserve the current board if it still exists after the refresh
@@ -40,15 +48,22 @@ export function BoardProvider({ children }: { children: ReactNode }) {
         return result.boards.find((b) => b.is_default) ?? result.boards[0] ?? null;
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load boards');
+      if (fetchEpoch.current === epoch) {
+        setError(err instanceof Error ? err.message : 'Failed to load boards');
+      }
     } finally {
-      setLoading(false);
+      if (fetchEpoch.current === epoch) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // Re-run on uid change (e.g. anon -> authenticated upgrade) so board state
+    // never leaks across identities. Reset first so a stale board isn't briefly
+    // shown while the new identity's boards are in flight.
+    setBoards([]);
+    setActiveBoardState(null);
     fetchBoards();
-  }, [fetchBoards]);
+  }, [user?.uid, fetchBoards]);
 
   function setActiveBoard(board: Board) {
     if (board.id !== activeBoard?.id) {
