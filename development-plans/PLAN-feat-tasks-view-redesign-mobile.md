@@ -55,7 +55,7 @@ None — this PR is presentation-only. Consumes the existing `GET /focused-view/
   - Full inventory of every `viewMode === 'detailed'` / `'focused'` comparison site to update (per Sneezy suggestion, so none are missed during implementation): lines 666, 704, 827 (approx. — the pill-toggle labels/array), 832, plus wherever `viewMode` is initialized/typed.
 - New: `src/components/BoardTabs.tsx` — RN tab-button row, styled consistently with the existing view pill; reads `boards`/`activeBoard` from `useBoard()`
 - New: `src/components/DayView.tsx` — fetches `GET /day-view/tasks?reference_date=`, renders the same board-grouped card layout as `FocusedView.tsx`
-- **Extract shared rendering**: `src/components/FocusedView.tsx`'s board-grouping/card-list JSX (lines ~73–96) factored into a new `src/components/BoardGroupedTasks.tsx` (`{ boards, onEditPress }` props); `FocusedView.tsx` becomes fetch-then-render via the shared component, `DayView.tsx` does the analogous fetch-from-day-view-then-render. Same 2×-reuse justification as the web plan.
+- **Extract shared rendering**: `src/components/FocusedView.tsx`'s board-grouping/card-list JSX (lines ~73–96) factored into a new `src/components/BoardGroupedTasks.tsx` (`{ boards, onEditPress, onRefresh }` props — **`onRefresh` added per Sneezy's 2026-07-04 second-pass review**, reconciling this bullet with the "Mobile Equivalent of Web PR #42" section's inline-quick-edit work below, which requires the same component to thread `onRefresh` through to each `FocusedTaskCard`); `FocusedView.tsx` becomes fetch-then-render via the shared component, `DayView.tsx` does the analogous fetch-from-day-view-then-render. Same 2×-reuse justification as the web plan.
 - New: `src/api/dayView.ts` — `getDayViewTasks(referenceDate: string): Promise<{ boards: FocusedBoard[] }>`, mirrors `getFocusedViewTasks`
 
 **Board picker on Create/Edit (fix per Sneezy risk #4)**
@@ -115,6 +115,7 @@ Web replaced Settings' implicit `activeBoard`-driven Labels section with a local
 - `src/screens/SettingsScreen.tsx`:
   - Add local `labelsBoardId` state, self-healing whenever it's `undefined` or no longer present in `boards` (set to `activeBoard?.id ?? boards[0].id`) — same self-heal condition as the web fix
   - Replace the three `activeBoard?.id` reads (labels fetch ×2, `createLabel`) with `labelsBoardId`
+  - **Fix per Sneezy's 2026-07-04 second-pass risk #2**: the labels-fetching `useEffect` (lines 658–679) is keyed on `[activeBoard?.id]` (line 679). This dependency array must change to `[labelsBoardId]` (or the effect otherwise restructured to key off `labelsBoardId` independently of the settings fetch) — otherwise selecting a different board in the new Labels picker sets `labelsBoardId` without ever re-triggering the fetch, so the Mode/Type lists shown would stay pinned to whatever board was active on last mount/`activeBoard` change. The picker would appear to do nothing.
   - Add a board picker for the Labels section, shown only when `boards.length > 1` (matches web). RN has no native `<select>` — reuse this codebase's existing open/close panel-of-buttons pattern already used for the board-switcher dropdown being removed from `TasksScreen.tsx:726-751`, rather than introducing a new picker paradigm.
 
 ### TaskForm cleanup
@@ -122,7 +123,7 @@ Web replaced Settings' implicit `activeBoard`-driven Labels section with a local
 Web reordered `TaskForm.tsx` (Notes → Links → Dates → ... → Labels, dropping a duplicate labels-summary block) and enlarged the Notes textarea (`rows={3}` → `rows={7}`). Mobile's `TaskFormScreen.tsx` has no duplicate-labels-summary to remove (never had one), but needs the same reordering and Notes sizing:
 
 - `src/screens/TaskFormScreen.tsx`:
-  - Move the "Links" block (currently after Labels, `TaskFormScreen.tsx:420-458`) to directly follow the "Notes" block (currently `TaskFormScreen.tsx:263-275`), before the "Dates" row
+  - Move the "Links" block (currently after Labels, `TaskFormScreen.tsx:420-466` — corrected per Sneezy's 2026-07-04 second-pass nit #3, was cited as 420-458 which clips mid-way through the remove-button `TouchableOpacity`) to directly follow the "Notes" block (currently `TaskFormScreen.tsx:264-277`, corrected from 263-275), before the "Dates" row
   - Notes `TextInput`: `numberOfLines={3}` → `numberOfLines={6}`, `minHeight: 80` → `minHeight: 160` (proportional to web's `rows={3}`→`rows={7}`)
 
 ### Not ported
@@ -134,6 +135,7 @@ Web reordered `TaskForm.tsx` (Notes → Links → Dates → ... → Labels, drop
 - Tapping the pencil icon on a Focused/Today/Tomorrow card opens inline quick-edit; Save persists title/label changes and refreshes the list; Cancel discards; tapping elsewhere on the card while editing does not navigate away
 - Switching to the Reports or Settings tab and back to Tasks preserves the previously selected view and board (sticky-nav regression check, extending this plan's existing Modal-based check to tab navigation)
 - Settings' Labels board picker only appears with 2+ boards; changing it does not change the app-wide active board (Tasks screen's board tabs stay unaffected); deleting the board currently selected in the picker falls back to the default/first board without erroring
+- Changing the Labels board picker's selection actually re-fetches and displays the newly-selected board's Mode/Type label lists (added per Sneezy's 2026-07-04 second-pass gap #4 — regression check for the `useEffect` dependency-array fix above)
 - Notes field is visibly taller (6 lines) and Links appears directly below Notes, above Must-do-by/Target date
 
 ---
@@ -296,3 +298,51 @@ Carried forward for a decision before or at implementation start — not blockin
 
 1. **Narrow extraction vs. duplication for mobile's Links/action-button rendering** (see "Not attempting a shared-component extraction on mobile" above): duplicate the Links/Complete/Delete rendering directly in `FocusedTaskCard.tsx` (current default, mirrors web's pre-PR#45 approach), or extract `TaskLinksRow`/`TaskActionButtons` shared by `TaskRow` and `FocusedTaskCard.tsx` first, per Sneezy's suggestion.
 2. **Whether the "Mobile Equivalent of Web PR #42" section (lines 93–137, added 2026-07-03) needs its own Sneezy pass.** It has never been reviewed — both prior reviews are dated 2026-07-02 (before that section existed), and the 2026-07-04 review was explicitly scoped to only the "Folding in PR #45" section. This section's assumptions (the `onRefresh` prop shape, the `isEditing` tap-guard, `TaskQuickEdit`'s label-fetch fallback) are what the PR #45 fold-in builds directly on top of.
+
+---
+
+## Sneezy's Review — 2026-07-04 (second pass, same day)
+
+**Tier:** FULL — no tier was stated in the spawn instructions for this pass, so FULL was used per default protocol. Mechanically re-checking the gate anyway: every file this section touches (`FocusedTaskCard.tsx`, new `TaskQuickEdit.tsx`, `SettingsScreen.tsx`, `TaskFormScreen.tsx`, `BoardGroupedTasks.tsx`) is presentation-only — no model/schema/router/API-contract file, no stated data-model change, OTA/single-component deployment — so a mechanically-computed gate would have landed on LIGHT. No blast-radius surprise was found during the read that would have forced an escalation; FULL was simply the safer default given the ambiguity, and the four project docs were read in full accordingly.
+
+**Scope:** Limited to "## Mobile Equivalent of Web PR #42" (lines 93–137) — the one section in this file that had never been reviewed. All citations below were independently re-verified against the current (pre-implementation) source in `mobile/src/`, not taken on the plan's word.
+
+**Verdict:** Approved with concerns
+
+### Issues
+
+1. **[Gap]** `BoardGroupedTasks.tsx`'s prop signature is stated inconsistently across two parts of this same plan. The original "Extract shared rendering" bullet (Files to Modify, line 58) declares it as `({ boards, onEditPress })` — no `onRefresh`. This section's Inline-quick-edit work (line 105) requires the same component to "thread `onRefresh` down to each `FocusedTaskCard`." Confirmed by reading the current `mobile/src/components/FocusedView.tsx` in full: its board-grouping JSX (lines 73–96, matching the plan's "~73–96" citation) calls `<FocusedTaskCard key={task.id} task={task} boardColor={color} onPress={onEditPress} />` with no `onRefresh` anywhere yet, and `load()` (lines 18–29) is the only candidate refetch function available to pass through. The web equivalent (`ARCHITECTURE.MD`'s `BoardGroupedTasks.tsx` entry) confirms `onRefresh` was added to the *web* component in PR #42 — i.e. the mobile plan's line-58 bullet was written before the PR #42 fold-in and was never updated to match. Whoever implements this needs `BoardGroupedTasks.tsx`'s real prop signature to be `{ boards, onEditPress, onRefresh }`; as written, the plan gives two different, uncoordinated answers for the same new file.
+2. **[Risk]** `SettingsScreen.tsx`'s label-loading effect is missed. Confirmed by reading the current file: the `useEffect` at lines 658–679 fetches `getSettings()` and both `listLabels('mode'|'type', activeBoard?.id)` calls together in one `Promise.all`, keyed on `[activeBoard?.id]` (line 679). This section's bullet says to "replace the three `activeBoard?.id` reads (labels fetch ×2, `createLabel`) with `labelsBoardId`" (line 117) but never says the effect's dependency array must also change. If the reads are swapped in-place but the array is left as `[activeBoard?.id]`, then picking a different board in the new Labels board picker sets `labelsBoardId` — a state independent of `activeBoard` by design — without ever re-running the effect that actually fetches labels. The picker would appear to do nothing: the Mode/Type lists shown would stay pinned to whatever board was active when the screen last mounted or `activeBoard` last changed, not the board the user just selected. This is a concrete, verifiable gap, not a stylistic one — the whole point of decoupling `labelsBoardId` from `activeBoard` is defeated if the fetch stays keyed on the latter.
+3. **[Nit]** Two `TaskFormScreen.tsx` line-range citations in the "TaskForm cleanup" bullet (lines 125–126) are off by a few lines, in the same style as line-range nits caught in earlier passes of this file. Confirmed by reading the current file: the Notes block is cited as "263-275" but actually runs 264–277 (comment through the closing `</View>`); the Links block is cited as "420-458" but actually runs 420–466 — line 458 lands mid-way through the remove-button `TouchableOpacity`, not at the block's end. Doesn't change what needs to move, but worth tightening since an implementer using these as cut boundaries could clip the closing tags.
+4. **[Gap]** The Test Plan additions for this section (lines 132–137) verify that the Labels board picker is independent of the app-wide active board and that deleting the selected board triggers a fallback, but there is no bullet verifying that changing the picker's selection actually re-fetches and displays the newly-selected board's Mode/Type labels. That is precisely the behavior Issue 2 puts at risk — worth adding once the dependency-array fix lands, so a regression here would be caught by the stated test plan rather than only by manual inspection.
+
+### Unverified assumptions
+
+- `DraggableTaskRow`'s edit wiring (cited as `TasksScreen.tsx:853`, `onEditPress={handleEditPress}`) — **confirmed accurate**: line 853 of the current file is exactly that prop assignment inside the `SectionList`'s `renderItem`.
+- The three `SettingsScreen.tsx` label-read citations (lines 613, 665–666, 682) — **confirmed accurate**: line 613 is `const { activeBoard } = useBoard();`, lines 665–666 are the two `listLabels('mode'|'type', activeBoard?.id)` calls, line 682 is `const label = await createLabel(cat, value, activeBoard?.id);` — all exactly as cited.
+- "`AppNavigator.tsx`'s `Tab.Navigator` (bottom tabs) does not unmount inactive tab screens by default" — **confirmed accurate**: read `AppNavigator.tsx` in full; no `unmountOnBlur` or `lazy` override is set on any `Tab.Screen` (lines 91–110), so default React Navigation bottom-tabs behavior (mount once, keep alive on blur) applies. The claim that this makes a mobile `ViewContext`-equivalent unnecessary holds up.
+- `TaskQuickEdit`'s planned fetch call, `listLabels(undefined, task.board_id)` — **confirmed the signature supports this**: `mobile/src/api/labels.ts:4`, `listLabels(category?: LabelCategory, boardId?: string)`, both params optional. `updateTask(task.id, { title, label_ids })` also type-checks cleanly against the current `UpdateTaskBody` (`mobile/src/types/index.ts:52-62`) — both fields are optional, and omitting `links` correctly leaves it unchanged per the type's own doc comment.
+- Not independently verified (no code exists yet to check against): whether the outer `TouchableOpacity`'s `onPress` guard (`if (!isEditing) onPress(task.id)`) correctly suppresses navigation when the user taps inside the swapped-in `TaskQuickEdit` body (its own nested `TextInput`/Save/Cancel touchables). Standard React Native touch-responder behavior (innermost interactive element captures the touch) suggests this will work as intended, but `TaskQuickEdit.tsx` doesn't exist yet, so this couldn't be checked directly. Already covered by this plan's own Test Plan (line 134: "tapping elsewhere on the card while editing does not navigate away"), so the risk is mitigated by manual verification either way.
+- "Reuses this plan's existing `labelsByCategory` grouping pattern" — there are in fact two slightly different existing implementations of this pattern in the codebase (`TaskFormScreen.tsx:196-203`, a `reduce` keyed by arbitrary category string, vs. `TasksScreen.tsx:359-367`, a `useMemo` keyed specifically to `'mode'|'type'`). The plan doesn't say which one `TaskQuickEdit.tsx` should mirror — low stakes since both produce an equivalent grouping, but worth a one-line pick during implementation rather than an implicit choice.
+
+### Suggestions
+
+- Reconcile `BoardGroupedTasks.tsx`'s prop signature in the "Extract shared rendering" bullet (line 58) to explicitly include `onRefresh`, matching what this section's Inline-quick-edit work requires — otherwise the two bullets read as contradictory specs for the same new file.
+- Add an explicit line to the "Board-scoped Settings Labels picker" bullet stating that `SettingsScreen.tsx`'s label-loading `useEffect` dependency array must change from `[activeBoard?.id]` to include `labelsBoardId` (or be restructured so label fetching keys off `labelsBoardId` independently of the settings fetch), so the picker actually does something once wired up.
+- Add a Test Plan bullet confirming that changing the Labels board picker's selection updates the displayed Mode/Type label lists to match the newly-selected board (not just that it leaves the app-wide active board untouched).
+- Correct the `TaskFormScreen.tsx` Notes/Links line-range citations to 264–277 and 420–466 respectively.
+
+— *Sneezy*
+
+---
+
+## Grumpy's Response to Sneezy's 2026-07-04 Second-Pass Review
+
+| Sneezy item | Status |
+|---|---|
+| Gap 1 (`BoardGroupedTasks.tsx` prop signature inconsistent — `onRefresh` missing from the "Extract shared rendering" bullet) | Addressed — bullet now states `{ boards, onEditPress, onRefresh }` |
+| Risk 2 (`SettingsScreen.tsx` label-fetch `useEffect` still keyed on `[activeBoard?.id]`, picker would be silently non-functional) | Addressed — bullet now explicitly requires the dependency array to change to `[labelsBoardId]` |
+| Nit 3 (`TaskFormScreen.tsx` Notes/Links line-range citations off) | Addressed — corrected to 264–277 and 420–466 |
+| Gap 4 (no Test Plan bullet for label-list re-fetch on picker change) | Addressed — bullet added |
+
+Open Question #2 (whether this section needed its own Sneezy pass) is now resolved — it has been reviewed. Open Question #1 (narrow extraction vs. duplication) remains open; see Open Questions above.
