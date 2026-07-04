@@ -28,9 +28,9 @@ See `PRODUCT_REQUIREMENTS_DOCUMENT.MD` for product requirements, feature status,
 - **Frontend unit tests**: `frontend/src/__tests__/` using Vitest; target pure utility functions in `frontend/src/utils/`
 
 ### Deploy trigger (`[skip deploy]`)
-Any commit with no backend application changes must include `[skip deploy]` in the commit message to prevent a Railway deployment:
-- **Triggers deploy**: files under `backend/app/`
-- **Does not trigger**: `mobile/`, `frontend/`, `.claude/`, docs, `backend/tests/`
+Railway builds a single Docker image (see root `Dockerfile`) that compiles `frontend/` and bakes the resulting `dist/` into the FastAPI backend's `static/` folder — there is no separate frontend host. So both `backend/app/` **and** `frontend/` changes need a Railway deployment to reach production; only truly deploy-irrelevant changes should carry `[skip deploy]`:
+- **Triggers deploy**: files under `backend/app/` or `frontend/` (excluding `frontend/src/__tests__/`)
+- **Does not trigger**: `mobile/`, `.claude/`, docs, `backend/tests/`, `frontend/src/__tests__/`
 
 ### Branch rules
 - **`backend/tests/test_api.py` belongs on the feature branch** — Sleepy's test changes must be committed to the PR branch and merged via PR, never directly to main.

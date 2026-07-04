@@ -603,6 +603,7 @@ def main():
     assert_eq("task title", task["title"], "Return library books")
     assert_eq("task state", task["state"], "pending")
     assert_eq("task label count", len(task["labels"]), 2)
+    assert_eq("task notes round-trips on create", task["notes"], "Row 4, shelf B")
     # target_date and must_do_by must both be present in the task response
     assert_in("task has target_date field", "target_date", task)
     assert_in("task has must_do_by field", "must_do_by", task)
@@ -829,6 +830,54 @@ def main():
 
     # Clean up the helper task.
     client.delete(f"/tasks/{dc_task_id}", headers=H)
+
+    # ── Tasks: notes field semantics (PR #45 regression guard) ────────────────
+    # PR #45 fixed a web frontend bug: TaskForm.tsx only included `notes` in the
+    # PUT body when non-empty (`if (notes.trim()) data.notes = ...`), so clearing
+    # the Notes textarea to empty silently failed to persist (the key was omitted
+    # entirely, and the backend's "field absent → unchanged" contract kept the old
+    # value). The fix was client-side only; these tests lock in the backend
+    # contract the fix depends on so a future backend change can't reintroduce
+    # this bug class silently. Unlike must_do_by/target_date, `notes` has no
+    # dedicated clear_notes flag — TaskUpdate.notes is a plain Optional[str], so
+    # explicit null and omission are indistinguishable at the schema level (both
+    # decode to None) and BOTH leave the existing value unchanged; only a
+    # non-None value (including "") writes through.
+    print("\n── Tasks: Notes field semantics (PR #45 regression guard) ──")
+    r = client.post("/tasks", headers=H, json={
+        "title": "Notes semantics test task",
+        "notes": "Initial notes",
+        "label_ids": [],
+    })
+    assert_eq("POST notes-test task → 201", r.status_code, 201)
+    notes_task = r.json()
+    notes_task_id = notes_task["id"]
+    assert_eq("notes round-trip on create", notes_task["notes"], "Initial notes")
+
+    # Omitting notes from PUT body leaves the existing value unchanged.
+    r = client.put(f"/tasks/{notes_task_id}", headers=H, json={"title": "Notes semantics test task (renamed)"})
+    assert_eq("PUT omitting notes → 200", r.status_code, 200)
+    assert_eq("notes unchanged when omitted from PUT body", r.json()["notes"], "Initial notes")
+
+    # Explicit null for notes is indistinguishable from omission (no clear_notes
+    # flag exists) — the value must be left unchanged, not cleared.
+    r = client.put(f"/tasks/{notes_task_id}", headers=H, json={"notes": None})
+    assert_eq("PUT notes=null → 200", r.status_code, 200)
+    assert_eq("notes unchanged when explicitly sent null (no clear_notes flag)",
+              r.json()["notes"], "Initial notes")
+
+    # Explicit empty string clears notes — this is the fix PR #45 relies on:
+    # the frontend must send "" (not omit the key, not send null) to clear.
+    r = client.put(f"/tasks/{notes_task_id}", headers=H, json={"notes": ""})
+    assert_eq("PUT notes='' → 200", r.status_code, 200)
+    assert_eq("notes cleared to empty string via explicit ''", r.json()["notes"], "")
+
+    # Re-set notes to a non-empty value, then verify a normal non-empty update works.
+    r = client.put(f"/tasks/{notes_task_id}", headers=H, json={"notes": "Updated notes"})
+    assert_eq("PUT notes='Updated notes' → 200", r.status_code, 200)
+    assert_eq("notes updated to new non-empty value", r.json()["notes"], "Updated notes")
+
+    client.delete(f"/tasks/{notes_task_id}", headers=H)
 
     # ── Drag-drop target_date-only updates (PR #11) ────────────────────────────
     # The frontend now always writes target_date on column drops, never must_do_by.

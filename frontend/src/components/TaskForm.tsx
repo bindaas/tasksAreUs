@@ -154,7 +154,7 @@ export function TaskForm({
       links: validLinks,
     };
     if (boardId) data.board_id = boardId;
-    if (notes.trim()) data.notes = notes.trim();
+    data.notes = notes.trim();
 
     if (mustDoBy !== '') {
       data.must_do_by = mustDoBy;

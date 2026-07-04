@@ -207,3 +207,92 @@ Implementation proceeds on this updated plan.
 ## Grumpy's Response to Second Review
 
 Addressed: `src/types/index.ts` added explicitly to the "Board picker on Create/Edit" Files-to-Modify bullet for the `UpdateTaskBody.board_id` addition. Cross-reference note: unlike web's `createTask(data as CreateTaskBody, activeBoard?.id)` (fixed in the web plan to drop the second argument), mobile's `TaskFormScreen.tsx:177` call is fixed by *changing* the second argument to the picker's selection rather than dropping it — mobile's `createTask(body, boardId)` requires a `boardId`, so the fix there is "pass the right one," not "stop passing one." Verdict was "Approved with concerns" — implementation proceeds on this updated plan.
+
+---
+
+## Folding in PR #45 (web notes bug + card parity) — added 2026-07-04
+
+Web PR #45 (`PLAN-fix-focused-card-parity-and-notes-bug.md`, merged) fixed two web-only bugs: a notes-persistence bug in `TaskForm.tsx`, and a Links/Complete/Delete parity gap between `TaskCard.tsx` (All view) and `FocusedTaskCard.tsx` (Focused/Today/Tomorrow). That plan's "Mobile follow-up" section originally claimed mobile was unaffected because "`FocusedTaskCard.tsx` doesn't exist yet" — **this was wrong**, caught by Dopey's code review of PR #45. `mobile/src/components/FocusedTaskCard.tsx` already shipped via `PLAN-feat-focused-view-mobile.md`, with the identical parity gap, and `mobile/src/screens/TaskFormScreen.tsx` has the identical notes bug. Both are real, currently-shipped issues on mobile, folded into this plan since it hasn't started implementation and already touches both files.
+
+### Notes bug (mirrors web's fix exactly)
+
+`mobile/src/screens/TaskFormScreen.tsx:165` (edit path) and `:174` (create path) both read:
+```ts
+if (notes.trim()) body.notes = notes.trim();
+```
+Same bug as web's pre-fix `TaskForm.tsx:157`: clearing the Notes field to empty omits the key from the body entirely, and `updateTask`/`createTask` (`mobile/src/api/tasks.ts`) leave the server-side value untouched when the field is absent — the save appears to succeed but the notes change is silently dropped.
+
+**Fix**: remove both conditionals; always set `body.notes = notes.trim();` in both branches. This is on top of whatever board-picker changes this plan already makes to the same `handleSubmit`-equivalent function (`TaskFormScreen.tsx`'s save handler, per the "Board picker on Create/Edit" section above) — same file, same function, no conflict.
+
+### FocusedTaskCard.tsx parity (folds into the existing "Inline quick-edit" work)
+
+This plan's "Mobile Equivalent of Web PR #42" section already adds a pencil-icon Edit affordance to `FocusedTaskCard.tsx` (via `TaskQuickEdit.tsx`, mobile's port of web's inline editor) — mobile's `FocusedTaskCard.tsx` currently has no Edit, Links, Complete, or Delete at all (confirmed by reading the current file in full: it renders only the priority badge, title, effective date, and labels). Web's `TaskCard.tsx`/`FocusedTaskCard.tsx` gap was Links/Complete/Delete only, since web already had Edit; mobile is starting from zero on all four, so this plan's existing Edit work and this fold-in's Links/Complete/Delete work land together as one coherent change to the same file.
+
+- `src/components/FocusedTaskCard.tsx` — in addition to the pencil/`TaskQuickEdit` swap already planned:
+  - Add a Links section, same rendering as mobile's existing All-view row (`TasksScreen.tsx`'s `TaskRow`, lines 116–131: `task.links.length > 0` → mapped list, each link openable, tap does not trigger card navigation; lines 132-134 are the sibling wrapper close and the start of the unrelated Complete/Delete button `View` — not part of the Links block)
+  - Add Complete and Delete buttons, calling `completeTask`/`deleteTask` (`mobile/src/api/tasks.ts`) then `onRefresh()`, same try/catch/`Alert.alert` error pattern as `TasksScreen.tsx`'s existing `handleComplete`/`handleDeletePress`. **Delete shows the same destructive-confirmation dialog** as `TasksScreen.tsx`'s `handleDeletePress` (lines 405-422, `Alert.alert('Delete task?', ..., [Cancel, Delete])`) before calling the API — not just the error-alert pattern. Tapping Delete on a Focused/Today/Tomorrow card must not delete immediately with no confirmation.
+  - Gains `onRefresh: () => void` prop — already planned in this section for the quick-edit wiring, so Complete/Delete reuse the same prop, no new plumbing
+  - **Interaction with `isEditing`**: Links/Complete/Delete (and the priority badge) are hidden while the card is in `isEditing`/quick-edit mode, same as the rest of the card body — the entire non-edit body is swapped for `<TaskQuickEdit>`, so there's nothing extra to gate here beyond the swap this plan's "Inline quick-edit" section already specifies.
+- **Not attempting a shared-component extraction on mobile** (unlike web's `TaskCardBody.tsx`) — **correction of a factual error caught by Sneezy's 2026-07-04 review**: the original rationale here claimed `DraggableTaskRow` (`TasksScreen.tsx:185-247`) was "tightly coupled to drag-gesture state," making a shared extraction risky. That's wrong — `DraggableTaskRow` is a thin `GestureDetector`/`Animated.View` wrapper with no presentational JSX of its own; all the actual card content (title, priority badge, effective date, labels, links, Complete/Delete) lives in `TaskRow` (`TasksScreen.tsx:71-154`), whose props are `{ task, onComplete, onDeletePress, onEditPress }` — zero drag-related props or state. `TaskRow` itself has no drag coupling to thread no-ops through.
+  - The real reason to skip extraction: `TaskRow` and `FocusedTaskCard.tsx` diverge in actual layout/style, not just data — board-color left border strip, priority-badge-as-pill vs. inline star, `isDone` dimming, `LabelBadge`'s `mr-1 mb-1` spacing vs. `FocusedTaskCard`'s `flex-wrap gap-4`. This is the same category of divergence web's `TaskCardBody.tsx` had to parameterize (layout, dateDisplay, priorityBadge, renderLabels) to make a shared component work, not a fundamentally different situation from web's.
+  - **Open question (unresolved — needs a decision before/at implementation time)**: Sneezy suggested a narrower shared extraction is available and lower-risk than either full duplication or a whole-card-body component — just the Links row and the Complete/Delete button row are near-identical between `TaskRow` and this section's planned `FocusedTaskCard.tsx` additions (e.g. `TaskLinksRow`, `TaskActionButtons`). This plan currently defaults to direct/duplicated implementation (same choice web made before PR #45), but a narrow extraction of just those two pieces would reduce future drift between the two card types. **Decide at implementation start**: duplicate as currently planned, or extract `TaskLinksRow`/`TaskActionButtons` first and have both `TaskRow` and `FocusedTaskCard.tsx` consume them.
+
+### Files to Modify (additions)
+
+- `src/screens/TaskFormScreen.tsx` — add the notes-bug fix (remove the two `if (notes.trim())` guards) alongside this plan's existing board-picker changes to the same file
+- `src/components/FocusedTaskCard.tsx` — add Links/Complete/Delete alongside this plan's existing Edit/`TaskQuickEdit` changes to the same file
+
+### Test Plan additions
+
+- Editing a task's notes to empty on mobile and saving actually clears it (regression check mirroring web's PR #45 test)
+- Focused/Today/Tomorrow cards on mobile show Links (tap doesn't navigate to detail) and have working Complete/Delete buttons, matching All view
+- Tapping Delete on a Focused/Today/Tomorrow card shows the same confirm dialog as All view before deleting; Cancel leaves the task untouched
+- Links/Complete/Delete/priority badge are hidden while a Focused/Today/Tomorrow card is in inline-edit mode, reappearing on Save/Cancel
+
+---
+
+## Sneezy's Review — 2026-07-04
+
+**Tier:** LIGHT — stated reason confirmed: this addition only touches `mobile/src/screens/TaskFormScreen.tsx` and `mobile/src/components/FocusedTaskCard.tsx`, both presentation-only, no model/schema/router/API-contract files, no data-model change, OTA-only deployment (unchanged from the rest of this plan). No escalation trigger found — `completeTask`/`deleteTask`/`updateTask` are consumed as-is with no signature changes, so no wide blast radius either. Scope of this review is limited to the new "Folding in PR #45" section (lines 213–246); the sections above it (including the "Mobile Equivalent of Web PR #42" section) were left untouched per instructions — see note under Unverified assumptions about that section's actual review status.
+
+**Verdict:** Approved with concerns
+
+### Issues
+
+1. **[Gap]** The "Not attempting a shared-component extraction" rationale (lines 235) misattributes the drag-gesture coupling to the wrong component. Confirmed by reading `TasksScreen.tsx` in full: `DraggableTaskRow` (lines 185–247) is a thin gesture wrapper — its own JSX is just a `GestureDetector`/`Animated.View` around `<TaskRow .../>` — while all the actual presentational JSX (title, priority badge, effective date, labels, links, Complete/Delete buttons) lives in `TaskRow` (lines 71–154), whose props are only `{ task, onComplete, onDeletePress, onEditPress }` — **zero drag-related props or state**. So the component that would actually need to be shared with `FocusedTaskCard.tsx` (`TaskRow`'s body) has no drag coupling to thread no-ops through; the plan's stated reason for skipping extraction doesn't hold up on inspection. The conclusion (don't extract) may still be right, but for a different, unstated reason: real layout/style divergence between `TaskRow` and `FocusedTaskCard.tsx` (board-color left border strip, priority-badge-as-pill vs inline star, `isDone` dimming, `LabelBadge`'s `mr-1 mb-1` vs `FocusedTaskCard`'s `flex-wrap gap-4`) — which is a legitimate echo of "web's TaskCardBody... easy to get wrong" concern the plan already cites, just misfiled under the wrong cause.
+2. **[Risk]** The Delete button's confirmation behavior is unspecified. `TasksScreen.tsx`'s `handleDeletePress` (lines 405–422) shows a destructive-confirmation `Alert.alert('Delete task?', ...)` with Cancel/Delete before calling `apiDeleteTask`; the plan's bullet only says Complete/Delete should use "the same try/catch/`Alert.alert` error pattern" — which names the *error*-alert convention but doesn't say whether the confirm-before-delete step is also being ported. If it's dropped, tapping Delete on a Focused/Today/Tomorrow card would delete immediately with no confirmation, an accidental/irreversible-data-loss regression relative to every other delete affordance in the app (All view's row, and presumably web's `TaskCard.tsx`).
+3. **[Gap]** No stated interaction between this section's Complete/Delete/Links additions and the existing (separately-added, see note below) `isEditing`/`TaskQuickEdit` swap on the same file. Both sections modify the same card body; the plan doesn't say whether Complete/Delete/Links stay visible while a card is in inline-edit mode or are hidden along with the rest of the "swapped" body. Worth an explicit decision since both changes land in the same PR.
+4. **[Nit]** The cited Links-block line range ("`TasksScreen.tsx`'s inline task row, ~line 116-134") is slightly off. Confirmed by reading the file: the `task.links.length > 0 && (...)` block is lines 116–131; lines 132–134 close the sibling `flex-1 mr-3` wrapper and open the unrelated Complete/Delete button `View`. Marked "~" so this is minor, but worth tightening since the range currently bleeds into the next section.
+
+### Unverified assumptions
+
+- The section states this fold-in "folds into the existing 'Mobile Equivalent of Web PR #42' work already planned for `FocusedTaskCard.tsx`." That PR #42 section (lines 93–137) is dated "added 2026-07-03," which is *after* both prior Sneezy passes in this file (both dated 2026-07-02) — so, contrary to this review's framing that "the rest of the plan... has already been reviewed twice," that specific section has not itself been through a Sneezy pass yet. Per this review's scope I did not audit it, but flag that its assumptions (the `onRefresh` prop shape, the `onPress` tap-guard while `isEditing`, `TaskQuickEdit`'s label-fetch fallback) are unverified by any review so far, and this new section builds directly on top of them.
+- "Web's `TaskCard.tsx`/`FocusedTaskCard.tsx` gap was Links/Complete/Delete only, since web already had Edit" — not independently re-verified against the web repo/plan in this pass (out of scope for this mobile-focused light review); taken on the plan's citation of `PLAN-fix-focused-card-parity-and-notes-bug.md`.
+- The claimed "same try/catch/Alert.alert error pattern" is confirmed accurate for the *error-handling* portion of `handleComplete`/`handleDeletePress` (`TasksScreen.tsx:376-384, 405-422`), but as noted in Issue 2, whether the destructive-confirmation dialog is also intended to be ported is not confirmed either way by the plan text.
+
+### Suggestions
+
+- Re-word the "not extracting" rationale to cite the real divergence (left-border board color, badge styling, `isDone` dimming, label-chip spacing) rather than drag-gesture coupling, since `TaskRow` — the component that would actually be shared — carries no drag props.
+- Consider a narrower shared extraction than a whole-card-body component: just the Links row and the Complete/Delete button row are near-identical between `TaskRow` and this section's planned `FocusedTaskCard.tsx` additions, and would be a much lower-risk shared piece (e.g. `TaskLinksRow`, `TaskActionButtons`) than either full duplication or a whole-body extraction.
+- Add one line to the plan making explicit whether Delete on `FocusedTaskCard.tsx` shows the same confirm dialog as `TasksScreen.tsx`, and add a corresponding Test Plan bullet either way.
+- Add one line making explicit whether Complete/Delete/Links are hidden or remain visible while a card is in `isEditing`/quick-edit mode, and a Test Plan bullet for it.
+
+— *Sneezy*
+
+---
+
+## Grumpy's Response to Sneezy's 2026-07-04 Review
+
+| Sneezy item | Status |
+|---|---|
+| Gap 1 (misattributed drag-gesture rationale) | Addressed — corrected to cite the real `TaskRow`/`FocusedTaskCard.tsx` layout divergence (border strip, badge styling, `isDone` dimming, label-chip spacing); the narrower-extraction alternative Sneezy suggested is recorded as an explicit open question below rather than decided unilaterally |
+| Risk 2 (Delete confirmation unspecified) | Addressed — plan now states Delete shows the same `Alert.alert` confirm dialog as `TasksScreen.tsx`'s `handleDeletePress`, plus a Test Plan bullet |
+| Gap 3 (Complete/Delete/Links vs. `isEditing`) | Addressed — plan now states these are hidden during inline-edit (whole body swap, same as the rest of the card), plus a Test Plan bullet |
+| Nit 4 (Links line-range off by a few lines) | Addressed — corrected to lines 116–131, with the 132-134 boundary explained |
+
+## Open Questions
+
+Carried forward for a decision before or at implementation start — not blocking the PR #45 merge, since none of these affect web or the already-merged PR:
+
+1. **Narrow extraction vs. duplication for mobile's Links/action-button rendering** (see "Not attempting a shared-component extraction on mobile" above): duplicate the Links/Complete/Delete rendering directly in `FocusedTaskCard.tsx` (current default, mirrors web's pre-PR#45 approach), or extract `TaskLinksRow`/`TaskActionButtons` shared by `TaskRow` and `FocusedTaskCard.tsx` first, per Sneezy's suggestion.
+2. **Whether the "Mobile Equivalent of Web PR #42" section (lines 93–137, added 2026-07-03) needs its own Sneezy pass.** It has never been reviewed — both prior reviews are dated 2026-07-02 (before that section existed), and the 2026-07-04 review was explicitly scoped to only the "Folding in PR #45" section. This section's assumptions (the `onRefresh` prop shape, the `isEditing` tap-guard, `TaskQuickEdit`'s label-fetch fallback) are what the PR #45 fold-in builds directly on top of.
