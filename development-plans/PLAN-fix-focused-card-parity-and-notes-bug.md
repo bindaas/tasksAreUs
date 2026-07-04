@@ -102,7 +102,9 @@ Single component (frontend only). No backend changes, no mobile changes. `[skip 
 
 ## Mobile follow-up (not part of this PR)
 
-Once this ships, `PLAN-feat-tasks-view-redesign-mobile.md`'s "Extract shared rendering" bullet (mobile's own `BoardGroupedTasks.tsx`/`FocusedTaskCard.tsx`) should be updated to build mobile's `FocusedTaskCard.tsx` with Links/Complete/Delete from the start, and to consider an equivalent shared-body extraction (`FocusedTaskCard.tsx` vs. mobile's All-view `DraggableTaskRow`), so mobile doesn't repeat the same drift. Not addressed in this plan — mobile implementation hasn't started yet, so there's nothing to retrofit until then.
+**Correction (2026-07-04, post-merge):** the paragraph originally here claimed mobile was unaffected because "`FocusedTaskCard.tsx` doesn't exist yet" — that was **wrong**. Dopey's code review of this PR (#45) caught it: `mobile/src/components/FocusedTaskCard.tsx` already shipped in production via `PLAN-feat-focused-view-mobile.md`, with the identical missing Links/Complete/Delete gap this PR fixes on web. Dopey also found `mobile/src/screens/TaskFormScreen.tsx:165,174` has the exact same notes-dropping bug (`if (notes.trim()) body.notes = notes.trim();`, in both the create and edit branches) — a live, currently-shipped data-loss bug this web PR does not fix.
+
+Both are now folded into `PLAN-feat-tasks-view-redesign-mobile.md` (see its "Folding in PR #45" section) rather than tracked here, since that plan hasn't started implementation yet and already touches both files.
 
 ## PR Structure
 
