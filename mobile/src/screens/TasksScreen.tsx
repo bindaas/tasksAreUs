@@ -9,8 +9,6 @@ import {
   RefreshControl,
   Modal,
   TextInput,
-  Switch,
-  Linking,
 } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -38,13 +36,19 @@ import {
 } from '../utils/taskDateUtils';
 import { TaskFormScreen } from './TaskFormScreen';
 import { FocusedView } from '../components/FocusedView';
-import { isValidLinkUrl } from '../utils/taskLinks';
+import { DayView } from '../components/DayView';
+import { BoardTabs } from '../components/BoardTabs';
+import { TaskCardBody } from '../components/TaskCardBody';
 import type { Task, Label, LabelCategory, UpdateTaskBody } from '../types';
 
-function openTaskLink(url: string) {
-  if (!isValidLinkUrl(url)) return;
-  Linking.openURL(url);
-}
+type ViewMode = 'focused' | 'today' | 'tomorrow' | 'all';
+
+const VIEW_LABELS: Record<ViewMode, string> = {
+  focused: 'Focused',
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  all: 'All',
+};
 
 const LABEL_BG: Record<string, string> = {
   mode: '#dcfce7',
@@ -88,66 +92,25 @@ function TaskRow({
       className="bg-white mx-4 mb-2 rounded-xl border border-gray-100 overflow-hidden"
       style={isDone ? { opacity: 0.55 } : undefined}
     >
-      {task.is_high_priority && !isDone && <View className="h-1 bg-amber-400" />}
-      <View className="flex-row items-start p-4">
-        <View className="flex-1 mr-3">
-          <View className="flex-row items-start mb-1">
-            {task.is_high_priority && !isDone && (
-              <Text className="text-amber-500 text-sm mr-1 mt-0.5">★</Text>
-            )}
-            <Text
-              className="text-gray-900 text-base font-medium flex-1"
-              numberOfLines={2}
-              style={isDone ? { textDecorationLine: 'line-through', color: '#9ca3af' } : undefined}
-            >
-              {task.title}
-            </Text>
-          </View>
-          {effectiveDate && (
-            <Text className="text-gray-400 text-xs mb-2">{formatDate(effectiveDate)}</Text>
-          )}
-          {task.labels.length > 0 && (
-            <View className="flex-row flex-wrap">
-              {task.labels.map((label) => (
-                <LabelBadge key={label.id} label={label} />
-              ))}
-            </View>
-          )}
-          {task.links.length > 0 && (
-            <View className="flex-row flex-wrap mt-1">
-              {task.links.map((link) => (
-                <TouchableOpacity
-                  key={link.id}
-                  onPress={() => openTaskLink(link.url)}
-                  className="mr-3 mb-1 max-w-[45%]"
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                >
-                  <Text className="text-indigo-600 text-xs" numberOfLines={1}>
-                    🔗 {link.description}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-        <View className="flex-row items-center">
-          {!isDone && (
-            <TouchableOpacity
-              onPress={() => onComplete(task.id)}
-              className="w-9 h-9 rounded-full bg-green-50 items-center justify-center"
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text className="text-green-600 text-base font-semibold">✓</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={() => onDeletePress(task.id, task.title)}
-            className="w-9 h-9 rounded-full bg-red-50 items-center justify-center ml-2"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text className="text-red-400 text-sm">🗑</Text>
-          </TouchableOpacity>
-        </View>
+      <View className="p-4">
+        <TaskCardBody
+          task={task}
+          layout="inline"
+          dateDisplay={{ mode: 'effective', effectiveDate }}
+          priorityBadge="static"
+          renderLabels={(labels) =>
+            labels.length > 0 ? (
+              <View className="flex-row flex-wrap mt-1">
+                {labels.map((label) => (
+                  <LabelBadge key={label.id} label={label} />
+                ))}
+              </View>
+            ) : null
+          }
+          onEdit={() => onEditPress(task.id)}
+          onComplete={() => onComplete(task.id)}
+          onDelete={() => onDeletePress(task.id, task.title)}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -249,8 +212,7 @@ function DraggableTaskRow({
 type DisplaySection = TaskSection & { totalCount: number };
 
 export function TasksScreen() {
-  const { boards, activeBoard, setActiveBoard } = useBoard();
-  const [boardSwitcherOpen, setBoardSwitcherOpen] = useState(false);
+  const { boards, activeBoard } = useBoard();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -258,6 +220,7 @@ export function TasksScreen() {
   const [error, setError] = useState<string | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | undefined>(undefined);
+  const [createBoardId, setCreateBoardId] = useState<string | undefined>(undefined);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['today', 'overdue']),
   );
@@ -265,11 +228,8 @@ export function TasksScreen() {
   const [allLabels, setAllLabels] = useState<Label[]>([]);
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [showDone, setShowDone] = useState(false);
-  // Ref lets load() read the latest showDone without being in its dep array
-  const showDoneRef = useRef(false);
 
-  const [viewMode, setViewMode] = useState<'detailed' | 'focused'>('detailed');
+  const [viewMode, setViewMode] = useState<ViewMode>('focused');
   const [focusedViewKey, setFocusedViewKey] = useState(0);
 
   const [highPriorityLimit, setHighPriorityLimit] = useState(3);
@@ -304,7 +264,7 @@ export function TasksScreen() {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const { tasks: fetched } = await listTasks(showDoneRef.current ? undefined : 'pending', boardId);
+      const { tasks: fetched } = await listTasks('pending', boardId);
       setTasks(fetched);
     } catch {
       if (!silent) setError('Failed to load tasks.');
@@ -318,10 +278,6 @@ export function TasksScreen() {
   useEffect(() => {
     setSelectedLabelIds(new Set());
     setSearchQuery('');
-    if (showDoneRef.current) {
-      showDoneRef.current = false;
-      setShowDone(false);
-    }
   }, [activeBoard?.id]);
 
   useFocusEffect(
@@ -335,8 +291,8 @@ export function TasksScreen() {
       getSettings()
         .then((s) => setHighPriorityLimit(s.high_priority_daily_limit))
         .catch(() => {});
-      // Force FocusedView remount on every tab re-focus so config changes in Settings
-      // are reflected without needing a manual Retry.
+      // Force FocusedView/DayView remount on every tab re-focus so config/board-tab
+      // changes are reflected without needing a manual Retry.
       setFocusedViewKey((k) => k + 1);
     }, [load, activeBoard?.id]),
   );
@@ -366,8 +322,7 @@ export function TasksScreen() {
     return groups;
   }, [allLabels]);
 
-  const hasActiveFilters =
-    selectedLabelIds.size > 0 || searchQuery.trim().length > 0 || showDone;
+  const hasActiveFilters = selectedLabelIds.size > 0 || searchQuery.trim().length > 0;
 
   const allSectionsExpanded =
     allFilteredSections.length > 0 &&
@@ -390,6 +345,11 @@ export function TasksScreen() {
 
   function handleCreatePress() {
     setEditingTaskId(undefined);
+    // Focused/Today/Tomorrow have no board tabs, so default to the user's
+    // default (starred) board; All view defaults to the currently selected tab.
+    setCreateBoardId(
+      viewMode === 'all' ? activeBoard?.id : boards.find((b) => b.is_default)?.id ?? activeBoard?.id,
+    );
     setFormVisible(true);
   }
 
@@ -449,22 +409,9 @@ export function TasksScreen() {
     });
   }
 
-  function toggleShowDone() {
-    const next = !showDone;
-    showDoneRef.current = next;
-    setShowDone(next);
-    if (next) setViewMode('detailed');
-    load(true, activeBoard?.id);
-  }
-
   function clearFilters() {
     setSelectedLabelIds(new Set());
     setSearchQuery('');
-    if (showDone) {
-      showDoneRef.current = false;
-      setShowDone(false);
-      load(true, activeBoard?.id);
-    }
   }
 
   // ── drag-drop ─────────────────────────────────────────────────────────────
@@ -645,25 +592,21 @@ export function TasksScreen() {
     );
   }
 
+  const todayStr = dateOnly(new Date());
+  const tomDate = new Date();
+  tomDate.setDate(tomDate.getDate() + 1);
+  const tomorrowStr = dateOnly(tomDate);
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       {/* Header */}
       <View className="px-4 pt-2 pb-2">
         <View className="flex-row items-center justify-between">
-          <TouchableOpacity
-            onPress={() => setBoardSwitcherOpen((o) => !o)}
-            className="flex-row items-center"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text className="text-2xl font-bold text-gray-900">
-              {activeBoard?.name ?? 'Tasks'}
-            </Text>
-            {boards.length > 1 && (
-              <Text className="text-gray-400 ml-1 text-base">▾</Text>
-            )}
-          </TouchableOpacity>
+          <Text className="text-2xl font-bold text-gray-900">
+            Tasks Are Us - {viewMode === 'all' ? (activeBoard?.name ?? '') : VIEW_LABELS[viewMode]}
+          </Text>
           <View className="flex-row items-center" style={{ gap: 8 }}>
-          {viewMode === 'detailed' && (
+          {viewMode === 'all' && (
             <TouchableOpacity
               onPress={handleToggleAllSections}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -673,35 +616,33 @@ export function TasksScreen() {
               </Text>
             </TouchableOpacity>
           )}
-          {!showDone && (
-            <View
-              className="flex-row rounded-full overflow-hidden"
-              style={{ backgroundColor: '#f3f4f6' }}
-            >
-              {(['detailed', 'focused'] as const).map((mode) => (
-                <TouchableOpacity
-                  key={mode}
-                  onPress={() => {
-                    setViewMode(mode);
-                    if (mode === 'focused') setFilterOpen(false);
-                  }}
-                  className="px-3 py-1.5"
-                  style={{
-                    backgroundColor: viewMode === mode ? '#6366f1' : 'transparent',
-                  }}
-                  hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          <View
+            className="flex-row rounded-full overflow-hidden"
+            style={{ backgroundColor: '#f3f4f6' }}
+          >
+            {(['focused', 'today', 'tomorrow', 'all'] as const).map((mode) => (
+              <TouchableOpacity
+                key={mode}
+                onPress={() => {
+                  setViewMode(mode);
+                  if (mode !== 'all') setFilterOpen(false);
+                }}
+                className="px-3 py-1.5"
+                style={{
+                  backgroundColor: viewMode === mode ? '#6366f1' : 'transparent',
+                }}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+              >
+                <Text
+                  className="text-xs font-medium"
+                  style={{ color: viewMode === mode ? '#ffffff' : '#6b7280' }}
                 >
-                  <Text
-                    className="text-xs font-medium"
-                    style={{ color: viewMode === mode ? '#ffffff' : '#6b7280' }}
-                  >
-                    {mode === 'detailed' ? 'All' : 'Focus'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-          {viewMode === 'detailed' && (
+                  {VIEW_LABELS[mode]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {viewMode === 'all' && (
             <TouchableOpacity
               onPress={() => setFilterOpen((o) => !o)}
               className="w-9 h-9 rounded-full items-center justify-center"
@@ -723,30 +664,10 @@ export function TasksScreen() {
         </View>
         </View>
 
-        {/* Board switcher dropdown */}
-        {boardSwitcherOpen && (
-          <View
-            className="bg-white rounded-xl border border-gray-200 mt-1"
-            style={{ zIndex: 50, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}
-          >
-            {boards.map((board) => (
-              <TouchableOpacity
-                key={board.id}
-                onPress={() => {
-                  setActiveBoard(board);
-                  setBoardSwitcherOpen(false);
-                }}
-                className="flex-row items-center px-4 py-3 border-b border-gray-50"
-              >
-                <Text className="flex-1 text-sm text-gray-800">{board.name}</Text>
-                {board.is_default && (
-                  <Text className="text-amber-400 mr-2 text-xs">★</Text>
-                )}
-                {board.id === activeBoard?.id && (
-                  <Text className="text-indigo-600 text-sm font-semibold">✓</Text>
-                )}
-              </TouchableOpacity>
-            ))}
+        {/* Board tabs — only under All */}
+        {viewMode === 'all' && (
+          <View className="mt-2">
+            <BoardTabs />
           </View>
         )}
       </View>
@@ -792,15 +713,6 @@ export function TasksScreen() {
                 </View>
               </View>
             ))}
-          <View className="flex-row items-center justify-between mt-2">
-            <Text className="text-sm text-gray-700">Show completed</Text>
-            <Switch
-              value={showDone}
-              onValueChange={toggleShowDone}
-              trackColor={{ false: '#e5e7eb', true: '#6366f1' }}
-              thumbColor="#ffffff"
-            />
-          </View>
           {hasActiveFilters && (
             <TouchableOpacity onPress={clearFilters} className="mt-2 self-start">
               <Text className="text-xs text-indigo-600 font-medium">Clear filters</Text>
@@ -820,16 +732,25 @@ export function TasksScreen() {
           onSave={handleFormSave}
           onCancel={handleFormCancel}
           initialLabelIds={editingTaskId ? undefined : [...selectedLabelIds]}
+          defaultBoardId={createBoardId}
         />
       </Modal>
 
       {/* Focused view */}
-      {!showDone && viewMode === 'focused' && (
+      {viewMode === 'focused' && (
         <FocusedView key={focusedViewKey} onEditPress={handleEditPress} />
       )}
 
+      {/* Today / Tomorrow */}
+      {viewMode === 'today' && (
+        <DayView key={focusedViewKey} referenceDate={todayStr} onEditPress={handleEditPress} />
+      )}
+      {viewMode === 'tomorrow' && (
+        <DayView key={focusedViewKey} referenceDate={tomorrowStr} onEditPress={handleEditPress} />
+      )}
+
       {/* List + ghost container */}
-      <View ref={listContainerRef} style={{ flex: 1, display: viewMode === 'focused' ? 'none' : 'flex' }}>
+      <View ref={listContainerRef} style={{ flex: 1, display: viewMode === 'all' ? 'flex' : 'none' }}>
         <SectionList<Task, DisplaySection>
           ref={listRef}
           sections={displaySections}

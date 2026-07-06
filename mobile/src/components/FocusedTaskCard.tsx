@@ -1,6 +1,10 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import type { Task } from '../types';
-import { getEffectiveDate, formatDate, isOverdue } from '../utils/taskDateUtils';
+import { completeTask, deleteTask } from '../api/tasks';
+import { getEffectiveDate } from '../utils/taskDateUtils';
+import { TaskQuickEdit } from './TaskQuickEdit';
+import { TaskCardBody } from './TaskCardBody';
 
 const LABEL_BG: Record<string, string> = {
   mode: '#dcfce7',
@@ -15,16 +19,48 @@ export function FocusedTaskCard({
   task,
   boardColor,
   onPress,
+  onRefresh,
 }: {
   task: Task;
   boardColor: string;
   onPress: (id: string) => void;
+  onRefresh: () => void;
 }) {
   const effectiveDate = getEffectiveDate(task);
+  const [isEditing, setIsEditing] = useState(false);
+
+  async function handleComplete() {
+    try {
+      await completeTask(task.id);
+      onRefresh();
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to complete task');
+    }
+  }
+
+  function handleDelete() {
+    Alert.alert('Delete task?', `"${task.title}" will be removed from your task list.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteTask(task.id);
+            onRefresh();
+          } catch (err) {
+            Alert.alert('Error', err instanceof Error ? err.message : 'Failed to delete task');
+          }
+        },
+      },
+    ]);
+  }
 
   return (
     <TouchableOpacity
-      onPress={() => onPress(task.id)}
+      onPress={() => {
+        if (!isEditing) onPress(task.id);
+      }}
       activeOpacity={0.7}
       className="bg-white rounded-xl mb-2 overflow-hidden"
       style={{
@@ -35,44 +71,45 @@ export function FocusedTaskCard({
       }}
     >
       <View className="p-3">
-        {task.is_high_priority && (
-          <View className="bg-amber-50 rounded px-1.5 py-0.5 mb-1.5 self-start">
-            <Text className="text-xs font-semibold text-amber-600">★ High</Text>
-          </View>
-        )}
-        <Text className="text-sm font-medium text-gray-800 leading-snug mb-2" numberOfLines={2}>
-          {task.title}
-        </Text>
-        {effectiveDate && (
-          <View
-            className="rounded px-1.5 py-0.5 mb-1.5 self-start"
-            style={{ backgroundColor: isOverdue(effectiveDate) ? '#fef2f2' : '#f3f4f6' }}
-          >
-            <Text
-              className="text-xs"
-              style={{ color: isOverdue(effectiveDate) ? '#dc2626' : '#6b7280' }}
-            >
-              {formatDate(effectiveDate)}
-            </Text>
-          </View>
-        )}
-        {task.labels.length > 0 && (
-          <View className="flex-row flex-wrap" style={{ gap: 4 }}>
-            {task.labels.map((label) => (
-              <View
-                key={label.id}
-                className="rounded-full px-2 py-0.5"
-                style={{ backgroundColor: LABEL_BG[label.category] ?? '#f3f4f6' }}
-              >
-                <Text
-                  className="text-xs font-medium"
-                  style={{ color: LABEL_TEXT[label.category] ?? '#4b5563' }}
-                >
-                  {label.value}
-                </Text>
-              </View>
-            ))}
-          </View>
+        {isEditing ? (
+          <TaskQuickEdit
+            task={task}
+            onSaved={() => {
+              onRefresh();
+              setIsEditing(false);
+            }}
+            onCancel={() => setIsEditing(false)}
+          />
+        ) : (
+          <TaskCardBody
+            task={task}
+            layout="stacked"
+            dateDisplay={{ mode: 'effective', effectiveDate }}
+            priorityBadge="static"
+            renderLabels={(labels) =>
+              labels.length > 0 ? (
+                <View className="flex-row flex-wrap" style={{ gap: 4 }}>
+                  {labels.map((label) => (
+                    <View
+                      key={label.id}
+                      className="rounded-full px-2 py-0.5"
+                      style={{ backgroundColor: LABEL_BG[label.category] ?? '#f3f4f6' }}
+                    >
+                      <Text
+                        className="text-xs font-medium"
+                        style={{ color: LABEL_TEXT[label.category] ?? '#4b5563' }}
+                      >
+                        {label.value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null
+            }
+            onEdit={() => setIsEditing(true)}
+            onComplete={handleComplete}
+            onDelete={handleDelete}
+          />
         )}
       </View>
     </TouchableOpacity>

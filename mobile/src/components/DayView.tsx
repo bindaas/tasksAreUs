@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { getFocusedViewTasks, type FocusedBoard } from '../api/focusedView';
-import { dateOnly } from '../utils/taskDateUtils';
+import { getDayViewTasks } from '../api/dayView';
+import type { FocusedBoard } from '../api/focusedView';
 import { BoardGroupedTasks } from './BoardGroupedTasks';
 
-export function FocusedView({ onEditPress }: { onEditPress: (id: string) => void }) {
+export function DayView({
+  referenceDate,
+  onEditPress,
+}: {
+  referenceDate: string;
+  onEditPress: (id: string) => void;
+}) {
   const [boards, setBoards] = useState<FocusedBoard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,10 +19,10 @@ export function FocusedView({ onEditPress }: { onEditPress: (id: string) => void
     setLoading(true);
     setError(null);
     try {
-      const result = await getFocusedViewTasks(dateOnly(new Date()));
+      const result = await getDayViewTasks(referenceDate);
       setBoards(result.boards);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load focused view');
+      setError(e instanceof Error ? e.message : 'Failed to load tasks');
     } finally {
       setLoading(false);
     }
@@ -24,7 +30,8 @@ export function FocusedView({ onEditPress }: { onEditPress: (id: string) => void
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referenceDate]);
 
   if (loading) {
     return (
@@ -50,15 +57,10 @@ export function FocusedView({ onEditPress }: { onEditPress: (id: string) => void
   if (boards.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-16 px-8">
-        <Text className="text-4xl mb-3">🎯</Text>
-        <Text className="text-gray-500 text-base text-center mb-1">
-          No focused tasks for this period
-        </Text>
-        <Text className="text-gray-400 text-xs text-center mb-4">
-          High-priority tasks with dates in your configured range will appear here
-        </Text>
+        <Text className="text-4xl mb-3">📅</Text>
+        <Text className="text-gray-500 text-base text-center mb-1">No tasks for this period</Text>
         <TouchableOpacity onPress={load}>
-          <Text className="text-indigo-500 text-sm">Refresh</Text>
+          <Text className="text-indigo-500 text-sm mt-3">Refresh</Text>
         </TouchableOpacity>
       </View>
     );
