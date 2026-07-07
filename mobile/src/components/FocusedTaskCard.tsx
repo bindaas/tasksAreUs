@@ -5,15 +5,7 @@ import { completeTask, deleteTask } from '../api/tasks';
 import { getEffectiveDate } from '../utils/taskDateUtils';
 import { TaskQuickEdit } from './TaskQuickEdit';
 import { TaskCardBody } from './TaskCardBody';
-
-const LABEL_BG: Record<string, string> = {
-  mode: '#dcfce7',
-  type: '#f3e8ff',
-};
-const LABEL_TEXT: Record<string, string> = {
-  mode: '#15803d',
-  type: '#7e22ce',
-};
+import { LABEL_BG, LABEL_TEXT } from '../utils/labelColors';
 
 export function FocusedTaskCard({
   task,

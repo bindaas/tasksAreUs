@@ -40,6 +40,7 @@ import { DayView } from '../components/DayView';
 import { BoardTabs } from '../components/BoardTabs';
 import { TaskCardBody } from '../components/TaskCardBody';
 import type { Task, Label, LabelCategory, UpdateTaskBody } from '../types';
+import { LABEL_BG, LABEL_TEXT } from '../utils/labelColors';
 
 type ViewMode = 'focused' | 'today' | 'tomorrow' | 'all';
 
@@ -48,15 +49,6 @@ const VIEW_LABELS: Record<ViewMode, string> = {
   today: 'Today',
   tomorrow: 'Tomorrow',
   all: 'All',
-};
-
-const LABEL_BG: Record<string, string> = {
-  mode: '#dcfce7',
-  type: '#f3e8ff',
-};
-const LABEL_TEXT: Record<string, string> = {
-  mode: '#15803d',
-  type: '#7e22ce',
 };
 
 function LabelBadge({ label }: { label: Label }) {
@@ -531,6 +523,11 @@ export function TasksScreen() {
     // cannot promote a non-HP task — the limit only matters when moving an existing
     // HP task into a section that may already be at capacity.
     if (task.is_high_priority && (targetSection === 'today' || targetSection === 'tomorrow')) {
+      // Fetch fresh HP limit to ensure Settings changes are reflected
+      const freshLimit = await getSettings()
+        .then((s) => s.high_priority_daily_limit)
+        .catch(() => highPriorityLimit);
+
       const todayStr = dateOnly(new Date());
       const tomDate = new Date();
       tomDate.setDate(tomDate.getDate() + 1);
@@ -542,10 +539,10 @@ export function TasksScreen() {
           t.state === 'pending' &&
           getColumn(t, todayStr, tomStr) === targetSection,
       ).length;
-      if (hpCount >= highPriorityLimit) {
+      if (hpCount >= freshLimit) {
         Alert.alert(
           'High Priority Limit',
-          `You already have ${highPriorityLimit} high-priority tasks for ${
+          `You already have ${freshLimit} high-priority tasks for ${
             targetSection === 'today' ? 'Today' : 'Tomorrow'
           }.`,
         );

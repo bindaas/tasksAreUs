@@ -18,20 +18,12 @@ import { useBoard } from '../context/BoardContext';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
 import { isValidLinkUrl, MAX_TASK_LINKS } from '../utils/taskLinks';
+import { LABEL_BG, LABEL_TEXT } from '../utils/labelColors';
 import type { Task, Label, TaskLink, CreateTaskBody, UpdateTaskBody } from '../types';
 
 function newLinkId(): string {
   return `link-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
-
-const LABEL_BG: Record<string, string> = {
-  mode: '#dcfce7',
-  type: '#f3e8ff',
-};
-const LABEL_TEXT: Record<string, string> = {
-  mode: '#15803d',
-  type: '#7e22ce',
-};
 
 const CATEGORY_ORDER: Array<'mode' | 'type'> = ['mode', 'type'];
 const CATEGORY_LABELS: Record<string, string> = { mode: 'Mode', type: 'Type' };
@@ -161,16 +153,17 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
     }
 
     const validLinks: TaskLink[] = [];
-    for (const link of links) {
+    for (let i = 0; i < links.length; i++) {
+      const link = links[i];
       const url = link.url.trim();
       const description = link.description.trim();
       if (!url && !description) continue; // skip fully-blank rows
       if (!url || !description) {
-        setError('Each link needs both a URL and a description.');
+        setError(`Link ${i + 1}: needs both a URL and a description.`);
         return;
       }
       if (!isValidLinkUrl(url)) {
-        setError('Links must start with http:// or https://');
+        setError(`Link ${i + 1}: must start with http:// or https://`);
         return;
       }
       validLinks.push({ id: link.id, url, description });
