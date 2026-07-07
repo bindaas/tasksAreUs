@@ -120,6 +120,8 @@ export function TaskCardBody({
   // focused_view_service.py and day_view.py) currently only ever return pending
   // tasks, so this gate is presently redundant for the 'stacked' layout — but
   // must be revisited if that query is ever loosened to include other states.
+  // TODO: When task-fetching is extended to include done tasks, this pending
+  // gate will suddenly hide Delete/Edit for non-pending tasks — update tests then.
   const actionsEl = task.state === 'pending' && (
     <View className="flex-row items-center" style={{ gap: 8 }}>
       {priorityBadge === 'toggle' && onTogglePriority && (

@@ -603,7 +603,7 @@ export function TasksScreen() {
       <View className="px-4 pt-2 pb-2">
         <View className="flex-row items-center justify-between">
           <Text className="text-2xl font-bold text-gray-900">
-            Tasks Are Us - {viewMode === 'all' ? (activeBoard?.name ?? '') : VIEW_LABELS[viewMode]}
+            Tasks Are Us - {viewMode === 'all' ? (activeBoard?.name || VIEW_LABELS['all']) : VIEW_LABELS[viewMode]}
           </Text>
           <View className="flex-row items-center" style={{ gap: 8 }}>
           {viewMode === 'all' && (
