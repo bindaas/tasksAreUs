@@ -103,21 +103,31 @@ Default config (created lazily on first GET, upsert-safe): `board_selection = al
 
 **New unit tests**: 2 new tests in `frontend/src/__tests__/boards.api.test.ts` covering `updateBoard` with a hex color and with `null` (clear).
 
-### Focused View UI — Mobile app (shipped — PR #38)
+### Focused View UI — Mobile app (shipped — PR #38, updated PR #46)
 
 **Color swatches in Settings → Boards**: Each board row in Settings → Boards gets a horizontal row of 8 pre-defined color swatches (20×20 circles from a fixed 8-color palette: `['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6']`) plus a "None" swatch (gray circle with ✕) at position 0. Tapping a swatch sets that board's color via `setColorBoard`; tapping the active swatch (or the "None" swatch) clears the color to `null`. The active swatch is highlighted with a border ring and shadow. No native color-picker module is required — the 8-swatch palette is OTA-deployable and uses the same palette as the web's `FocusedView.tsx` fallback.
 
-**Focused View config section in SettingsScreen**: A `FocusedViewConfigSection` component appears between the Boards section and the Labels section. Loads config via `getFocusedViewConfig()` on mount. Fields: board selection radio (All boards / Selected boards); board checkboxes visible only when "Selected boards" is chosen (sourced from `useBoard()` directly); day range radio (Today only / Today + tomorrow / Today + 2 days). Has its own Save button that calls `updateFocusedViewConfig` with all three fields required (`board_selection`, `selected_board_ids`, `day_range` — matching the backend contract). Inline error and success banners; independent `busy` and `error` state local to this component.
+**Focused View config section in SettingsScreen — removed (PR #46)**: The mobile Settings editor for Focused View config (board selection, day range) was removed as part of the Tasks-view redesign. The backend `GET`/`PUT /focused-view/config` endpoints remain live and unchanged — nothing in the mobile frontend calls them anymore.
 
-**View mode toggle in TasksScreen header**: A two-button pill toggle ("All" | "Focus") appears in the TasksScreen header when "Show done" is off. The Collapse/Expand button and the filter (☰) button are hidden in focused mode. Switching to "Show done" resets the view mode to "All" (detailed). `filterOpen` is reset to `false` when switching to focused mode. A `focusedViewKey` counter is incremented on each `useFocusEffect` when `viewMode === 'focused'`, forcing `FocusedView` to remount and re-fetch fresh data on every tab re-focus (prevents stale data after changing focused view config in Settings).
+**View mode toggle in TasksScreen header (updated PR #46)**: A four-button pill toggle (**Focused** | **Today** | **Tomorrow** | **All**) appears in the TasksScreen header. Focused is the default. The Collapse/Expand button and the filter (☰) button are visible only in All view. A `focusedViewKey` counter is incremented on each `useFocusEffect`, forcing FocusedView/DayView to remount and re-fetch fresh data on every tab re-focus.
 
-**`FocusedView` component** (inline in `TasksScreen`, rendered when view mode is "Focus" and "Show done" is off): Fetches `GET /focused-view/tasks?reference_date=YYYY-MM-DD` on mount using `dateOnly(new Date())` for local-timezone correctness. Shows a loading spinner while fetching; inline error banner with Retry on failure; empty state ("No focused tasks for this period") with a Refresh button when no qualifying tasks exist. Renders board sections in a `ScrollView` — tasks stacked vertically in a single column (appropriate for phone widths). Each board section header shows a colored dot (board color or palette fallback), board name, and task count badge. Board color comes from `board.board_color` or falls back to the 8-color palette indexed by board position.
+**`FocusedView` component** (rendered when `viewMode === 'focused'`): Fetches `GET /focused-view/tasks?reference_date=YYYY-MM-DD` on mount using `dateOnly(new Date())` for local-timezone correctness. Shows a loading spinner while fetching; inline error banner with Retry on failure; empty state ("No focused tasks for this period") with a Refresh button when no qualifying tasks exist. Renders board sections in a `ScrollView` — tasks stacked vertically in a single column (appropriate for phone widths). Each board section header shows a colored dot (board color or palette fallback), board name, and task count badge. Board color comes from `board.board_color` or falls back to the 8-color palette indexed by board position.
 
-**`FocusedTaskCard` component**: Compact card with a 4px colored left border (`borderLeftColor: boardColor`). Displays: title (2-line clamp with ellipsis), high-priority "★ High" badge (amber) when `is_high_priority` is true, effective date chip using `getEffectiveDate` (red if overdue, gray otherwise), label badges from `task.labels` (mode=green, type=purple). Tapping the card calls `onPress(id)`, which opens `TaskFormScreen` in edit mode via the same `handleEditPress` handler used by `DraggableTaskRow`. No drag-and-drop.
+**`DayView` component (new, PR #46)**: Fetches `GET /day-view/tasks?reference_date=YYYY-MM-DD` for Today or Tomorrow. Same structure and UX as FocusedView (loading/error/empty states, board-grouped rendering via shared `BoardGroupedTasks`), but shows all pending tasks (any priority) for the selected calendar day.
 
-**New mobile API module** (`mobile/src/api/focusedView.ts`): Exports `FocusedViewConfig` and `FocusedBoard` interfaces plus `getFocusedViewConfig()`, `updateFocusedViewConfig()` (all three fields required), and `getFocusedViewTasks(referenceDate?)`.
+**`FocusedTaskCard` component (updated PR #46)**: Compact card with a 4px colored left border (`borderLeftColor: boardColor`). Displays: high-priority "★ High" badge (amber) when applicable, title, effective date chip using `getEffectiveDate`, label badges, and up to 3 link chips. Now uses a shared `TaskCardBody` component for its title/date/labels/links/actions rendering, with layout set to `'stacked'`. Inline quick-edit (added PR #42 on web, PR #46 on mobile) toggles an in-place `TaskQuickEdit` form (title + label toggles); tapping the Edit icon in the action row opens it. Complete and Delete buttons are also available in the action row (added PR #45 on web, PR #46 on mobile). Tapping anywhere on a non-editing card still opens `TaskFormScreen` in edit mode (unless `isEditing` is true, which suppresses the tap).
 
-**Tests**: 2 new tests in `mobile/src/__tests__/boards.api.test.ts` for `updateBoard` with hex color and with `null` (9 tests total in that file); new `mobile/src/__tests__/focusedView.api.test.ts` with 7 tests covering all three API functions. Total: 86 mobile unit tests pass.
+**`TaskCardBody` component (new, PR #46)**: A shared presentational component (RN port of the web component of the same name) used by both `TaskRow` (All view, inline layout) and `FocusedTaskCard` (Focused/Today/Tomorrow, stacked layout). Parameterized by `layout` (`'inline' | 'stacked'`), date-display mode (`'split'` or `'effective'`), priority-badge style (`'static'` — `'toggle'` is not used on mobile), and a labels render-prop. Owns Title/Date/Labels/Links/priority-indicator/Edit/Complete/Delete rendering, gated by `task.state === 'pending'` for the action row.
+
+**`BoardGroupedTasks` component (new, PR #46)**: A shared rendering component for both FocusedView and DayView. Iterates over board groups and renders each via `FocusedTaskCard`.
+
+**`TaskQuickEdit` component (new, PR #46)**: RN port of the web quick-edit component. Shown inline when `isEditing` is true on `FocusedTaskCard`. Renders: title `TextInput`, label chips grouped by category (Mode/Type only) with toggle interaction, and Save/Cancel row. Accepts an optional `labels` prop (board-scoped labels already on hand); when omitted, fetches via `listLabels(undefined, task.board_id)` — needed because FocusedTaskCard/DayView group tasks across boards.
+
+**New mobile API module** (`mobile/src/api/focusedView.ts`, updated PR #46): Exports `FocusedBoard` interface (still used by both Focused View and Day View) plus `getFocusedViewTasks(referenceDate?)`. Config functions removed.
+
+**New mobile API module** (`mobile/src/api/dayView.ts`, new PR #46): Exports `getDayViewTasks(referenceDate)` to fetch Day View tasks.
+
+**Tests**: Existing `mobile/src/__tests__/focusedView.api.test.ts` refactored to cover only `getFocusedViewTasks` (config functions removed). New `mobile/src/__tests__/dayView.api.test.ts` with tests for `getDayViewTasks`. Deleted `mobile/src/__tests__/chatUtils.test.ts`. Total: 84 mobile unit tests pass (all 8 suites passing).
 
 **Deployment**: OTA only — all JS/TS changes, no native modules, no `app.json` or `eas.json` changes.
 
@@ -139,7 +149,6 @@ Day View uses the same `focused_view_configs` table for its future per-view conf
 
 The Tasks page's **Today** and **Tomorrow** views render the Day View. Selecting either fetches `GET /day-view/tasks?reference_date=` for today or tomorrow (respectively) and renders the results using the same board-grouped card layout as Focused View (`BoardGroupedTasks.tsx`, extracted from `FocusedView.tsx` and shared by both Day View and Focused View), including the same `FocusedTaskCard` cards — so the inline quick-edit added in PR #42 (see "FocusedTaskCard component" above) is available here too. Loading spinner while fetching; inline error banner with Retry on failure; empty state ("No tasks for this period") with a Refresh button when no qualifying tasks exist. There is no configuration for Day View — it always shows all-priority, all-board tasks for the single selected day.
 
-> **[ASPIRATIONAL]** — Not yet shipped. Mobile Day View UI (Today/Tomorrow views in the mobile Tasks screen) is PR 3 of the 3-PR epic and has not been implemented yet.
 
 ---
 
@@ -344,14 +353,15 @@ A React Native + Expo managed-workflow client (`mobile/`) ships alongside the we
 - **Deep-link scheme**: `tasksareus://` for magic link sign-in in standalone builds
 
 ### Navigation / Tabs
-The mobile app has four bottom tabs, mirroring the web app's four primary pages:
+The mobile app has three bottom tabs, mirroring the web app's primary pages:
 
 | Tab | Equivalent web route | Status |
 |-----|----------------------|--------|
 | Tasks | `/` | **Shipped — PR #20** |
-| Chat | `/chat` | **Shipped — PR #22** |
 | Reports | `/reports` | **Shipped — PR #24** |
 | Settings | `/settings` | **Shipped — PR #23** |
+
+**Chat tab removed (PR #46)**: The Chat tab was removed from mobile as part of the Tasks-view redesign. The backend conversational endpoints remain live. A future PR is expected to rebuild the mobile Chat UI (the web Chat UI was similarly removed in PR #41 pending a rebuild).
 
 ### Authentication (shipped — PR #18)
 Mobile auth follows the same Firebase-only identity model as the web frontend, with mobile-specific implementation details:
@@ -365,90 +375,89 @@ Mobile auth follows the same Firebase-only identity model as the web frontend, w
 - **Deliberate sign-out flag**: A module-level boolean (resets on app force-quit) prevents the auto-anonymous-sign-in from firing after an explicit sign-out.
 - **API client** (`mobile/src/api/client.ts`): Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer <token>` on every request to `EXPO_PUBLIC_API_URL/api/v1`.
 
-### Tasks Screen (shipped — PR #20, updated PR #21, updated PR #26, updated PR #27)
+### Tasks Screen (shipped — PR #20, updated PR #21, updated PR #26, updated PR #27, updated PR #46)
 
-The Tasks tab is fully implemented as a `SectionList` grouped by date proximity:
+The Tasks tab supports four session-only views (Focused, Today, Tomorrow, All) selectable via a pill toggle in the screen header. The header reads "Tasks Are Us - `<View>`" (Focused/Today/Tomorrow) or "Tasks Are Us - `<Board>`" (All). Focused is the default view.
+
+**All view (kanban board)**:
+The All view is a `SectionList` grouped by date proximity:
 
 - **Grouped sections**: Overdue (red header) → Today → Tomorrow → Day After Tomorrow → Upcoming → No Date; empty sections are hidden.
-- **Collapse / expand sections (shipped — PR #26)**: Each section header is tappable to collapse or expand it. Today and Overdue start expanded on first load; all other sections start collapsed. When collapsed, the task count is shown in parentheses after the section title (e.g. "Tomorrow (3)"). An "Expand" / "Collapse" text button in the screen header toggles all sections at once.
-- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (mode=green, type=purple — frequency badges removed from UI as of PR #29), and up to 3 link chips (shipped — PR #39; shown as their description — tapping a chip opens the URL directly, no hover step on touch). Tapping a task row opens it in the task form in edit mode; tapping a link chip opens the link instead. Completed tasks shown via the filter panel appear faded (reduced opacity) with a strikethrough title and without the high-priority bar or star.
-- **Filter panel (shipped — PR #26)**: A `☰` icon in the screen header opens a collapsible filter panel. The icon turns indigo when any filter is active. The panel provides:
+- **Collapse / expand sections (shipped — PR #26)**: Each section header is tappable to collapse or expand it. Today and Overdue start expanded on first load; all other sections start collapsed. When collapsed, the task count is shown in parentheses after the section title (e.g. "Tomorrow (3)"). An "Expand" / "Collapse" text button in the screen header toggles all sections at once (visible only in All view).
+- **Board tabs (shipped — PR #46)**: Board tabs appear directly below the view toggle, visible only when All view is selected. Selecting a tab switches the shared active-board state. Creating a task while in All view defaults the board picker to the currently selected tab.
+- **Task row**: title, effective-date chip, high-priority amber top bar + amber star badge, label badges (mode=green, type=purple — frequency badges removed from UI as of PR #29), up to 3 link chips (shipped — PR #39; shown as their description — tapping a chip opens the URL directly, no hover step on touch), and an Edit button (added PR #46) for parity with task cards in other views. Tapping a task row or the Edit button opens it in the task form in edit mode; tapping a link chip opens the link instead.
+- **Complete/Delete actions (shipped — PR #46)**: Inline Complete and Delete buttons are available on all task rows.
+- **Filter panel (shipped — PR #26, updated PR #46)**: A `☰` icon in the screen header opens a collapsible filter panel. The icon turns indigo when any filter is active (visible only in All view). The panel provides:
   - **Text search**: filters tasks by title and notes simultaneously (case-insensitive, live filtering) — same AND semantics as the web client.
   - **Label chips**: grouped by category (Mode / Type — Frequency chips removed as of PR #29) with the same category colors as task badges; tap to toggle; multiple selections compose with AND logic.
-  - **"Show completed" switch**: when on, re-fetches all tasks (not just pending); completed tasks appear in their date sections faded with a strikethrough title and no complete button.
-  - **"Clear filters" link**: visible when any filter is active; resets text search, label selection, and show-completed toggle.
-- **Drag-and-drop between sections (shipped — PR #27, updated PR #28)**: Long-press (500ms) any pending task to enter drag mode. A ghost card lifts and follows the finger. Section headers highlight in indigo as valid drop targets. On drop, sets `target_date` only — matching web behavior; `must_do_by` is never modified by drag. Drop targets and their resulting `target_date` values: Today → today, Tomorrow → tomorrow, Day After Tomorrow → today+2, No Date → null. **Dropping onto the Overdue or Upcoming sections is silently rejected** — neither section highlights during a drag; the task stays put. Scroll is disabled while a drag is active. Done tasks are not draggable. The high-priority limit (from user settings) is enforced for Today/Tomorrow drops of already-high-priority tasks — an Alert is shown and the drop is cancelled if the limit would be exceeded. The optimistic update reverts on API error. The list auto-scrolls when the finger is within 80px of the top or bottom edge.
-- **Complete**: check button → `completeTask()` → optimistic remove + background re-fetch (picks up the next recurring occurrence automatically). The complete button is hidden for completed tasks shown via "Show completed".
-- **Delete**: trash button → confirmation dialog → `deleteTask()` → optimistic remove.
-- **"+" button**: tapping the indigo "+" button in the Tasks header opens the task form in create mode. When one or more label filters are active, those labels are pre-selected in the new task form (shipped — PR #28). Edit mode is unaffected — the form always reflects the task's own labels when editing.
-- **Loading state**: full-screen spinner on first load.
-- **Error state**: friendly message + Retry button.
-- **Pull-to-refresh**: `RefreshControl` wired to the current fetch mode (pending-only or all tasks depending on "Show completed").
-- **Focus refresh**: `useFocusEffect` re-fetches tasks and labels on every tab focus (stays fresh after web-app edits and Settings label changes).
-- **Empty state**: "No pending tasks" when no tasks exist; "No tasks match your filters" when filters are active and yield no results.
+  - **"Clear filters" link**: visible when any filter is active; resets text search and label selection.
+- **Drag-and-drop between sections (shipped — PR #27, updated PR #28)**: Long-press (500ms) any pending task to enter drag mode. A ghost card lifts and follows the finger. Section headers highlight in indigo as valid drop targets. On drop, sets `target_date` only — matching web behavior; `must_do_by` is never modified by drag. Drop targets and their resulting `target_date` values: Today → today, Tomorrow → tomorrow, Day After Tomorrow → today+2, No Date → null. **Dropping onto the Overdue or Upcoming sections is silently rejected** — neither section highlights during a drag; the task stays put. Scroll is disabled while a drag is active. The high-priority limit (from user settings) is enforced for Today/Tomorrow drops of already-high-priority tasks — an Alert is shown and the drop is cancelled if the limit would be exceeded. The optimistic update reverts on API error. The list auto-scrolls when the finger is within 80px of the top or bottom edge.
+
+**Focused, Today, Tomorrow views**:
+These views show high-priority and day-specific tasks respectively. Tasks are grouped by board and displayed as cards with inline quick-edit capability:
+
+- **Focused view**: Shows only high-priority tasks from all boards for the configured day range. See "Focused View UI — Mobile app" section above for full detail.
+- **Today / Tomorrow views (shipped — PR #46)**: Show all pending tasks (any priority) across all boards for that single calendar day, grouped by board. Same as Focused view but without the priority filter. Uses the shared `DayView` component.
+- **Board-grouped rendering (shipped — PR #46)**: Tasks are grouped by board, each group headed by a color-coded board name and task count. Tasks within each board are sorted by `updated_at` descending.
+- **Task cards (shipped — PR #46)**: Compact cards with stacked layout (title, effective date, labels, links, actions below). Inline quick-edit is available via a shared `TaskQuickEdit` component (same as web). Complete and Delete buttons (added PR #45 on web, PR #46 on mobile) are available directly on cards. Tapping anywhere on a non-editing card still opens the full `TaskFormScreen` modal (unless the card is in inline-edit mode, which suppresses the tap).
+- **Loading/error/empty states**: Loading spinner while fetching; inline error banner with Retry button on failure; empty state with Refresh button when no qualifying tasks exist.
+- **No completed-task browsing**: Completed tasks are never shown on the Tasks screen in any view; the "Show completed" toggle removed entirely in PR #46. Once a task is completed it is no longer visible except via the Reports page.
+
+**Common header and controls:**
+- **"+" button**: tapping the indigo "+" button in the Tasks header opens the task form in create mode. When one or more label filters are active (All view only), those labels are pre-selected in the new task form (shipped — PR #28). Edit mode is unaffected — the form always reflects the task's own labels when editing. When creating a task from Focused/Today/Tomorrow views (no board tabs), the form defaults to the user's default (starred) board; when creating from All view, it defaults to the currently selected board tab.
+- **Pull-to-refresh**: `RefreshControl` wired to the current view's fetch mode.
+- **Focus refresh**: `useFocusEffect` re-fetches data on every tab focus (stays fresh after web-app edits and Settings label changes).
+- **Empty state**: "No pending tasks" when no tasks exist; "No tasks match your filters" when filters are active and yield no results (All view only).
 
 New files shipped in PR #20:
 - `mobile/src/utils/taskGrouping.ts` — pure `groupTasksForList(tasks, referenceDate?)` → `SectionList` sections
 - `mobile/src/__tests__/taskGrouping.test.ts` — 11 unit tests covering all section keys and edge cases
 
-### Task Form — Create / Edit (shipped — PR #21)
+### Task Form — Create / Edit (shipped — PR #21, updated PR #46)
 
 `TaskFormScreen` is a slide-up modal (`pageSheet` presentation) used for both creating and editing tasks on mobile. It is surfaced from `TasksScreen` via a `Modal` component — no stack navigator change was needed.
 
 **Fields:**
 - **Title** (required) — auto-focuses in create mode
-- **Notes** — multiline text input
+- **Notes** — multiline text input; unconditionally trimmed on save to fix a prior bug where blank notes were silently omitted (PR #46)
+- **Links (shipped — PR #39, reordered PR #46)** — up to 3 description + URL row pairs; an "+ Add link" button (disabled at 3) adds a row, each row has its own remove button. Moved to appear immediately after Notes (previously after Labels). Same validation as web: both fields required per non-blank row, URL must start with `http://` or `https://`. See "Links" under Task Model for full rules.
 - **Must do by** — date picker field with × clear button
 - **Target date** — date picker field with × clear button
 - **High priority** — checkbox visible only when at least one date is set to today or tomorrow (same eligibility rule as the web form). The checkbox is hidden and submits as `false` for all other dates. `isFormHighPriorityEligible` guards against overdue dates: both conditions must hold — the date must be `>= today` **and** `<= tomorrow`.
-- **Labels** — grouped by Mode → Type (Frequency section removed as of PR #29); tap to toggle; matches web form colour coding (mode=green, type=purple)
-- **Links (shipped — PR #39)** — up to 3 description + URL row pairs; an "+ Add link" button (disabled at 3) adds a row, each row has its own remove button. Same validation as web: both fields required per non-blank row, URL must start with `http://` or `https://`. See "Links" under Task Model for full rules.
+- **Board picker (shipped — PR #46)** — a set of board-name pills; tapping one selects that board for the task. When creating a task from Focused/Today/Tomorrow views (no board tabs), the form defaults to the user's default (starred) board; when creating from the All view, it defaults to the currently selected board tab. In edit mode, the form shows the task's current board; selecting a different board displays an inline warning ("Moving to a different board will clear this task's labels.") and clears the selected labels (server-side behavior when a task is moved between boards).
+- **Labels** — grouped by Mode → Type (Frequency section removed as of PR #29); tap to toggle; matches web form colour coding (mode=green, type=purple). Board-scoped — labels are fetched for the selected board and change whenever the board is switched.
 
 **Behaviour:**
-- **Create mode** ("New Task" header): opened by the "+" button; title field is auto-focused; saves via `POST /api/v1/tasks`.
-- **Edit mode** ("Edit Task" header): opened by tapping a task row; form pre-populated with existing field values; saves via `PUT /api/v1/tasks/:id`. Clearing a date field sends an explicit `null` to the backend so the field is actually cleared.
+- **Create mode** ("New Task" header): opened by the "+" button; title field is auto-focused; saves via `POST /api/v1/tasks` to the selected board.
+- **Edit mode** ("Edit Task" header): opened by tapping a task row; form pre-populated with existing field values; saves via `PUT /api/v1/tasks/:id`. Clearing a date field sends an explicit `null` to the backend so the field is actually cleared. Moving a task to a different board updates the `board_id` field and unconditionally clears labels (server-side: labels are resolved against the destination board).
 - **Native date picker**: `@react-native-community/datetimepicker` — iOS shows an inline calendar; Android shows a system modal dialog.
 - **422 handling**: if the backend returns 422 (high-priority limit reached), a user-friendly `Alert` is shown and the high-priority checkbox is automatically unchecked.
 - **Cancel**: dismisses the modal without changes.
 - After a successful save, the task list silently re-fetches to reflect the change.
+- **Label dependency fix (PR #46)**: Labels are now keyed on the actual selected board ID, not the stale active-board context, ensuring labels are always fetched from the correct board.
 
 New file shipped in PR #21:
 - `mobile/src/screens/TaskFormScreen.tsx` — 380-line create/edit form component
 
 **API client improvement (PR #21):** `mobile/src/api/client.ts` now exports an `ApiError` class (extends `Error`) carrying the HTTP `status` code. All `apiFetch` errors are thrown as `ApiError` instances, enabling callers to branch on specific status codes (e.g. 422).
 
-### Chat Screen (shipped — PR #22)
+### Chat Screen
 
-`ChatScreen` is a fully working conversational AI interface replacing the earlier placeholder.
+> **[ASPIRATIONAL]** — Not yet shipped on the mobile app. The Chat tab was removed from the mobile bottom tab navigator as part of the Tasks-view redesign (PR #46). The backend conversational endpoints remain live. A future PR is expected to rebuild the mobile Chat UI (the web Chat UI was similarly removed in PR #41 pending a rebuild).
 
-**Behaviour:**
-- **Lazy conversation creation**: `POST /conversations` fires on the first message send, not on screen mount. No conversation is created if the user never types.
-- **Optimistic user message**: the user's message bubble appears immediately with a temporary ID; it is replaced with the confirmed message once the API responds.
-- **Typing indicator**: an `ActivityIndicator` spinner inside an assistant bubble is shown while awaiting the AI response.
-- **Suggested follow-up chips**: rendered below each assistant message; tapping a chip sends it immediately as the next message.
-- **Multiline input**: `TextInput` expands up to 120pt tall, then scrolls internally. The send button is disabled while the input is empty or a send is in flight (prevents double-send).
-- **Keyboard handling**: `KeyboardAvoidingView` with `padding` behaviour on iOS and `height` on Android keeps the input field above the software keyboard.
-- **Error handling**: an inline dismissible error banner is shown on send failure; the optimistic message is removed (rolled back) on error.
-- **Auto-scroll**: `ScrollView.scrollToEnd` fires on `onContentSizeChange` to keep the latest message visible.
-- **Empty state**: a 💬 icon is shown before any messages exist. If the user has configured starter questions, they appear as indigo chips ("What would you like to know?") that can be tapped to send immediately; if no starter questions are configured, a plain "Ask me about your tasks" prompt is shown instead (shipped — PR #23).
-- **Board-scoped conversations (shipped — PR #35)**: `createConversation(boardId?)` passes the active board's ID when starting a new conversation. A `useEffect([activeBoard?.id])` resets `conversationIdRef` and clears messages whenever the active board changes, ensuring the next message creates a fresh conversation scoped to the new board.
-
-New files shipped in PR #22:
-- `mobile/src/utils/chatUtils.ts` — pure utility functions extracted for testability: `buildOptimisticMessage`, `confirmMessages`, `rollbackMessage`
-- `mobile/src/__tests__/chatUtils.test.ts` — 9 Jest unit tests covering message-state transitions
-
-### Settings Screen (shipped — PR #23)
+### Settings Screen (shipped — PR #23, updated PR #46)
 
 `SettingsScreen` is a fully scrollable screen replacing the earlier placeholder. It uses `KeyboardAvoidingView` + `ScrollView` to handle on-screen keyboards gracefully.
 
 **Sections:**
 
-- **Labels**: Mode and Type subsections, each showing the user's personal label list. Each label has inline rename (tap to edit, submit to save, Cancel to abort) and Delete (with confirmation alert). Each subsection has an "+ Add" button to create a new label. Frequency labels are not shown here (they are immutable). Changes take effect immediately against the live API.
+- **Boards section (shipped — PR #35)**: Inserted at the top of `SettingsScreen`. See "Board UI — Mobile app" section above for full detail.
+- **Labels section (shipped — PR #15, updated PR #34, made board-scoped PR #46)**: Mode and Type subsections, each showing the user's personal label list scoped to a board chosen **independently of the app's globally active board**. When the user has more than one board, a dropdown selector appears next to the "Labels" heading, letting the user pick which board's labels to view/edit here without changing the board selected elsewhere in the app (e.g. the Tasks page's board tabs). The selector defaults to the currently active board on load and self-heals to the active board (or first board) if the selected board is deleted. Each label has inline rename (tap to edit, submit to save, Cancel to abort) and Delete (with confirmation alert). Each subsection has an "+ Add" button to create a new label. Frequency labels are not shown here (they are immutable). Changes take effect immediately against the live API. Labels created here are added to the selected board.
+- **Focused View config section — removed (PR #46)**: The mobile Settings editor for Focused View config (board selection, day range) was removed as part of the Tasks-view redesign. The backend `GET`/`PUT /focused-view/config` endpoints remain live and unchanged.
 - **High Priority Daily Limit**: stepper with − and + buttons (clamped to minimum 1) showing the current limit numerically. Persisted server-side along with starter questions via the Save button.
 - **Starter Questions**: up to 5 text inputs. Questions can be added (up to 5), edited inline, and removed individually. A counter shows `(N/5)` in the section header. Saved server-side via `PUT /settings` when the user taps "Save Settings".
 - **Save Settings button**: persists High Priority Limit and Starter Questions together in a single `PUT /settings` call. Shows a "Settings saved" confirmation banner for 3 seconds on success.
-- **Boards section (shipped — PR #35)**: Inserted at the top of `SettingsScreen` (above Connection and Labels). See "Board UI — Mobile app" section above for full detail.
-- **Connection section (shipped — PR #25)**: Shown below Boards (above Labels). Displays an environment badge — green "Production" when `EXPO_PUBLIC_API_URL` starts with `https://`, yellow "Development" otherwise — and the resolved API base URL. A "Test Connection" button pings `GET /api/v1/health` (unauthenticated) and reports either "Connected Xms" or "Failed: <error message>".
+- **Connection section (shipped — PR #25)**: Shown below Labels. Displays an environment badge — green "Production" when `EXPO_PUBLIC_API_URL` starts with `https://`, yellow "Development" otherwise — and the resolved API base URL. A "Test Connection" button pings `GET /api/v1/health` (unauthenticated) and reports either "Connected Xms" or "Failed: <error message>".
 - **Account section**: see Authentication section above.
 
 ### Reports Screen (shipped — PR #24)
@@ -487,4 +496,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #42 (web: quick-edit — title + labels — extended to Focused/Today/Tomorrow cards via a shared `TaskQuickEdit` component; Tasks page view/board selection now sticky across Reports/Settings/Task Detail navigation via session-only `ViewContext` alongside the existing URL encoding; board tabs right-aligned; Task Form dedup'd read-only label chips and moved "+ Add Link" after Notes; Settings' Labels section made board-neutral via its own board selector, independent of the app's globally active board). Previous update after PR #41 (web: four-view Tasks page — Focused/Today/Tomorrow/All — replacing the Detailed/Focused toggle and the Show done/pending toggle; board tabs replace the always-visible board switcher; Day View UI shipped on web; board picker added to Task Form; web Chat UI and web Focused View Settings editor removed pending a future rebuild, both marked aspirational)*
+*Last updated by — *Bashful* after PR #46 (mobile: Tasks-view redesign with 4-way view mode — Focused/Today/Tomorrow/All — replacing the 2-way Detailed/Focused toggle; Day View UI shipped (Today/Tomorrow views); board tabs shown only in All view; "Show completed" toggle removed entirely; Chat tab and Focused View config editor removed from mobile (both marked aspirational pending future rebuild); board picker added to Task Form with label-clear warning on board move; Settings' Labels section made board-scoped with independent board selector; shared `TaskCardBody`, `BoardGroupedTasks`, and `TaskQuickEdit` components added for UI parity with web; notes unconditionally trimmed on save to fix bug). Previous update after PR #42 (web: quick-edit extended to Focused/Today/Tomorrow cards; view/board selection sticky across navigation; board tabs right-aligned; Settings' Labels made board-neutral with independent selector)*
