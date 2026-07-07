@@ -607,6 +607,8 @@ Accept or reject a belief.
 
 ### Conversations
 
+**Note (PR #41 web, PR #46 mobile):** The Chat feature was removed from the web frontend in PR #41 and from the mobile app in PR #46. The backend API endpoints below remain fully functional and available for potential future use or third-party integrations, but are currently not called by any frontend UI.
+
 #### `POST /conversations`
 Start a new conversation session.
 
