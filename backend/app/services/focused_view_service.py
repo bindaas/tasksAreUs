@@ -130,7 +130,7 @@ def _query_board_grouped_tasks(
     if high_priority_only:
         filters.append(Task.is_high_priority == True)
 
-    tasks = db.query(Task).filter(*filters).order_by(Task.updated_at.desc()).all()
+    tasks = db.query(Task).filter(*filters).order_by(Task.is_high_priority.desc(), Task.updated_at.desc()).all()
 
     tasks_by_board: dict[str, list] = {b.id: [] for b in boards}
     for task in tasks:

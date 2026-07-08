@@ -135,6 +135,9 @@ export function TasksPage() {
     }
     for (const key of Object.keys(map) as ColumnKey[]) {
       map[key].sort((a, b) => {
+        if (a.is_high_priority !== b.is_high_priority) {
+          return a.is_high_priority ? -1 : 1;
+        }
         const aDate = getEffectiveDate(a);
         const bDate = getEffectiveDate(b);
         if (!aDate && !bDate) return 0;

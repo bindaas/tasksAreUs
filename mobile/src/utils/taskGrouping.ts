@@ -39,6 +39,15 @@ export function groupTasksForList(tasks: Task[], referenceDate: Date = new Date(
     buckets[getColumn(task, today, tomorrow)].push(task);
   }
 
+  for (const key of SECTION_ORDER) {
+    buckets[key].sort((a, b) => {
+      if (a.is_high_priority !== b.is_high_priority) {
+        return a.is_high_priority ? -1 : 1;
+      }
+      return b.updated_at.localeCompare(a.updated_at);
+    });
+  }
+
   return SECTION_ORDER
     .filter((key) => buckets[key].length > 0)
     .map((key) => ({ key, title: SECTION_TITLES[key], data: buckets[key] }));
