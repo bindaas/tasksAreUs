@@ -1,25 +1,46 @@
-Editable Task details-
-Make the task details editable from the Focussed , Today and tomorrow view as well. Just like its in the "all" view
 
-Sticky Boards and view
-If I navigate out  to reports, settings , task details, when I come back I want the same view and board selected
+If any of the following needs a database change , flag it. We will exclude that from the list
 
-Task details
-Labels appear twice in task details. Remove the read-only ones
-Move the Add Link right below notes
-Make the Notes section bigger
+This feedback is applicable to both Web UI and Mobile, though it is possible it was observed in one of the twop interfaces.
 
-Board tabs- positioning
-Make them right aligned. Right below the view buttons
+If I navigate to Edit Task from a focussed view and try to change the board in the drop down- that doesnt work. The page refreshes and comes back to the origina board
+
+If the board has a no tasks, the New task button should be in the middle of the grid
+Rename from + to "New Task". This is for all boards, not just new board.
+
+Create a new view - Overdue.
+This will be designed similar to Focussed.
+Its criteria is - when dude date is in the past (target or must d o by)
+The tab will show to the right of Focussed.
+If there are overdue tasks, this will be the default view otherwise Focussed
 
 
-Settings- 
-Settings page to be board neutral.
-For the board specific sections  add a dropdown to select the board
+Focussed and other non-all views - why are the edit/check/cross on the bottom ? All haave them at the top. Arent we using the same component ?
 
-Reports -
-To be board neutral.
-The results should show across all boards
+All views -
+Need an option to toggle High on -off from the card
+Need an option to change the date
+Show High priority  first . rest of the tasks to be sorted by last updated on
+
+Edit Task
+If there are 0 links,  Keep one set of description/link text field visible to be filled in. 
+For saved and un-saved links, show an icon to the right of the box which will open in a new tab
+
+From what i can tell the boards have color assigned to them.
+These colors shoudl be chnagable in settinngs.
+Hard coded color options is fine. 
+The board tab button under the All view - should be on the same color. 
+When that board is chosen, the same color should be used to draw the kanban board
+In Focussed/overdude/today/tomorrow - same color should be used to draw the bopundaries for cards- this is happening already 
+
+Mobile specific
+The view tabs on the right top corner are getting truncated. All doesnt even show up.
+maybe show the view tabs below the header ?
+Move some or all actions to - slide i.e. when the user slides the card to left or right , action links/buttons should show up
+
+
+*****
+
 
 
 ******
@@ -113,7 +134,6 @@ Once done, create a plan for Sleepy to review
 ******
 
 Web and Mobile
-Do not allow drag-drop to Upcoming Tasks
 
 The tasks should be ordered by last updated date-time. Most recent at the top. If the task is newly created its last_updated should be same as created date-time (Note- High priority tasks will be at the top ; they too shoukd follow the chonological rule within themselves though)
 
