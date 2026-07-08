@@ -16,11 +16,6 @@ import Constants from 'expo-constants';
 import { useAuth } from '../hooks/useAuth';
 import { getSettings, updateSettings } from '../api/settings';
 import { listLabels, createLabel, updateLabel, deleteLabel } from '../api/labels';
-import {
-  getFocusedViewConfig,
-  updateFocusedViewConfig,
-  type FocusedViewConfig,
-} from '../api/focusedView';
 import { API_BASE_URL, API_V1_URL } from '../api/client';
 import { useBoard } from '../context/BoardContext';
 import type { Label } from '../types';
@@ -276,175 +271,6 @@ function BoardSection() {
   );
 }
 
-function FocusedViewConfigSection() {
-  const { boards } = useBoard();
-  const [config, setConfig] = useState<FocusedViewConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    getFocusedViewConfig()
-      .then(setConfig)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load focused view config'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  async function handleSave() {
-    if (!config) return;
-    setBusy(true);
-    setError(null);
-    setSaved(false);
-    try {
-      const updated = await updateFocusedViewConfig({
-        board_selection: config.board_selection,
-        selected_board_ids: config.selected_board_ids,
-        day_range: config.day_range,
-      });
-      setConfig(updated);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function toggleBoard(id: string) {
-    if (!config) return;
-    const next = config.selected_board_ids.includes(id)
-      ? config.selected_board_ids.filter((b) => b !== id)
-      : [...config.selected_board_ids, id];
-    setConfig({ ...config, selected_board_ids: next });
-  }
-
-  const DAY_RANGE_LABELS: Record<FocusedViewConfig['day_range'], string> = {
-    today: 'Today only',
-    today_tomorrow: 'Today + tomorrow',
-    today_plus_two: 'Today + 2 days',
-  };
-
-  return (
-    <View className="bg-white rounded-xl border border-gray-200 px-4 pt-4 pb-3 mb-4">
-      <Text className="text-sm font-semibold text-gray-700 mb-0.5">Focused View</Text>
-      <Text className="text-xs text-gray-400 mb-3">
-        Configure which boards and date range appear in focused mode.
-      </Text>
-
-      {loading ? (
-        <ActivityIndicator color="#6366f1" size="small" />
-      ) : (
-        <>
-          {error && (
-            <Text className="text-xs text-red-600 mb-2">{error}</Text>
-          )}
-
-          {config && (
-            <>
-              {/* Board selection */}
-              <Text className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Board selection
-              </Text>
-              {(['all', 'selected'] as const).map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  onPress={() => setConfig({ ...config, board_selection: option })}
-                  disabled={busy}
-                  className="flex-row items-center mb-2"
-                  style={{ gap: 8, opacity: busy ? 0.4 : 1 }}
-                >
-                  <View
-                    className="w-4 h-4 rounded-full border-2 items-center justify-center"
-                    style={{ borderColor: config.board_selection === option ? '#6366f1' : '#d1d5db' }}
-                  >
-                    {config.board_selection === option && (
-                      <View className="w-2 h-2 rounded-full bg-indigo-600" />
-                    )}
-                  </View>
-                  <Text className="text-sm text-gray-700">
-                    {option === 'all' ? 'All boards' : 'Selected boards'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-
-              {config.board_selection === 'selected' && (
-                <View className="ml-6 mb-2" style={{ gap: 4 }}>
-                  {boards.map((board) => {
-                    const checked = config.selected_board_ids.includes(board.id);
-                    return (
-                      <TouchableOpacity
-                        key={board.id}
-                        onPress={() => toggleBoard(board.id)}
-                        disabled={busy}
-                        className="flex-row items-center"
-                        style={{ gap: 8, opacity: busy ? 0.4 : 1 }}
-                      >
-                        <View
-                          className="w-4 h-4 rounded border-2 items-center justify-center"
-                          style={{
-                            borderColor: checked ? '#6366f1' : '#d1d5db',
-                            backgroundColor: checked ? '#6366f1' : 'transparent',
-                          }}
-                        >
-                          {checked && (
-                            <Text style={{ color: '#fff', fontSize: 9, lineHeight: 12 }}>✓</Text>
-                          )}
-                        </View>
-                        <Text className="text-sm text-gray-700">{board.name}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
-
-              {/* Day range */}
-              <Text className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-1">
-                Day range
-              </Text>
-              {(Object.keys(DAY_RANGE_LABELS) as FocusedViewConfig['day_range'][]).map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  onPress={() => setConfig({ ...config, day_range: option })}
-                  disabled={busy}
-                  className="flex-row items-center mb-2"
-                  style={{ gap: 8, opacity: busy ? 0.4 : 1 }}
-                >
-                  <View
-                    className="w-4 h-4 rounded-full border-2 items-center justify-center"
-                    style={{ borderColor: config.day_range === option ? '#6366f1' : '#d1d5db' }}
-                  >
-                    {config.day_range === option && (
-                      <View className="w-2 h-2 rounded-full bg-indigo-600" />
-                    )}
-                  </View>
-                  <Text className="text-sm text-gray-700">{DAY_RANGE_LABELS[option]}</Text>
-                </TouchableOpacity>
-              ))}
-
-              {saved && (
-                <Text className="text-xs text-green-600 mb-2">Saved</Text>
-              )}
-
-              <TouchableOpacity
-                onPress={handleSave}
-                disabled={busy || (config?.board_selection === 'selected' && config.selected_board_ids.length === 0)}
-                className="mt-1 bg-indigo-600 rounded-lg py-2 items-center"
-                style={{ opacity: (busy || (config?.board_selection === 'selected' && config.selected_board_ids.length === 0)) ? 0.5 : 1 }}
-              >
-                <Text className="text-white text-xs font-semibold">
-                  {busy ? 'Saving…' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </>
-      )}
-    </View>
-  );
-}
-
 function makeQuestion(text = ''): StarterQuestion {
   return { id: Math.random().toString(36).slice(2), text };
 }
@@ -610,7 +436,7 @@ function LabelSection({
 
 export function SettingsScreen() {
   const { user, signInWithGoogle, sendMagicLink, signOut } = useAuth();
-  const { activeBoard } = useBoard();
+  const { boards, activeBoard } = useBoard();
   const isAnonymous = user?.isAnonymous ?? true;
 
   const [loading, setLoading] = useState(true);
@@ -623,6 +449,18 @@ export function SettingsScreen() {
   const [typeLabels, setTypeLabels] = useState<Label[]>([]);
   const [highPriorityLimit, setHighPriorityLimit] = useState(3);
   const [questions, setQuestions] = useState<StarterQuestion[]>([]);
+
+  // Labels are shown for a board independent of the app-wide active board —
+  // self-heals to activeBoard (or the first board) if unset or the
+  // previously-selected board is no longer present (e.g. deleted).
+  const [labelsBoardId, setLabelsBoardId] = useState('');
+  const [labelsBoardPickerOpen, setLabelsBoardPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (labelsBoardId && boards.some((b) => b.id === labelsBoardId)) return;
+    const fallback = activeBoard?.id ?? boards[0]?.id;
+    if (fallback) setLabelsBoardId(fallback);
+  }, [boards, activeBoard?.id, labelsBoardId]);
 
   const [emailInput, setEmailInput] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
@@ -660,15 +498,9 @@ export function SettingsScreen() {
       setLoading(true);
       setLoadError(null);
       try {
-        const [settings, modeRes, typeRes] = await Promise.all([
-          getSettings(),
-          listLabels('mode', activeBoard?.id),
-          listLabels('type', activeBoard?.id),
-        ]);
+        const settings = await getSettings();
         setHighPriorityLimit(settings.high_priority_daily_limit ?? 3);
         setQuestions((settings.starter_questions ?? []).map(makeQuestion));
-        setModeLabels(modeRes.labels);
-        setTypeLabels(typeRes.labels);
       } catch (e) {
         setLoadError(e instanceof Error ? e.message : 'Failed to load settings');
       } finally {
@@ -676,10 +508,22 @@ export function SettingsScreen() {
       }
     }
     load();
-  }, [activeBoard?.id]);
+  }, []);
+
+  // Labels are board-scoped — (re)fetch whenever the Labels section's board
+  // picker selection changes, independent of the settings load above.
+  useEffect(() => {
+    if (!labelsBoardId) return;
+    Promise.all([listLabels('mode', labelsBoardId), listLabels('type', labelsBoardId)])
+      .then(([modeRes, typeRes]) => {
+        setModeLabels(modeRes.labels);
+        setTypeLabels(typeRes.labels);
+      })
+      .catch((e) => setLoadError(e instanceof Error ? e.message : 'Failed to load labels'));
+  }, [labelsBoardId]);
 
   async function handleAddLabel(cat: 'mode' | 'type', value: string) {
-    const label = await createLabel(cat, value, activeBoard?.id);
+    const label = await createLabel(cat, value, labelsBoardId);
     if (cat === 'mode') setModeLabels((prev) => [...prev, label]);
     else setTypeLabels((prev) => [...prev, label]);
   }
@@ -823,15 +667,45 @@ export function SettingsScreen() {
               {/* Boards */}
               <BoardSection />
 
-              {/* Focused View config */}
-              <FocusedViewConfigSection />
-
               {/* Labels */}
               <View className="bg-white rounded-xl border border-gray-200 px-4 pt-4 pb-2 mb-4">
-                <Text className="text-sm font-semibold text-gray-700 mb-0.5">Labels</Text>
+                <View className="flex-row items-center justify-between mb-0.5">
+                  <Text className="text-sm font-semibold text-gray-700">Labels</Text>
+                  {boards.length > 1 && (
+                    <TouchableOpacity
+                      onPress={() => setLabelsBoardPickerOpen((o) => !o)}
+                      className="flex-row items-center"
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text className="text-xs text-indigo-600 font-medium">
+                        {boards.find((b) => b.id === labelsBoardId)?.name ?? 'Select board'}
+                      </Text>
+                      <Text className="text-gray-400 ml-1 text-xs">▾</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
                 <Text className="text-xs text-gray-400 mb-3">
-                  Manage Mode and Type labels for the active board.
+                  Manage Mode and Type labels for the selected board.
                 </Text>
+                {boards.length > 1 && labelsBoardPickerOpen && (
+                  <View className="bg-gray-50 rounded-lg border border-gray-200 mb-3">
+                    {boards.map((board) => (
+                      <TouchableOpacity
+                        key={board.id}
+                        onPress={() => {
+                          setLabelsBoardId(board.id);
+                          setLabelsBoardPickerOpen(false);
+                        }}
+                        className="flex-row items-center px-3 py-2.5 border-b border-gray-100"
+                      >
+                        <Text className="flex-1 text-sm text-gray-700">{board.name}</Text>
+                        {board.id === labelsBoardId && (
+                          <Text className="text-indigo-600 text-sm font-semibold">✓</Text>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
                 <LabelSection
                   category="mode"
                   labels={modeLabels}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,20 +18,12 @@ import { useBoard } from '../context/BoardContext';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
 import { isValidLinkUrl, MAX_TASK_LINKS } from '../utils/taskLinks';
+import { LABEL_BG, LABEL_TEXT } from '../utils/labelColors';
 import type { Task, Label, TaskLink, CreateTaskBody, UpdateTaskBody } from '../types';
 
 function newLinkId(): string {
   return `link-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
-
-const LABEL_BG: Record<string, string> = {
-  mode: '#dcfce7',
-  type: '#f3e8ff',
-};
-const LABEL_TEXT: Record<string, string> = {
-  mode: '#15803d',
-  type: '#7e22ce',
-};
 
 const CATEGORY_ORDER: Array<'mode' | 'type'> = ['mode', 'type'];
 const CATEGORY_LABELS: Record<string, string> = { mode: 'Mode', type: 'Type' };
@@ -41,12 +33,15 @@ interface Props {
   onSave: () => void;
   onCancel: () => void;
   initialLabelIds?: string[];
+  /** Board to preselect when creating a task (ignored in edit mode, where the
+   * task's own board_id is used instead). */
+  defaultBoardId?: string;
 }
 
 type DateField = 'mustDoBy' | 'targetDate' | null;
 
-export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Props) {
-  const { activeBoard } = useBoard();
+export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defaultBoardId }: Props) {
+  const { boards, activeBoard } = useBoard();
   const isEditMode = !!taskId;
 
   const [title, setTitle] = useState('');
@@ -57,6 +52,8 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
   const [allLabels, setAllLabels] = useState<Label[]>([]);
   const [links, setLinks] = useState<TaskLink[]>([]);
+  const [boardId, setBoardId] = useState('');
+  const initialBoardIdRef = useRef<string | undefined>(undefined);
 
   const [activeDatePicker, setActiveDatePicker] = useState<DateField>(null);
   const [loadingInitial, setLoadingInitial] = useState(isEditMode);
@@ -68,14 +65,11 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
   _tom.setDate(_tom.getDate() + 1);
   const tomorrowStr = dateOnly(_tom);
   const highPriorityEligible = isFormHighPriorityEligible(mustDoBy, targetDate, todayStr, tomorrowStr);
+  const movingBoard = isEditMode && !!initialBoardIdRef.current && boardId !== initialBoardIdRef.current;
 
   const loadData = useCallback(async () => {
     try {
-      const [labelsResult, task] = await Promise.all([
-        listLabels(undefined, activeBoard?.id),
-        isEditMode ? getTask(taskId) : Promise.resolve(null),
-      ]);
-      setAllLabels(labelsResult.labels);
+      const task = isEditMode ? await getTask(taskId) : null;
       if (task) {
         setTitle(task.title);
         setNotes(task.notes ?? '');
@@ -84,19 +78,43 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
         setIsHighPriority(task.is_high_priority);
         setSelectedLabelIds(new Set(task.labels.map((l) => l.id)));
         setLinks(task.links ?? []);
+        initialBoardIdRef.current = task.board_id;
+        setBoardId(task.board_id);
       } else {
         setSelectedLabelIds(new Set(initialLabelIds ?? []));
+        setBoardId(defaultBoardId ?? activeBoard?.id ?? '');
       }
     } catch {
       setError('Failed to load data.');
     } finally {
       setLoadingInitial(false);
     }
-  }, [isEditMode, taskId, initialLabelIds, activeBoard?.id]);
+  }, [isEditMode, taskId, initialLabelIds, defaultBoardId, activeBoard?.id]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Labels are board-scoped — (re)fetch whenever the selected board changes,
+  // including the initial resolution once boardId is known.
+  useEffect(() => {
+    if (!boardId) return;
+    listLabels(undefined, boardId)
+      .then((result) => setAllLabels(result.labels))
+      .catch(() => {});
+  }, [boardId]);
+
+  // A genuine board switch (not the initial resolution above) invalidates
+  // whatever labels were previously selected, since those ids won't exist on
+  // the new board and would 422 on submit — mirrors the web TaskForm fix.
+  const prevBoardIdRef = useRef('');
+  useEffect(() => {
+    const prev = prevBoardIdRef.current;
+    prevBoardIdRef.current = boardId;
+    if (prev && boardId && prev !== boardId) {
+      setSelectedLabelIds(new Set());
+    }
+  }, [boardId]);
 
   function toggleLabel(id: string) {
     setSelectedLabelIds((prev) => {
@@ -135,16 +153,17 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
     }
 
     const validLinks: TaskLink[] = [];
-    for (const link of links) {
+    for (let i = 0; i < links.length; i++) {
+      const link = links[i];
       const url = link.url.trim();
       const description = link.description.trim();
       if (!url && !description) continue; // skip fully-blank rows
       if (!url || !description) {
-        setError('Each link needs both a URL and a description.');
+        setError(`Link ${i + 1}: needs both a URL and a description.`);
         return;
       }
       if (!isValidLinkUrl(url)) {
-        setError('Links must start with http:// or https://');
+        setError(`Link ${i + 1}: must start with http:// or https://`);
         return;
       }
       validLinks.push({ id: link.id, url, description });
@@ -156,25 +175,26 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
       if (isEditMode) {
         const body: UpdateTaskBody = {
           title: title.trim(),
+          notes: notes.trim(),
           label_ids: Array.from(selectedLabelIds),
           is_high_priority: highPriorityEligible && isHighPriority,
           must_do_by: mustDoBy || null,
           target_date: targetDate || null,
           links: validLinks,
+          board_id: boardId,
         };
-        if (notes.trim()) body.notes = notes.trim();
         await updateTask(taskId, body);
       } else {
         const body: CreateTaskBody = {
           title: title.trim(),
+          notes: notes.trim(),
           label_ids: Array.from(selectedLabelIds),
           is_high_priority: highPriorityEligible && isHighPriority,
           links: validLinks,
         };
-        if (notes.trim()) body.notes = notes.trim();
         if (mustDoBy) body.must_do_by = mustDoBy;
         if (targetDate) body.target_date = targetDate;
-        await createTask(body, activeBoard?.id);
+        await createTask(body, boardId || activeBoard?.id);
       }
       onSave();
     } catch (err: unknown) {
@@ -269,10 +289,58 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
             placeholder="Any additional details..."
             placeholderTextColor="#9ca3af"
             multiline
-            numberOfLines={3}
+            numberOfLines={6}
             className="border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
-            style={{ minHeight: 80, textAlignVertical: 'top' }}
+            style={{ minHeight: 160, textAlignVertical: 'top' }}
           />
+        </View>
+
+        {/* Links */}
+        <View className="mb-5">
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-sm font-medium text-gray-700">Links</Text>
+            <TouchableOpacity
+              onPress={addLinkRow}
+              disabled={links.length >= MAX_TASK_LINKS}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text className={`text-xs font-medium ${links.length >= MAX_TASK_LINKS ? 'text-gray-300' : 'text-indigo-600'}`}>
+                + Add link
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View className="gap-2">
+            {links.map((link) => (
+              <View key={link.id} className="flex-row items-start gap-2">
+                <View className="flex-1 gap-1.5">
+                  <TextInput
+                    value={link.description}
+                    onChangeText={(v) => updateLinkRow(link.id, 'description', v)}
+                    placeholder="Description"
+                    placeholderTextColor="#9ca3af"
+                    className="border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900"
+                  />
+                  <TextInput
+                    value={link.url}
+                    onChangeText={(v) => updateLinkRow(link.id, 'url', v)}
+                    placeholder="https://..."
+                    placeholderTextColor="#9ca3af"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="url"
+                    className="border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900"
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={() => removeLinkRow(link.id)}
+                  className="p-2"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text className="text-gray-400 text-base">×</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Dates */}
@@ -374,6 +442,42 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
           </TouchableOpacity>
         )}
 
+        {/* Board */}
+        {boards.length > 0 && (
+          <View className="mb-5">
+            <Text className="text-sm font-medium text-gray-700 mb-2">Board</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {boards.map((board) => {
+                const selected = board.id === boardId;
+                return (
+                  <TouchableOpacity
+                    key={board.id}
+                    onPress={() => setBoardId(board.id)}
+                    style={
+                      selected
+                        ? { backgroundColor: '#6366f1' }
+                        : { backgroundColor: '#fff', borderColor: '#d1d5db', borderWidth: 1 }
+                    }
+                    className="rounded-full px-3 py-1.5"
+                  >
+                    <Text
+                      style={{ color: selected ? '#ffffff' : '#374151' }}
+                      className="text-xs font-medium"
+                    >
+                      {board.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {movingBoard && (
+              <Text className="text-xs text-amber-600 mt-1.5">
+                Moving to a different board will clear this task's labels.
+              </Text>
+            )}
+          </View>
+        )}
+
         {/* Labels */}
         {allLabels.length > 0 && (
           <View className="mb-5">
@@ -416,54 +520,6 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds }: Pr
             </View>
           </View>
         )}
-
-        {/* Links */}
-        <View className="mb-5">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-sm font-medium text-gray-700">Links</Text>
-            <TouchableOpacity
-              onPress={addLinkRow}
-              disabled={links.length >= MAX_TASK_LINKS}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text className={`text-xs font-medium ${links.length >= MAX_TASK_LINKS ? 'text-gray-300' : 'text-indigo-600'}`}>
-                + Add link
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View className="gap-2">
-            {links.map((link) => (
-              <View key={link.id} className="flex-row items-start gap-2">
-                <View className="flex-1 gap-1.5">
-                  <TextInput
-                    value={link.description}
-                    onChangeText={(v) => updateLinkRow(link.id, 'description', v)}
-                    placeholder="Description"
-                    placeholderTextColor="#9ca3af"
-                    className="border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900"
-                  />
-                  <TextInput
-                    value={link.url}
-                    onChangeText={(v) => updateLinkRow(link.id, 'url', v)}
-                    placeholder="https://..."
-                    placeholderTextColor="#9ca3af"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="url"
-                    className="border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900"
-                  />
-                </View>
-                <TouchableOpacity
-                  onPress={() => removeLinkRow(link.id)}
-                  className="p-2"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text className="text-gray-400 text-base">×</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );

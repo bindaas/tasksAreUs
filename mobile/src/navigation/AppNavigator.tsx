@@ -6,14 +6,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { BoardProvider } from '../context/BoardContext';
 import { TasksScreen } from '../screens/TasksScreen';
-import { ChatScreen } from '../screens/ChatScreen';
 import { ReportsScreen } from '../screens/ReportsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 
 export type RootTabParamList = {
   Tasks: undefined;
-  Chat: undefined;
   Reports: undefined;
   Settings: undefined;
 };
@@ -92,11 +90,6 @@ export function AppNavigator() {
             name="Tasks"
             component={TasksScreen}
             options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>✓</Text> }}
-          />
-          <Tab.Screen
-            name="Chat"
-            component={ChatScreen}
-            options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>💬</Text> }}
           />
           <Tab.Screen
             name="Reports"

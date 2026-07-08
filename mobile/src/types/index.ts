@@ -56,6 +56,7 @@ export interface UpdateTaskBody {
   target_date?: string | null;
   label_ids?: string[];
   is_high_priority?: boolean;
+  board_id?: string;
   // Omit entirely to leave links unchanged (full-replace semantics). TaskFormScreen
   // (full save) must always include this; partial updates should omit it.
   links?: TaskLink[];
