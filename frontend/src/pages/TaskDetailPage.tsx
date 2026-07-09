@@ -98,7 +98,7 @@ export function TaskDetailPage() {
     setSuccess(false);
     try {
       if (isNew) {
-        const newTask = await createTask(data as CreateTaskBody);
+        await createTask(data as CreateTaskBody);
         navigate(-1);
       } else {
         const updatedTask = await updateTask(id!, data as UpdateTaskBody);
