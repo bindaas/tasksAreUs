@@ -807,7 +807,7 @@ Returns `is_high_priority = true` pending tasks that have `must_do_by` or `targe
 
 - Boards with zero qualifying tasks are omitted from the response.
 - Boards are ordered alphabetically by name.
-- Within each board group, tasks are sorted by `updated_at` DESC.
+- Within each board group, tasks are sorted by `is_high_priority DESC` (high-priority first), then `updated_at` DESC (as of PR #47).
 - `board_color` is `null` when the user has not configured a color; clients should substitute a default from a fixed palette.
 
 ---
@@ -838,7 +838,7 @@ Returns pending tasks (any priority) whose `must_do_by` or `target_date` falls o
 
 - Boards with zero qualifying tasks are omitted from the response.
 - Boards are ordered alphabetically by name.
-- Within each board group, tasks are sorted by `updated_at` DESC.
+- Within each board group, tasks are sorted by `is_high_priority DESC` (high-priority first), then `updated_at` DESC (as of PR #47).
 - Completed and soft-deleted tasks are excluded.
 
 ---
