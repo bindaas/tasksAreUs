@@ -2203,6 +2203,21 @@ def main():
         fv_target_task_ids = [t["id"] for t in fv_target_group["tasks"]]
         assert_in("target_date-only HP task appears in focused view", fv_target_only_task_id, fv_target_task_ids)
 
+        # PR #47: Verify high-priority tasks are sorted by updated_at DESC
+        # Both tasks are HP, so order should be by updated_at DESC (most recent first)
+        fv_target_only_pos = None
+        fv_hp_original_pos = None
+        for idx, task in enumerate(fv_target_group["tasks"]):
+            if task["id"] == fv_target_only_task_id:
+                fv_target_only_pos = idx
+            elif task["id"] == fv_hp_task_id:
+                fv_hp_original_pos = idx
+        assert_true("target_date-only HP task position found", fv_target_only_pos is not None)
+        assert_true("original HP task position found", fv_hp_original_pos is not None)
+        if fv_target_only_pos is not None and fv_hp_original_pos is not None:
+            assert_true("target_date-only task appears before original task (PR #47: sorted by updated_at DESC)",
+                        fv_target_only_pos < fv_hp_original_pos)
+
     # Complete the HP task on the default board — done tasks must NOT appear
     r = client.post(f"/tasks/{fv_hp_task_id}/complete", headers=H)
     assert_eq("Complete focused view HP task → 200", r.status_code, 200)
@@ -2371,6 +2386,21 @@ def main():
                     dv_tomorrow_task_id not in dv_default_task_ids)
         assert_true("completed task excluded from day view",
                     dv_done_task_id not in dv_default_task_ids)
+
+        # PR #47: Verify high-priority tasks appear before non-high-priority tasks
+        # in the task list (sorted by is_high_priority DESC, then updated_at DESC)
+        hp_task_pos = None
+        normal_task_pos = None
+        for idx, task in enumerate(dv_default_group["tasks"]):
+            if task["id"] == dv_hp_task_id:
+                hp_task_pos = idx
+            elif task["id"] == dv_normal_task_id:
+                normal_task_pos = idx
+        assert_true("HP task position found in day view response", hp_task_pos is not None)
+        assert_true("normal-priority task position found in day view response", normal_task_pos is not None)
+        if hp_task_pos is not None and normal_task_pos is not None:
+            assert_true("HP task appears before non-HP task in day view (PR #47: high-priority sorting)",
+                        hp_task_pos < normal_task_pos)
 
     # Second board group must appear, even though Focused View config's
     # board_selection=selected excludes it — day-view has no board_selection concept
