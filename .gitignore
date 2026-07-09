@@ -3,4 +3,3 @@
 **/*.pyc
 backend/pgadmin_pgpass
 backend/pgadmin_servers.json
-archive/

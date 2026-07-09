@@ -68,6 +68,12 @@ export function TaskDetailPage() {
     return () => { cancelled = true; };
   }, [id, isNew]);
 
+  useEffect(() => {
+    if (!success) return;
+    const timer = setTimeout(() => setSuccess(false), 3000);
+    return () => clearTimeout(timer);
+  }, [success]);
+
   const highPriorityWarning = useMemo(() => {
     if (!task?.is_high_priority) return null;
     const now = new Date();
@@ -93,12 +99,11 @@ export function TaskDetailPage() {
     try {
       if (isNew) {
         const newTask = await createTask(data as CreateTaskBody);
-        navigate(`/tasks/${newTask.id}`);
+        navigate(-1);
       } else {
         const updatedTask = await updateTask(id!, data as UpdateTaskBody);
         setTask(updatedTask);
         setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save task');
