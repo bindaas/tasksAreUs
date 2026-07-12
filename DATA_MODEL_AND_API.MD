@@ -31,7 +31,7 @@ The `device_uuid` column was removed at startup via `ALTER TABLE users DROP COLU
 ---
 
 ### Table: `boards`
-Top-level organizational unit. Each user has up to `MAX_BOARDS_PER_USER = 10` boards. Tasks, labels, and conversations each belong to exactly one board. A default board named "General tasks" is created automatically for new users on first access (via `board_service.ensure_board_seeded`). Existing users received a "General tasks" board via the startup migration in PR #33.
+Top-level organizational unit. Each user has up to `MAX_BOARDS_PER_USER = 10` boards. Tasks and labels each belong to exactly one board. A default board named "General tasks" is created automatically for new users on first access (via `board_service.ensure_board_seeded`). Existing users received a "General tasks" board via the startup migration in PR #33.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -165,30 +165,7 @@ AI-generated suggestions (labels, time estimates) awaiting user validation.
 
 ---
 
-### Table: `conversations`
-A session of conversational UI interaction. Each conversation is scoped to a single board — the AI only sees tasks and labels from that board.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID | PK |
-| `user_id` | UUID | FK → users |
-| `board_id` | VARCHAR | NOT NULL. FK → boards. Indexed. Scopes the AI context to this board's tasks and labels. |
-| `created_at` | TIMESTAMP | |
-
----
-
-### Table: `messages`
-Individual turns within a conversation.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID | PK |
-| `conversation_id` | UUID | FK → conversations |
-| `user_id` | UUID | FK → users |
-| `role` | ENUM | `user`, `assistant` |
-| `content` | TEXT | The message text |
-| `suggested_questions` | JSONB | Nullable. Array of strings. Only on assistant messages |
-| `created_at` | TIMESTAMP | |
+**Conversations/messages removal (PR #50):** The `conversations` and `messages` tables (previously documented here as per-board conversation sessions and their message turns), the `/conversations` API, the `Conversation`/`Message` SQLAlchemy models and Pydantic schemas, and `ai_service.handle_conversation_message()` were removed entirely. The Chat feature had no users; its UI was already removed from web (PR #41) and mobile (PR #46), and this PR completed the removal on the backend. Both tables were dropped via `DROP TABLE IF EXISTS` in `main.py`'s startup migration (no backup taken — accepted, no data existed).
 
 ---
 
@@ -218,10 +195,11 @@ Per-user configuration. One row per user.
 |---|---|---|
 | `id` | UUID | PK |
 | `user_id` | UUID | FK → users. Unique |
-| `starter_questions` | JSONB | Array of up to 5 strings for the Conversational UI |
 | `high_priority_daily_limit` | INTEGER | Nullable. Configurable cap on high-priority tasks per calendar day. Defaults to 3 when null. Min 1. |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | |
+
+**`starter_questions` removal (PR #50):** The `starter_questions` JSONB column (array of up to 5 strings, previously fed the Chat screen's quick-start chips) was dropped via `ALTER TABLE user_settings DROP COLUMN IF EXISTS starter_questions` in `main.py`'s startup migration, orphaned once the Chat UI it fed was removed from web (PR #41) and mobile (PR #46).
 
 ---
 
@@ -232,7 +210,7 @@ Tracks every Claude API call for cost monitoring.
 |---|---|---|
 | `id` | UUID | PK |
 | `user_id` | UUID | FK → users |
-| `feature` | VARCHAR | e.g. `label_suggestion`, `time_estimate`, `conversation`, `journal_parse` |
+| `feature` | VARCHAR | e.g. `label_suggestion`, `time_estimate`, `journal_parse`. The `conversation` feature value is no longer logged as of PR #50 (chat removal) but may still appear on historical rows. |
 | `model` | VARCHAR | e.g. `claude-sonnet-4-6` |
 | `input_tokens` | INTEGER | |
 | `output_tokens` | INTEGER | |
@@ -605,68 +583,9 @@ Accept or reject a belief.
 
 ---
 
-### Conversations
+### Conversations — removed (PR #50)
 
-**Note (PR #41 web, PR #46 mobile):** The Chat feature was removed from the web frontend in PR #41 and from the mobile app in PR #46. The backend API endpoints below remain fully functional and available for potential future use or third-party integrations, but are currently not called by any frontend UI.
-
-#### `POST /conversations`
-Start a new conversation session.
-
-**Request** (optional body)
-```json
-{ "board_id": "uuid" }
-```
-`board_id` is optional; omitting it scopes the conversation to the user's default board.
-
-**Response**
-```json
-{ "id": "uuid", "board_id": "uuid", "created_at": "2026-05-06T10:00:00Z" }
-```
-
----
-
-#### `POST /conversations/{conversation_id}/messages`
-Send a user message and receive an AI response. The AI interprets the message and may:
-- Create one or more new tasks
-- Mark existing tasks as done
-- Answer a query about the user's tasks
-
-**Request**
-```json
-{ "content": "I returned the library books today" }
-```
-
-**Response**
-```json
-{
-  "message": {
-    "id": "uuid",
-    "role": "assistant",
-    "content": "Got it — I've marked 'Return library books' as done.",
-    "suggested_questions": [
-      "What other outdoor tasks do I have this week?",
-      "What tasks are due before the weekend?"
-    ],
-    "created_at": "2026-05-06T10:00:00Z"
-  },
-  "actions": {
-    "tasks_created": [],
-    "tasks_completed": ["uuid-library-task"]
-  }
-}
-```
-
----
-
-#### `GET /conversations/{conversation_id}/messages`
-Get the message history for a conversation.
-
-**Response**
-```json
-{
-  "messages": [ ...message objects... ]
-}
-```
+`POST /conversations`, `POST /conversations/{conversation_id}/messages`, and `GET /conversations/{conversation_id}/messages` were deleted entirely in PR #50, along with the `conversations`/`messages` tables. The Chat feature had no users; its UI was already removed from web (PR #41) and mobile (PR #46). All three routes now 404 (no route registered).
 
 ---
 
@@ -706,17 +625,10 @@ Get the current user's settings.
 **Response**
 ```json
 {
-  "starter_questions": [
-    "What tasks do I need to do today?",
-    "What online tasks can I do in the next hour?",
-    "What did I complete this week?",
-    "What tasks are due this weekend?",
-    "What household tasks are pending?"
-  ],
   "high_priority_daily_limit": 3
 }
 ```
-`high_priority_daily_limit` defaults to 3 when no setting has been saved.
+`high_priority_daily_limit` defaults to 3 when no setting has been saved. `starter_questions` was removed from this response in PR #50 (orphaned once the Chat UI it fed was removed from web and mobile).
 
 ---
 
@@ -726,17 +638,10 @@ Update user settings.
 **Request**
 ```json
 {
-  "starter_questions": [
-    "What tasks do I need to do today?",
-    "What online tasks can I do in the next hour?",
-    "What did I complete this week?",
-    "What tasks are due this weekend?",
-    "What household tasks are pending?"
-  ],
   "high_priority_daily_limit": 3
 }
 ```
-`high_priority_daily_limit` is clamped to a minimum of 1 server-side. Reducing below the current count is allowed (no retroactive enforcement — warnings are shown but no tasks are auto-demoted).
+`high_priority_daily_limit` is clamped to a minimum of 1 server-side. Reducing below the current count is allowed (no retroactive enforcement — warnings are shown but no tasks are auto-demoted). `starter_questions` was removed from `SettingsUpdate` in PR #50; a stale client that still sends it gets a normal `200` (Pydantic silently ignores unknown fields) and the field is not echoed back or persisted.
 
 **Response**: updated settings object
 
@@ -856,7 +761,6 @@ Push local changes to the server and pull server changes since last sync. Uses l
     "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board on create, unchanged on update; present on update = move the task to that board and clear its labels); links optional (omitted = unchanged on update, present = replace, including [])... ],
     "task_labels": [ ...task_label objects... ],
     "beliefs": [ ...belief objects... ],
-    "settings": { ...settings object... },
     "boards": []
   }
 }
@@ -870,11 +774,11 @@ Push local changes to the server and pull server changes since last sync. Uses l
     "tasks": [ ...server-side task objects updated since last_synced_at, each including board_id and links... ],
     "task_labels": [ ... ],
     "beliefs": [ ... ],
-    "settings": { ... },
     "boards": [ ...board objects updated since last_synced_at... ]
   }
 }
 ```
+`changes.settings` was removed from both the push and pull payloads in PR #50 — `SyncChanges.settings` no longer exists on the schema, and `starter_questions` (the only field it ever carried) was removed end-to-end.
 
 **Board sync notes**: Task objects in the pull response always include `board_id`. Stale clients that push tasks without `board_id` have them assigned to the user's default board. Cross-board label assignments in sync push payloads are silently dropped (only labels matching the task's board are applied). The pull response includes a `boards` array of boards updated since `last_synced_at`; clients that do not yet support boards can ignore this field.
 
