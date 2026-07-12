@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from ..database import get_db
 from ..dependencies import get_current_user
-from ..models import Belief, Board, Label, Task, TaskLabel, UserSettings
+from ..models import Belief, Board, Label, Task, TaskLabel
 from ..schemas import MAX_TASK_LINKS, SyncChanges, SyncRequest, SyncResponse, TaskLabelSync, TaskLink
 from ..services import board_service as board_svc
 
