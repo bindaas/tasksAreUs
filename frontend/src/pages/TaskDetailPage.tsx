@@ -47,6 +47,10 @@ export function TaskDetailPage() {
   // `labelsLoading` left over from a previous board. Tracking the last
   // *observed* labelsBoardId lets pageLoading distrust labelsLoading for that
   // one render, instead of prematurely marking the initial load complete.
+  // Reset alongside mountedForIdRef in the id-keyed effect below, so a future
+  // same-instance task-to-task navigation still shows labelsBoardIdJustChanged
+  // for the new task's first load instead of relying on today's routing
+  // (which always unmounts between tasks) to make that case unreachable.
   const lastLabelsBoardIdRef = useRef<string | undefined>(undefined);
   const labelsBoardIdJustChanged = lastLabelsBoardIdRef.current !== labelsBoardId;
   useEffect(() => {
@@ -63,6 +67,7 @@ export function TaskDetailPage() {
   useEffect(() => {
     setLiveBoardId(undefined);
     mountedForIdRef.current = undefined;
+    lastLabelsBoardIdRef.current = undefined;
     if (isNew) return;
     let cancelled = false;
 
