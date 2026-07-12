@@ -35,7 +35,7 @@ def main():
             "DELETE FROM task_labels WHERE task_id IN (SELECT id FROM tasks WHERE user_id = %s)",
             (uid,),
         )
-        for table in ["ai_cost_log", "messages", "conversations", "beliefs", "tasks", "user_settings"]:
+        for table in ["ai_cost_log", "beliefs", "tasks", "user_settings"]:
             cur.execute(f"DELETE FROM {table} WHERE user_id = %s", (uid,))
         cur.execute("DELETE FROM users WHERE id = %s", (uid,))
         print(f"  Deleted user {uid}")

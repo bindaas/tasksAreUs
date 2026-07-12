@@ -26,7 +26,7 @@ LOCAL_DB_URL   = os.getenv("LOCAL_DB_URL",   "postgresql://postgres:postgres@loc
 RAILWAY_DB_URL = os.getenv("RAILWAY_DB_URL", "")
 
 # Tables with user_id, in FK-safe insert order
-USER_TABLES = ["tasks", "beliefs", "conversations", "messages", "user_settings", "ai_cost_log"]
+USER_TABLES = ["tasks", "beliefs", "user_settings", "ai_cost_log"]
 
 
 def count(cur, table, user_id):
@@ -116,7 +116,7 @@ def main():
     )
     print(f"  task_labels deleted: {rc.rowcount}")
 
-    for t in ["beliefs", "messages", "conversations", "ai_cost_log", "user_settings", "tasks"]:
+    for t in ["beliefs", "ai_cost_log", "user_settings", "tasks"]:
         rc.execute(f"DELETE FROM {t} WHERE user_id = %s", (USER_ID,))
         print(f"  {t} deleted: {rc.rowcount}")
 
@@ -142,15 +142,6 @@ def main():
     n = bulk_insert(rc, "beliefs", cols, rows)
     print(f"  beliefs inserted: {n}")
 
-    # conversations + messages
-    cols, rows = fetch_all_as_dicts(lc, "SELECT * FROM conversations WHERE user_id = %s", (USER_ID,))
-    n = bulk_insert(rc, "conversations", cols, rows)
-    print(f"  conversations inserted: {n}")
-
-    cols, rows = fetch_all_as_dicts(lc, "SELECT * FROM messages WHERE user_id = %s", (USER_ID,))
-    n = bulk_insert(rc, "messages", cols, rows)
-    print(f"  messages inserted: {n}")
-
     # user_settings
     cols, rows = fetch_all_as_dicts(lc, "SELECT * FROM user_settings WHERE user_id = %s", (USER_ID,))
     n = bulk_insert(rc, "user_settings", cols, rows)
@@ -171,7 +162,6 @@ Railway is now in sync with local for user {USER_ID}.
 
 Backup tables (drop when confirmed):
   DROP TABLE tasks_backup_{ts}, task_labels_backup_{ts}, beliefs_backup_{ts},
-    conversations_backup_{ts}, messages_backup_{ts},
     user_settings_backup_{ts}, ai_cost_log_backup_{ts};
 """)
 
