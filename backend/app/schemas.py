@@ -176,42 +176,6 @@ class BeliefUpdate(BaseModel):
     status: str  # accepted | rejected
 
 
-# ── Conversations ─────────────────────────────────────────────────────────────
-
-class ConversationCreate(BaseModel):
-    board_id: Optional[str] = None  # resolved to default board if omitted
-
-
-class ConversationOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: str
-    board_id: str
-    created_at: datetime
-
-
-class MessageRequest(BaseModel):
-    content: str
-
-
-class MessageOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: str
-    role: str
-    content: str
-    suggested_questions: Optional[List[str]] = None
-    created_at: datetime
-
-
-class MessageActions(BaseModel):
-    tasks_created: List[str] = []
-    tasks_completed: List[str] = []
-
-
-class SendMessageResponse(BaseModel):
-    message: MessageOut
-    actions: MessageActions
-
-
 # ── Reports ───────────────────────────────────────────────────────────────────
 
 class CompletionItem(BaseModel):
@@ -229,12 +193,10 @@ class CompletionsReport(BaseModel):
 # ── Settings ──────────────────────────────────────────────────────────────────
 
 class SettingsOut(BaseModel):
-    starter_questions: List[str] = []
     high_priority_daily_limit: int = 3
 
 
 class SettingsUpdate(BaseModel):
-    starter_questions: List[str]
     high_priority_daily_limit: int = Field(default=3, ge=1)
 
 
@@ -249,7 +211,6 @@ class SyncChanges(BaseModel):
     tasks: List[Dict[str, Any]] = []
     task_labels: List[TaskLabelSync] = []
     beliefs: List[Dict[str, Any]] = []
-    settings: Optional[Dict[str, Any]] = None
     boards: List[Dict[str, Any]] = []
 
 

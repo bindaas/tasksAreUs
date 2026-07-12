@@ -20,12 +20,9 @@ import { API_BASE_URL, API_V1_URL } from '../api/client';
 import { useBoard } from '../context/BoardContext';
 import type { Label } from '../types';
 
-const MAX_QUESTIONS = 5;
 const MAX_BOARDS = 10;
 
 const COLOR_PALETTE = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
-
-type StarterQuestion = { id: string; text: string };
 
 function BoardSection() {
   const {
@@ -271,10 +268,6 @@ function BoardSection() {
   );
 }
 
-function makeQuestion(text = ''): StarterQuestion {
-  return { id: Math.random().toString(36).slice(2), text };
-}
-
 function LabelSection({
   category,
   labels,
@@ -448,7 +441,6 @@ export function SettingsScreen() {
   const [modeLabels, setModeLabels] = useState<Label[]>([]);
   const [typeLabels, setTypeLabels] = useState<Label[]>([]);
   const [highPriorityLimit, setHighPriorityLimit] = useState(3);
-  const [questions, setQuestions] = useState<StarterQuestion[]>([]);
 
   // Labels are shown for a board independent of the app-wide active board —
   // self-heals to activeBoard (or the first board) if unset or the
@@ -500,7 +492,6 @@ export function SettingsScreen() {
       try {
         const settings = await getSettings();
         setHighPriorityLimit(settings.high_priority_daily_limit ?? 3);
-        setQuestions((settings.starter_questions ?? []).map(makeQuestion));
       } catch (e) {
         setLoadError(e instanceof Error ? e.message : 'Failed to load settings');
       } finally {
@@ -546,7 +537,6 @@ export function SettingsScreen() {
     setSaved(false);
     try {
       await updateSettings({
-        starter_questions: questions.map((q) => q.text).filter((t) => t.trim()),
         high_priority_daily_limit: Math.max(1, highPriorityLimit),
       });
       setSaved(true);
@@ -747,60 +737,6 @@ export function SettingsScreen() {
                     <Text className="text-gray-700 text-xl leading-none">+</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-
-              {/* Starter Questions */}
-              <View className="bg-white rounded-xl border border-gray-200 px-4 py-4 mb-4">
-                <View className="flex-row items-center justify-between mb-0.5">
-                  <Text className="text-sm font-semibold text-gray-700">
-                    Starter Questions{' '}
-                    <Text className="text-gray-400 font-normal">
-                      ({questions.length}/{MAX_QUESTIONS})
-                    </Text>
-                  </Text>
-                  {questions.length < MAX_QUESTIONS && (
-                    <TouchableOpacity
-                      onPress={() => setQuestions((prev) => [...prev, makeQuestion()])}
-                    >
-                      <Text className="text-xs text-indigo-600 font-medium">+ Add</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                <Text className="text-xs text-gray-400 mb-3">
-                  Shown as quick-start chips in the Chat screen.
-                </Text>
-
-                {questions.length === 0 ? (
-                  <Text className="text-sm text-gray-400 text-center py-3">
-                    No questions yet. Tap + Add above.
-                  </Text>
-                ) : (
-                  <View style={{ gap: 8 }}>
-                    {questions.map((q, idx) => (
-                      <View key={q.id} className="flex-row items-center" style={{ gap: 8 }}>
-                        <TextInput
-                          value={q.text}
-                          onChangeText={(v) =>
-                            setQuestions((prev) =>
-                              prev.map((item) => (item.id === q.id ? { ...item, text: v } : item)),
-                            )
-                          }
-                          placeholder={`Question ${idx + 1}`}
-                          placeholderTextColor="#9ca3af"
-                          className="flex-1 border border-gray-300 rounded-xl px-3 py-2.5 text-sm text-gray-900 bg-white"
-                        />
-                        <TouchableOpacity
-                          onPress={() =>
-                            setQuestions((prev) => prev.filter((item) => item.id !== q.id))
-                          }
-                          className="p-1"
-                        >
-                          <Text className="text-red-400 text-base">✕</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                )}
               </View>
 
               {saveError && (

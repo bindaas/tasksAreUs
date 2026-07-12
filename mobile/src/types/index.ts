@@ -71,32 +71,11 @@ export interface CompleteTaskResponse {
   next_task: Task | null;
 }
 
-export interface Conversation {
-  id: string;
-  board_id: string;
-  created_at: string;
-}
-
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  suggested_questions: string[] | null;
-  created_at: string;
-}
-
-export interface SendMessageResponse {
-  message: Message;
-  actions: unknown[];
-}
-
 export interface Settings {
-  starter_questions: string[];
   high_priority_daily_limit: number;
 }
 
 export interface UpdateSettingsBody {
-  starter_questions?: string[];
   high_priority_daily_limit?: number;
 }
 

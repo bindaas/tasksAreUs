@@ -179,25 +179,6 @@ def sync(
                 server_belief.status = b_data.get("status", server_belief.status)
                 server_belief.updated_at = client_updated_at
 
-    # ── Apply incoming settings ────────────────────────────────────────────────
-    if body.changes.settings:
-        s_data = body.changes.settings
-        client_updated_at = _parse_dt(s_data.get("updated_at"))
-        server_settings = db.query(UserSettings).filter(
-            UserSettings.user_id == user_id
-        ).first()
-        if not server_settings:
-            server_settings = UserSettings(user_id=user_id)
-            db.add(server_settings)
-            db.flush()
-        if client_updated_at:
-            server_ts = server_settings.updated_at
-            if server_ts.tzinfo is None:
-                server_ts = server_ts.replace(tzinfo=timezone.utc)
-            if client_updated_at > server_ts:
-                server_settings.starter_questions = s_data.get("starter_questions", [])
-                server_settings.updated_at = client_updated_at
-
     db.commit()
 
     # ── Build server-side changes since last_synced_at ─────────────────────────
@@ -248,14 +229,6 @@ def sync(
         for b in server_beliefs
     ]
 
-    settings_obj = db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
-    settings_dict = None
-    if settings_obj and settings_obj.updated_at > last_synced_at:
-        settings_dict = {
-            "starter_questions": settings_obj.starter_questions or [],
-            "updated_at": settings_obj.updated_at.isoformat(),
-        }
-
     server_boards = db.query(Board).filter(
         Board.user_id == user_id,
         Board.updated_at > last_synced_at,
@@ -278,7 +251,6 @@ def sync(
             tasks=task_dicts,
             task_labels=task_label_list,
             beliefs=belief_dicts,
-            settings=settings_dict,
             boards=board_dicts,
         ),
     )

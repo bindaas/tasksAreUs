@@ -33,11 +33,6 @@ class StateEnum(str, enum.Enum):
     done = "done"
 
 
-class RoleEnum(str, enum.Enum):
-    user = "user"
-    assistant = "assistant"
-
-
 class BeliefTypeEnum(str, enum.Enum):
     label_suggestion = "label_suggestion"
     time_estimate = "time_estimate"
@@ -129,33 +124,11 @@ class Belief(Base):
     label = relationship("Label", lazy="joined")
 
 
-class Conversation(Base):
-    __tablename__ = "conversations"
-
-    id = Column(String, primary_key=True, default=_uuid)
-    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    board_id = Column(String, ForeignKey("boards.id"), nullable=False, index=True)
-    created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
-
-
-class Message(Base):
-    __tablename__ = "messages"
-
-    id = Column(String, primary_key=True, default=_uuid)
-    conversation_id = Column(String, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    role = Column(Enum(RoleEnum), nullable=False)
-    content = Column(Text, nullable=False)
-    suggested_questions = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
-
-
 class UserSettings(Base):
     __tablename__ = "user_settings"
 
     id = Column(String, primary_key=True, default=_uuid)
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    starter_questions = Column(JSONB, nullable=True)
     high_priority_daily_limit = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
