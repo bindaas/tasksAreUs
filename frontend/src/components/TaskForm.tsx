@@ -339,38 +339,38 @@ export function TaskForm({
         {labelsLoading ? (
           <p className="text-xs text-gray-400">Loading labels…</p>
         ) : (
-        <div className="space-y-3">
-          {CATEGORY_ORDER.map((cat) => {
-            const catLabels = labelsByCategory[cat];
-            if (!catLabels || catLabels.length === 0) return null;
-            return (
-              <div key={cat}>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 capitalize">
-                  {cat}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {catLabels.map((label) => {
-                    const selected = selectedLabelIds.has(label.id);
-                    return (
-                      <button
-                        key={label.id}
-                        type="button"
-                        onClick={() => toggleLabel(label.id)}
-                        className={`inline-flex items-center rounded-full text-xs px-3 py-1.5 font-medium border transition-colors ${
-                          selected
-                            ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
-                        }`}
-                      >
-                        {label.value}
-                      </button>
-                    );
-                  })}
+          <div className="space-y-3">
+            {CATEGORY_ORDER.map((cat) => {
+              const catLabels = labelsByCategory[cat];
+              if (!catLabels || catLabels.length === 0) return null;
+              return (
+                <div key={cat}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 capitalize">
+                    {cat}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {catLabels.map((label) => {
+                      const selected = selectedLabelIds.has(label.id);
+                      return (
+                        <button
+                          key={label.id}
+                          type="button"
+                          onClick={() => toggleLabel(label.id)}
+                          className={`inline-flex items-center rounded-full text-xs px-3 py-1.5 font-medium border transition-colors ${
+                            selected
+                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                          }`}
+                        >
+                          {label.value}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
         )}
       </div>
 

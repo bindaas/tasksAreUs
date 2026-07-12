@@ -41,6 +41,18 @@ export function TaskDetailPage() {
   const labelsBoardId = liveBoardId ?? (isNew ? defaultBoardId : task?.board_id);
   const { labels, loading: labelsLoading } = useLabels(labelsBoardId);
 
+  // useLabels's `loading` flag lags one render behind a `labelsBoardId` change
+  // (its effect hasn't run yet for the new id), so the very render where
+  // `labelsBoardId` first resolves to the task's real board can read a stale
+  // `labelsLoading` left over from a previous board. Tracking the last
+  // *observed* labelsBoardId lets pageLoading distrust labelsLoading for that
+  // one render, instead of prematurely marking the initial load complete.
+  const lastLabelsBoardIdRef = useRef<string | undefined>(undefined);
+  const labelsBoardIdJustChanged = lastLabelsBoardIdRef.current !== labelsBoardId;
+  useEffect(() => {
+    lastLabelsBoardIdRef.current = labelsBoardId;
+  }, [labelsBoardId]);
+
   // Tracks which task `id` has already completed its first full load (task +
   // labels). Only that initial load should show the full-page spinner in
   // place of the form — once mounted, a later labelsLoading toggle (from the
@@ -146,7 +158,8 @@ export function TaskDetailPage() {
   }
 
   const isInitialLoadForId = mountedForIdRef.current !== id;
-  const pageLoading = loading || (isInitialLoadForId && labelsLoading);
+  const pageLoading =
+    loading || (isInitialLoadForId && (labelsLoading || labelsBoardIdJustChanged));
 
   useEffect(() => {
     if (!pageLoading) {
