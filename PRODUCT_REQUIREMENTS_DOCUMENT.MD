@@ -233,23 +233,6 @@ The AI generates suggestions that users validate, following an RLHF-style feedba
 
 Users accept or reject each belief. Accepted beliefs carry more weight in future suggestions than pending or rejected ones.
 
-### Conversational Interface
-The primary interaction mode on mobile. (On the web frontend, the Chat UI was removed in PR #41 pending a rebuild — see "Chat Page" under Frontend for detail; the endpoints below are unaffected and still serve the mobile Chat screen.) Each conversation is tied to a specific board (via `board_id` on the `conversations` table). The AI only sees tasks and labels belonging to that board — there is no cross-board leakage. Supported input styles:
-
-1. **Journal-style entries** — freeform natural language:
-   - "I need to return books to the library tomorrow" → creates a task with a due date
-   - "I did laundry today" → finds the matching pending task and marks it Done
-   - The AI determines whether to create or complete a task
-
-2. **Questions** about the user's tasks:
-   - "What tasks do I need to do this week?"
-   - "What online tasks can I do in the next hour?"
-   - Date-based queries match on both `must_do_by` and `target_date` — tasks are not omitted from AI context just because they only have a `target_date`.
-
-3. Every response must include one or more **suggested follow-up questions** that the app can actually answer and that don't repeat what was just answered.
-
-`POST /conversations` accepts an optional `board_id`; omitting it defaults the conversation to the user's default board. The conversation's `board_id` is included in the `ConversationOut` response (shipped — PR #33).
-
 ---
 
 ## Frontend
@@ -263,8 +246,6 @@ The primary interaction mode on mobile. (On the web frontend, the Chat UI was re
 2. **Reports** (`/reports`) — completed tasks for a user-chosen date range. As of PR #41, this is the **only** place to view completed tasks on the web frontend (the Tasks page no longer has a completed-tasks view).
 3. **Settings** (`/settings`) — manage per-user labels (Mode and Type), configure the High Priority Daily Limit, define up to 5 starter questions, and manage the account (sign in / sign out). The Focused View config editor was removed from this page in PR #41 (backend endpoints remain live; see "Focused View" section).
 4. **Task Detail** (`/tasks/:id`, `/tasks/new`) — create or edit a task with full field and label editing, including a board picker (shipped — PR #41; see "Task Form" below)
-
-> **[ASPIRATIONAL]** — Not yet shipped on the web frontend. A dedicated **Chat** page/tab (`/chat`) previously existed but its UI was removed in PR #41 (`ChatPage.tsx`, its nav entry, and `frontend/src/api/conversations.ts` deleted) as part of the Tasks-view redesign. The backend conversational endpoints are untouched and the mobile Chat screen is unaffected. A future PR is expected to rebuild the web Chat UI.
 
 ### Task List / Kanban Board
 
@@ -297,19 +278,12 @@ The primary interaction mode on mobile. (On the web frontend, the Chat UI was re
 - **Form layout cleanup (PR #42)**: The "+ Add Link" control now appears immediately after Notes (previously it appeared after Labels), and the Notes textarea is taller. The redundant read-only label chips that used to render below the label picker (duplicating the picker's own selected/highlighted state) were removed.
 - **Save button state (fixed — PR #48)**: After a successful edit save, "Save Changes" returns to its normal enabled state once the success banner appears, and stays clickable for a subsequent edit (previously it stayed disabled/stuck on "Saving…" indefinitely after every successful edit, even though the save itself succeeded and persisted).
 
-### Chat Page
-
-> **[ASPIRATIONAL]** — Not yet shipped on the web frontend. The web Chat page/UI (formerly `/chat`) was removed in PR #41 as part of the Tasks-view redesign; the description below reflects the mobile Chat screen (unaffected) and the still-live backend conversational endpoints. A future PR is expected to rebuild the web Chat UI.
-
-- Suggested follow-up questions from the AI are shown as clickable chips after each assistant response; clicking a chip sends it as the next message.
-
 ### Settings Page
 
 - **Boards section (shipped — PR #34, updated PR #37)**: Appears at the top of Settings, above Labels. Shows all boards with: a color swatch (a circle showing the current hex color, or gray if unset — clicking opens a hidden native `<input type="color">`; color auto-saves with a 300ms debounce via `setColorBoard` in `BoardContext`; a `×` button (visible only when a color is set) clears the color); inline rename; a star icon to set the default board (the current default's star is amber and non-clickable); a Delete button (disabled for the default board or the only board — server errors such as "board has tasks" are surfaced inline); and a "+ Add board" button to create a new board.
 - **Focused View config section — removed from web Settings (PR #41)**: The web Settings editor for Focused View config (board selection, day range) shipped in PR #37 was deleted as part of the Tasks-view redesign, along with the now-unused `getFocusedViewConfig`/`updateFocusedViewConfig` frontend calls. The backend `GET`/`PUT /focused-view/config` endpoints remain live and unchanged — nothing in the web frontend calls them anymore; the mobile Settings screen still has its own config editor (see "Focused View UI — Mobile app"). Users can no longer change their Focused View board-selection/day-range config from the web app.
-- **Labels section (shipped — PR #15, updated PR #34, made board-neutral PR #42)**: Appears below Boards, above High Priority Limit and Starter Questions. Shows **Mode** and **Type** subsections scoped to a board chosen **independently of the app's globally active board**: a dropdown selector appears next to the "Labels" heading whenever the user has more than one board (defaulting to the currently active board on load, and self-healing to the active board or first board if the selected one is deleted), letting the user pick which board's labels to view/edit here without changing the board selected elsewhere in the app (e.g. the Tasks page's board tabs). When the user has only one board, no selector is shown. Each label has Edit and Delete buttons; each subsection has an Add button to create new values. Labels created here are added to the selected board. Frequency labels are not shown here (they are not editable). Changes take effect immediately in TaskForm label pickers and on task cards.
+- **Labels section (shipped — PR #15, updated PR #34, made board-neutral PR #42)**: Appears below Boards, above High Priority Limit. Shows **Mode** and **Type** subsections scoped to a board chosen **independently of the app's globally active board**: a dropdown selector appears next to the "Labels" heading whenever the user has more than one board (defaulting to the currently active board on load, and self-healing to the active board or first board if the selected one is deleted), letting the user pick which board's labels to view/edit here without changing the board selected elsewhere in the app (e.g. the Tasks page's board tabs). When the user has only one board, no selector is shown. Each label has Edit and Delete buttons; each subsection has an Add button to create new values. Labels created here are added to the selected board. Frequency labels are not shown here (they are not editable). Changes take effect immediately in TaskForm label pickers and on task cards.
 - **High Priority Daily Limit**: numeric input (min 1) that sets the per-day cap for high-priority tasks in Today and Tomorrow columns. Defaults to 3 when unset. Reducing the limit below the current count is allowed — a warning is shown but no retroactive removal occurs. Persisted server-side via `user_settings.high_priority_daily_limit`.
-- Configure up to 5 starter questions saved server-side. Questions can be added, removed, and reordered.
 - **Connection section (shipped — PR #25)**: Shown at the bottom of Settings (below the Save Settings button). Displays an environment badge — green "Production" when the app is served over HTTPS, yellow "Development" otherwise — and the resolved API base URL. A "Test Connection" button pings `GET /api/v1/health` (unauthenticated) and reports either "Connected Xms" (with measured round-trip latency) or "Failed: <error message>". Implemented on both the web frontend and the mobile app.
 
 ---
@@ -442,10 +416,6 @@ New file shipped in PR #21:
 
 **API client improvement (PR #21):** `mobile/src/api/client.ts` now exports an `ApiError` class (extends `Error`) carrying the HTTP `status` code. All `apiFetch` errors are thrown as `ApiError` instances, enabling callers to branch on specific status codes (e.g. 422).
 
-### Chat Screen
-
-> **[ASPIRATIONAL]** — Not yet shipped on the mobile app. The Chat tab was removed from the mobile bottom tab navigator as part of the Tasks-view redesign (PR #46). The backend conversational endpoints remain live. A future PR is expected to rebuild the mobile Chat UI (the web Chat UI was similarly removed in PR #41 pending a rebuild).
-
 ### Settings Screen (shipped — PR #23, updated PR #46)
 
 `SettingsScreen` is a fully scrollable screen replacing the earlier placeholder. It uses `KeyboardAvoidingView` + `ScrollView` to handle on-screen keyboards gracefully.
@@ -455,9 +425,8 @@ New file shipped in PR #21:
 - **Boards section (shipped — PR #35)**: Inserted at the top of `SettingsScreen`. See "Board UI — Mobile app" section above for full detail.
 - **Labels section (shipped — PR #15, updated PR #34, made board-scoped PR #46)**: Mode and Type subsections, each showing the user's personal label list scoped to a board chosen **independently of the app's globally active board**. When the user has more than one board, a dropdown selector appears next to the "Labels" heading, letting the user pick which board's labels to view/edit here without changing the board selected elsewhere in the app (e.g. the Tasks page's board tabs). The selector defaults to the currently active board on load and self-heals to the active board (or first board) if the selected board is deleted. Each label has inline rename (tap to edit, submit to save, Cancel to abort) and Delete (with confirmation alert). Each subsection has an "+ Add" button to create a new label. Frequency labels are not shown here (they are immutable). Changes take effect immediately against the live API. Labels created here are added to the selected board.
 - **Focused View config section — removed (PR #46)**: The mobile Settings editor for Focused View config (board selection, day range) was removed as part of the Tasks-view redesign. The backend `GET`/`PUT /focused-view/config` endpoints remain live and unchanged.
-- **High Priority Daily Limit**: stepper with − and + buttons (clamped to minimum 1) showing the current limit numerically. Persisted server-side along with starter questions via the Save button.
-- **Starter Questions**: up to 5 text inputs. Questions can be added (up to 5), edited inline, and removed individually. A counter shows `(N/5)` in the section header. Saved server-side via `PUT /settings` when the user taps "Save Settings".
-- **Save Settings button**: persists High Priority Limit and Starter Questions together in a single `PUT /settings` call. Shows a "Settings saved" confirmation banner for 3 seconds on success.
+- **High Priority Daily Limit**: stepper with − and + buttons (clamped to minimum 1) showing the current limit numerically. Persisted server-side via the Save button.
+- **Save Settings button**: persists High Priority Limit in a single `PUT /settings` call. Shows a "Settings saved" confirmation banner for 3 seconds on success.
 - **Connection section (shipped — PR #25)**: Shown below Labels. Displays an environment badge — green "Production" when `EXPO_PUBLIC_API_URL` starts with `https://`, yellow "Development" otherwise — and the resolved API base URL. A "Test Connection" button pings `GET /api/v1/health` (unauthenticated) and reports either "Connected Xms" or "Failed: <error message>".
 - **Account section**: see Authentication section above.
 
@@ -497,4 +466,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #48 (web: fixed two Task Detail Form bugs — switching the Board dropdown mid-edit no longer unmounts and resets the form, and "Save Changes" no longer gets stuck on "Saving…" after a successful edit). Previous update after PR #46 (mobile: Tasks-view redesign with 4-way view mode — Focused/Today/Tomorrow/All — replacing the 2-way Detailed/Focused toggle; Day View UI shipped (Today/Tomorrow views); board tabs shown only in All view; "Show completed" toggle removed entirely; Chat tab and Focused View config editor removed from mobile (both marked aspirational pending future rebuild); board picker added to Task Form with label-clear warning on board move; Settings' Labels section made board-scoped with independent board selector; shared `TaskCardBody`, `BoardGroupedTasks`, and `TaskQuickEdit` components added for UI parity with web; notes unconditionally trimmed on save to fix bug). Previous update after PR #42 (web: quick-edit extended to Focused/Today/Tomorrow cards; view/board selection sticky across navigation; board tabs right-aligned; Settings' Labels made board-neutral with independent selector)*
+*Last updated by — *Bashful* after PR #50 (chore: removed chat/conversations API end-to-end — deleted `/conversations` router and backend conversational endpoints, `Conversation`/`Message` models, `starter_questions` setting from all platforms, and related DB tables via startup migration). Previous update after PR #48 (web: fixed two Task Detail Form bugs — switching the Board dropdown mid-edit no longer unmounts and resets the form, and "Save Changes" no longer gets stuck on "Saving…" after a successful edit). Previous update after PR #46 (mobile: Tasks-view redesign with 4-way view mode — Focused/Today/Tomorrow/All; Day View UI shipped; Chat tab and Focused View config editor removed from mobile). Previous update after PR #42 (web: quick-edit extended to Focused/Today/Tomorrow cards; Settings' Labels made board-neutral)*
