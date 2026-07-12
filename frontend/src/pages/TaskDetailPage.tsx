@@ -47,15 +47,8 @@ export function TaskDetailPage() {
   // `labelsLoading` left over from a previous board. Tracking the last
   // *observed* labelsBoardId lets pageLoading distrust labelsLoading for that
   // one render, instead of prematurely marking the initial load complete.
-  // Reset alongside mountedForIdRef in the id-keyed effect below, so a future
-  // same-instance task-to-task navigation still shows labelsBoardIdJustChanged
-  // for the new task's first load instead of relying on today's routing
-  // (which always unmounts between tasks) to make that case unreachable.
   const lastLabelsBoardIdRef = useRef<string | undefined>(undefined);
   const labelsBoardIdJustChanged = lastLabelsBoardIdRef.current !== labelsBoardId;
-  useEffect(() => {
-    lastLabelsBoardIdRef.current = labelsBoardId;
-  }, [labelsBoardId]);
 
   // Tracks which task `id` has already completed its first full load (task +
   // labels). Only that initial load should show the full-page spinner in
@@ -92,6 +85,18 @@ export function TaskDetailPage() {
     fetch();
     return () => { cancelled = true; };
   }, [id, isNew]);
+
+  // Declared after the id-reset effect above so it runs after it within the
+  // same commit (React fires effects in source order): that ordering lets
+  // this effect have the final word on lastLabelsBoardIdRef, correcting it to
+  // the current labelsBoardId even when that id resolves synchronously on the
+  // same render as an id change (e.g. New Task, whose board comes from the
+  // URL immediately). Declaring it first previously let the id-reset effect
+  // clobber this one's value back to undefined right after, permanently
+  // pinning labelsBoardIdJustChanged (and pageLoading) true — see PR history.
+  useEffect(() => {
+    lastLabelsBoardIdRef.current = labelsBoardId;
+  }, [labelsBoardId]);
 
   useEffect(() => {
     if (!success) return;
