@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getTask, updateTask, deleteTask, completeTask, createTask, listTasks } from '../api/tasks';
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
@@ -41,8 +41,33 @@ export function TaskDetailPage() {
   const labelsBoardId = liveBoardId ?? (isNew ? defaultBoardId : task?.board_id);
   const { labels, loading: labelsLoading } = useLabels(labelsBoardId);
 
+  // useLabels's `loading` flag lags one render behind a `labelsBoardId` change
+  // (its effect hasn't run yet for the new id), so the very render where
+  // `labelsBoardId` first resolves to the task's real board can read a stale
+  // `labelsLoading` left over from a previous board. Tracking the last
+  // *observed* labelsBoardId lets pageLoading distrust labelsLoading for that
+  // one render, instead of prematurely marking the initial load complete.
+  // Reset alongside mountedForIdRef in the id-keyed effect below, so a future
+  // same-instance task-to-task navigation still shows labelsBoardIdJustChanged
+  // for the new task's first load instead of relying on today's routing
+  // (which always unmounts between tasks) to make that case unreachable.
+  const lastLabelsBoardIdRef = useRef<string | undefined>(undefined);
+  const labelsBoardIdJustChanged = lastLabelsBoardIdRef.current !== labelsBoardId;
+  useEffect(() => {
+    lastLabelsBoardIdRef.current = labelsBoardId;
+  }, [labelsBoardId]);
+
+  // Tracks which task `id` has already completed its first full load (task +
+  // labels). Only that initial load should show the full-page spinner in
+  // place of the form — once mounted, a later labelsLoading toggle (from the
+  // user switching boards mid-edit) must not unmount TaskForm, since that
+  // would wipe its in-progress (uncontrolled) form state.
+  const mountedForIdRef = useRef<string | undefined>(undefined);
+
   useEffect(() => {
     setLiveBoardId(undefined);
+    mountedForIdRef.current = undefined;
+    lastLabelsBoardIdRef.current = undefined;
     if (isNew) return;
     let cancelled = false;
 
@@ -104,6 +129,7 @@ export function TaskDetailPage() {
         const updatedTask = await updateTask(id!, data as UpdateTaskBody);
         setTask(updatedTask);
         setSuccess(true);
+        setSaving(false);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save task');
@@ -136,7 +162,15 @@ export function TaskDetailPage() {
     }
   }
 
-  const pageLoading = loading || labelsLoading;
+  const isInitialLoadForId = mountedForIdRef.current !== id;
+  const pageLoading =
+    loading || (isInitialLoadForId && (labelsLoading || labelsBoardIdJustChanged));
+
+  useEffect(() => {
+    if (!pageLoading) {
+      mountedForIdRef.current = id;
+    }
+  }, [pageLoading, id]);
 
   return (
     <div className="p-4 max-w-xl mx-auto">
@@ -189,6 +223,7 @@ export function TaskDetailPage() {
                 : task ?? undefined
             }
             labels={labels}
+            labelsLoading={labelsLoading}
             boards={boards}
             defaultBoardId={defaultBoardId}
             onBoardIdChange={setLiveBoardId}
