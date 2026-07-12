@@ -16,8 +16,8 @@ from sqlalchemy.orm import Session
 
 from .config import settings as app_settings
 from .database import SessionLocal, engine
-from .models import Base, Board, Conversation, Label, Task, User
-from .routers import beliefs, boards, conversations, day_view, focused_view, labels, reports, settings, sync, tasks
+from .models import Base, Board, Label, Task, User
+from .routers import beliefs, boards, day_view, focused_view, labels, reports, settings, sync, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +55,8 @@ def _migrate_boards(db: Session) -> None:
     """Create 'General tasks' board for all existing users who have none.
 
     Runs after DDL adds board_id columns as nullable. Assigns all existing
-    labels/tasks/conversations to the new board, then seeds any missing
-    LABEL_SEED entries. Idempotent — skips users who already have a board.
+    labels/tasks to the new board, then seeds any missing LABEL_SEED entries.
+    Idempotent — skips users who already have a board.
     """
     from .services.board_service import _seed_board_labels
     users_without_boards = (
@@ -81,9 +81,6 @@ def _migrate_boards(db: Session) -> None:
         ).update({"board_id": board.id})
         db.query(Task).filter(
             Task.user_id == user.id, Task.board_id == None
-        ).update({"board_id": board.id})
-        db.query(Conversation).filter(
-            Conversation.user_id == user.id, Conversation.board_id == None
         ).update({"board_id": board.id})
         db.commit()
         _seed_board_labels(db, board.id, user.id)
@@ -136,9 +133,6 @@ async def lifespan(app: FastAPI):
         conn.execute(text(
             "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS board_id VARCHAR"
         ))
-        conn.execute(text(
-            "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS board_id VARCHAR"
-        ))
 
         # ── Board migration — Step B: indexes ─────────────────────────────────
         # Partial unique index for default board — not expressible via SQLAlchemy create_all
@@ -154,6 +148,11 @@ async def lifespan(app: FastAPI):
             "CREATE UNIQUE INDEX IF NOT EXISTS labels_board_id_category_value_key "
             "ON labels (board_id, category, value)"
         ))
+
+        # ── Chat removal — drop conversations/messages tables and starter_questions ──
+        conn.execute(text("DROP TABLE IF EXISTS messages"))
+        conn.execute(text("DROP TABLE IF EXISTS conversations"))
+        conn.execute(text("ALTER TABLE user_settings DROP COLUMN IF EXISTS starter_questions"))
         conn.commit()
 
     # ── Board migration — Step C: DML — create boards for existing users ───────
@@ -187,15 +186,6 @@ async def lifespan(app: FastAPI):
               AND b.is_deleted = false
         """))
         conn.execute(text("DELETE FROM tasks WHERE board_id IS NULL"))
-        conn.execute(text("""
-            UPDATE conversations c SET board_id = b.id
-            FROM boards b
-            WHERE c.board_id IS NULL
-              AND b.user_id = c.user_id
-              AND b.is_default = true
-              AND b.is_deleted = false
-        """))
-        conn.execute(text("DELETE FROM conversations WHERE board_id IS NULL"))
         conn.commit()
 
     # ── Board migration — Step D: tighten board_id columns to NOT NULL ─────────
@@ -205,9 +195,6 @@ async def lifespan(app: FastAPI):
         ))
         conn.execute(text(
             "ALTER TABLE tasks ALTER COLUMN board_id SET NOT NULL"
-        ))
-        conn.execute(text(
-            "ALTER TABLE conversations ALTER COLUMN board_id SET NOT NULL"
         ))
         conn.commit()
 
@@ -222,7 +209,6 @@ app.include_router(boards.router, prefix=PREFIX)
 app.include_router(labels.router, prefix=PREFIX)
 app.include_router(tasks.router, prefix=PREFIX)
 app.include_router(beliefs.router, prefix=PREFIX)
-app.include_router(conversations.router, prefix=PREFIX)
 app.include_router(reports.router, prefix=PREFIX)
 app.include_router(settings.router, prefix=PREFIX)
 app.include_router(sync.router, prefix=PREFIX)

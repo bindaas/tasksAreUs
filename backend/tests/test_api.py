@@ -61,7 +61,10 @@ def cleanup(user_id: str):
         "DELETE FROM task_labels WHERE task_id IN (SELECT id FROM tasks WHERE user_id = %s)",
         (user_id,),
     )
-    for table in ["ai_cost_log", "messages", "conversations", "beliefs", "tasks", "user_settings", "focused_view_configs"]:
+    # PR #50: conversations/messages tables were dropped entirely (chat removal) —
+    # deleting from them here would fail with "relation does not exist" against a
+    # DB that has run this PR's startup migration.
+    for table in ["ai_cost_log", "beliefs", "tasks", "user_settings", "focused_view_configs"]:
         cur.execute(f"DELETE FROM {table} WHERE user_id = %s", (user_id,))
     # Per-user labels created by PR #15 (mode/type labels with user_id set)
     cur.execute("DELETE FROM labels WHERE user_id = %s", (user_id,))
@@ -388,13 +391,6 @@ def main():
     all_label_ids_compat = [l["id"] for l in r.json()["labels"]]
     assert_in("label created without board_id appears in default board GET /labels", compat_label_id, all_label_ids_compat)
     client.delete(f"/labels/{compat_label_id}", headers=H)
-
-    # Conversations created without board_id go to the default board
-    r = client.post("/conversations", headers=H)
-    assert_eq("POST /conversations without board_id → 201 (backward-compat)", r.status_code, 201)
-    compat_conv = r.json()
-    assert_in("conversation response has board_id field (PR #33)", "board_id", compat_conv)
-    assert_eq("conversation board_id defaults to default board", compat_conv["board_id"], default_board_id)
 
     # ── Labels ─────────────────────────────────────────────────────────────────
     print("\n── Labels ─────────────────────────────────────────────")
@@ -1441,11 +1437,13 @@ def main():
     else:
         print("  (skipping belief AI tests — ANTHROPIC_API_KEY not set)")
 
-    # ── target_date-only task (PR #4 fix: chat context must include target_date) ─
-    print("\n── Tasks: target_date-only (chat context fix) ──────────")
+    # ── target_date-only task (PR #4: must not be excluded from pending queries
+    # just because must_do_by is unset; originally added to cover the now-removed
+    # chat AI context, the underlying task-model behavior is still worth pinning) ─
+    print("\n── Tasks: target_date-only task ─────────────────────────")
     target_only_date = (date.today() + timedelta(days=3)).isoformat()
     r = client.post("/tasks", headers=H, json={
-        "title": "Chat target-date test task",
+        "title": "Target-date-only test task",
         "must_do_by": None,
         "target_date": target_only_date,
         "label_ids": [],
@@ -1462,48 +1460,18 @@ def main():
     pending_ids = [t["id"] for t in r.json()["tasks"]]
     assert_in("target_date-only task in pending list", target_only_task_id, pending_ids)
 
-    # ── Conversations ──────────────────────────────────────────────────────────
-    print("\n── Conversations ───────────────────────────────────────")
+    # ── Conversations — removed (PR #50) ──────────────────────────────────────
+    # The /conversations router, ai_service.handle_conversation_message(), and the
+    # conversations/messages tables were deleted entirely — chat was already gone
+    # from both frontends (web PR #41, mobile PR #46) and this PR completes the
+    # removal. Verify the endpoints are actually gone rather than just untested.
+    print("\n── Conversations (removed, PR #50) ──────────────────────")
     r = client.post("/conversations", headers=H)
-    assert_eq("POST /conversations → 201", r.status_code, 201)
-    conv_resp = r.json()
-    conv_id = conv_resp["id"]
-    # PR #33: conversation response must include board_id
-    assert_in("POST /conversations response has board_id (PR #33)", "board_id", conv_resp)
-    assert_eq("conversation board_id is default board (PR #33)", conv_resp["board_id"], default_board_id)
+    assert_eq("POST /conversations → 404 (router removed, PR #50)", r.status_code, 404)
+    r = client.get(f"/conversations/{uuid.uuid4()}/messages", headers=H)
+    assert_eq("GET /conversations/:id/messages → 404 (router removed, PR #50)", r.status_code, 404)
 
-    if os.getenv("ANTHROPIC_API_KEY"):
-        r = client.post(f"/conversations/{conv_id}/messages", headers=H, json={
-            "content": "What pending tasks do I have?"
-        })
-        assert_eq("POST conversation message → 200", r.status_code, 200)
-        msg = r.json()["message"]
-        assert_eq("assistant role", msg["role"], "assistant")
-        assert_true("has content", bool(msg["content"]))
-        assert_true("has suggested questions", bool(msg.get("suggested_questions")))
-
-        r = client.get(f"/conversations/{conv_id}/messages", headers=H)
-        assert_eq("GET conversation messages → 200", r.status_code, 200)
-        assert_true("2 messages (user + assistant)", len(r.json()["messages"]) == 2)
-
-        # PR #4 fix: the AI should see tasks that have only target_date set.
-        # Ask specifically about the target-date-only task we just created.
-        r2 = client.post("/conversations", headers=H)
-        assert_eq("POST /conversations for target_date test → 201", r2.status_code, 201)
-        conv2_id = r2.json()["id"]
-        r = client.post(f"/conversations/{conv2_id}/messages", headers=H, json={
-            "content": "Tell me about the task called 'Chat target-date test task'."
-        })
-        assert_eq("conversation msg about target_date-only task → 200", r.status_code, 200)
-        msg2 = r.json()["message"]
-        assert_true(
-            "AI response references target_date-only task",
-            "target" in msg2["content"].lower() or "chat target-date test task" in msg2["content"].lower(),
-        )
-    else:
-        print("  (skipping conversation AI tests — ANTHROPIC_API_KEY not set)")
-
-    # Clean up the target-date-only task after conversation tests
+    # Clean up the target-date-only task
     client.delete(f"/tasks/{target_only_task_id}", headers=H)
 
     # ── Reports ────────────────────────────────────────────────────────────────
@@ -1620,15 +1588,18 @@ def main():
     settings_body = r.json()
     assert_in("GET /settings has high_priority_daily_limit field", "high_priority_daily_limit", settings_body)
     assert_eq("GET /settings default high_priority_daily_limit is 3", settings_body["high_priority_daily_limit"], 3)
+    # PR #50: starter_questions removed end-to-end (only ever fed the removed chat screen)
+    assert_true("GET /settings no longer has starter_questions field (PR #50)",
+                "starter_questions" not in settings_body)
 
-    questions = ["What tasks do I need to do today?", "What outdoor tasks are pending?"]
-    r = client.put("/settings", headers=H, json={"starter_questions": questions})
+    r = client.put("/settings", headers=H, json={"high_priority_daily_limit": 3})
     assert_eq("PUT /settings → 200", r.status_code, 200)
-    assert_eq("settings saved", r.json()["starter_questions"], questions)
     assert_in("PUT /settings response has high_priority_daily_limit", "high_priority_daily_limit", r.json())
+    assert_true("PUT /settings response no longer has starter_questions field (PR #50)",
+                "starter_questions" not in r.json())
 
     # PUT /settings with explicit high_priority_daily_limit persists and round-trips
-    r = client.put("/settings", headers=H, json={"starter_questions": questions, "high_priority_daily_limit": 5})
+    r = client.put("/settings", headers=H, json={"high_priority_daily_limit": 5})
     assert_eq("PUT /settings with custom limit → 200", r.status_code, 200)
     assert_eq("PUT /settings custom limit round-trips", r.json()["high_priority_daily_limit"], 5)
     r = client.get("/settings", headers=H)
@@ -1638,31 +1609,27 @@ def main():
     # Floor of 1: sending 0 is rejected by schema validation (ge=1 on SettingsUpdate)
     # The PRD says minimum 1; the schema enforces this at the Pydantic layer (422),
     # rather than silently clamping. 422 is correct behaviour here.
-    r = client.put("/settings", headers=H, json={"starter_questions": questions, "high_priority_daily_limit": 0})
+    r = client.put("/settings", headers=H, json={"high_priority_daily_limit": 0})
     assert_eq("PUT /settings with limit=0 → 422 (schema min=1 rejects it)", r.status_code, 422)
 
     # Omitting high_priority_daily_limit in PUT body uses schema default of 3
-    r = client.put("/settings", headers=H, json={"starter_questions": questions})
-    assert_eq("PUT /settings without limit field → 200", r.status_code, 200)
+    r = client.put("/settings", headers=H, json={})
+    assert_eq("PUT /settings with empty body → 200", r.status_code, 200)
     assert_eq("limit defaults to 3 when omitted from PUT body", r.json()["high_priority_daily_limit"], 3)
 
-    # PUT /settings with partial body — omitting starter_questions must return 422
-    # because SettingsUpdate.starter_questions has no default (required field).
-    # The mobile UpdateSettingsBody marks both fields optional, so this test pins
-    # the backend contract so any future loosening is intentional.
-    r = client.put("/settings", headers=H, json={"high_priority_daily_limit": 2})
-    assert_eq("PUT /settings omitting required starter_questions → 422", r.status_code, 422)
-
-    # Backend silently truncates starter_questions to 5 entries
-    six_questions = [f"Question {i}" for i in range(1, 7)]
-    r = client.put("/settings", headers=H, json={"starter_questions": six_questions, "high_priority_daily_limit": 3})
-    assert_eq("PUT /settings with 6 questions → 200 (truncates to 5)", r.status_code, 200)
-    assert_eq("starter_questions truncated to 5 by backend", len(r.json()["starter_questions"]), 5)
+    # PR #50: starter_questions is no longer a field on SettingsUpdate at all. A stale
+    # client (or the mobile/web clients before this PR is deployed to them) may still
+    # send it — Pydantic's default "ignore extra fields" behaviour means the request
+    # must still succeed and the field must not be echoed back or persisted anywhere.
+    r = client.put("/settings", headers=H, json={"starter_questions": ["stale client field"], "high_priority_daily_limit": 3})
+    assert_eq("PUT /settings with stray starter_questions field → 200 (ignored, not rejected)", r.status_code, 200)
+    assert_true("stray starter_questions field not echoed back in response",
+                "starter_questions" not in r.json())
 
     # ── Configurable high-priority limit (PR #9) ──────────────────────────────
     print("\n── Settings: Configurable High-Priority Limit ──────────")
     # Set limit to 2 for this test section
-    r = client.put("/settings", headers=H, json={"starter_questions": [], "high_priority_daily_limit": 2})
+    r = client.put("/settings", headers=H, json={"high_priority_daily_limit": 2})
     assert_eq("PUT /settings set limit to 2 → 200", r.status_code, 200)
     assert_eq("limit confirmed as 2", r.json()["high_priority_daily_limit"], 2)
 
@@ -1690,7 +1657,7 @@ def main():
     assert_true("422 detail references limit=2", "2" in r.json().get("detail", ""))
 
     # Raise limit to 4 — the same 3rd task should now succeed
-    r = client.put("/settings", headers=H, json={"starter_questions": [], "high_priority_daily_limit": 4})
+    r = client.put("/settings", headers=H, json={"high_priority_daily_limit": 4})
     assert_eq("PUT /settings raise limit to 4 → 200", r.status_code, 200)
     r = client.post("/tasks", headers=H, json={
         "title": "HP config task 3 (should succeed at limit=4)",
@@ -1728,7 +1695,7 @@ def main():
     # Clean up HP config test tasks and restore limit to 3
     for tid in hp_config_ids:
         client.delete(f"/tasks/{tid}", headers=H)
-    r = client.put("/settings", headers=H, json={"starter_questions": questions, "high_priority_daily_limit": 3})
+    r = client.put("/settings", headers=H, json={"high_priority_daily_limit": 3})
     assert_eq("Restore limit to 3 after configurable-limit test → 200", r.status_code, 200)
 
     # ── Sync ───────────────────────────────────────────────────────────────────
@@ -1737,7 +1704,7 @@ def main():
     last_synced = "2020-01-01T00:00:00Z"
     r = client.post("/sync", headers=H, json={
         "last_synced_at": last_synced,
-        "changes": {"tasks": [], "task_labels": [], "beliefs": [], "settings": None},
+        "changes": {"tasks": [], "task_labels": [], "beliefs": []},
     })
     assert_eq("POST /sync → 200", r.status_code, 200)
     sync_result = r.json()
@@ -1782,7 +1749,6 @@ def main():
             }],
             "task_labels": [],
             "beliefs": [],
-            "settings": None,
         },
     })
     assert_eq("POST /sync with is_high_priority task → 200", r.status_code, 200)
@@ -1824,7 +1790,6 @@ def main():
             }],
             "task_labels": [],
             "beliefs": [],
-            "settings": None,
         },
     })
     assert_eq("POST /sync with stale recurrence_group_id field → 200 (PR #31 backward compat)",
@@ -1871,7 +1836,6 @@ def main():
             }],
             "task_labels": [],
             "beliefs": [],
-            "settings": None,
         },
     })
     assert_eq("POST /sync push new task with links → 200", r.status_code, 200)
@@ -1904,7 +1868,6 @@ def main():
             }],
             "task_labels": [],
             "beliefs": [],
-            "settings": None,
         },
     })
     assert_eq("POST /sync push task with bad-scheme link → 200 (push succeeds)", r.status_code, 200)
@@ -1939,7 +1902,6 @@ def main():
             }],
             "task_labels": [],
             "beliefs": [],
-            "settings": None,
         },
     })
     assert_eq("POST /sync push task with 5 links → 200 (truncates, doesn't reject)", r.status_code, 200)
@@ -1968,7 +1930,6 @@ def main():
             }],
             "task_labels": [],
             "beliefs": [],
-            "settings": None,
         },
     })
     assert_eq("POST /sync push update omitting links field → 200", r.status_code, 200)
@@ -1980,7 +1941,7 @@ def main():
     # Pull: the sync response includes links for tasks updated since last_synced_at
     r = client.post("/sync", headers=H, json={
         "last_synced_at": "2020-01-01T00:00:00Z",
-        "changes": {"tasks": [], "task_labels": [], "beliefs": [], "settings": None},
+        "changes": {"tasks": [], "task_labels": [], "beliefs": []},
     })
     assert_eq("POST /sync pull after link pushes → 200", r.status_code, 200)
     pulled_tasks = {t["id"]: t for t in r.json()["changes"]["tasks"]}
