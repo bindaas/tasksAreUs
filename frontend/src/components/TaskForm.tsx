@@ -15,6 +15,7 @@ function newLinkId(): string {
 interface TaskFormProps {
   initialValues?: Partial<Task>;
   labels: Label[];
+  labelsLoading?: boolean;
   boards: Board[];
   defaultBoardId?: string;
   onBoardIdChange?: (boardId: string) => void;
@@ -31,6 +32,7 @@ const CATEGORY_ORDER: LabelCategory[] = ['mode', 'type'];
 export function TaskForm({
   initialValues,
   labels,
+  labelsLoading = false,
   boards,
   defaultBoardId,
   onBoardIdChange,
@@ -334,6 +336,9 @@ export function TaskForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">Labels</label>
+        {labelsLoading ? (
+          <p className="text-xs text-gray-400">Loading labels…</p>
+        ) : (
         <div className="space-y-3">
           {CATEGORY_ORDER.map((cat) => {
             const catLabels = labelsByCategory[cat];
@@ -366,6 +371,7 @@ export function TaskForm({
             );
           })}
         </div>
+        )}
       </div>
 
       <div className="flex gap-3 pt-2">
