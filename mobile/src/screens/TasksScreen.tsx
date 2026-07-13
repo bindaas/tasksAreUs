@@ -305,9 +305,9 @@ export function TasksScreen() {
   );
 
   const labelsByCategory = useMemo(() => {
-    const groups: Record<LabelCategory, Label[]> = { mode: [], type: [] };
+    const groups: Record<LabelCategory, Label[]> = { type: [] };
     for (const label of allLabels) {
-      if (label.category === 'mode' || label.category === 'type') {
+      if (label.category === 'type') {
         groups[label.category].push(label);
       }
     }
@@ -679,7 +679,7 @@ export function TasksScreen() {
             onChangeText={setSearchQuery}
             className="bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-900 border border-gray-200"
           />
-          {(['mode', 'type'] as LabelCategory[])
+          {(['type'] as LabelCategory[])
             .filter((cat) => labelsByCategory[cat].length > 0)
             .map((cat) => (
               <View key={cat}>

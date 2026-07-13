@@ -2,7 +2,7 @@ import { apiFetch } from './client';
 
 export interface Label {
   id: string;
-  category: 'mode' | 'type';
+  category: 'type';
   value: string;
 }
 
