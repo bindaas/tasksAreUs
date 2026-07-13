@@ -25,9 +25,12 @@ interface TaskFormProps {
   loading?: boolean;
 }
 
-type LabelCategory = 'mode' | 'type';
+type LabelCategory = 'type';
 
-const CATEGORY_ORDER: LabelCategory[] = ['mode', 'type'];
+const CATEGORY_ORDER: LabelCategory[] = ['type'];
+const CATEGORY_DISPLAY_NAMES: Record<LabelCategory, string> = {
+  type: 'Tags',
+};
 
 export function TaskForm({
   initialValues,
@@ -104,12 +107,12 @@ export function TaskForm({
 
   const labelsByCategory = labels.reduce<Record<LabelCategory, Label[]>>(
     (acc, label) => {
-      if (label.category === 'mode' || label.category === 'type') {
+      if (label.category === 'type') {
         acc[label.category].push(label);
       }
       return acc;
     },
-    { mode: [], type: [] }
+    { type: [] }
   );
 
   function toggleLabel(id: string) {
@@ -345,8 +348,8 @@ export function TaskForm({
               if (!catLabels || catLabels.length === 0) return null;
               return (
                 <div key={cat}>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 capitalize">
-                    {cat}
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                    {CATEGORY_DISPLAY_NAMES[cat]}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {catLabels.map((label) => {

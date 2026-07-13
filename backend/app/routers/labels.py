@@ -11,7 +11,7 @@ from ..services import board_service as board_svc
 
 router = APIRouter(prefix="/labels", tags=["labels"])
 
-_CONFIGURABLE = {CategoryEnum.mode, CategoryEnum.type}
+_CONFIGURABLE = {CategoryEnum.type}
 
 
 @router.get("", response_model=dict)
@@ -45,7 +45,7 @@ def create_label(
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Unknown category: {body.category}")
     if cat not in _CONFIGURABLE:
-        raise HTTPException(status_code=400, detail="Only mode and type labels are configurable")
+        raise HTTPException(status_code=400, detail="Only type labels are configurable")
 
     value = body.value.strip()
     if not value:
@@ -79,7 +79,7 @@ def update_label(
     if not label:
         raise HTTPException(status_code=404, detail="Label not found")
     if label.category not in _CONFIGURABLE:
-        raise HTTPException(status_code=400, detail="Only mode and type labels are editable")
+        raise HTTPException(status_code=400, detail="Only type labels are editable")
     if label.user_id != user_id:
         raise HTTPException(status_code=403, detail="Cannot modify this label")
 
@@ -116,7 +116,7 @@ def delete_label(
     if not label:
         raise HTTPException(status_code=404, detail="Label not found")
     if label.category not in _CONFIGURABLE:
-        raise HTTPException(status_code=400, detail="Only mode and type labels can be deleted")
+        raise HTTPException(status_code=400, detail="Only type labels can be deleted")
     if label.user_id != user_id:
         raise HTTPException(status_code=403, detail="Cannot delete this label")
 

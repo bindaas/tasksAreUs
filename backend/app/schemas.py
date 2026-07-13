@@ -47,7 +47,7 @@ class LabelOut(BaseModel):
 
 
 class LabelCreate(BaseModel):
-    category: str  # "mode" or "type" only
+    category: str  # "type" only
     value: str
     board_id: Optional[str] = None  # resolved to default board if omitted
 

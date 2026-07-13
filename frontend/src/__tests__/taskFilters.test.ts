@@ -23,7 +23,7 @@ function makeTask(overrides: Partial<Task>): Task {
 }
 
 const labelA = { id: 'label-a', category: 'type' as const, value: 'Work' };
-const labelB = { id: 'label-b', category: 'mode' as const, value: 'Deep' };
+const labelB = { id: 'label-b', category: 'type' as const, value: 'Deep' };
 
 // ── no filters ────────────────────────────────────────────────────────────────
 

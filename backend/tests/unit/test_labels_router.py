@@ -41,7 +41,7 @@ class TestSeedBoardLabels:
     def test_skips_already_existing_labels(self):
         db = MagicMock()
         db.query.return_value.filter.return_value.all.return_value = [
-            _make_label("e1", CategoryEnum.mode, "online", "user-1", "board-1"),
+            _make_label("e1", CategoryEnum.type, "household", "user-1", "board-1"),
         ]
 
         _seed_board_labels(db, "board-1", "user-1")
@@ -49,7 +49,7 @@ class TestSeedBoardLabels:
         assert db.add.call_count == len(LABEL_SEED) - 1
         added = [c[0][0] for c in db.add.call_args_list]
         assert not any(
-            l.category == CategoryEnum.mode and l.value == "online" for l in added
+            l.category == CategoryEnum.type and l.value == "household" for l in added
         )
         db.commit.assert_called_once()
 
@@ -69,20 +69,26 @@ class TestSeedBoardLabels:
 # ── create_label ──────────────────────────────────────────────────────────────
 
 class TestCreateLabel:
-    def test_creates_mode_label(self):
+    def test_creates_type_label(self):
         db = MagicMock()
         db.query.return_value.filter.return_value.first.return_value = None
         db.refresh.side_effect = lambda l: setattr(l, "id", "new-id")
 
         with patch("app.routers.labels.board_svc.resolve_board_id", return_value="board-1"):
-            result = create_label(LabelCreate(category="mode", value="  in-person  "), db, "user-1")
+            result = create_label(LabelCreate(category="type", value="  household  "), db, "user-1")
 
         db.add.assert_called_once()
         added = db.add.call_args[0][0]
-        assert added.value == "in-person"
+        assert added.value == "household"
         assert added.user_id == "user-1"
         assert added.board_id == "board-1"
-        assert added.category == CategoryEnum.mode
+        assert added.category == CategoryEnum.type
+
+    def test_rejects_mode_category(self):
+        db = MagicMock()
+        with pytest.raises(HTTPException) as exc:
+            create_label(LabelCreate(category="mode", value="online"), db, "user-1")
+        assert exc.value.status_code == 400
 
     def test_rejects_frequency_category(self):
         db = MagicMock()
@@ -100,17 +106,17 @@ class TestCreateLabel:
         db = MagicMock()
         with patch("app.routers.labels.board_svc.resolve_board_id", return_value="board-1"):
             with pytest.raises(HTTPException) as exc:
-                create_label(LabelCreate(category="mode", value="   "), db, "user-1")
+                create_label(LabelCreate(category="type", value="   "), db, "user-1")
         assert exc.value.status_code == 400
 
     def test_rejects_duplicate(self):
         db = MagicMock()
         db.query.return_value.filter.return_value.first.return_value = _make_label(
-            "x", CategoryEnum.mode, "online", "user-1", "board-1"
+            "x", CategoryEnum.type, "household", "user-1", "board-1"
         )
         with patch("app.routers.labels.board_svc.resolve_board_id", return_value="board-1"):
             with pytest.raises(HTTPException) as exc:
-                create_label(LabelCreate(category="mode", value="online"), db, "user-1")
+                create_label(LabelCreate(category="type", value="household"), db, "user-1")
         assert exc.value.status_code == 409
 
 
@@ -129,7 +135,7 @@ class TestUpdateLabel:
         db.commit.assert_called_once()
 
     def test_rejects_wrong_owner(self):
-        label = _make_label("l1", CategoryEnum.mode, "online", "user-2")
+        label = _make_label("l1", CategoryEnum.type, "household", "user-2")
         db = MagicMock()
         db.query.return_value.filter.return_value.first.return_value = label
 

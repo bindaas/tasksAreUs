@@ -1,7 +1,6 @@
 import type { Label } from '../api/tasks';
 
 const CATEGORY_COLORS: Record<string, string> = {
-  mode: 'bg-green-100 text-green-800',
   type: 'bg-purple-100 text-purple-800',
 };
 

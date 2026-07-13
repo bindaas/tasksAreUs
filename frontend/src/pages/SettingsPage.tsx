@@ -225,7 +225,7 @@ function BoardEditor({
   );
 }
 
-type ConfigurableCategory = 'mode' | 'type';
+type ConfigurableCategory = 'type';
 
 function LabelEditor({
   category,
@@ -430,7 +430,6 @@ export function SettingsPage() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [showEmailInput, setShowEmailInput] = useState(false);
 
-  const [modeLabels, setModeLabels] = useState<Label[]>([]);
   const [typeLabels, setTypeLabels] = useState<Label[]>([]);
 
   const [connStatus, setConnStatus] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
@@ -464,13 +463,11 @@ export function SettingsPage() {
       setLoading(true);
       setError(null);
       try {
-        const [s, modeRes, typeRes] = await Promise.all([
+        const [s, typeRes] = await Promise.all([
           getSettings(),
-          listLabels('mode', labelsBoardId),
           listLabels('type', labelsBoardId),
         ]);
         setHighPriorityLimit(s.high_priority_daily_limit ?? 3);
-        setModeLabels(modeRes.labels);
         setTypeLabels(typeRes.labels);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load settings');
@@ -481,21 +478,18 @@ export function SettingsPage() {
     fetch();
   }, [labelsBoardId]);
 
-  async function handleAddLabel(category: 'mode' | 'type', value: string) {
+  async function handleAddLabel(category: 'type', value: string) {
     const label = await createLabel(category, value, labelsBoardId);
-    if (category === 'mode') setModeLabels((prev) => [...prev, label]);
-    else setTypeLabels((prev) => [...prev, label]);
+    setTypeLabels((prev) => [...prev, label]);
   }
 
   async function handleRenameLabel(id: string, value: string) {
     const updated = await updateLabel(id, value);
-    setModeLabels((prev) => prev.map((l) => (l.id === id ? updated : l)));
     setTypeLabels((prev) => prev.map((l) => (l.id === id ? updated : l)));
   }
 
   async function handleDeleteLabel(id: string) {
     await deleteLabel(id);
-    setModeLabels((prev) => prev.filter((l) => l.id !== id));
     setTypeLabels((prev) => prev.filter((l) => l.id !== id));
   }
 
@@ -605,16 +599,9 @@ export function SettingsPage() {
               )}
             </div>
             <p className="text-xs text-gray-500 mb-3">
-              Customise Mode and Type labels for {labelsBoard ? <span className="font-medium">{labelsBoard.name}</span> : 'the selected board'}.
+              Customise Tags for {labelsBoard ? <span className="font-medium">{labelsBoard.name}</span> : 'the selected board'}.
             </p>
             <div className="border border-gray-200 rounded-lg p-3 space-y-1">
-              <LabelEditor
-                category="mode"
-                labels={modeLabels}
-                onAdd={handleAddLabel}
-                onRename={handleRenameLabel}
-                onDelete={handleDeleteLabel}
-              />
               <LabelEditor
                 category="type"
                 labels={typeLabels}

@@ -286,7 +286,7 @@ def main():
     client.delete(f"/tasks/{board_task_id}", headers=H)
 
     # Cannot delete a board that has labels — add a label to new_board_id
-    r = client.post("/labels", headers=H, json={"category": "mode", "value": "video-call", "board_id": new_board_id})
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "test-type", "board_id": new_board_id})
     assert_eq("POST /labels with board_id → 201", r.status_code, 201)
     board_label = r.json()
     board_label_id = board_label["id"]
@@ -329,11 +329,11 @@ def main():
     isolation_board_id = r.json()["id"]
 
     # Add a label to each board
-    r = client.post("/labels", headers=H, json={"category": "mode", "value": "default-board-label", "board_id": default_board_id})
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "default-board-label", "board_id": default_board_id})
     assert_eq("POST label to default board → 201", r.status_code, 201)
     default_isolation_label_id = r.json()["id"]
 
-    r = client.post("/labels", headers=H, json={"category": "mode", "value": "other-board-label", "board_id": isolation_board_id})
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "other-board-label", "board_id": isolation_board_id})
     assert_eq("POST label to isolation board → 201", r.status_code, 201)
     isolation_label_id = r.json()["id"]
 
@@ -383,7 +383,7 @@ def main():
     client.delete(f"/tasks/{compat_task_id}", headers=H)
 
     # Labels created without board_id go to the default board
-    r = client.post("/labels", headers=H, json={"category": "mode", "value": "compat-test"})
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "compat-test"})
     assert_eq("POST /labels without board_id → 201 (backward-compat)", r.status_code, 201)
     compat_label_id = r.json()["id"]
     # Verify it appears in GET /labels (default board)
@@ -397,10 +397,12 @@ def main():
     r = client.get("/labels", headers=H)
     assert_eq("GET /labels → 200", r.status_code, 200)
     labels = r.json()["labels"]
-    # PR #30: frequency labels removed from LABEL_SEED — new users get 9 labels (mode + type only)
-    assert_true("at least 9 labels seeded (PR #30)", len(labels) >= 9)
+    # PR #51: mode labels removed — new users get 5 labels (type only, no mode)
+    # Previously LABEL_SEED had 9 labels (4 mode + 5 type), now only 5 type labels are seeded.
+    assert_true("at least 5 labels seeded (PR #51: mode removed)", len(labels) >= 5)
 
     # Pick specific labels for use in tests
+    # PR #51: mode labels are removed end-to-end, so this dict will be empty
     mode_labels = {l["value"]: l["id"] for l in labels if l["category"] == "mode"}
     type_labels = {l["value"]: l["id"] for l in labels if l["category"] == "type"}
 
@@ -416,12 +418,10 @@ def main():
     r = client.get("/labels?category=frequency", headers=H)
     assert_eq("GET /labels?category=frequency → 400 (PR #31: unknown category)", r.status_code, 400)
 
-    # All label categories are per-user (PR #16) — verify mode and type are returned for this user
+    # PR #51: mode category removed — GET /labels?category=mode now returns 400 (unknown category)
+    # Previously this returned 200 with 4+ mode labels; now mode is not a valid category.
     r = client.get("/labels?category=mode", headers=H)
-    assert_eq("GET /labels?category=mode → 200", r.status_code, 200)
-    mode_only = r.json()["labels"]
-    assert_true("mode labels returned for user", len(mode_only) >= 4)
-    assert_true("mode labels all have category=mode", all(l["category"] == "mode" for l in mode_only))
+    assert_eq("GET /labels?category=mode → 400 (PR #51: mode removed)", r.status_code, 400)
 
     r = client.get("/labels?category=type", headers=H)
     assert_eq("GET /labels?category=type → 200", r.status_code, 200)
@@ -440,24 +440,27 @@ def main():
     # All users (including the persistent system test user) now have exactly mode + type labels.
     assert_true("GET /labels returns at least 9 seeded labels (PR #30)", len(labels) >= 9)
 
-    # Only mode and type categories must be present — frequency is fully gone (PR #31)
+    # PR #51: Only type category remains — mode is fully gone (PR #51), frequency was removed in PR #31
     all_categories = {l["category"] for l in labels}
-    assert_true("mode and type categories present in GET /labels (PR #31)",
-                {"mode", "type"}.issubset(all_categories))
+    assert_true("type category present in GET /labels (PR #51)",
+                "type" in all_categories)
+    assert_true("mode category absent from GET /labels (PR #51)",
+                "mode" not in all_categories)
     assert_true("frequency category absent from GET /labels (PR #31)",
                 "frequency" not in all_categories)
 
     # Verify that label IDs from GET /labels can be used to create tasks (the core
     # bug fixed in PR #16 — per-user IDs were not matching global IDs on task creation)
+    # PR #51: mode labels no longer seeded, use type label instead
     pr16_verify_task_r = client.post("/tasks", headers=H, json={
         "title": "PR #16 label-ID verification task",
-        "label_ids": [mode_labels["online"]],
+        "label_ids": [type_labels["household"]],
     })
     assert_eq("POST task using per-user label IDs → 201 (PR #16)", pr16_verify_task_r.status_code, 201)
     pr16_task = pr16_verify_task_r.json()
     pr16_task_id = pr16_task["id"]
     pr16_label_values = {l["value"] for l in pr16_task["labels"]}
-    assert_eq("per-user label IDs attach correctly to task (PR #16)", pr16_label_values, {"online"})
+    assert_eq("per-user label IDs attach correctly to task (PR #16)", pr16_label_values, {"household"})
     # Clean up
     client.delete(f"/tasks/{pr16_task_id}", headers=H)
 
@@ -487,16 +490,33 @@ def main():
     assert_eq("POST /labels frequency category → 400 (PR #31: unknown category)",
               r.status_code, 400)
 
-    # ── Labels: Create / Update / Delete (PR #15) ─────────────────────────────
-    print("\n── Labels: Configurable Mode/Type (PR #15) ─────────────")
+    # ── Labels: Mode fully removed (PR #51) ──────────────────────────────────
+    # PR #51 removes the Mode label category end-to-end: all Mode labels deleted at startup,
+    # and the API no longer accepts mode as a category in GET or POST requests.
+    print("\n── Labels: Mode fully removed (PR #51) ──────────────────")
+    # GET /labels?category=mode must return 400 (unknown category) — verified earlier
+    r = client.get("/labels?category=mode", headers=H)
+    assert_eq("GET /labels?category=mode → 400 (PR #51: mode removed)",
+              r.status_code, 400)
 
-    # POST /labels — create a mode label
+    # GET /labels must not include any mode rows (all deleted by startup migration)
+    r = client.get("/labels", headers=H)
+    all_labels_pr51 = r.json()["labels"]
+    mode_rows = [l for l in all_labels_pr51 if l["category"] == "mode"]
+    assert_eq("no mode label rows remain after PR #51 startup migration", mode_rows, [])
+
+    # POST /labels — mode category must be rejected (now: non-configurable 400)
+    r = client.post("/labels", headers=H, json={"category": "mode", "value": "video-call"})
+    assert_eq("POST /labels mode category → 400 (PR #51: mode no longer configurable)",
+              r.status_code, 400)
+
+    # ── Labels: Create / Update / Delete (PR #15, updated PR #51) ─────────────
+    print("\n── Labels: Configurable Type (PR #15, PR #51: mode removed) ────")
+
+    # PR #51: POST /labels with mode category now returns 400 (non-configurable)
+    # Mode labels are no longer supported in the API
     r = client.post("/labels", headers=H, json={"category": "mode", "value": "in-person"})
-    assert_eq("POST /labels (mode) → 201", r.status_code, 201)
-    new_mode_label = r.json()
-    new_mode_label_id = new_mode_label["id"]
-    assert_eq("new mode label value", new_mode_label["value"], "in-person")
-    assert_eq("new mode label category", new_mode_label["category"], "mode")
+    assert_eq("POST /labels (mode) → 400 (PR #51: mode removed)", r.status_code, 400)
 
     # POST /labels — create a type label
     r = client.post("/labels", headers=H, json={"category": "type", "value": "school"})
@@ -505,8 +525,8 @@ def main():
     new_type_label_id = new_type_label["id"]
     assert_eq("new type label value", new_type_label["value"], "school")
 
-    # POST /labels — duplicate label returns 409
-    r = client.post("/labels", headers=H, json={"category": "mode", "value": "in-person"})
+    # POST /labels — duplicate type label returns 409
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "school"})
     assert_eq("POST /labels duplicate → 409", r.status_code, 409)
 
     # POST /labels — unknown category → 400
@@ -514,28 +534,27 @@ def main():
     assert_eq("POST /labels unknown category → 400", r.status_code, 400)
 
     # POST /labels — empty value → 400
-    r = client.post("/labels", headers=H, json={"category": "mode", "value": "   "})
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "   "})
     assert_eq("POST /labels empty value → 400", r.status_code, 400)
 
     # Newly created label appears in GET /labels
     r = client.get("/labels", headers=H)
     all_label_ids = [l["id"] for l in r.json()["labels"]]
-    assert_in("new mode label in GET /labels", new_mode_label_id, all_label_ids)
     assert_in("new type label in GET /labels", new_type_label_id, all_label_ids)
 
     # PUT /labels/{id} — rename a label
-    r = client.put(f"/labels/{new_mode_label_id}", headers=H, json={"value": "face-to-face"})
+    r = client.put(f"/labels/{new_type_label_id}", headers=H, json={"value": "school-work"})
     assert_eq("PUT /labels/:id rename → 200", r.status_code, 200)
     renamed = r.json()
-    assert_eq("label renamed", renamed["value"], "face-to-face")
-    assert_eq("category unchanged after rename", renamed["category"], "mode")
+    assert_eq("label renamed", renamed["value"], "school-work")
+    assert_eq("category unchanged after rename", renamed["category"], "type")
 
     # PUT /labels/{id} — rename to existing value → 409
-    r = client.put(f"/labels/{new_mode_label_id}", headers=H, json={"value": "online"})
+    r = client.put(f"/labels/{new_type_label_id}", headers=H, json={"value": "household"})
     assert_eq("PUT /labels/:id rename to existing value → 409", r.status_code, 409)
 
     # PUT /labels/{id} — empty value → 400
-    r = client.put(f"/labels/{new_mode_label_id}", headers=H, json={"value": "  "})
+    r = client.put(f"/labels/{new_type_label_id}", headers=H, json={"value": "  "})
     assert_eq("PUT /labels/:id empty value → 400", r.status_code, 400)
 
     # PUT /labels/{id} — 404 for non-existent label
@@ -567,9 +586,9 @@ def main():
     r = client.delete(f"/labels/{str(uuid.uuid4())}", headers=H)
     assert_eq("DELETE /labels/:id non-existent → 404", r.status_code, 404)
 
-    # Clean up the mode label created above
-    r = client.delete(f"/labels/{new_mode_label_id}", headers=H)
-    assert_eq("DELETE created mode label (cleanup) → 204", r.status_code, 204)
+    # Clean up the type label created above
+    r = client.delete(f"/labels/{new_type_label_id}", headers=H)
+    assert_eq("DELETE created type label (cleanup) → 204", r.status_code, 204)
 
     # Verify label isolation: a task should not accept a label_id that belongs
     # to a different user.  Confirm that the per-user label we just deleted
@@ -578,7 +597,7 @@ def main():
     r = client.post("/tasks", headers=H, json={
         "title": "Label isolation test task",
         "must_do_by": today_str_labels,
-        "label_ids": [new_mode_label_id],  # already deleted — should 404
+        "label_ids": [new_type_label_id],  # already deleted — should 422
     })
     assert_eq("POST /tasks with deleted label_id → 422", r.status_code, 422)
 
@@ -591,7 +610,7 @@ def main():
         "notes": "Row 4, shelf B",
         "must_do_by": next_week,
         "target_date": tomorrow,
-        "label_ids": [mode_labels["outdoor"], type_labels["child"]],
+        "label_ids": [type_labels["child"], type_labels["household"]],
     })
     assert_eq("POST /tasks → 201", r.status_code, 201)
     task = r.json()
@@ -620,7 +639,7 @@ def main():
 
     r = client.put(f"/tasks/{task_id}", headers=H, json={
         "title": "Return library books (updated)",
-        "label_ids": [mode_labels["outdoor"]],
+        "label_ids": [type_labels["child"]],
     })
     assert_eq("PUT /tasks/:id → 200", r.status_code, 200)
     assert_eq("updated title", r.json()["title"], "Return library books (updated)")
@@ -976,12 +995,12 @@ def main():
     assert_eq("POST /boards move-test board B → 201", r.status_code, 201)
     move_board_b_id = r.json()["id"]
 
-    # A label scoped to board A and a label scoped to board B
-    r = client.post("/labels", headers=H, json={"category": "mode", "value": "move-label-a", "board_id": move_board_a_id})
+    # A label scoped to board A and a label scoped to board B (PR #51: use type labels, mode removed)
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "move-label-a", "board_id": move_board_a_id})
     assert_eq("POST label on move-test board A → 201", r.status_code, 201)
     move_label_a_id = r.json()["id"]
 
-    r = client.post("/labels", headers=H, json={"category": "mode", "value": "move-label-b", "board_id": move_board_b_id})
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "move-label-b", "board_id": move_board_b_id})
     assert_eq("POST label on move-test board B → 201", r.status_code, 201)
     move_label_b_id = r.json()["id"]
 
@@ -1377,15 +1396,14 @@ def main():
 
     # ── Recurring task (PR #30: recurrence logic removed) ─────────────────────
     # PR #30 removes recurrence logic from complete_task(). next_task is always null.
-    # Frequency labels are no longer seeded for new users, so this section now verifies
-    # that completing ANY task (including one that formerly had a frequency label) always
-    # returns next_task: null.
+    # Frequency labels are no longer seeded for new users, and mode labels are removed in PR #51,
+    # so this section now verifies that completing ANY task always returns next_task: null.
     print("\n── Tasks: Complete always returns next_task=null (PR #30) ──")
     today_str = date.today().isoformat()
     r = client.post("/tasks", headers=H, json={
         "title": "Daily exercise",
         "must_do_by": today_str,
-        "label_ids": [mode_labels["outdoor"]],
+        "label_ids": [type_labels["household"]],
     })
     assert_eq("POST task for recurrence-removal test → 201", r.status_code, 201)
     rec_task_id = r.json()["id"]
@@ -1502,9 +1520,9 @@ def main():
         assert_in("completion record has completed_at field", "completed_at", completion_rec)
         assert_in("completion record has labels field", "labels", completion_rec)
         assert_true("completion record labels is a list", isinstance(completion_rec["labels"], list))
-        # The completed task had its labels replaced to just [outdoor] via PUT before completion.
+        # The completed task had its labels updated to [child] via PUT before completion (PR #51: mode removed).
         completion_label_values = {l["value"] for l in completion_rec["labels"]}
-        assert_in("outdoor label in completion record", "outdoor", completion_label_values)
+        assert_in("child label in completion record", "child", completion_label_values)
         # Each label in a completion record must have id, category, value
         if completion_rec["labels"]:
             first_label = completion_rec["labels"][0]
@@ -1533,11 +1551,12 @@ def main():
     r = client.get("/reports/completions", params={"from": from_date, "to": to_date})
     assert_eq("GET /reports/completions with no auth → 401", r.status_code, 401)
 
-    # label_ids filter on reports: the completed task has outdoor label — filtering by it
-    # should include the task; filtering by a non-matching label should exclude it.
-    outdoor_label_id = mode_labels["outdoor"]
+    # label_ids filter on reports: the completed task (task_id) now has child + household labels
+    # (PR #51: mode labels removed, so we use type labels instead).
+    # Filtering by child label should include the task.
+    child_label_id = type_labels["child"]
     r = client.get("/reports/completions", headers=H,
-                   params={"from": from_date, "to": to_date, "label_ids": outdoor_label_id})
+                   params={"from": from_date, "to": to_date, "label_ids": child_label_id})
     assert_eq("GET /reports/completions with label_ids filter → 200", r.status_code, 200)
     label_filtered_report = r.json()
     label_filtered_ids = [c["task_id"] for c in label_filtered_report["completions"]]

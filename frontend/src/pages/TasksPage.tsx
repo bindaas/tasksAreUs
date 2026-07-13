@@ -24,14 +24,13 @@ import { isHighPriorityEligible, splitByPriority, canAddHighPriority } from '../
 import { useSettings } from '../hooks/useSettings';
 import { viewLabel, type ViewMode } from '../utils/viewLabel';
 
-type LabelCategory = 'mode' | 'type';
-const CATEGORIES: LabelCategory[] = ['mode', 'type'];
+type LabelCategory = 'type';
+const CATEGORIES: LabelCategory[] = ['type'];
+const CATEGORY_DISPLAY_NAMES: Record<LabelCategory, string> = {
+  type: 'Tags',
+};
 
 const CATEGORY_COLORS: Record<LabelCategory, { active: string; inactive: string }> = {
-  mode: {
-    active: 'bg-green-600 text-white border-green-600',
-    inactive: 'bg-white text-green-700 border-green-300 hover:bg-green-50',
-  },
   type: {
     active: 'bg-purple-600 text-white border-purple-600',
     inactive: 'bg-white text-purple-700 border-purple-300 hover:bg-purple-50',
@@ -262,8 +261,8 @@ export function TasksPage() {
             const colors = CATEGORY_COLORS[cat];
             return (
               <div key={cat} className="flex flex-wrap gap-1.5 items-center">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-16 shrink-0 capitalize">
-                  {cat}
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-16 shrink-0">
+                  {CATEGORY_DISPLAY_NAMES[cat]}
                 </span>
                 {catLabels.map((label) => {
                   const active = selectedLabelIds.has(label.id);

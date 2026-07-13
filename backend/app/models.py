@@ -24,8 +24,8 @@ class Base(DeclarativeBase):
 
 
 class CategoryEnum(str, enum.Enum):
-    mode = "mode"
     type = "type"
+    mode = "mode"
 
 
 class StateEnum(str, enum.Enum):
@@ -160,11 +160,8 @@ class AICostLog(Base):
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
 
 
+# LABEL_SEED contains only Type labels (Mode labels removed in chore/remove-mode-labels)
 LABEL_SEED = [
-    ("mode", "online"),
-    ("mode", "phone"),
-    ("mode", "outdoor"),
-    ("mode", "email"),
     ("type", "household"),
     ("type", "financial"),
     ("type", "child"),
