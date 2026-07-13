@@ -52,16 +52,18 @@ Top-level organizational unit. Each user has up to `MAX_BOARDS_PER_USER = 10` bo
 ---
 
 ### Table: `labels`
-All labels are per-board (and per-user). There are no global rows. On first access, the user's default board is seeded with mode and type labels (9 entries total) from the `LABEL_SEED` constant in `models.py` by `label_service.seed_board_labels()`. New boards created by users start with zero labels. Users can add, rename, and delete their own mode/type labels.
+All labels are per-board (and per-user). There are no global rows. On first access, the user's default board is seeded with type labels (5 entries total) from the `LABEL_SEED` constant in `models.py` by `label_service.seed_board_labels()`. New boards created by users start with zero labels. Users can add, rename, and delete their own type labels.
 
 **Frequency label removal (completed — PR #29, #30, #31):** The `frequency` category has been fully removed from the system. `GET /labels?category=frequency` now returns `400 Unknown category`.
+
+**Mode label removal (completed — PR #51):** The `mode` category has been fully removed from the system. All existing Mode labels (online, phone, outdoor, email) were deleted via startup migration. `POST /labels` with `category=mode` and `GET /labels?category=mode` now return `400 Unknown category`.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
 | `user_id` | VARCHAR | NOT NULL. FK → users (CASCADE). Indexed. |
 | `board_id` | VARCHAR | NOT NULL. FK → boards. Indexed. Every label belongs to exactly one board. |
-| `category` | ENUM | `mode`, `type` |
+| `category` | ENUM | `type` (mode removed in PR #51) |
 | `value` | VARCHAR | e.g. `online`, `household` |
 
 **Uniqueness constraint:**
@@ -69,14 +71,10 @@ All labels are per-board (and per-user). There are no global rows. On first acce
 
 The old `labels_user_id_category_value_key` unique **constraint** (on `(user_id, category, value)`) and the older partial indices (`uq_global_label`, `uq_user_label`) have all been dropped. Note: SQLAlchemy creates `UNIQUE(...)` as a table constraint, not a plain index — it must be removed with `ALTER TABLE labels DROP CONSTRAINT`, not `DROP INDEX`.
 
-**Per-board seed data** (from `LABEL_SEED` constant in `models.py`; seeded lazily into the "General tasks" board on first user access — 9 entries, mode and type only):
+**Per-board seed data** (from `LABEL_SEED` constant in `models.py`; seeded lazily into the "General tasks" board on first user access — 5 entries, type only; mode labels removed in PR #51):
 
 | category | value |
 |---|---|
-| mode | online |
-| mode | phone |
-| mode | outdoor |
-| mode | email |
 | type | household |
 | type | financial |
 | type | child |
@@ -345,28 +343,28 @@ All labels are per-board. On first access (when `board_id` is omitted), the user
 ---
 
 #### `POST /labels`
-Create a new mode or type label in the specified board (or the user's default board if `board_id` is omitted). Only `mode` and `type` categories are accepted.
+Create a new type label in the specified board (or the user's default board if `board_id` is omitted). Only `type` category is accepted (mode labels removed in PR #51).
 
 **Request**
 ```json
-{ "category": "mode", "value": "in-person", "board_id": "uuid" }
+{ "category": "type", "value": "in-person", "board_id": "uuid" }
 ```
 `board_id` is optional; omitting it creates the label in the user's default board.
 
 **Response** `201 Created` — the created label object
 ```json
-{ "id": "uuid", "category": "mode", "value": "in-person" }
+{ "id": "uuid", "category": "type", "value": "in-person" }
 ```
 
 **Error cases**
-- `400` — unknown category (including `frequency`), category is not `mode` or `type`, or value is empty/whitespace
+- `400` — unknown category (including `frequency` and `mode`), or value is empty/whitespace
 - `404` — `board_id` not found or not owned by caller
 - `409` — label with that value already exists in this board in this category
 
 ---
 
 #### `PUT /labels/{label_id}`
-Rename a mode or type label. The caller must own the label.
+Rename a type label. The caller must own the label.
 
 **Request**
 ```json
@@ -376,7 +374,7 @@ Rename a mode or type label. The caller must own the label.
 **Response** — the updated label object
 
 **Error cases**
-- `400` — label category is not `mode` or `type` (not editable), or new value is empty/whitespace
+- `400` — label category is not `type` (not editable), or new value is empty/whitespace
 - `403` — caller does not own the label
 - `404` — label not found
 - `409` — another label with the new value already exists in this board in this category
@@ -384,12 +382,12 @@ Rename a mode or type label. The caller must own the label.
 ---
 
 #### `DELETE /labels/{label_id}`
-Delete a mode or type label. The caller must own the label. Deleting a label removes it from any tasks that reference it (CASCADE via `task_labels`).
+Delete a type label. The caller must own the label. Deleting a label removes it from any tasks that reference it (CASCADE via `task_labels`).
 
 **Response** `204 No Content`
 
 **Error cases**
-- `400` — label category is not `mode` or `type` (not deletable)
+- `400` — label category is not `type` (not deletable)
 - `403` — caller does not own the label
 - `404` — label not found
 
