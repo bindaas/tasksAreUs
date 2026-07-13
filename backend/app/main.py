@@ -198,6 +198,25 @@ async def lifespan(app: FastAPI):
         ))
         conn.commit()
 
+    # ── Mode label removal migration ────────────────────────────────────────────
+    # Delete all Mode labels (replaced by type labels); update ENUM type.
+    # Safe to run before code removes Mode from CategoryEnum, and safe to deploy
+    # independently — after this runs, ORM will no longer encounter Mode values.
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM labels WHERE category = 'mode'"))
+        conn.execute(text(
+            "ALTER TYPE category_enum RENAME TO category_enum_old"
+        ))
+        conn.execute(text(
+            "CREATE TYPE category_enum AS ENUM ('type')"
+        ))
+        conn.execute(text(
+            "ALTER TABLE labels ALTER COLUMN category TYPE category_enum USING category::text::category_enum"
+        ))
+        conn.execute(text("DROP TYPE category_enum_old"))
+        conn.commit()
+        logger.info("Mode label migration completed: deleted all Mode labels and updated ENUM type")
+
     yield
 
 

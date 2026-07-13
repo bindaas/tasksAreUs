@@ -25,6 +25,7 @@ class Base(DeclarativeBase):
 
 class CategoryEnum(str, enum.Enum):
     type = "type"
+    mode = "mode"
 
 
 class StateEnum(str, enum.Enum):
