@@ -261,7 +261,7 @@ export function TasksPage() {
             const colors = CATEGORY_COLORS[cat];
             return (
               <div key={cat} className="flex flex-wrap gap-1.5 items-center">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide w-16 shrink-0">
+                <span className="text-xs font-semibold text-gray-500 tracking-wide w-16 shrink-0">
                   {CATEGORY_DISPLAY_NAMES[cat]}
                 </span>
                 {catLabels.map((label) => {

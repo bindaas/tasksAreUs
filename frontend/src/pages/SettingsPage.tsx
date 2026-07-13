@@ -295,10 +295,7 @@ function LabelEditor({
 
   return (
     <div className="mb-5">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide capitalize">
-          {category}
-        </h4>
+      <div className="flex items-center justify-end mb-2">
         <button
           onClick={() => { setAddingNew(true); setNewValue(''); setErr(null); }}
           disabled={addingNew || busy}
@@ -580,10 +577,10 @@ export function SettingsPage() {
             </div>
           </div>
 
-          {/* Labels */}
+          {/* Tags */}
           <div className="mb-6">
             <div className="flex items-center justify-between gap-3 mb-1">
-              <h3 className="text-sm font-semibold text-gray-700">Labels</h3>
+              <h3 className="text-sm font-semibold text-gray-700">Tags</h3>
               {boards.length > 1 && (
                 <select
                   value={labelsBoardId ?? ''}
