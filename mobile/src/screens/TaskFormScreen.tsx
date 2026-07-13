@@ -25,8 +25,8 @@ function newLinkId(): string {
   return `link-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-const CATEGORY_ORDER: Array<'mode' | 'type'> = ['mode', 'type'];
-const CATEGORY_LABELS: Record<string, string> = { mode: 'Mode', type: 'Type' };
+const CATEGORY_ORDER: Array<'type'> = ['type'];
+const CATEGORY_LABELS: Record<string, string> = { type: 'Tags' };
 
 interface Props {
   taskId?: string;

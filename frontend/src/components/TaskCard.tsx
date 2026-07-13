@@ -15,7 +15,7 @@ interface TaskCardProps {
   onTogglePriority?: () => void;
 }
 
-const LABEL_CATEGORY_ORDER: Record<string, number> = { mode: 0, type: 1 };
+const LABEL_CATEGORY_ORDER: Record<string, number> = { type: 0 };
 
 export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = false, onTogglePriority }: TaskCardProps) {
   const navigate = useNavigate();

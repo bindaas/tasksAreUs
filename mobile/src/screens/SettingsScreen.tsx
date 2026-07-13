@@ -275,9 +275,9 @@ function LabelSection({
   onRename,
   onDelete,
 }: {
-  category: 'mode' | 'type';
+  category: 'type';
   labels: Label[];
-  onAdd: (category: 'mode' | 'type', value: string) => Promise<void>;
+  onAdd: (category: 'type', value: string) => Promise<void>;
   onRename: (id: string, value: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
@@ -438,7 +438,6 @@ export function SettingsScreen() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const [modeLabels, setModeLabels] = useState<Label[]>([]);
   const [typeLabels, setTypeLabels] = useState<Label[]>([]);
   const [highPriorityLimit, setHighPriorityLimit] = useState(3);
 
@@ -505,29 +504,25 @@ export function SettingsScreen() {
   // picker selection changes, independent of the settings load above.
   useEffect(() => {
     if (!labelsBoardId) return;
-    Promise.all([listLabels('mode', labelsBoardId), listLabels('type', labelsBoardId)])
-      .then(([modeRes, typeRes]) => {
-        setModeLabels(modeRes.labels);
+    listLabels('type', labelsBoardId)
+      .then((typeRes) => {
         setTypeLabels(typeRes.labels);
       })
       .catch((e) => setLoadError(e instanceof Error ? e.message : 'Failed to load labels'));
   }, [labelsBoardId]);
 
-  async function handleAddLabel(cat: 'mode' | 'type', value: string) {
+  async function handleAddLabel(cat: 'type', value: string) {
     const label = await createLabel(cat, value, labelsBoardId);
-    if (cat === 'mode') setModeLabels((prev) => [...prev, label]);
-    else setTypeLabels((prev) => [...prev, label]);
+    setTypeLabels((prev) => [...prev, label]);
   }
 
   async function handleRenameLabel(id: string, value: string) {
     const updated = await updateLabel(id, value);
-    setModeLabels((prev) => prev.map((l) => (l.id === id ? updated : l)));
     setTypeLabels((prev) => prev.map((l) => (l.id === id ? updated : l)));
   }
 
   async function handleDeleteLabel(id: string) {
     await deleteLabel(id);
-    setModeLabels((prev) => prev.filter((l) => l.id !== id));
     setTypeLabels((prev) => prev.filter((l) => l.id !== id));
   }
 
@@ -675,7 +670,7 @@ export function SettingsScreen() {
                   )}
                 </View>
                 <Text className="text-xs text-gray-400 mb-3">
-                  Manage Mode and Type labels for the selected board.
+                  Manage Tags for the selected board.
                 </Text>
                 {boards.length > 1 && labelsBoardPickerOpen && (
                   <View className="bg-gray-50 rounded-lg border border-gray-200 mb-3">
@@ -696,13 +691,6 @@ export function SettingsScreen() {
                     ))}
                   </View>
                 )}
-                <LabelSection
-                  category="mode"
-                  labels={modeLabels}
-                  onAdd={handleAddLabel}
-                  onRename={handleRenameLabel}
-                  onDelete={handleDeleteLabel}
-                />
                 <LabelSection
                   category="type"
                   labels={typeLabels}

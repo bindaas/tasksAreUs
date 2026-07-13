@@ -11,7 +11,7 @@ from ..services import board_service as board_svc
 
 router = APIRouter(prefix="/labels", tags=["labels"])
 
-_CONFIGURABLE = {CategoryEnum.mode, CategoryEnum.type}
+_CONFIGURABLE = {CategoryEnum.type}
 
 
 @router.get("", response_model=dict)
@@ -45,7 +45,7 @@ def create_label(
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Unknown category: {body.category}")
     if cat not in _CONFIGURABLE:
-        raise HTTPException(status_code=400, detail="Only mode and type labels are configurable")
+        raise HTTPException(status_code=400, detail="Only type labels are configurable")
 
     value = body.value.strip()
     if not value:

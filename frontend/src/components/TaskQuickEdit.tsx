@@ -3,7 +3,7 @@ import type { Task, Label } from '../api/tasks';
 import { updateTask } from '../api/tasks';
 import { listLabels } from '../api/labels';
 
-const EDIT_CATEGORY_ORDER = ['mode', 'type'] as const;
+const EDIT_CATEGORY_ORDER = ['type'] as const;
 
 interface TaskQuickEditProps {
   task: Task;

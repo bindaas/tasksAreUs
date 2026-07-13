@@ -9,7 +9,7 @@ export async function listLabels(category?: LabelCategory, boardId?: string): Pr
   return apiFetch<{ labels: Label[] }>(`/labels${query}`);
 }
 
-export async function createLabel(category: 'mode' | 'type', value: string, boardId?: string): Promise<Label> {
+export async function createLabel(category: 'type', value: string, boardId?: string): Promise<Label> {
   return apiFetch<Label>('/labels', {
     method: 'POST',
     body: JSON.stringify(boardId ? { category, value, board_id: boardId } : { category, value }),

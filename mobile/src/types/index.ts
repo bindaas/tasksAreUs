@@ -10,11 +10,11 @@ export interface Board {
 
 export interface Label {
   id: string;
-  category: 'mode' | 'type';
+  category: 'type';
   value: string;
 }
 
-export type LabelCategory = 'mode' | 'type';
+export type LabelCategory = 'type';
 
 export interface TaskLink {
   id: string;

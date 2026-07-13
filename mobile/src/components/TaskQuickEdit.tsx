@@ -4,10 +4,10 @@ import type { Task, Label } from '../types';
 import { updateTask } from '../api/tasks';
 import { listLabels } from '../api/labels';
 
-const EDIT_CATEGORY_ORDER = ['mode', 'type'] as const;
+const EDIT_CATEGORY_ORDER = ['type'] as const;
 
-const LABEL_BG: Record<string, string> = { mode: '#dcfce7', type: '#f3e8ff' };
-const LABEL_TEXT: Record<string, string> = { mode: '#15803d', type: '#7e22ce' };
+const LABEL_BG: Record<string, string> = { type: '#f3e8ff' };
+const LABEL_TEXT: Record<string, string> = { type: '#7e22ce' };
 
 interface TaskQuickEditProps {
   task: Task;
