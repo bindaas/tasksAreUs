@@ -4,7 +4,7 @@ import type { Label, TaskLink } from '../api/tasks';
 import type { Board } from '../api/boards';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
-import { isValidLinkUrl, MAX_TASK_LINKS } from '../utils/taskLinks';
+import { isValidLinkUrl, withReadyLinkRow } from '../utils/taskLinks';
 
 function newLinkId(): string {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -92,14 +92,7 @@ export function TaskForm({
   // Decides inside the updater (not from the `links` closure) so StrictMode's
   // double-invoked effect can't append two rows for one state transition.
   useEffect(() => {
-    setLinks((prev) => {
-      const last = prev[prev.length - 1];
-      const lastIsBlank = !!last && last.url.trim() === '' && last.description.trim() === '';
-      if (!lastIsBlank && prev.length < MAX_TASK_LINKS) {
-        return [...prev, { id: newLinkId(), url: '', description: '' }];
-      }
-      return prev;
-    });
+    setLinks((prev) => withReadyLinkRow(prev, newLinkId));
   }, [links]);
 
   function removeLinkRow(id: string) {
