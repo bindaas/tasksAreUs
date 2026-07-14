@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -17,7 +18,7 @@ import { listLabels } from '../api/labels';
 import { useBoard } from '../context/BoardContext';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
-import { isValidLinkUrl, MAX_TASK_LINKS } from '../utils/taskLinks';
+import { isValidLinkUrl, withReadyLinkRow } from '../utils/taskLinks';
 import { LABEL_BG, LABEL_TEXT } from '../utils/labelColors';
 import type { Task, Label, TaskLink, CreateTaskBody, UpdateTaskBody } from '../types';
 
@@ -125,10 +126,11 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
     });
   }
 
-  function addLinkRow() {
-    if (links.length >= MAX_TASK_LINKS) return;
-    setLinks((prev) => [...prev, { id: newLinkId(), url: '', description: '' }]);
-  }
+  // Always keep one blank, ready-to-fill link row at the end while under the
+  // cap, so the user can start typing a link without an explicit "+ Add" step.
+  useEffect(() => {
+    setLinks((prev) => withReadyLinkRow(prev, newLinkId));
+  }, [links]);
 
   function removeLinkRow(id: string) {
     setLinks((prev) => prev.filter((l) => l.id !== id));
@@ -297,18 +299,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
 
         {/* Links */}
         <View className="mb-5">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-sm font-medium text-gray-700">Links</Text>
-            <TouchableOpacity
-              onPress={addLinkRow}
-              disabled={links.length >= MAX_TASK_LINKS}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text className={`text-xs font-medium ${links.length >= MAX_TASK_LINKS ? 'text-gray-300' : 'text-indigo-600'}`}>
-                + Add link
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Text className="text-sm font-medium text-gray-700 mb-2">Links</Text>
           <View className="gap-2">
             {links.map((link) => (
               <View key={link.id} className="flex-row items-start gap-2">
@@ -320,16 +311,27 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
                     placeholderTextColor="#9ca3af"
                     className="border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900"
                   />
-                  <TextInput
-                    value={link.url}
-                    onChangeText={(v) => updateLinkRow(link.id, 'url', v)}
-                    placeholder="https://..."
-                    placeholderTextColor="#9ca3af"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="url"
-                    className="border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900"
-                  />
+                  <View className="flex-row items-center gap-1.5">
+                    <TextInput
+                      value={link.url}
+                      onChangeText={(v) => updateLinkRow(link.id, 'url', v)}
+                      placeholder="https://..."
+                      placeholderTextColor="#9ca3af"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                      className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900"
+                    />
+                    {isValidLinkUrl(link.url) && (
+                      <TouchableOpacity
+                        onPress={() => Linking.openURL(link.url.trim())}
+                        className="p-2"
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Text className="text-gray-400 text-base">↗</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
                 <TouchableOpacity
                   onPress={() => removeLinkRow(link.id)}
