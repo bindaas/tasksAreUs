@@ -1,13 +1,8 @@
 import type { ReactNode } from 'react';
-import { View, Text, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import type { Task, Label } from '../types';
 import { formatDate, isOverdue } from '../utils/taskDateUtils';
-import { isValidLinkUrl } from '../utils/taskLinks';
-
-function openTaskLink(url: string) {
-  if (!isValidLinkUrl(url)) return;
-  Linking.openURL(url);
-}
+import { openTaskLink } from '../utils/taskLinks';
 
 interface TaskCardBodyProps {
   task: Task;

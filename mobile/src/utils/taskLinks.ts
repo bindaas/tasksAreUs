@@ -1,3 +1,4 @@
+import { Linking } from 'react-native';
 import type { TaskLink } from '../types';
 
 export const MAX_TASK_LINKS = 3;
@@ -6,6 +7,11 @@ const URL_SCHEME_RE = /^https?:\/\//i;
 
 export function isValidLinkUrl(url: string): boolean {
   return URL_SCHEME_RE.test(url.trim());
+}
+
+export function openTaskLink(url: string) {
+  if (!isValidLinkUrl(url)) return;
+  Linking.openURL(url.trim());
 }
 
 function isBlankLink(link: TaskLink): boolean {

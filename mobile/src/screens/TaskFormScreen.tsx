@@ -8,7 +8,6 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -18,7 +17,7 @@ import { listLabels } from '../api/labels';
 import { useBoard } from '../context/BoardContext';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormHighPriorityEligible } from '../utils/taskPriority';
-import { isValidLinkUrl, withReadyLinkRow } from '../utils/taskLinks';
+import { isValidLinkUrl, openTaskLink, withReadyLinkRow } from '../utils/taskLinks';
 import { LABEL_BG, LABEL_TEXT } from '../utils/labelColors';
 import type { Task, Label, TaskLink, CreateTaskBody, UpdateTaskBody } from '../types';
 
@@ -324,7 +323,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
                     />
                     {isValidLinkUrl(link.url) && (
                       <TouchableOpacity
-                        onPress={() => Linking.openURL(link.url.trim())}
+                        onPress={() => openTaskLink(link.url)}
                         className="p-2"
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
