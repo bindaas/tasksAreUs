@@ -87,10 +87,20 @@ export function TaskForm({
     }
   }, [boardId]);
 
-  function addLinkRow() {
-    if (links.length >= MAX_TASK_LINKS) return;
-    setLinks((prev) => [...prev, { id: newLinkId(), url: '', description: '' }]);
-  }
+  // Always keep one blank, ready-to-fill link row at the end while under the
+  // cap, so the user can start typing a link without an explicit "+ Add" step.
+  // Decides inside the updater (not from the `links` closure) so StrictMode's
+  // double-invoked effect can't append two rows for one state transition.
+  useEffect(() => {
+    setLinks((prev) => {
+      const last = prev[prev.length - 1];
+      const lastIsBlank = !!last && last.url.trim() === '' && last.description.trim() === '';
+      if (!lastIsBlank && prev.length < MAX_TASK_LINKS) {
+        return [...prev, { id: newLinkId(), url: '', description: '' }];
+      }
+      return prev;
+    });
+  }, [links]);
 
   function removeLinkRow(id: string) {
     setLinks((prev) => prev.filter((l) => l.id !== id));
@@ -210,17 +220,7 @@ export function TaskForm({
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-sm font-medium text-gray-700">Links</label>
-          <button
-            type="button"
-            onClick={addLinkRow}
-            disabled={links.length >= MAX_TASK_LINKS}
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            + Add link
-          </button>
-        </div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Links</label>
         <div className="space-y-2">
           {links.map((link) => (
             <div key={link.id} className="flex gap-2 items-start">
@@ -232,13 +232,28 @@ export function TaskForm({
                   placeholder="Description"
                   className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
-                <input
-                  type="text"
-                  value={link.url}
-                  onChange={(e) => updateLinkRow(link.id, 'url', e.target.value)}
-                  placeholder="https://..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
+                <div className="flex gap-1.5 items-center">
+                  <input
+                    type="text"
+                    value={link.url}
+                    onChange={(e) => updateLinkRow(link.id, 'url', e.target.value)}
+                    placeholder="https://..."
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                  {isValidLinkUrl(link.url) && (
+                    <a
+                      href={link.url.trim()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors shrink-0"
+                      aria-label="Open link in new tab"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  )}
+                </div>
               </div>
               <button
                 type="button"
