@@ -433,12 +433,13 @@ def main():
     r = client.get("/labels?category=bogus", headers=H)
     assert_eq("GET /labels?category=bogus → 400", r.status_code, 400)
 
-    # ── Labels: Per-User Model (PR #16, updated PR #31) ───────────────────────
-    print("\n── Labels: Per-User Model (PR #16, updated PR #31) ─────")
-    # PR #30: LABEL_SEED contains 9 entries (4 mode + 5 type); frequency entries removed.
+    # ── Labels: Per-User Model (PR #16, updated PR #31, updated PR #51) ───────
+    print("\n── Labels: Per-User Model (PR #16, updated PR #31, updated PR #51) ─")
+    # PR #30: LABEL_SEED originally contained 9 entries (4 mode + 5 type); frequency entries removed.
     # PR #31: SQL migration deletes all remaining frequency rows from the DB.
-    # All users (including the persistent system test user) now have exactly mode + type labels.
-    assert_true("GET /labels returns at least 9 seeded labels (PR #30)", len(labels) >= 9)
+    # PR #51: mode labels removed end-to-end — LABEL_SEED now contains 5 entries (type only).
+    # All users (including the persistent system test user) now have exactly the 5 seeded type labels.
+    assert_true("GET /labels returns at least 5 seeded labels (PR #51: mode removed)", len(labels) >= 5)
 
     # PR #51: Only type category remains — mode is fully gone (PR #51), frequency was removed in PR #31
     all_categories = {l["category"] for l in labels}
@@ -586,9 +587,11 @@ def main():
     r = client.delete(f"/labels/{str(uuid.uuid4())}", headers=H)
     assert_eq("DELETE /labels/:id non-existent → 404", r.status_code, 404)
 
-    # Clean up the type label created above
-    r = client.delete(f"/labels/{new_type_label_id}", headers=H)
-    assert_eq("DELETE created type label (cleanup) → 204", r.status_code, 204)
+    # NOTE: no further cleanup needed here — new_type_label_id was already
+    # permanently deleted above (labels are hard-deleted, not soft-deleted;
+    # see Table: labels in DATA_MODEL_AND_API.MD). A prior version of this test
+    # re-issued a DELETE on the same already-deleted id expecting 204, which is
+    # wrong (the correct/actual response is 404, as already asserted above).
 
     # Verify label isolation: a task should not accept a label_id that belongs
     # to a different user.  Confirm that the per-user label we just deleted

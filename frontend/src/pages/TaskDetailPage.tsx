@@ -20,7 +20,6 @@ export function TaskDetailPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const { selectedLabelIds } = useFilter();
   const { highPriorityDailyLimit } = useSettings();
@@ -98,12 +97,6 @@ export function TaskDetailPage() {
     lastLabelsBoardIdRef.current = labelsBoardId;
   }, [labelsBoardId]);
 
-  useEffect(() => {
-    if (!success) return;
-    const timer = setTimeout(() => setSuccess(false), 3000);
-    return () => clearTimeout(timer);
-  }, [success]);
-
   const highPriorityWarning = useMemo(() => {
     if (!task?.is_high_priority) return null;
     const now = new Date();
@@ -125,17 +118,13 @@ export function TaskDetailPage() {
   async function handleSubmit(data: CreateTaskBody | UpdateTaskBody) {
     setSaving(true);
     setError(null);
-    setSuccess(false);
     try {
       if (isNew) {
         await createTask(data as CreateTaskBody);
-        navigate(-1);
       } else {
-        const updatedTask = await updateTask(id!, data as UpdateTaskBody);
-        setTask(updatedTask);
-        setSuccess(true);
-        setSaving(false);
+        await updateTask(id!, data as UpdateTaskBody);
       }
+      navigate(-1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save task');
       setSaving(false);
@@ -197,12 +186,6 @@ export function TaskDetailPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">
           {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm mb-4">
-          Task saved successfully
         </div>
       )}
 
