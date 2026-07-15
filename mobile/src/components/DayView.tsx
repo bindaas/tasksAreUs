@@ -7,9 +7,15 @@ import { BoardGroupedTasks } from './BoardGroupedTasks';
 export function DayView({
   referenceDate,
   onEditPress,
+  collapsedBoardIds,
+  onToggleBoard,
+  onSetAllCollapsed,
 }: {
   referenceDate: string;
   onEditPress: (id: string) => void;
+  collapsedBoardIds: Set<string>;
+  onToggleBoard: (id: string) => void;
+  onSetAllCollapsed: (ids: string[], collapsed: boolean) => void;
 }) {
   const [boards, setBoards] = useState<FocusedBoard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +77,14 @@ export function DayView({
       className="flex-1"
       contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}
     >
-      <BoardGroupedTasks boards={boards} onEditPress={onEditPress} onRefresh={load} />
+      <BoardGroupedTasks
+        boards={boards}
+        onEditPress={onEditPress}
+        onRefresh={load}
+        collapsedBoardIds={collapsedBoardIds}
+        onToggleBoard={onToggleBoard}
+        onSetAllCollapsed={onSetAllCollapsed}
+      />
     </ScrollView>
   );
 }

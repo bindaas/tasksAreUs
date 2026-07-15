@@ -3,7 +3,7 @@ import { getDayViewTasks } from '../api/dayView';
 import type { FocusedBoard } from '../api/focusedView';
 import { BoardGroupedTasks } from './BoardGroupedTasks';
 
-export function DayView({ referenceDate }: { referenceDate: string }) {
+export function DayView({ referenceDate, viewKey }: { referenceDate: string; viewKey: 'today' | 'tomorrow' }) {
   const [boards, setBoards] = useState<FocusedBoard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,5 +59,5 @@ export function DayView({ referenceDate }: { referenceDate: string }) {
     );
   }
 
-  return <BoardGroupedTasks boards={boards} onRefresh={load} />;
+  return <BoardGroupedTasks boards={boards} onRefresh={load} viewKey={viewKey} />;
 }

@@ -4,7 +4,17 @@ import { getFocusedViewTasks, type FocusedBoard } from '../api/focusedView';
 import { dateOnly } from '../utils/taskDateUtils';
 import { BoardGroupedTasks } from './BoardGroupedTasks';
 
-export function FocusedView({ onEditPress }: { onEditPress: (id: string) => void }) {
+export function FocusedView({
+  onEditPress,
+  collapsedBoardIds,
+  onToggleBoard,
+  onSetAllCollapsed,
+}: {
+  onEditPress: (id: string) => void;
+  collapsedBoardIds: Set<string>;
+  onToggleBoard: (id: string) => void;
+  onSetAllCollapsed: (ids: string[], collapsed: boolean) => void;
+}) {
   const [boards, setBoards] = useState<FocusedBoard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +79,14 @@ export function FocusedView({ onEditPress }: { onEditPress: (id: string) => void
       className="flex-1"
       contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}
     >
-      <BoardGroupedTasks boards={boards} onEditPress={onEditPress} onRefresh={load} />
+      <BoardGroupedTasks
+        boards={boards}
+        onEditPress={onEditPress}
+        onRefresh={load}
+        collapsedBoardIds={collapsedBoardIds}
+        onToggleBoard={onToggleBoard}
+        onSetAllCollapsed={onSetAllCollapsed}
+      />
     </ScrollView>
   );
 }

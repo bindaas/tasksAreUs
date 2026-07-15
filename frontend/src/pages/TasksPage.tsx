@@ -305,8 +305,8 @@ export function TasksPage() {
       )}
 
       {viewMode === 'focused' && <FocusedView />}
-      {viewMode === 'today' && <DayView referenceDate={today} />}
-      {viewMode === 'tomorrow' && <DayView referenceDate={tomorrow} />}
+      {viewMode === 'today' && <DayView referenceDate={today} viewKey="today" />}
+      {viewMode === 'tomorrow' && <DayView referenceDate={tomorrow} viewKey="tomorrow" />}
 
       {!loading && !error && viewMode === 'all' && (
         filteredTasks.length === 0 ? (

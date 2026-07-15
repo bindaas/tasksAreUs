@@ -11,6 +11,7 @@ import { LoginPage } from './pages/LoginPage';
 import { FilterProvider } from './context/FilterContext';
 import { BoardProvider } from './context/BoardContext';
 import { ViewProvider } from './context/ViewContext';
+import { BoardCollapseProvider } from './context/BoardCollapseContext';
 
 function EmailConfirmationPage() {
   const { confirmEmailSignIn } = useAuth();
@@ -88,17 +89,19 @@ function AppRoutes() {
     <FilterProvider>
       <BoardProvider>
         <ViewProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route element={<Layout />}>
-                <Route path="/" element={<TasksPage />} />
-                <Route path="/tasks/:id" element={<TaskDetailPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
+          <BoardCollapseProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<TasksPage />} />
+                  <Route path="/tasks/:id" element={<TaskDetailPage />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </BoardCollapseProvider>
         </ViewProvider>
       </BoardProvider>
     </FilterProvider>
