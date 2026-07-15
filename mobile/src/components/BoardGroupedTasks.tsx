@@ -30,6 +30,8 @@ export function BoardGroupedTasks({
       <View className="flex-row justify-end mb-2">
         <TouchableOpacity
           onPress={() => onSetAllCollapsed(boards.map((b) => b.board_id), !allCollapsed)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: !allCollapsed }}
         >
           <Text className="text-indigo-500 text-xs">{allCollapsed ? 'Expand all' : 'Collapse all'}</Text>
         </TouchableOpacity>
@@ -43,6 +45,8 @@ export function BoardGroupedTasks({
               onPress={() => onToggleBoard(board.board_id)}
               className="flex-row items-center mb-2"
               style={{ gap: 8 }}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: !collapsed }}
             >
               <Text className="text-gray-400 text-xs w-3 text-center">{collapsed ? '▸' : '▾'}</Text>
               <View className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
