@@ -25,6 +25,7 @@ export function BoardGroupedTasks({
       <div className="flex justify-end">
         <button
           onClick={() => setAllCollapsed(viewKey, boards.map((b) => b.board_id), !allCollapsed)}
+          aria-expanded={!allCollapsed}
           className="text-xs text-indigo-500 hover:underline"
         >
           {allCollapsed ? 'Expand all' : 'Collapse all'}

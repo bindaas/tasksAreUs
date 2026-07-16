@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { getDayViewTasks } from '../api/dayView';
 import type { FocusedBoard } from '../api/focusedView';
 import { BoardGroupedTasks } from './BoardGroupedTasks';
+import type { ViewKey } from '../context/BoardCollapseContext';
 
-export function DayView({ referenceDate, viewKey }: { referenceDate: string; viewKey: 'today' | 'tomorrow' }) {
+export function DayView({ referenceDate, viewKey }: { referenceDate: string; viewKey: Extract<ViewKey, 'today' | 'tomorrow'> }) {
   const [boards, setBoards] = useState<FocusedBoard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
