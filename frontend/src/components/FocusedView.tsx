@@ -59,5 +59,5 @@ export function FocusedView() {
     );
   }
 
-  return <BoardGroupedTasks boards={boards} onRefresh={load} />;
+  return <BoardGroupedTasks boards={boards} onRefresh={load} viewKey="focused" />;
 }

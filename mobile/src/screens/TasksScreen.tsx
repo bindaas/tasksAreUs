@@ -43,6 +43,7 @@ import type { Task, Label, LabelCategory, UpdateTaskBody } from '../types';
 import { LABEL_BG, LABEL_TEXT } from '../utils/labelColors';
 
 type ViewMode = 'focused' | 'today' | 'tomorrow' | 'all';
+type BoardViewKey = 'focused' | 'today' | 'tomorrow';
 
 const VIEW_LABELS: Record<ViewMode, string> = {
   focused: 'Focused',
@@ -216,6 +217,13 @@ export function TasksScreen() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['today', 'overdue']),
   );
+  // Ids left in a view's Set after a board is deleted/renamed are inert
+  // (never matched again) rather than actively cleaned up.
+  const [collapsedBoards, setCollapsedBoards] = useState<Record<BoardViewKey, Set<string>>>({
+    focused: new Set(),
+    today: new Set(),
+    tomorrow: new Set(),
+  });
   const [filterOpen, setFilterOpen] = useState(false);
   const [allLabels, setAllLabels] = useState<Label[]>([]);
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
@@ -390,6 +398,19 @@ export function TasksScreen() {
         new Set(['overdue', 'today', 'tomorrow', 'day_after_tomorrow', 'upcoming', 'nodate']),
       );
     }
+  }
+
+  function toggleBoardCollapse(view: BoardViewKey, boardId: string) {
+    setCollapsedBoards((prev) => {
+      const next = new Set(prev[view]);
+      if (next.has(boardId)) next.delete(boardId);
+      else next.add(boardId);
+      return { ...prev, [view]: next };
+    });
+  }
+
+  function setAllBoardsCollapsed(view: BoardViewKey, boardIds: string[], collapsed: boolean) {
+    setCollapsedBoards((prev) => ({ ...prev, [view]: collapsed ? new Set(boardIds) : new Set() }));
   }
 
   function toggleLabel(id: string) {
@@ -735,15 +756,35 @@ export function TasksScreen() {
 
       {/* Focused view */}
       {viewMode === 'focused' && (
-        <FocusedView key={focusedViewKey} onEditPress={handleEditPress} />
+        <FocusedView
+          key={focusedViewKey}
+          onEditPress={handleEditPress}
+          collapsedBoardIds={collapsedBoards.focused}
+          onToggleBoard={(id) => toggleBoardCollapse('focused', id)}
+          onSetAllCollapsed={(ids, collapsed) => setAllBoardsCollapsed('focused', ids, collapsed)}
+        />
       )}
 
       {/* Today / Tomorrow */}
       {viewMode === 'today' && (
-        <DayView key={focusedViewKey} referenceDate={todayStr} onEditPress={handleEditPress} />
+        <DayView
+          key={focusedViewKey}
+          referenceDate={todayStr}
+          onEditPress={handleEditPress}
+          collapsedBoardIds={collapsedBoards.today}
+          onToggleBoard={(id) => toggleBoardCollapse('today', id)}
+          onSetAllCollapsed={(ids, collapsed) => setAllBoardsCollapsed('today', ids, collapsed)}
+        />
       )}
       {viewMode === 'tomorrow' && (
-        <DayView key={focusedViewKey} referenceDate={tomorrowStr} onEditPress={handleEditPress} />
+        <DayView
+          key={focusedViewKey}
+          referenceDate={tomorrowStr}
+          onEditPress={handleEditPress}
+          collapsedBoardIds={collapsedBoards.tomorrow}
+          onToggleBoard={(id) => toggleBoardCollapse('tomorrow', id)}
+          onSetAllCollapsed={(ids, collapsed) => setAllBoardsCollapsed('tomorrow', ids, collapsed)}
+        />
       )}
 
       {/* List + ghost container */}
