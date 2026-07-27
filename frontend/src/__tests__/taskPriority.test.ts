@@ -42,8 +42,12 @@ describe('isHighPriorityEligible', () => {
     expect(isHighPriorityEligible('overdue')).toBe(false);
   });
 
-  it('returns false for day_after_tomorrow', () => {
-    expect(isHighPriorityEligible('day_after_tomorrow')).toBe(false);
+  it('returns true for day_after_tomorrow', () => {
+    expect(isHighPriorityEligible('day_after_tomorrow')).toBe(true);
+  });
+
+  it('returns true for monday', () => {
+    expect(isHighPriorityEligible('monday')).toBe(true);
   });
 });
 

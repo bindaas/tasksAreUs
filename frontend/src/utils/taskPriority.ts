@@ -10,7 +10,7 @@ export function isFormHighPriorityEligible(mustDoBy: string, targetDate: string,
 export const HIGH_PRIORITY_DAILY_LIMIT = 3;
 
 export function isHighPriorityEligible(columnKey: ColumnKey): boolean {
-  return columnKey === 'today' || columnKey === 'tomorrow';
+  return columnKey === 'today' || columnKey === 'tomorrow' || columnKey === 'day_after_tomorrow' || columnKey === 'monday';
 }
 
 export function splitByPriority(tasks: Task[]): { high: Task[]; normal: Task[] } {
