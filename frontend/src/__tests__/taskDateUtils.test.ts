@@ -2,10 +2,12 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
   dateOnly,
   formatDate,
+  formatDateWithDay,
   isOverdue,
   getEffectiveDate,
   getColumn,
   getDropDate,
+  isFriday,
 } from '../utils/taskDateUtils';
 
 function mockNow(isoDate: string) {
@@ -166,6 +168,82 @@ describe('getDropDate', () => {
 
   it('returns 7 days from today for upcoming column', () => {
     expect(getDropDate('upcoming')).toBe('2026-06-01');
+  });
+
+  it('returns monday for monday column (when today is Friday)', () => {
+    vi.useRealTimers();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-29T12:00:00')); // Friday
+    expect(getDropDate('monday')).toBe('2026-06-01');
+  });
+});
+
+// ── formatDateWithDay ────────────────────────────────────────────────────────────
+
+describe('formatDateWithDay', () => {
+  it('formats date with month, day, and day name', () => {
+    const result = formatDateWithDay('2026-07-27');
+    expect(result).toMatch(/July.*27.*Monday/);
+  });
+
+  it('includes correct day name for different dates', () => {
+    const result = formatDateWithDay('2026-07-28');
+    expect(result).toMatch(/July.*28.*Tuesday/);
+  });
+
+  it('handles month transitions', () => {
+    const result = formatDateWithDay('2026-08-01');
+    expect(result).toMatch(/August.*1.*Saturday/);
+  });
+});
+
+// ── isFriday ──────────────────────────────────────────────────────────────────
+
+describe('isFriday', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns true when today is Friday', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-29T12:00:00')); // Friday
+    expect(isFriday()).toBe(true);
+  });
+
+  it('returns false when today is not Friday', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-25T12:00:00')); // Monday
+    expect(isFriday()).toBe(false);
+  });
+
+  it('returns false on Saturday', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-30T12:00:00')); // Saturday
+    expect(isFriday()).toBe(false);
+  });
+});
+
+// ── getColumn with Monday ─────────────────────────────────────────────────────────
+
+describe('getColumn with Monday', () => {
+  it('assigns to monday when today is Friday and effective date equals Monday', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-29T12:00:00')); // Friday
+    const today = '2026-05-29';
+    const tomorrow = '2026-05-30';
+    expect(getColumn({ must_do_by: '2026-06-01', target_date: null }, today, tomorrow)).toBe('monday');
+  });
+
+  it('assigns to upcoming when today is not Friday even if date would be Monday', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-25T12:00:00')); // Monday
+    const today = '2026-05-25';
+    const tomorrow = '2026-05-26';
+    expect(getColumn({ must_do_by: '2026-06-01', target_date: null }, today, tomorrow)).toBe('upcoming');
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 });
 

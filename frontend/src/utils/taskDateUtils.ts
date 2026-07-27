@@ -1,6 +1,6 @@
 import type { Task } from '../api/tasks';
 
-export type ColumnKey = 'overdue' | 'today' | 'tomorrow' | 'day_after_tomorrow' | 'upcoming' | 'nodate';
+export type ColumnKey = 'overdue' | 'today' | 'tomorrow' | 'day_after_tomorrow' | 'monday' | 'upcoming' | 'nodate';
 
 export function dateOnly(d: Date): string {
   const y = d.getFullYear();
@@ -16,6 +16,18 @@ export function formatDate(dateStr: string): string {
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+export function formatDateWithDay(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  const month = d.toLocaleDateString(undefined, { month: 'long' });
+  const day = d.getDate();
+  const dayName = d.toLocaleDateString(undefined, { weekday: 'long' });
+  return `${month} ${day}, ${dayName}`;
+}
+
+export function isFriday(): boolean {
+  return new Date().getDay() === 5;
 }
 
 export function isOverdue(dateStr: string | null): boolean {
@@ -45,6 +57,13 @@ export function getColumn(
   const dat = new Date(tomorrow + 'T00:00:00');
   dat.setDate(dat.getDate() + 1);
   if (effective === dateOnly(dat)) return 'day_after_tomorrow';
+
+  if (isFriday()) {
+    const monday = new Date(dat);
+    monday.setDate(monday.getDate() + 1);
+    if (effective === dateOnly(monday)) return 'monday';
+  }
+
   return 'upcoming';
 }
 
@@ -63,6 +82,11 @@ export function getDropDate(columnKey: ColumnKey): string | null {
     const dat = new Date(now);
     dat.setDate(dat.getDate() + 2);
     return dateOnly(dat);
+  }
+  if (columnKey === 'monday') {
+    const mon = new Date(now);
+    mon.setDate(mon.getDate() + 3);
+    return dateOnly(mon);
   }
   const week = new Date(now);
   week.setDate(week.getDate() + 7);

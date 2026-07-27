@@ -19,6 +19,8 @@ import {
   getEffectiveDate,
   getColumn,
   getDropDate,
+  formatDateWithDay,
+  isFriday,
 } from '../utils/taskDateUtils';
 import { isHighPriorityEligible, splitByPriority, canAddHighPriority } from '../utils/taskPriority';
 import { useSettings } from '../hooks/useSettings';
@@ -37,14 +39,6 @@ const CATEGORY_COLORS: Record<LabelCategory, { active: string; inactive: string 
   },
 };
 
-const COLUMNS: { key: ColumnKey; title: string }[] = [
-  { key: 'overdue', title: 'Overdue' },
-  { key: 'today', title: 'Today' },
-  { key: 'tomorrow', title: 'Tomorrow' },
-  { key: 'day_after_tomorrow', title: 'Day After Tomorrow' },
-  { key: 'upcoming', title: 'Upcoming' },
-  { key: 'nodate', title: 'No Date' },
-];
 
 const VIEW_ORDER: { key: ViewMode; title: string }[] = [
   { key: 'focused', title: 'Focused' },
@@ -67,6 +61,7 @@ export function TasksPage() {
   const { labels, labelsByCategory } = useLabels();
   const { highPriorityDailyLimit } = useSettings();
   const [dropError, setDropError] = useState<string | null>(null);
+  const [collapsedPriorityByColumn, setCollapsedPriorityByColumn] = useState<Partial<Record<ColumnKey, boolean>>>({});
 
   const { today, tomorrow } = useMemo(() => {
     const now = new Date();
@@ -74,6 +69,31 @@ export function TasksPage() {
     tom.setDate(tom.getDate() + 1);
     return { today: dateOnly(now), tomorrow: dateOnly(tom) };
   }, []);
+
+  const isFridayToday = useMemo(() => isFriday(), []);
+  const monday = useMemo(() => {
+    if (!isFridayToday) return null;
+    const m = new Date(tomorrow);
+    m.setDate(m.getDate() + 1);
+    return dateOnly(m);
+  }, [isFridayToday, tomorrow]);
+
+  const COLUMNS = useMemo<{ key: ColumnKey; title: string }[]>(() => {
+    const base = [
+      { key: 'overdue' as const, title: 'Overdue' },
+      { key: 'today' as const, title: `Today (${formatDateWithDay(today)})` },
+      { key: 'tomorrow' as const, title: `Tomorrow (${formatDateWithDay(tomorrow)})` },
+      { key: 'day_after_tomorrow' as const, title: (() => {
+        const dat = new Date(tomorrow);
+        dat.setDate(dat.getDate() + 1);
+        return `Day After Tomorrow (${formatDateWithDay(dateOnly(dat))})`;
+      })() },
+      ...(isFridayToday && monday ? [{ key: 'monday' as const, title: `Monday (${formatDateWithDay(monday)})` }] : []),
+      { key: 'upcoming' as const, title: 'Upcoming' },
+      { key: 'nodate' as const, title: 'No Date' },
+    ];
+    return base;
+  }, [today, tomorrow, isFridayToday, monday]);
 
   // Restore viewMode from the URL's ?view= param (hard reload / shared link).
   // No-ops once the context already matches, so it doesn't fight in-app view changes.
@@ -128,7 +148,7 @@ export function TasksPage() {
   );
 
   const columnTasks = useMemo(() => {
-    const map: Record<ColumnKey, Task[]> = { overdue: [], today: [], tomorrow: [], day_after_tomorrow: [], upcoming: [], nodate: [] };
+    const map: Record<ColumnKey, Task[]> = { overdue: [], today: [], tomorrow: [], day_after_tomorrow: [], monday: [], upcoming: [], nodate: [] };
     for (const task of filteredTasks) {
       map[getColumn(task, today, tomorrow)].push(task);
     }
@@ -205,6 +225,13 @@ export function TasksPage() {
   function clearDragState() {
     setDragOverColumn(null);
     setDragOverPriority(null);
+  }
+
+  function togglePriorityCollapse(columnKey: ColumnKey) {
+    setCollapsedPriorityByColumn((prev) => ({
+      ...prev,
+      [columnKey]: !prev[columnKey],
+    }));
   }
 
   return (
@@ -366,40 +393,58 @@ export function TasksPage() {
                         )}
                       </div>
 
-                      {/* High-priority zone — onDragOver sets priority intent; onDrop is on the outer div */}
-                      <div
-                        className={`p-2 space-y-2 min-h-[60px] transition-colors rounded-t-lg ${
-                          isHighZoneOver ? 'bg-orange-50' : ''
-                        }`}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setDragOverColumn(col.key);
-                          setDragOverPriority('high');
-                        }}
-                      >
-                        {highTasks.length === 0 ? (
-                          <div className={`text-center py-4 text-xs select-none transition-colors ${
-                            isHighZoneOver ? 'text-orange-400' : 'text-gray-300'
-                          }`}>
-                            {isOverdueCol ? 'High priority' : 'Drop for high priority ↑'}
-                          </div>
-                        ) : (
-                          highTasks.map((task) => (
-                            <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
-                              onTogglePriority={isHighPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
-                            />
-                          ))
-                        )}
+                      {/* High-priority zone header with collapse toggle */}
+                      <div className="px-2 py-1 flex items-center gap-1.5 bg-orange-100 border-b border-orange-200">
+                        <button
+                          onClick={() => togglePriorityCollapse(col.key)}
+                          className="text-orange-600 hover:text-orange-700 transition-colors p-0.5"
+                          title={collapsedPriorityByColumn[col.key] ? 'Expand' : 'Collapse'}
+                        >
+                          <svg className={`w-4 h-4 transition-transform ${collapsedPriorityByColumn[col.key] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7-7m0 0L5 14m7-7v12" />
+                          </svg>
+                        </button>
+                        <span className="text-xs font-semibold text-orange-700">High Priority</span>
                       </div>
 
+                      {/* High-priority zone — onDragOver sets priority intent; onDrop is on the outer div */}
+                      {!collapsedPriorityByColumn[col.key] && (
+                        <div
+                          className={`p-2 space-y-2 min-h-[60px] transition-colors rounded-t-lg ${
+                            isHighZoneOver ? 'bg-orange-50' : ''
+                          }`}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDragOverColumn(col.key);
+                            setDragOverPriority('high');
+                          }}
+                        >
+                          {highTasks.length === 0 ? (
+                            <div className={`text-center py-4 text-xs select-none transition-colors ${
+                              isHighZoneOver ? 'text-orange-400' : 'text-gray-300'
+                            }`}>
+                              {isOverdueCol ? 'High priority' : 'Drop for high priority ↑'}
+                            </div>
+                          ) : (
+                            highTasks.map((task) => (
+                              <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
+                                onTogglePriority={isHighPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
+                              />
+                            ))
+                          )}
+                        </div>
+                      )}
+
                       {/* Divider */}
-                      <div className="flex items-center gap-1 px-2 py-0.5 select-none">
-                        <div className="flex-1 h-px bg-orange-200" />
-                        <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wide whitespace-nowrap">
-                          high · normal
-                        </span>
-                        <div className="flex-1 h-px bg-gray-200" />
-                      </div>
+                      {!collapsedPriorityByColumn[col.key] && (
+                        <div className="flex items-center gap-1 px-2 py-0.5 select-none">
+                          <div className="flex-1 h-px bg-orange-200" />
+                          <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wide whitespace-nowrap">
+                            high · normal
+                          </span>
+                          <div className="flex-1 h-px bg-gray-200" />
+                        </div>
+                      )}
 
                       {/* Normal-priority zone — onDragOver sets priority intent; onDrop is on the outer div */}
                       <div
