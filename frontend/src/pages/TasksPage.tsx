@@ -400,7 +400,7 @@ export function TasksPage() {
                           className="text-orange-600 hover:text-orange-700 transition-colors p-0.5"
                           title={collapsedPriorityByColumn[col.key] ? 'Expand' : 'Collapse'}
                         >
-                          <svg className={`w-4 h-4 transition-transform ${collapsedPriorityByColumn[col.key] ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className={`w-4 h-4 transition-transform ${collapsedPriorityByColumn[col.key] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7-7m0 0L5 14m7-7v12" />
                           </svg>
                         </button>
