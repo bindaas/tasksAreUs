@@ -17,6 +17,12 @@ describe('dayView API', () => {
       expect(mockApiFetch).toHaveBeenCalledWith('/day-view/tasks?reference_date=2026-07-01');
     });
 
+    it('appends &overdue=true when overdue=true', async () => {
+      mockApiFetch.mockResolvedValue({ boards: [] });
+      await getDayViewTasks('2026-07-01', true);
+      expect(mockApiFetch).toHaveBeenCalledWith('/day-view/tasks?reference_date=2026-07-01&overdue=true');
+    });
+
     it('returns boards array', async () => {
       const board = {
         board_id: 'b1',

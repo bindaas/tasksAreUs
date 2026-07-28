@@ -10,12 +10,16 @@ export function DayView({
   collapsedBoardIds,
   onToggleBoard,
   onSetAllCollapsed,
+  overdue = false,
+  onLoaded,
 }: {
   referenceDate: string;
   onEditPress: (id: string) => void;
   collapsedBoardIds: Set<string>;
   onToggleBoard: (id: string) => void;
   onSetAllCollapsed: (ids: string[], collapsed: boolean) => void;
+  overdue?: boolean;
+  onLoaded?: (hasAny: boolean) => void;
 }) {
   const [boards, setBoards] = useState<FocusedBoard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,8 +29,9 @@ export function DayView({
     setLoading(true);
     setError(null);
     try {
-      const result = await getDayViewTasks(referenceDate);
+      const result = await getDayViewTasks(referenceDate, overdue);
       setBoards(result.boards);
+      onLoaded?.(result.boards.length > 0);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load tasks');
     } finally {
@@ -37,7 +42,7 @@ export function DayView({
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [referenceDate]);
+  }, [referenceDate, overdue]);
 
   if (loading) {
     return (
@@ -64,7 +69,9 @@ export function DayView({
     return (
       <View className="flex-1 items-center justify-center py-16 px-8">
         <Text className="text-4xl mb-3">📅</Text>
-        <Text className="text-gray-500 text-base text-center mb-1">No tasks for this period</Text>
+        <Text className="text-gray-500 text-base text-center mb-1">
+          {overdue ? 'No overdue tasks' : 'No tasks for this period'}
+        </Text>
         <TouchableOpacity onPress={load}>
           <Text className="text-indigo-500 text-sm mt-3">Refresh</Text>
         </TouchableOpacity>

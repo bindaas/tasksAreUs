@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 
-export type ViewKey = 'focused' | 'today' | 'tomorrow';
+export type ViewKey = 'overdue' | 'focused' | 'today' | 'tomorrow';
 
 interface BoardCollapseContextValue {
   isCollapsed: (view: ViewKey, boardId: string) => boolean;
@@ -13,6 +13,7 @@ const BoardCollapseContext = createContext<BoardCollapseContextValue | null>(nul
 
 export function BoardCollapseProvider({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState<Record<ViewKey, Set<string>>>({
+    overdue: new Set(),
     focused: new Set(),
     today: new Set(),
     tomorrow: new Set(),

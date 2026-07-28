@@ -149,6 +149,19 @@ async def lifespan(app: FastAPI):
             "ON labels (board_id, category, value)"
         ))
 
+        # ── Overdue view — perf indexes ──────────────────────────────────────────
+        # GET /day-view/tasks?overdue=true does an unbounded `< reference_date` scan
+        # (unlike Today/Tomorrow's bounded `.in_(window)`), so it benefits from an
+        # index scoped to exactly what _query_board_grouped_tasks filters on.
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS tasks_user_id_must_do_by_pending_idx "
+            "ON tasks (user_id, must_do_by) WHERE is_deleted = false AND state = 'pending'"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS tasks_user_id_target_date_pending_idx "
+            "ON tasks (user_id, target_date) WHERE is_deleted = false AND state = 'pending'"
+        ))
+
         # ── Chat removal — drop conversations/messages tables and starter_questions ──
         conn.execute(text("DROP TABLE IF EXISTS messages"))
         conn.execute(text("DROP TABLE IF EXISTS conversations"))

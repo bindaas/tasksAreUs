@@ -96,8 +96,8 @@ Core entity. One-time and recurring task instances are both stored here.
 | `title` | VARCHAR | Required |
 | `notes` | TEXT | Nullable |
 | `state` | ENUM | `pending`, `done` |
-| `must_do_by` | DATE | Nullable. Hard deadline |
-| `target_date` | DATE | Nullable. Aspirational completion date |
+| `must_do_by` | DATE | Nullable. Hard deadline. Partial index `tasks_user_id_must_do_by_pending_idx` on `(user_id, must_do_by) WHERE is_deleted = false AND state = 'pending'` (PR #55) — added for the Overdue view's unbounded `< reference_date` scan. |
+| `target_date` | DATE | Nullable. Aspirational completion date. Partial index `tasks_user_id_target_date_pending_idx` on `(user_id, target_date) WHERE is_deleted = false AND state = 'pending'` (PR #55), same reason. |
 | `completed_at` | TIMESTAMP | Nullable. Set when state → done |
 | `is_high_priority` | BOOLEAN | Default false. Only meaningful when effective date (earliest of `must_do_by` / `target_date`) is overdue, today, tomorrow, day_after_tomorrow, or monday |
 | `is_deleted` | BOOLEAN | Default false. Soft delete |
@@ -717,13 +717,14 @@ Returns `is_high_priority = true` pending tasks that have `must_do_by` or `targe
 
 ### Day View
 
-New in PR #40 (backend only; part 1 of a 3-PR epic — web/mobile Today/Tomorrow views consume this endpoint in later PRs). Unlike Focused View, Day View has no per-user configuration — it always shows all pending tasks (any priority) across all boards for a single date.
+New in PR #40 (backend only; part 1 of a 3-PR epic — web/mobile Today/Tomorrow views consume this endpoint in later PRs). Unlike Focused View, Day View has no per-user configuration — it always shows all pending tasks (any priority) across all boards for a single date (or, with `overdue=true`, before a single date).
 
 #### `GET /day-view/tasks`
-Returns pending tasks (any priority) whose `must_do_by` or `target_date` falls on `reference_date`, across all of the caller's boards, grouped alphabetically by board. This is the same OR-across-both-date-fields filter Focused View uses (not a computed "earliest effective date"). Ignores the user's Focused View config entirely — no `board_selection`/`day_range` concept applies here.
+Returns pending tasks (any priority) whose `must_do_by` or `target_date` falls on `reference_date` (or, when `overdue=true`, strictly before `reference_date`), across all of the caller's boards, grouped alphabetically by board. This is the same OR-across-both-date-fields filter Focused View uses (not a computed "earliest effective date") — `overdue=true` swaps the per-field comparison from `==` to `<` but keeps the same OR-across-both-fields shape, which is equivalent to "the earliest of the two fields is before `reference_date`" (see Table `tasks`' Effective date definition). Ignores the user's Focused View config entirely — no `board_selection`/`day_range` concept applies here.
 
 **Query params**
 - `reference_date=YYYY-MM-DD` (required — no default; `422` if omitted)
+- `overdue=true|false` (optional, default `false`, added PR #55) — when `true`, matches tasks strictly before `reference_date` instead of exactly on it. Backs the web/mobile **Overdue** view (a separate top-level view from Today/Tomorrow, not a new endpoint); a task due exactly on `reference_date` is excluded when `overdue=true`. Omitting the param, or passing `overdue=false`, preserves the pre-PR #55 exact-match behavior byte-for-byte.
 
 **Response** — same shape as `GET /focused-view/tasks`
 ```json

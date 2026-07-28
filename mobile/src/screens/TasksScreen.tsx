@@ -39,13 +39,15 @@ import { FocusedView } from '../components/FocusedView';
 import { DayView } from '../components/DayView';
 import { BoardTabs } from '../components/BoardTabs';
 import { TaskCardBody } from '../components/TaskCardBody';
+import { getDayViewTasks } from '../api/dayView';
 import type { Task, Label, LabelCategory, UpdateTaskBody } from '../types';
 import { LABEL_BG, LABEL_TEXT } from '../utils/labelColors';
 
-type ViewMode = 'focused' | 'today' | 'tomorrow' | 'all';
-type BoardViewKey = 'focused' | 'today' | 'tomorrow';
+type ViewMode = 'overdue' | 'focused' | 'today' | 'tomorrow' | 'all';
+type BoardViewKey = 'overdue' | 'focused' | 'today' | 'tomorrow';
 
 const VIEW_LABELS: Record<ViewMode, string> = {
+  overdue: 'Overdue',
   focused: 'Focused',
   today: 'Today',
   tomorrow: 'Tomorrow',
@@ -220,6 +222,7 @@ export function TasksScreen() {
   // Ids left in a view's Set after a board is deleted/renamed are inert
   // (never matched again) rather than actively cleaned up.
   const [collapsedBoards, setCollapsedBoards] = useState<Record<BoardViewKey, Set<string>>>({
+    overdue: new Set(),
     focused: new Set(),
     today: new Set(),
     tomorrow: new Set(),
@@ -231,6 +234,9 @@ export function TasksScreen() {
 
   const [viewMode, setViewMode] = useState<ViewMode>('focused');
   const [focusedViewKey, setFocusedViewKey] = useState(0);
+  const [hasOverdueTasks, setHasOverdueTasks] = useState(false);
+  const [initialGateResolved, setInitialGateResolved] = useState(false);
+  const appliedDefaultViewRef = useRef(false);
 
   const [highPriorityLimit, setHighPriorityLimit] = useState(3);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -294,6 +300,23 @@ export function TasksScreen() {
       // Force FocusedView/DayView remount on every tab re-focus so config/board-tab
       // changes are reflected without needing a manual Retry.
       setFocusedViewKey((k) => k + 1);
+
+      // Drives the Overdue pill's visibility and (on the very first focus only) the
+      // Focused vs. Overdue default. appliedDefaultViewRef is only ever set inside the
+      // .then() continuation — after the real value is known — so there's no
+      // synchronous code path that can consume the one-shot default-application guard
+      // before the fetch resolves.
+      getDayViewTasks(dateOnly(new Date()), true)
+        .then((result) => {
+          const hasAny = result.boards.length > 0;
+          setHasOverdueTasks(hasAny);
+          if (!appliedDefaultViewRef.current) {
+            appliedDefaultViewRef.current = true;
+            if (hasAny) setViewMode('overdue');
+          }
+        })
+        .catch(() => {})
+        .finally(() => setInitialGateResolved(true));
     }, [load, activeBoard?.id]),
   );
 
@@ -591,7 +614,7 @@ export function TasksScreen() {
 
   // ── render ─────────────────────────────────────────────────────────────────
 
-  if (loading) {
+  if (loading || !initialGateResolved) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
         <ActivityIndicator size="large" color="#4f46e5" />
@@ -614,6 +637,10 @@ export function TasksScreen() {
   const tomDate = new Date();
   tomDate.setDate(tomDate.getDate() + 1);
   const tomorrowStr = dateOnly(tomDate);
+
+  const pillModes: readonly ViewMode[] = hasOverdueTasks
+    ? (['overdue', 'focused', 'today', 'tomorrow', 'all'] as const)
+    : (['focused', 'today', 'tomorrow', 'all'] as const);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
@@ -638,7 +665,7 @@ export function TasksScreen() {
             className="flex-row rounded-full overflow-hidden"
             style={{ backgroundColor: '#f3f4f6' }}
           >
-            {(['focused', 'today', 'tomorrow', 'all'] as const).map((mode) => (
+            {pillModes.map((mode) => (
               <TouchableOpacity
                 key={mode}
                 onPress={() => {
@@ -753,6 +780,20 @@ export function TasksScreen() {
           defaultBoardId={createBoardId}
         />
       </Modal>
+
+      {/* Overdue */}
+      {viewMode === 'overdue' && (
+        <DayView
+          key={focusedViewKey}
+          referenceDate={todayStr}
+          overdue
+          onLoaded={setHasOverdueTasks}
+          onEditPress={handleEditPress}
+          collapsedBoardIds={collapsedBoards.overdue}
+          onToggleBoard={(id) => toggleBoardCollapse('overdue', id)}
+          onSetAllCollapsed={(ids, collapsed) => setAllBoardsCollapsed('overdue', ids, collapsed)}
+        />
+      )}
 
       {/* Focused view */}
       {viewMode === 'focused' && (

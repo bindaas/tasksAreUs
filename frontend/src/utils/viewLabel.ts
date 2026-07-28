@@ -1,6 +1,7 @@
-export type ViewMode = 'focused' | 'today' | 'tomorrow' | 'all';
+export type ViewMode = 'overdue' | 'focused' | 'today' | 'tomorrow' | 'all';
 
 const VIEW_LABELS: Record<Exclude<ViewMode, 'all'>, string> = {
+  overdue: 'Overdue',
   focused: 'Focused',
   today: 'Today',
   tomorrow: 'Tomorrow',

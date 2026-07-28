@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { useLabels } from '../hooks/useLabels';
@@ -7,6 +7,7 @@ import { FocusedView } from '../components/FocusedView';
 import { DayView } from '../components/DayView';
 import { BoardTabs } from '../components/BoardTabs';
 import { updateTask } from '../api/tasks';
+import { getDayViewTasks } from '../api/dayView';
 import { useFilter } from '../context/FilterContext';
 import { useBoard } from '../context/BoardContext';
 import { useView } from '../context/ViewContext';
@@ -40,13 +41,6 @@ const CATEGORY_COLORS: Record<LabelCategory, { active: string; inactive: string 
 };
 
 
-const VIEW_ORDER: { key: ViewMode; title: string }[] = [
-  { key: 'focused', title: 'Focused' },
-  { key: 'today', title: 'Today' },
-  { key: 'tomorrow', title: 'Tomorrow' },
-  { key: 'all', title: 'All' },
-];
-
 export function TasksPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -62,6 +56,17 @@ export function TasksPage() {
   const { highPriorityDailyLimit } = useSettings();
   const [dropError, setDropError] = useState<string | null>(null);
   const [collapsedPriorityByColumn, setCollapsedPriorityByColumn] = useState<Partial<Record<ColumnKey, boolean>>>({});
+  const [hasOverdueTasks, setHasOverdueTasks] = useState(false);
+  const [overdueChecked, setOverdueChecked] = useState(false);
+  const appliedDefaultRef = useRef(false);
+
+  const VIEW_ORDER = useMemo<{ key: ViewMode; title: string }[]>(() => [
+    ...(hasOverdueTasks ? [{ key: 'overdue' as const, title: 'Overdue' }] : []),
+    { key: 'focused', title: 'Focused' },
+    { key: 'today', title: 'Today' },
+    { key: 'tomorrow', title: 'Tomorrow' },
+    { key: 'all', title: 'All' },
+  ], [hasOverdueTasks]);
 
   const { today, tomorrow } = useMemo(() => {
     const now = new Date();
@@ -100,7 +105,7 @@ export function TasksPage() {
   useEffect(() => {
     const viewParam = searchParams.get('view');
     if (
-      (viewParam === 'today' || viewParam === 'tomorrow' || viewParam === 'all') &&
+      (viewParam === 'overdue' || viewParam === 'today' || viewParam === 'tomorrow' || viewParam === 'all') &&
       viewParam !== viewMode
     ) {
       setViewMode(viewParam);
@@ -118,6 +123,28 @@ export function TasksPage() {
       setActiveBoard(found);
     }
   }, [boards, searchParams, activeBoard, setActiveBoard]);
+
+  // Check for overdue tasks once on mount: drives the Overdue pill's visibility and
+  // (when no explicit ?view= param already won) the Focused vs. Overdue default.
+  // The ref is only ever set inside the .then() continuation — i.e. only once the
+  // real value is known — so there's no synchronous code path that can consume the
+  // one-shot default-application guard before the fetch resolves.
+  useEffect(() => {
+    getDayViewTasks(dateOnly(new Date()), true)
+      .then((result) => {
+        const hasAny = result.boards.length > 0;
+        setHasOverdueTasks(hasAny);
+        if (!appliedDefaultRef.current) {
+          appliedDefaultRef.current = true;
+          if (!searchParams.get('view') && hasAny) {
+            setView('overdue');
+          }
+        }
+      })
+      .catch(() => setHasOverdueTasks(false))
+      .finally(() => setOverdueChecked(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function setView(v: ViewMode) {
     setViewMode(v);
@@ -241,107 +268,118 @@ export function TasksPage() {
         <h2 className="text-xl font-bold text-gray-900">
           Tasks Are Us - {viewLabel(viewMode, activeBoard?.name)}
         </h2>
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* 4-way view toggle */}
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
-            {VIEW_ORDER.map((v, idx) => (
-              <button
-                key={v.key}
-                onClick={() => setView(v.key)}
-                className={`px-3 py-1.5 transition-colors ${idx > 0 ? 'border-l border-gray-200' : ''} ${
-                  viewMode === v.key
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                {v.title}
-              </button>
-            ))}
-          </div>
-
-          {viewMode === 'all' && (
-            <div className="relative">
-              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-              </svg>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tasks…"
-                className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
-              />
+        {overdueChecked && (
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* view toggle */}
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+              {VIEW_ORDER.map((v, idx) => (
+                <button
+                  key={v.key}
+                  onClick={() => setView(v.key)}
+                  className={`px-3 py-1.5 transition-colors ${idx > 0 ? 'border-l border-gray-200' : ''} ${
+                    viewMode === v.key
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {v.title}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+
+            {viewMode === 'all' && (
+              <div className="relative">
+                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search tasks…"
+                  className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Board tabs — only under All */}
-      {viewMode === 'all' && <BoardTabs onSelect={handleBoardTabSelect} />}
-
-      {/* Label filter chips — only shown for the All (kanban) view */}
-      {viewMode === 'all' && (
-        <div className="mb-4 space-y-2">
-          {CATEGORIES.map((cat) => {
-            const catLabels = (labelsByCategory[cat] ?? []) as Label[];
-            if (catLabels.length === 0) return null;
-            const colors = CATEGORY_COLORS[cat];
-            return (
-              <div key={cat} className="flex flex-wrap gap-1.5 items-center">
-                <span className="text-xs font-semibold text-gray-500 tracking-wide w-16 shrink-0">
-                  {CATEGORY_DISPLAY_NAMES[cat]}
-                </span>
-                {catLabels.map((label) => {
-                  const active = selectedLabelIds.has(label.id);
-                  return (
-                    <button
-                      key={label.id}
-                      onClick={() => toggleLabel(label.id)}
-                      className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors ${
-                        active ? colors.active : colors.inactive
-                      }`}
-                    >
-                      {label.value}
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-          {selectedLabelIds.size > 0 && (
-            <button
-              onClick={clearLabels}
-              className="text-xs text-gray-500 hover:text-gray-700 underline"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-      )}
-
-      {loading && viewMode === 'all' && (
-        <div className="flex justify-center py-12">
+      {!overdueChecked ? (
+        <div className="flex justify-center py-16">
           <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
         </div>
-      )}
+      ) : (
+        <>
+          {/* Board tabs — only under All */}
+          {viewMode === 'all' && <BoardTabs onSelect={handleBoardTabSelect} />}
 
-      {(error || dropError) && viewMode === 'all' && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-          {error ?? dropError}
-        </div>
-      )}
+          {/* Label filter chips — only shown for the All (kanban) view */}
+          {viewMode === 'all' && (
+            <div className="mb-4 space-y-2">
+              {CATEGORIES.map((cat) => {
+                const catLabels = (labelsByCategory[cat] ?? []) as Label[];
+                if (catLabels.length === 0) return null;
+                const colors = CATEGORY_COLORS[cat];
+                return (
+                  <div key={cat} className="flex flex-wrap gap-1.5 items-center">
+                    <span className="text-xs font-semibold text-gray-500 tracking-wide w-16 shrink-0">
+                      {CATEGORY_DISPLAY_NAMES[cat]}
+                    </span>
+                    {catLabels.map((label) => {
+                      const active = selectedLabelIds.has(label.id);
+                      return (
+                        <button
+                          key={label.id}
+                          onClick={() => toggleLabel(label.id)}
+                          className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors ${
+                            active ? colors.active : colors.inactive
+                          }`}
+                        >
+                          {label.value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+              {selectedLabelIds.size > 0 && (
+                <button
+                  onClick={clearLabels}
+                  className="text-xs text-gray-500 hover:text-gray-700 underline"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
 
-      {viewMode === 'focused' && <FocusedView />}
-      {viewMode === 'today' && <DayView referenceDate={today} viewKey="today" />}
-      {viewMode === 'tomorrow' && <DayView referenceDate={tomorrow} viewKey="tomorrow" />}
+          {loading && viewMode === 'all' && (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            </div>
+          )}
 
-      {!loading && !error && viewMode === 'all' && (
-        filteredTasks.length === 0 ? (
-          <EmptyState msg={selectedLabelIds.size > 0 || searchQuery.trim() ? 'No tasks match this filter' : 'No pending tasks'} />
-        ) : (
-          /* Pending tasks: 6-column kanban board */
-          <div className="overflow-x-auto -mx-4 px-4 pb-4">
-            <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
+          {(error || dropError) && viewMode === 'all' && (
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+              {error ?? dropError}
+            </div>
+          )}
+
+          {viewMode === 'overdue' && (
+            <DayView referenceDate={today} viewKey="overdue" overdue onLoaded={setHasOverdueTasks} />
+          )}
+          {viewMode === 'focused' && <FocusedView />}
+          {viewMode === 'today' && <DayView referenceDate={today} viewKey="today" />}
+          {viewMode === 'tomorrow' && <DayView referenceDate={tomorrow} viewKey="tomorrow" />}
+
+          {!loading && !error && viewMode === 'all' && (
+            filteredTasks.length === 0 ? (
+              <EmptyState msg={selectedLabelIds.size > 0 || searchQuery.trim() ? 'No tasks match this filter' : 'No pending tasks'} />
+            ) : (
+              /* Pending tasks: 6-column kanban board */
+              <div className="overflow-x-auto -mx-4 px-4 pb-4">
+                <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
               {COLUMNS.map((col) => {
                 const colTasks = columnTasks[col.key];
                 if (col.key === 'overdue' && colTasks.length === 0) return null;
@@ -526,6 +564,8 @@ export function TasksPage() {
             </div>
           </div>
         )
+      )}
+        </>
       )}
 
       {/* FAB */}
