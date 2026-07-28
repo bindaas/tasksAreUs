@@ -96,8 +96,8 @@ Core entity. One-time and recurring task instances are both stored here.
 | `title` | VARCHAR | Required |
 | `notes` | TEXT | Nullable |
 | `state` | ENUM | `pending`, `done` |
-| `must_do_by` | DATE | Nullable. Hard deadline |
-| `target_date` | DATE | Nullable. Aspirational completion date |
+| `must_do_by` | DATE | Nullable. Hard deadline. Partial index `tasks_user_id_must_do_by_pending_idx` on `(user_id, must_do_by) WHERE is_deleted = false AND state = 'pending'` (PR #55) — added for the Overdue view's unbounded `< reference_date` scan. |
+| `target_date` | DATE | Nullable. Aspirational completion date. Partial index `tasks_user_id_target_date_pending_idx` on `(user_id, target_date) WHERE is_deleted = false AND state = 'pending'` (PR #55), same reason. |
 | `completed_at` | TIMESTAMP | Nullable. Set when state → done |
 | `is_high_priority` | BOOLEAN | Default false. Only meaningful when effective date (earliest of `must_do_by` / `target_date`) is overdue, today, tomorrow, day_after_tomorrow, or monday |
 | `is_deleted` | BOOLEAN | Default false. Soft delete |

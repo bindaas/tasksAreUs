@@ -323,3 +323,12 @@ No new files anywhere — every change is a modification to an existing file.
 - Add the mixed-date-fields test case from Issue 3 to `test_focused_view_service.py`'s planned `TestGetDayViewTasks` additions.
 
 — *Sneezy*
+
+---
+
+## Post-merge addendum: perf indexes (Doc's arch-review callout)
+
+Doc's arch-review of the shipped PR flagged that `overdue=true`'s `< reference_date` scan is unbounded and hit unindexed `must_do_by`/`target_date` columns — not urgent at current scale, but the first query in this codebase whose cost scales with total task history rather than a fixed window, and it recurs on every mobile tab refocus. Folded into this same branch as a follow-up, low-risk perf fix (Confidence 5/5, Regression risk 1/5, single-component/backend-only deploy, no test changes needed since behavior is unchanged):
+
+- `backend/app/main.py` — two new partial indexes added to the existing lifespan migration block: `tasks_user_id_must_do_by_pending_idx` and `tasks_user_id_target_date_pending_idx`, both `ON tasks (user_id, <col>) WHERE is_deleted = false AND state = 'pending'` — scoped to exactly the filter set `_query_board_grouped_tasks` already applies.
+- `DATA_MODEL_AND_API.MD` — documented both indexes against the `must_do_by`/`target_date` rows.
