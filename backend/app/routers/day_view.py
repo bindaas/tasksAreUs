@@ -14,8 +14,9 @@ router = APIRouter(prefix="/day-view", tags=["day-view"])
 @router.get("/tasks", response_model=FocusedViewTasksOut)
 def get_day_view_tasks(
     reference_date: date = Query(...),
+    overdue: bool = Query(default=False),
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    boards = svc.get_day_view_tasks(db, user_id, reference_date)
+    boards = svc.get_day_view_tasks(db, user_id, reference_date, overdue=overdue)
     return FocusedViewTasksOut(boards=boards)

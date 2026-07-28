@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { viewLabel } from '../utils/viewLabel';
 
 describe('viewLabel', () => {
+  it('returns Overdue for the overdue view', () => {
+    expect(viewLabel('overdue', 'General tasks')).toBe('Overdue');
+  });
+
   it('returns Focused for the focused view', () => {
     expect(viewLabel('focused', 'General tasks')).toBe('Focused');
   });

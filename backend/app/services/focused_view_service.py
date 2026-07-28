@@ -104,10 +104,10 @@ def _query_board_grouped_tasks(
     db: Session,
     user_id: str,
     boards: List[Board],
-    window: List[date],
+    date_filter,
     high_priority_only: bool,
 ) -> List[dict]:
-    """Query pending tasks due within `window`, grouped by the given (already-ordered) boards.
+    """Query pending tasks matching `date_filter`, grouped by the given (already-ordered) boards.
 
     Callers are responsible for resolving and ordering `boards` before calling this —
     ordering here follows whatever order `boards` was passed in.
@@ -122,10 +122,7 @@ def _query_board_grouped_tasks(
         Task.board_id.in_(board_ids),
         Task.is_deleted == False,
         Task.state == StateEnum.pending,
-        or_(
-            Task.must_do_by.in_(window),
-            Task.target_date.in_(window),
-        ),
+        date_filter,
     ]
     if high_priority_only:
         filters.append(Task.is_high_priority == True)
@@ -170,17 +167,33 @@ def get_focused_tasks(
         ).order_by(Board.name.asc()).all()
 
     window = date_window(config.day_range, reference_date)
-    return _query_board_grouped_tasks(db, user_id, boards, window, high_priority_only=True)
+    date_filter = or_(
+        Task.must_do_by.in_(window),
+        Task.target_date.in_(window),
+    )
+    return _query_board_grouped_tasks(db, user_id, boards, date_filter, high_priority_only=True)
 
 
 def get_day_view_tasks(
     db: Session,
     user_id: str,
     reference_date: date,
+    overdue: bool = False,
 ) -> List[dict]:
     boards = db.query(Board).filter(
         Board.user_id == user_id,
         Board.is_deleted == False,
     ).order_by(Board.name.asc()).all()
 
-    return _query_board_grouped_tasks(db, user_id, boards, [reference_date], high_priority_only=False)
+    if overdue:
+        date_filter = or_(
+            Task.must_do_by < reference_date,
+            Task.target_date < reference_date,
+        )
+    else:
+        date_filter = or_(
+            Task.must_do_by == reference_date,
+            Task.target_date == reference_date,
+        )
+
+    return _query_board_grouped_tasks(db, user_id, boards, date_filter, high_priority_only=False)

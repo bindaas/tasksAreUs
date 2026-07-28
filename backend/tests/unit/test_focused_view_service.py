@@ -373,3 +373,68 @@ class TestGetDayViewTasks:
         result = get_day_view_tasks(db, "user-1", self.TODAY)
 
         assert [r["board_name"] for r in result] == ["Alpha", "Zebra"]
+
+    def test_overdue_true_still_groups_and_orders_boards(self):
+        board = _make_board("b1", name="Alpha")
+        task = _make_task("t1", "b1", must_do_by=self.TODAY - timedelta(days=1))
+        db = self._setup_db(boards=[board], tasks=[task])
+
+        result = get_day_view_tasks(db, "user-1", self.TODAY, overdue=True)
+
+        assert len(result) == 1
+        assert result[0]["board_id"] == "b1"
+        assert result[0]["tasks"] == [task]
+
+
+# ── get_day_view_tasks date filter clause ────────────────────────────────────
+#
+# Unit tests mock the SQLAlchemy session, so they can't exercise real WHERE-clause
+# evaluation against row data (no DB). Instead these capture the actual filter clause
+# passed to `.filter(...)` and inspect its structure directly, to guard against a future
+# edit silently inverting the "earliest of must_do_by/target_date" comparison (`<` vs `==`)
+# or dropping a field from the OR — the class of bug a canned-return-value mock would never
+# catch. Real end-to-end date-boundary behavior (including NULL handling) is covered by the
+# integration suite in backend/tests/test_api.py.
+
+class TestGetDayViewTasksDateFilterClause:
+    TODAY = date(2026, 6, 28)
+
+    def _capture_date_filter(self, overdue: bool) -> str:
+        db = MagicMock()
+        board_mock = MagicMock()
+        board_mock.filter.return_value.order_by.return_value.all.return_value = [_make_board("b1")]
+        task_mock = MagicMock()
+        task_mock.filter.return_value.order_by.return_value.all.return_value = []
+        db.query.side_effect = [board_mock, task_mock]
+
+        get_day_view_tasks(db, "user-1", self.TODAY, overdue=overdue)
+
+        args, _ = task_mock.filter.call_args
+        return str(args[-1])
+
+    def test_overdue_true_uses_less_than_on_both_fields(self):
+        clause = self._capture_date_filter(overdue=True)
+        assert "must_do_by <" in clause
+        assert "target_date <" in clause
+        assert " OR " in clause
+
+    def test_overdue_false_uses_equality_on_both_fields(self):
+        clause = self._capture_date_filter(overdue=False)
+        assert "must_do_by =" in clause
+        assert "target_date =" in clause
+        assert " OR " in clause
+
+    def test_overdue_defaults_to_false(self):
+        db = MagicMock()
+        board_mock = MagicMock()
+        board_mock.filter.return_value.order_by.return_value.all.return_value = [_make_board("b1")]
+        task_mock = MagicMock()
+        task_mock.filter.return_value.order_by.return_value.all.return_value = []
+        db.query.side_effect = [board_mock, task_mock]
+
+        get_day_view_tasks(db, "user-1", self.TODAY)
+
+        args, _ = task_mock.filter.call_args
+        clause = str(args[-1])
+        assert "must_do_by =" in clause
+        assert "must_do_by <" not in clause

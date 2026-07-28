@@ -4,7 +4,17 @@ import type { FocusedBoard } from '../api/focusedView';
 import { BoardGroupedTasks } from './BoardGroupedTasks';
 import type { ViewKey } from '../context/BoardCollapseContext';
 
-export function DayView({ referenceDate, viewKey }: { referenceDate: string; viewKey: Extract<ViewKey, 'today' | 'tomorrow'> }) {
+export function DayView({
+  referenceDate,
+  viewKey,
+  overdue = false,
+  onLoaded,
+}: {
+  referenceDate: string;
+  viewKey: Extract<ViewKey, 'today' | 'tomorrow' | 'overdue'>;
+  overdue?: boolean;
+  onLoaded?: (hasAny: boolean) => void;
+}) {
   const [boards, setBoards] = useState<FocusedBoard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,8 +23,9 @@ export function DayView({ referenceDate, viewKey }: { referenceDate: string; vie
     setLoading(true);
     setError(null);
     try {
-      const result = await getDayViewTasks(referenceDate);
+      const result = await getDayViewTasks(referenceDate, overdue);
       setBoards(result.boards);
+      onLoaded?.(result.boards.length > 0);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load tasks');
     } finally {
@@ -25,7 +36,7 @@ export function DayView({ referenceDate, viewKey }: { referenceDate: string; vie
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [referenceDate]);
+  }, [referenceDate, overdue]);
 
   if (loading) {
     return (
@@ -54,7 +65,7 @@ export function DayView({ referenceDate, viewKey }: { referenceDate: string; vie
         <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
-        <p className="text-sm">No tasks for this period</p>
+        <p className="text-sm">{overdue ? 'No overdue tasks' : 'No tasks for this period'}</p>
         <button onClick={load} className="mt-4 text-xs text-indigo-500 hover:underline">Refresh</button>
       </div>
     );
