@@ -139,21 +139,23 @@ Default config (created lazily on first GET, upsert-safe): `board_selection = al
 
 ## Day View
 
-The Day View shows all pending tasks (any priority, not just high-priority) across all boards for a single calendar day. It is used as the backing data for Today and Tomorrow views (PR 2-3 of the 3-PR epic). Unlike Focused View, there is no configuration — Day View simply returns tasks due on the specified date.
+The Day View shows all pending tasks (any priority, not just high-priority) across all boards for a specific date or date range. It is used as the backing data for Today, Tomorrow, and Overdue views. Unlike Focused View, there is no configuration — Day View simply returns tasks matching the caller's date filter.
 
 ### Data Model
 
 Day View uses the same `focused_view_configs` table for its future per-view configuration (when views expand beyond just Focused and Day). Currently, only Focused View configuration is stored.
 
-### Day View API (shipped — PR #40)
+### Day View API (shipped — PR #40, Overdue param added PR #55)
 
-- `GET /api/v1/day-view/tasks?reference_date=YYYY-MM-DD` — returns all pending tasks (any `is_high_priority` value) with `must_do_by` or `target_date` equal to the specified `reference_date`, grouped by board (same response shape as Focused View: `{ "boards": [{ "board_id", "board_name", "board_color", "tasks": [TaskOut, ...] }, ...] }`). Boards are ordered alphabetically by name; within each board, tasks are sorted by `updated_at` descending. Boards with zero qualifying tasks are omitted. The `reference_date` query parameter is required (no default); omitting it returns `422`.
+- `GET /api/v1/day-view/tasks?reference_date=YYYY-MM-DD` — returns all pending tasks (any `is_high_priority` value) matching a date filter, grouped by board (same response shape as Focused View: `{ "boards": [{ "board_id", "board_name", "board_color", "tasks": [TaskOut, ...] }, ...] }`). Boards are ordered alphabetically by name; within each board, tasks are sorted by `updated_at` descending. Boards with zero qualifying tasks are omitted. The `reference_date` query parameter is required (no default); omitting it returns `422`.
+  - When `overdue=false` (default) — returns tasks with `must_do_by` or `target_date` equal to `reference_date` (used by Today and Tomorrow views).
+  - When `overdue=true` (PR #55) — returns tasks whose effective date (earliest of `must_do_by`/`target_date`) is strictly before `reference_date` (used by Overdue view).
 
-### Day View UI — Web frontend (shipped — PR #41, board collapse added PR #53)
+### Day View UI — Web frontend (shipped — PR #41, board collapse added PR #53, Overdue view added PR #55)
 
-The Tasks page's **Today** and **Tomorrow** views render the Day View. Selecting either fetches `GET /day-view/tasks?reference_date=` for today or tomorrow (respectively) and renders the results using the same board-grouped card layout as Focused View (`BoardGroupedTasks.tsx`, extracted from `FocusedView.tsx` and shared by both Day View and Focused View), including the same `FocusedTaskCard` cards — so the inline quick-edit added in PR #42 (see "FocusedTaskCard component" above) is available here too. Loading spinner while fetching; inline error banner with Retry on failure; empty state ("No tasks for this period") with a Refresh button when no qualifying tasks exist. There is no configuration for Day View — it always shows all-priority, all-board tasks for the single selected day.
+The Tasks page's **Today**, **Tomorrow**, and **Overdue** views render the Day View. Today and Tomorrow fetch `GET /day-view/tasks?reference_date=` for the respective date (with `overdue=false`, the default); Overdue fetches `GET /day-view/tasks?reference_date=today&overdue=true`. All three render results using the same board-grouped card layout as Focused View (`BoardGroupedTasks.tsx`, extracted from `FocusedView.tsx` and shared by all day-based views), including the same `FocusedTaskCard` cards — so the inline quick-edit added in PR #42 is available here too. Loading spinner while fetching; inline error banner with Retry on failure; empty state (e.g., "No overdue tasks", "No tasks for this period") with a Refresh button when no qualifying tasks exist. Day View is unconfigured — it always shows all-priority, all-board tasks for the specified date filter.
 
-Each board group uses the same collapsible header design as Focused View (▾/▸ chevron, "Collapse all / Expand all" button), with session-only per-view collapse state (independent for Today and Tomorrow, reset on page reload).
+Each board group uses the same collapsible header design as Focused View (▾/▸ chevron, "Collapse all / Expand all" button), with session-only per-view collapse state (independent for Today, Tomorrow, and Overdue; reset on page reload).
 
 
 ---
@@ -256,9 +258,10 @@ Users accept or reject each belief. Accepted beliefs carry more weight in future
 
 ### Task List / Kanban Board
 
-**Four-view redesign (shipped — web PR #41):** The Tasks page header reads "Tasks Are Us - `<View>`" (Focused/Today/Tomorrow) or "Tasks Are Us - `<Board name>`" (All). The "tasksAreUs" nav branding and the always-visible board-switcher dropdown were removed from the sidebar/mobile header; board switching is now done via **board tabs** shown only under the All view. The four views are:
+**Five-view redesign (shipped — web PR #41, Overdue view added PR #55):** The Tasks page header reads "Tasks Are Us - `<View>`" (Overdue/Focused/Today/Tomorrow) or "Tasks Are Us - `<Board name>`" (All). The "tasksAreUs" nav branding and the always-visible board-switcher dropdown were removed from the sidebar/mobile header; board switching is now done via **board tabs** shown only under the All view. The five views are (Overdue shown only when overdue tasks exist):
 
-- **Focused** (default) — the existing high-priority, config-driven Focused View (see "Focused View" section).
+- **Overdue** (conditional, PR #55) — shows all pending tasks across all boards whose effective date (earliest of `must_do_by`/`target_date`) is strictly before today. Rendered only when at least one overdue task exists in any board. Selected as the default view on page load when overdue tasks exist; otherwise Focused is the default. Positioned first in the pill toggle before Focused.
+- **Focused** — the existing high-priority, config-driven Focused View (see "Focused View" section).
 - **Today** / **Tomorrow** — the Day View: all pending tasks (any priority) due that single day, across all boards, grouped by board (see "Day View" section).
 - **All** — the kanban board described below, scoped to a single board at a time via board tabs.
 
@@ -361,9 +364,9 @@ Mobile auth follows the same Firebase-only identity model as the web frontend, w
 - **Deliberate sign-out flag**: A module-level boolean (resets on app force-quit) prevents the auto-anonymous-sign-in from firing after an explicit sign-out.
 - **API client** (`mobile/src/api/client.ts`): Calls `auth.currentUser?.getIdToken()` asynchronously; attaches `Authorization: Bearer <token>` on every request to `EXPO_PUBLIC_API_URL/api/v1`.
 
-### Tasks Screen (shipped — PR #20, updated PR #21, updated PR #26, updated PR #27, updated PR #46)
+### Tasks Screen (shipped — PR #20, updated PR #21, updated PR #26, updated PR #27, updated PR #46, Overdue view added PR #55)
 
-The Tasks tab supports four session-only views (Focused, Today, Tomorrow, All) selectable via a pill toggle in the screen header. The header reads "Tasks Are Us - `<View>`" (Focused/Today/Tomorrow) or "Tasks Are Us - `<Board>`" (All). Focused is the default view.
+The Tasks tab supports five session-only views (Overdue, Focused, Today, Tomorrow, All), selectable via a pill toggle in the screen header. The Overdue pill is rendered only when overdue tasks exist; otherwise four views are shown. The header reads "Tasks Are Us - `<View>`" (Overdue/Focused/Today/Tomorrow) or "Tasks Are Us - `<Board>`" (All). Overdue is the default view on page load when overdue tasks exist; otherwise Focused is the default.
 
 **All view (kanban board)**:
 The All view is a `SectionList` grouped by date proximity:
@@ -379,9 +382,10 @@ The All view is a `SectionList` grouped by date proximity:
   - **"Clear filters" link**: visible when any filter is active; resets text search and label selection.
 - **Drag-and-drop between sections (shipped — PR #27, updated PR #28)**: Long-press (500ms) any pending task to enter drag mode. A ghost card lifts and follows the finger. Section headers highlight in indigo as valid drop targets. On drop, sets `target_date` only — matching web behavior; `must_do_by` is never modified by drag. Drop targets and their resulting `target_date` values: Today → today, Tomorrow → tomorrow, Day After Tomorrow → today+2, No Date → null. **Dropping onto the Overdue or Upcoming sections is silently rejected** — neither section highlights during a drag; the task stays put. Scroll is disabled while a drag is active. The high-priority limit (from user settings) is enforced for Today/Tomorrow drops of already-high-priority tasks — an Alert is shown and the drop is cancelled if the limit would be exceeded. The optimistic update reverts on API error. The list auto-scrolls when the finger is within 80px of the top or bottom edge.
 
-**Focused, Today, Tomorrow views**:
-These views show high-priority and day-specific tasks respectively. Tasks are grouped by board and displayed as cards with inline quick-edit capability:
+**Overdue, Focused, Today, Tomorrow views**:
+These views show day-specific and priority-specific tasks. Tasks are grouped by board and displayed as cards with inline quick-edit capability:
 
+- **Overdue view (PR #55)**: Shows all pending tasks across all boards whose effective date (earliest of `must_do_by`/`target_date`) is strictly before today, grouped by board. Rendered only when at least one overdue task exists. Uses the shared `DayView` component.
 - **Focused view**: Shows only high-priority tasks from all boards for the configured day range. See "Focused View UI — Mobile app" section above for full detail.
 - **Today / Tomorrow views (shipped — PR #46)**: Show all pending tasks (any priority) across all boards for that single calendar day, grouped by board. Same as Focused view but without the priority filter. Uses the shared `DayView` component.
 - **Board-grouped rendering (shipped — PR #46)**: Tasks are grouped by board, each group headed by a color-coded board name and task count. Tasks within each board are sorted by `updated_at` descending.
@@ -477,4 +481,4 @@ Pure utility functions (`taskDateUtils`, `taskFilters`, `taskPriority`, `chatUti
 
 ---
 
-*Last updated by — *Bashful* after PR #52 (feat: improve task edit form — nav-back-on-save (web only), auto-ready link rows (web + mobile), open-in-new-tab icons for valid URLs (web + mobile); removed "+ Add link" button in favor of auto-appending blank rows; added comprehensive unit tests for the new `withReadyLinkRow()` function). Previous update after PR #51 (chore: remove Mode label category — startup migration deletes all Mode labels from database, updates PostgreSQL ENUM type to only include 'type', logs completion; API now rejects POST /labels with category=mode or category=frequency with 400; only Type labels are configurable; backend temporarily keeps Mode in CategoryEnum Python enum to avoid ORM crashes). Previous update after PR #50 (chore: removed chat/conversations API end-to-end — deleted `/conversations` router and backend conversational endpoints, `Conversation`/`Message` models, `starter_questions` setting from all platforms, and related DB tables via startup migration). Previous update after PR #48 (web: fixed two Task Detail Form bugs — switching the Board dropdown mid-edit no longer unmounts and resets the form, and "Save Changes" no longer gets stuck on "Saving…" after a successful edit). Previous update after PR #46 (mobile: Tasks-view redesign with 4-way view mode — Focused/Today/Tomorrow/All; Day View UI shipped; Chat tab and Focused View config editor removed from mobile). Previous update after PR #42 (web: quick-edit extended to Focused/Today/Tomorrow cards; Settings' Labels made board-neutral)*
+*Last updated by — *Bashful* after PR #55 (feat: add Overdue view — new session-only pill-toggle view positioned before Focused, rendered only when overdue tasks exist, selected as default view when they do; uses `/day-view/tasks?overdue=true` endpoint). Previous update after PR #52 (feat: improve task edit form — nav-back-on-save (web only), auto-ready link rows (web + mobile), open-in-new-tab icons for valid URLs (web + mobile); removed "+ Add link" button in favor of auto-appending blank rows; added comprehensive unit tests for the new `withReadyLinkRow()` function). Previous update after PR #51 (chore: remove Mode label category — startup migration deletes all Mode labels from database, updates PostgreSQL ENUM type to only include 'type', logs completion; API now rejects POST /labels with category=mode or category=frequency with 400; only Type labels are configurable; backend temporarily keeps Mode in CategoryEnum Python enum to avoid ORM crashes). Previous update after PR #50 (chore: removed chat/conversations API end-to-end — deleted `/conversations` router and backend conversational endpoints, `Conversation`/`Message` models, `starter_questions` setting from all platforms, and related DB tables via startup migration). Previous update after PR #48 (web: fixed two Task Detail Form bugs — switching the Board dropdown mid-edit no longer unmounts and resets the form, and "Save Changes" no longer gets stuck on "Saving…" after a successful edit). Previous update after PR #46 (mobile: Tasks-view redesign with 4-way view mode — Focused/Today/Tomorrow/All; Day View UI shipped; Chat tab and Focused View config editor removed from mobile). Previous update after PR #42 (web: quick-edit extended to Focused/Today/Tomorrow cards; Settings' Labels made board-neutral)*
