@@ -717,13 +717,14 @@ Returns `is_high_priority = true` pending tasks that have `must_do_by` or `targe
 
 ### Day View
 
-New in PR #40 (backend only; part 1 of a 3-PR epic — web/mobile Today/Tomorrow views consume this endpoint in later PRs). Unlike Focused View, Day View has no per-user configuration — it always shows all pending tasks (any priority) across all boards for a single date.
+New in PR #40 (backend only; part 1 of a 3-PR epic — web/mobile Today/Tomorrow views consume this endpoint in later PRs). Unlike Focused View, Day View has no per-user configuration — it always shows all pending tasks (any priority) across all boards for a single date (or, with `overdue=true`, before a single date).
 
 #### `GET /day-view/tasks`
-Returns pending tasks (any priority) whose `must_do_by` or `target_date` falls on `reference_date`, across all of the caller's boards, grouped alphabetically by board. This is the same OR-across-both-date-fields filter Focused View uses (not a computed "earliest effective date"). Ignores the user's Focused View config entirely — no `board_selection`/`day_range` concept applies here.
+Returns pending tasks (any priority) whose `must_do_by` or `target_date` falls on `reference_date` (or, when `overdue=true`, strictly before `reference_date`), across all of the caller's boards, grouped alphabetically by board. This is the same OR-across-both-date-fields filter Focused View uses (not a computed "earliest effective date") — `overdue=true` swaps the per-field comparison from `==` to `<` but keeps the same OR-across-both-fields shape, which is equivalent to "the earliest of the two fields is before `reference_date`" (see Table `tasks`' Effective date definition). Ignores the user's Focused View config entirely — no `board_selection`/`day_range` concept applies here.
 
 **Query params**
 - `reference_date=YYYY-MM-DD` (required — no default; `422` if omitted)
+- `overdue=true|false` (optional, default `false`, added PR #55) — when `true`, matches tasks strictly before `reference_date` instead of exactly on it. Backs the web/mobile **Overdue** view (a separate top-level view from Today/Tomorrow, not a new endpoint); a task due exactly on `reference_date` is excluded when `overdue=true`. Omitting the param, or passing `overdue=false`, preserves the pre-PR #55 exact-match behavior byte-for-byte.
 
 **Response** — same shape as `GET /focused-view/tasks`
 ```json
