@@ -9,11 +9,13 @@ export function DayView({
   viewKey,
   overdue = false,
   onLoaded,
+  searchQuery = '',
 }: {
   referenceDate: string;
   viewKey: Extract<ViewKey, 'today' | 'tomorrow' | 'overdue'>;
   overdue?: boolean;
   onLoaded?: (hasAny: boolean) => void;
+  searchQuery?: string;
 }) {
   const [boards, setBoards] = useState<FocusedBoard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,5 +73,5 @@ export function DayView({
     );
   }
 
-  return <BoardGroupedTasks boards={boards} onRefresh={load} viewKey={viewKey} />;
+  return <BoardGroupedTasks boards={boards} onRefresh={load} viewKey={viewKey} searchQuery={searchQuery} />;
 }

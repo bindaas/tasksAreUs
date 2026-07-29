@@ -3,7 +3,7 @@ import { getFocusedViewTasks, type FocusedBoard } from '../api/focusedView';
 import { dateOnly } from '../utils/taskDateUtils';
 import { BoardGroupedTasks } from './BoardGroupedTasks';
 
-export function FocusedView() {
+export function FocusedView({ searchQuery = '' }: { searchQuery?: string } = {}) {
   const [boards, setBoards] = useState<FocusedBoard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,5 +59,5 @@ export function FocusedView() {
     );
   }
 
-  return <BoardGroupedTasks boards={boards} onRefresh={load} viewKey="focused" />;
+  return <BoardGroupedTasks boards={boards} onRefresh={load} viewKey="focused" searchQuery={searchQuery} />;
 }
