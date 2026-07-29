@@ -439,6 +439,7 @@ export function TasksPage() {
                         title={collapsedPriorityByColumn[col.key] ? 'Expand' : 'Collapse'}
                       >
                         <button
+                          aria-label={collapsedPriorityByColumn[col.key] ? 'Expand high priority tasks' : 'Collapse high priority tasks'}
                           className="text-orange-600 hover:text-orange-700 transition-colors p-0.5 pointer-events-none"
                         >
                           <svg className={`w-4 h-4 transition-transform ${collapsedPriorityByColumn[col.key] ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
