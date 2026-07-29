@@ -1,6 +1,9 @@
+import { useMemo } from 'react';
 import type { FocusedBoard } from '../api/focusedView';
 import { FocusedTaskCard } from './FocusedTaskCard';
 import { useBoardCollapse, type ViewKey } from '../context/BoardCollapseContext';
+import { filterBoards } from '../utils/taskFilters';
+import { EmptyState, FolderIcon } from './EmptyState';
 
 const PALETTE = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
 
@@ -12,26 +15,34 @@ export function BoardGroupedTasks({
   boards,
   onRefresh,
   viewKey,
+  searchQuery = '',
 }: {
   boards: FocusedBoard[];
   onRefresh: () => void;
   viewKey: ViewKey;
+  searchQuery?: string;
 }) {
   const { isCollapsed, toggleBoard, setAllCollapsed } = useBoardCollapse();
-  const allCollapsed = boards.length > 0 && boards.every((b) => isCollapsed(viewKey, b.board_id));
+  const filteredBoards = useMemo(() => filterBoards(boards, searchQuery), [boards, searchQuery]);
+
+  if (boards.length > 0 && filteredBoards.length === 0) {
+    return <EmptyState icon={<FolderIcon />} message="No tasks match this search" />;
+  }
+
+  const allCollapsed = filteredBoards.length > 0 && filteredBoards.every((b) => isCollapsed(viewKey, b.board_id));
 
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
         <button
-          onClick={() => setAllCollapsed(viewKey, boards.map((b) => b.board_id), !allCollapsed)}
+          onClick={() => setAllCollapsed(viewKey, filteredBoards.map((b) => b.board_id), !allCollapsed)}
           aria-expanded={!allCollapsed}
           className="text-xs text-indigo-500 hover:underline"
         >
           {allCollapsed ? 'Expand all' : 'Collapse all'}
         </button>
       </div>
-      {boards.map((board, idx) => {
+      {filteredBoards.map((board, idx) => {
         const color = boardColor(board, idx);
         const collapsed = isCollapsed(viewKey, board.board_id);
         return (

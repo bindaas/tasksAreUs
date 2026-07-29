@@ -6,6 +6,7 @@ import { TaskCard } from '../components/TaskCard';
 import { FocusedView } from '../components/FocusedView';
 import { DayView } from '../components/DayView';
 import { BoardTabs } from '../components/BoardTabs';
+import { EmptyState, FolderIcon } from '../components/EmptyState';
 import { updateTask } from '../api/tasks';
 import { getDayViewTasks } from '../api/dayView';
 import { useFilter } from '../context/FilterContext';
@@ -78,8 +79,8 @@ export function TasksPage() {
   const isFridayToday = useMemo(() => isFriday(), []);
   const monday = useMemo(() => {
     if (!isFridayToday) return null;
-    const m = new Date(tomorrow);
-    m.setDate(m.getDate() + 1);
+    const m = new Date(tomorrow + 'T00:00:00');
+    m.setDate(m.getDate() + 2);
     return dateOnly(m);
   }, [isFridayToday, tomorrow]);
 
@@ -89,7 +90,7 @@ export function TasksPage() {
       { key: 'today' as const, title: `Today (${formatDateWithDay(today)})` },
       { key: 'tomorrow' as const, title: `Tomorrow (${formatDateWithDay(tomorrow)})` },
       { key: 'day_after_tomorrow' as const, title: (() => {
-        const dat = new Date(tomorrow);
+        const dat = new Date(tomorrow + 'T00:00:00');
         dat.setDate(dat.getDate() + 1);
         return `Day After Tomorrow (${formatDateWithDay(dateOnly(dat))})`;
       })() },
@@ -286,21 +287,6 @@ export function TasksPage() {
                 </button>
               ))}
             </div>
-
-            {viewMode === 'all' && (
-              <div className="relative">
-                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                </svg>
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search tasks…"
-                  className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
-                />
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -311,6 +297,22 @@ export function TasksPage() {
         </div>
       ) : (
         <>
+          {/* Search box — all views, directly above the board-tabs row */}
+          <div className="flex justify-end mb-3">
+            <div className="relative">
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+              </svg>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tasks…"
+                className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
+              />
+            </div>
+          </div>
+
           {/* Board tabs — only under All */}
           {viewMode === 'all' && <BoardTabs onSelect={handleBoardTabSelect} />}
 
@@ -318,11 +320,11 @@ export function TasksPage() {
           {viewMode === 'all' && (
             <div className="mb-4 space-y-2">
               {CATEGORIES.map((cat) => {
-                const catLabels = (labelsByCategory[cat] ?? []) as Label[];
+                const catLabels = ((labelsByCategory[cat] ?? []) as Label[]).slice().sort((a, b) => a.value.localeCompare(b.value));
                 if (catLabels.length === 0) return null;
                 const colors = CATEGORY_COLORS[cat];
                 return (
-                  <div key={cat} className="flex flex-wrap gap-1.5 items-center">
+                  <div key={cat} className="flex flex-wrap gap-1.5 items-center justify-end">
                     <span className="text-xs font-semibold text-gray-500 tracking-wide w-16 shrink-0">
                       {CATEGORY_DISPLAY_NAMES[cat]}
                     </span>
@@ -367,15 +369,18 @@ export function TasksPage() {
           )}
 
           {viewMode === 'overdue' && (
-            <DayView referenceDate={today} viewKey="overdue" overdue onLoaded={setHasOverdueTasks} />
+            <DayView referenceDate={today} viewKey="overdue" overdue onLoaded={setHasOverdueTasks} searchQuery={searchQuery} />
           )}
-          {viewMode === 'focused' && <FocusedView />}
-          {viewMode === 'today' && <DayView referenceDate={today} viewKey="today" />}
-          {viewMode === 'tomorrow' && <DayView referenceDate={tomorrow} viewKey="tomorrow" />}
+          {viewMode === 'focused' && <FocusedView searchQuery={searchQuery} />}
+          {viewMode === 'today' && <DayView referenceDate={today} viewKey="today" searchQuery={searchQuery} />}
+          {viewMode === 'tomorrow' && <DayView referenceDate={tomorrow} viewKey="tomorrow" searchQuery={searchQuery} />}
 
           {!loading && !error && viewMode === 'all' && (
             filteredTasks.length === 0 ? (
-              <EmptyState msg={selectedLabelIds.size > 0 || searchQuery.trim() ? 'No tasks match this filter' : 'No pending tasks'} />
+              <EmptyState
+                icon={<FolderIcon />}
+                message={selectedLabelIds.size > 0 || searchQuery.trim() ? 'No tasks match this filter' : 'No pending tasks'}
+              />
             ) : (
               /* Pending tasks: 6-column kanban board */
               <div className="overflow-x-auto -mx-4 px-4 pb-4">
@@ -431,15 +436,18 @@ export function TasksPage() {
                         )}
                       </div>
 
-                      {/* High-priority zone header with collapse toggle */}
-                      <div className="px-2 py-1 flex items-center gap-1.5 bg-orange-100 border-b border-orange-200">
+                      {/* High-priority zone header with collapse toggle — whole strip is clickable */}
+                      <div
+                        onClick={() => togglePriorityCollapse(col.key)}
+                        className="px-2 py-1 flex items-center gap-1.5 bg-orange-100 border-b border-orange-200 cursor-pointer"
+                        title={collapsedPriorityByColumn[col.key] ? 'Expand' : 'Collapse'}
+                      >
                         <button
-                          onClick={() => togglePriorityCollapse(col.key)}
-                          className="text-orange-600 hover:text-orange-700 transition-colors p-0.5"
-                          title={collapsedPriorityByColumn[col.key] ? 'Expand' : 'Collapse'}
+                          aria-label={collapsedPriorityByColumn[col.key] ? 'Expand high priority tasks' : 'Collapse high priority tasks'}
+                          className="text-orange-600 hover:text-orange-700 transition-colors p-0.5 pointer-events-none"
                         >
-                          <svg className={`w-4 h-4 transition-transform ${collapsedPriorityByColumn[col.key] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7-7m0 0L5 14m7-7v12" />
+                          <svg className={`w-4 h-4 transition-transform ${collapsedPriorityByColumn[col.key] ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 6l7 12H5z" />
                           </svg>
                         </button>
                         <span className="text-xs font-semibold text-orange-700">High Priority</span>
@@ -582,13 +590,3 @@ export function TasksPage() {
   );
 }
 
-function EmptyState({ msg }: { msg: string }) {
-  return (
-    <div className="text-center py-16 text-gray-400">
-      <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
-      <p className="text-sm">{msg}</p>
-    </div>
-  );
-}

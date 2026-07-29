@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getDayViewTasks } from '../api/dayView';
 import type { FocusedBoard } from '../api/focusedView';
 import { BoardGroupedTasks } from './BoardGroupedTasks';
+import { EmptyState, FolderIcon } from './EmptyState';
 import type { ViewKey } from '../context/BoardCollapseContext';
 
 export function DayView({
@@ -9,11 +10,13 @@ export function DayView({
   viewKey,
   overdue = false,
   onLoaded,
+  searchQuery = '',
 }: {
   referenceDate: string;
   viewKey: Extract<ViewKey, 'today' | 'tomorrow' | 'overdue'>;
   overdue?: boolean;
   onLoaded?: (hasAny: boolean) => void;
+  searchQuery?: string;
 }) {
   const [boards, setBoards] = useState<FocusedBoard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,15 +64,13 @@ export function DayView({
 
   if (boards.length === 0) {
     return (
-      <div className="text-center py-16 text-gray-400">
-        <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-        <p className="text-sm">{overdue ? 'No overdue tasks' : 'No tasks for this period'}</p>
-        <button onClick={load} className="mt-4 text-xs text-indigo-500 hover:underline">Refresh</button>
-      </div>
+      <EmptyState
+        icon={<FolderIcon />}
+        message={overdue ? 'No overdue tasks' : 'No tasks for this period'}
+        onRefresh={load}
+      />
     );
   }
 
-  return <BoardGroupedTasks boards={boards} onRefresh={load} viewKey={viewKey} />;
+  return <BoardGroupedTasks boards={boards} onRefresh={load} viewKey={viewKey} searchQuery={searchQuery} />;
 }

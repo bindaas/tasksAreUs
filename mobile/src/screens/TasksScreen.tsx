@@ -650,17 +650,17 @@ export function TasksScreen() {
           <Text className="text-2xl font-bold text-gray-900">
             Tasks Are Us - {viewMode === 'all' ? (activeBoard?.name || VIEW_LABELS['all']) : VIEW_LABELS[viewMode]}
           </Text>
-          <View className="flex-row items-center" style={{ gap: 8 }}>
-          {viewMode === 'all' && (
-            <TouchableOpacity
-              onPress={handleToggleAllSections}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text className="text-xs font-medium" style={{ color: '#6b7280' }}>
-                {allSectionsExpanded ? 'Collapse' : 'Expand'}
-              </Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={handleCreatePress}
+            className="w-9 h-9 rounded-full bg-indigo-600 items-center justify-center"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text className="text-white text-xl font-light leading-none">+</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* View-mode pills + (All view only) Collapse/Expand + filter toggle */}
+        <View className="flex-row items-center justify-between mt-2">
           <View
             className="flex-row rounded-full overflow-hidden"
             style={{ backgroundColor: '#f3f4f6' }}
@@ -688,25 +688,27 @@ export function TasksScreen() {
             ))}
           </View>
           {viewMode === 'all' && (
-            <TouchableOpacity
-              onPress={() => setFilterOpen((o) => !o)}
-              className="w-9 h-9 rounded-full items-center justify-center"
-              style={{ backgroundColor: hasActiveFilters ? '#eef2ff' : '#f3f4f6' }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text className="text-base" style={{ color: hasActiveFilters ? '#4f46e5' : '#9ca3af' }}>
-                ☰
-              </Text>
-            </TouchableOpacity>
+            <View className="flex-row items-center" style={{ gap: 8 }}>
+              <TouchableOpacity
+                onPress={handleToggleAllSections}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text className="text-xs font-medium" style={{ color: '#6b7280' }}>
+                  {allSectionsExpanded ? 'Collapse' : 'Expand'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setFilterOpen((o) => !o)}
+                className="w-9 h-9 rounded-full items-center justify-center"
+                style={{ backgroundColor: hasActiveFilters ? '#eef2ff' : '#f3f4f6' }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text className="text-base" style={{ color: hasActiveFilters ? '#4f46e5' : '#9ca3af' }}>
+                  ☰
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
-          <TouchableOpacity
-            onPress={handleCreatePress}
-            className="w-9 h-9 rounded-full bg-indigo-600 items-center justify-center"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text className="text-white text-xl font-light leading-none">+</Text>
-          </TouchableOpacity>
-        </View>
         </View>
 
         {/* Board tabs — only under All */}

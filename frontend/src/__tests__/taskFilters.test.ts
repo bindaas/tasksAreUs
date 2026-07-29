@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { filterTasks } from '../utils/taskFilters';
+import { filterTasks, filterBoards } from '../utils/taskFilters';
 import type { Task } from '../api/tasks';
+import type { FocusedBoard } from '../api/focusedView';
 
 function makeTask(overrides: Partial<Task>): Task {
   return {
@@ -104,5 +105,58 @@ describe('filterTasks — label AND search', () => {
     ];
     const result = filterTasks(tasks, new Set(['label-a']), 'buy');
     expect(result.map((t) => t.id)).toEqual(['1']);
+  });
+});
+
+// ── filterBoards ─────────────────────────────────────────────────────────────
+
+function makeBoard(overrides: Partial<FocusedBoard>): FocusedBoard {
+  return {
+    board_id: 'board-1',
+    board_name: 'Board 1',
+    board_color: null,
+    tasks: [],
+    ...overrides,
+  };
+}
+
+describe('filterBoards', () => {
+  it('returns boards unchanged for an empty query (reference equality preserved)', () => {
+    const boards = [makeBoard({ board_id: '1', tasks: [makeTask({ id: 't1' })] })];
+    expect(filterBoards(boards, '')).toBe(boards);
+  });
+
+  it('returns boards unchanged for a whitespace-only query', () => {
+    const boards = [makeBoard({ board_id: '1', tasks: [makeTask({ id: 't1' })] })];
+    expect(filterBoards(boards, '   ')).toBe(boards);
+  });
+
+  it('matches title/notes across multiple boards, keeping only matching tasks', () => {
+    const boards = [
+      makeBoard({
+        board_id: '1',
+        tasks: [
+          makeTask({ id: 't1', title: 'Buy groceries' }),
+          makeTask({ id: 't2', title: 'Send invoice' }),
+        ],
+      }),
+      makeBoard({
+        board_id: '2',
+        tasks: [makeTask({ id: 't3', title: 'Task', notes: 'remember groceries' })],
+      }),
+    ];
+    const result = filterBoards(boards, 'groceries');
+    expect(result.map((b) => b.board_id)).toEqual(['1', '2']);
+    expect(result[0].tasks.map((t) => t.id)).toEqual(['t1']);
+    expect(result[1].tasks.map((t) => t.id)).toEqual(['t3']);
+  });
+
+  it('drops a board entirely when none of its tasks match', () => {
+    const boards = [
+      makeBoard({ board_id: '1', tasks: [makeTask({ id: 't1', title: 'Buy groceries' })] }),
+      makeBoard({ board_id: '2', tasks: [makeTask({ id: 't2', title: 'Send invoice' })] }),
+    ];
+    const result = filterBoards(boards, 'groceries');
+    expect(result.map((b) => b.board_id)).toEqual(['1']);
   });
 });
