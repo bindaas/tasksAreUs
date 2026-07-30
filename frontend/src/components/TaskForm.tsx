@@ -19,6 +19,7 @@ interface TaskFormProps {
   boards: Board[];
   defaultBoardId?: string;
   onBoardIdChange?: (boardId: string) => void;
+  onCreateLabel?: (value: string) => Promise<Label>;
   onSubmit: (data: CreateTaskBody | UpdateTaskBody) => Promise<void>;
   onCancel: () => void;
   submitLabel?: string;
@@ -39,6 +40,7 @@ export function TaskForm({
   boards,
   defaultBoardId,
   onBoardIdChange,
+  onCreateLabel,
   onSubmit,
   onCancel,
   submitLabel = 'Save',
@@ -55,6 +57,10 @@ export function TaskForm({
   const [links, setLinks] = useState<TaskLink[]>(initialValues?.links ?? []);
   const [boardId, setBoardId] = useState(initialValues?.board_id ?? defaultBoardId ?? '');
   const [error, setError] = useState<string | null>(null);
+  const [addingTag, setAddingTag] = useState(false);
+  const [newTagValue, setNewTagValue] = useState('');
+  const [addTagBusy, setAddTagBusy] = useState(false);
+  const [addTagError, setAddTagError] = useState<string | null>(null);
 
   const isEditMode = !!initialValues;
   const movingBoard = isEditMode && !!initialValues?.board_id && boardId !== initialValues.board_id;
@@ -128,6 +134,29 @@ export function TaskForm({
       }
       return next;
     });
+  }
+
+  function cancelAddTag() {
+    setAddingTag(false);
+    setNewTagValue('');
+    setAddTagError(null);
+  }
+
+  async function handleAddTag() {
+    const trimmed = newTagValue.trim();
+    if (!trimmed || !onCreateLabel) return;
+    setAddTagBusy(true);
+    setAddTagError(null);
+    try {
+      const label = await onCreateLabel(trimmed);
+      setSelectedLabelIds((prev) => new Set(prev).add(label.id));
+      setAddingTag(false);
+      setNewTagValue('');
+    } catch (err) {
+      setAddTagError(err instanceof Error ? err.message : 'Failed to add tag');
+    } finally {
+      setAddTagBusy(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -346,38 +375,93 @@ export function TaskForm({
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">Labels</label>
         {labelsLoading ? (
           <p className="text-xs text-gray-400">Loading labels…</p>
         ) : (
           <div className="space-y-3">
             {CATEGORY_ORDER.map((cat) => {
-              const catLabels = labelsByCategory[cat];
-              if (!catLabels || catLabels.length === 0) return null;
+              const catLabels = [...(labelsByCategory[cat] ?? [])].sort((a, b) =>
+                a.value.localeCompare(b.value)
+              );
               return (
                 <div key={cat}>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                    {CATEGORY_DISPLAY_NAMES[cat]}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {catLabels.map((label) => {
-                      const selected = selectedLabelIds.has(label.id);
-                      return (
-                        <button
-                          key={label.id}
-                          type="button"
-                          onClick={() => toggleLabel(label.id)}
-                          className={`inline-flex items-center rounded-full text-xs px-3 py-1.5 font-medium border transition-colors ${
-                            selected
-                              ? 'bg-indigo-600 text-white border-indigo-600'
-                              : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
-                          }`}
-                        >
-                          {label.value}
-                        </button>
-                      );
-                    })}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-semibold text-gray-500 tracking-wide">
+                      {CATEGORY_DISPLAY_NAMES[cat]}
+                    </p>
+                    {onCreateLabel && !addingTag && (
+                      <button
+                        type="button"
+                        onClick={() => setAddingTag(true)}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                      >
+                        + Add
+                      </button>
+                    )}
                   </div>
+
+                  {addingTag && (
+                    <div className="mb-2">
+                      <div className="flex gap-1.5 items-center">
+                        <input
+                          autoFocus
+                          type="text"
+                          value={newTagValue}
+                          onChange={(e) => setNewTagValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddTag();
+                            } else if (e.key === 'Escape') {
+                              cancelAddTag();
+                            }
+                          }}
+                          placeholder="New tag"
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddTag}
+                          disabled={addTagBusy || !newTagValue.trim()}
+                          className="text-xs bg-indigo-600 text-white rounded-lg px-3 py-1.5 font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Add
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelAddTag}
+                          className="text-xs text-gray-500 hover:text-gray-700 font-medium px-2 py-1.5"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      {addTagError && (
+                        <p className="mt-1 text-xs text-red-600">{addTagError}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {catLabels.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {catLabels.map((label) => {
+                        const selected = selectedLabelIds.has(label.id);
+                        return (
+                          <button
+                            key={label.id}
+                            type="button"
+                            onClick={() => toggleLabel(label.id)}
+                            className={`inline-flex items-center rounded-full text-xs px-3 py-1.5 font-medium border transition-colors ${
+                              selected
+                                ? 'bg-indigo-600 text-white border-indigo-600'
+                                : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                            }`}
+                          >
+                            {label.value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
