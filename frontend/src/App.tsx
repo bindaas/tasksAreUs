@@ -12,6 +12,7 @@ import { FilterProvider } from './context/FilterContext';
 import { BoardProvider } from './context/BoardContext';
 import { ViewProvider } from './context/ViewContext';
 import { BoardCollapseProvider } from './context/BoardCollapseContext';
+import { ColumnPriorityCollapseProvider } from './context/ColumnPriorityCollapseContext';
 
 function EmailConfirmationPage() {
   const { confirmEmailSignIn } = useAuth();
@@ -90,17 +91,19 @@ function AppRoutes() {
       <BoardProvider>
         <ViewProvider>
           <BoardCollapseProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route element={<Layout />}>
-                  <Route path="/" element={<TasksPage />} />
-                  <Route path="/tasks/:id" element={<TaskDetailPage />} />
-                  <Route path="/reports" element={<ReportsPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Route>
-              </Routes>
-            </BrowserRouter>
+            <ColumnPriorityCollapseProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route element={<Layout />}>
+                    <Route path="/" element={<TasksPage />} />
+                    <Route path="/tasks/:id" element={<TaskDetailPage />} />
+                    <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Route>
+                </Routes>
+              </BrowserRouter>
+            </ColumnPriorityCollapseProvider>
           </BoardCollapseProvider>
         </ViewProvider>
       </BoardProvider>

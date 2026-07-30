@@ -12,6 +12,7 @@ import { getDayViewTasks } from '../api/dayView';
 import { useFilter } from '../context/FilterContext';
 import { useBoard } from '../context/BoardContext';
 import { useView } from '../context/ViewContext';
+import { useColumnPriorityCollapse } from '../context/ColumnPriorityCollapseContext';
 import type { Board } from '../api/boards';
 import type { Label, Task } from '../api/tasks';
 import { filterTasks } from '../utils/taskFilters';
@@ -30,9 +31,6 @@ import { viewLabel, type ViewMode } from '../utils/viewLabel';
 
 type LabelCategory = 'type';
 const CATEGORIES: LabelCategory[] = ['type'];
-const CATEGORY_DISPLAY_NAMES: Record<LabelCategory, string> = {
-  type: 'Tags',
-};
 
 const CATEGORY_COLORS: Record<LabelCategory, { active: string; inactive: string }> = {
   type: {
@@ -48,6 +46,7 @@ export function TasksPage() {
   const { selectedLabelIds, toggleLabel, clearLabels } = useFilter();
   const { boards, activeBoard, setActiveBoard } = useBoard();
   const { viewMode, setViewMode } = useView();
+  const { isCollapsed: isPriorityCollapsed, toggleColumn: togglePriorityCollapse } = useColumnPriorityCollapse();
   const [searchQuery, setSearchQuery] = useState('');
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
   const [dragOverPriority, setDragOverPriority] = useState<'high' | 'normal' | null>(null);
@@ -56,7 +55,6 @@ export function TasksPage() {
   const { labels, labelsByCategory } = useLabels();
   const { highPriorityDailyLimit } = useSettings();
   const [dropError, setDropError] = useState<string | null>(null);
-  const [collapsedPriorityByColumn, setCollapsedPriorityByColumn] = useState<Partial<Record<ColumnKey, boolean>>>({});
   const [hasOverdueTasks, setHasOverdueTasks] = useState(false);
   const [overdueChecked, setOverdueChecked] = useState(false);
   const appliedDefaultRef = useRef(false);
@@ -84,17 +82,18 @@ export function TasksPage() {
     return dateOnly(m);
   }, [isFridayToday, tomorrow]);
 
-  const COLUMNS = useMemo<{ key: ColumnKey; title: string }[]>(() => {
+  const COLUMNS = useMemo<{ key: ColumnKey; title: string; dateLabel?: string }[]>(() => {
+    const dayAfterTomorrow = (() => {
+      const dat = new Date(tomorrow + 'T00:00:00');
+      dat.setDate(dat.getDate() + 1);
+      return dateOnly(dat);
+    })();
     const base = [
       { key: 'overdue' as const, title: 'Overdue' },
-      { key: 'today' as const, title: `Today (${formatDateWithDay(today)})` },
-      { key: 'tomorrow' as const, title: `Tomorrow (${formatDateWithDay(tomorrow)})` },
-      { key: 'day_after_tomorrow' as const, title: (() => {
-        const dat = new Date(tomorrow + 'T00:00:00');
-        dat.setDate(dat.getDate() + 1);
-        return `Day After Tomorrow (${formatDateWithDay(dateOnly(dat))})`;
-      })() },
-      ...(isFridayToday && monday ? [{ key: 'monday' as const, title: `Monday (${formatDateWithDay(monday)})` }] : []),
+      { key: 'today' as const, title: 'Today', dateLabel: formatDateWithDay(today) },
+      { key: 'tomorrow' as const, title: 'Tomorrow', dateLabel: formatDateWithDay(tomorrow) },
+      { key: 'day_after_tomorrow' as const, title: 'Day After Tomorrow', dateLabel: formatDateWithDay(dayAfterTomorrow) },
+      ...(isFridayToday && monday ? [{ key: 'monday' as const, title: 'Monday', dateLabel: formatDateWithDay(monday) }] : []),
       { key: 'upcoming' as const, title: 'Upcoming' },
       { key: 'nodate' as const, title: 'No Date' },
     ];
@@ -255,15 +254,24 @@ export function TasksPage() {
     setDragOverPriority(null);
   }
 
-  function togglePriorityCollapse(columnKey: ColumnKey) {
-    setCollapsedPriorityByColumn((prev) => ({
-      ...prev,
-      [columnKey]: !prev[columnKey],
-    }));
-  }
-
   return (
     <div className="p-4">
+      {/* Search box — topmost element, all views */}
+      <div className="flex justify-end mb-3">
+        <div className="relative">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tasks…"
+            className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
+          />
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4 max-w-full gap-3 flex-wrap">
         <h2 className="text-xl font-bold text-gray-900">
@@ -297,22 +305,6 @@ export function TasksPage() {
         </div>
       ) : (
         <>
-          {/* Search box — all views, directly above the board-tabs row */}
-          <div className="flex justify-end mb-3">
-            <div className="relative">
-              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-              </svg>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tasks…"
-                className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
-              />
-            </div>
-          </div>
-
           {/* Board tabs — only under All */}
           {viewMode === 'all' && <BoardTabs onSelect={handleBoardTabSelect} />}
 
@@ -325,9 +317,6 @@ export function TasksPage() {
                 const colors = CATEGORY_COLORS[cat];
                 return (
                   <div key={cat} className="flex flex-wrap gap-1.5 items-center justify-end">
-                    <span className="text-xs font-semibold text-gray-500 tracking-wide w-16 shrink-0">
-                      {CATEGORY_DISPLAY_NAMES[cat]}
-                    </span>
                     {catLabels.map((label) => {
                       const active = selectedLabelIds.has(label.id);
                       return (
@@ -346,12 +335,14 @@ export function TasksPage() {
                 );
               })}
               {selectedLabelIds.size > 0 && (
-                <button
-                  onClick={clearLabels}
-                  className="text-xs text-gray-500 hover:text-gray-700 underline"
-                >
-                  Clear filters
-                </button>
+                <div className="flex justify-end">
+                  <button
+                    onClick={clearLabels}
+                    className="text-xs text-gray-500 hover:text-gray-700 underline"
+                  >
+                    Clear filters
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -425,7 +416,12 @@ export function TasksPage() {
                       }}
                     >
                       <div className="px-3 py-2.5 border-b border-gray-200 flex items-center gap-2">
-                        <span className={`text-sm font-semibold ${isOverdueCol ? 'text-red-700' : 'text-gray-700'}`}>{col.title}</span>
+                        <span className={`text-sm font-semibold ${isOverdueCol ? 'text-red-700' : 'text-gray-700'}`}>
+                          {col.title}
+                          {col.dateLabel && (
+                            <span className="block text-xs text-gray-400 font-normal">{col.dateLabel}</span>
+                          )}
+                        </span>
                         <span className="text-xs text-gray-400 font-medium bg-gray-200 rounded-full px-1.5 py-0.5">
                           {colTasks.length}
                         </span>
@@ -440,21 +436,21 @@ export function TasksPage() {
                       <div
                         onClick={() => togglePriorityCollapse(col.key)}
                         className="px-2 py-1 flex items-center gap-1.5 bg-orange-100 border-b border-orange-200 cursor-pointer"
-                        title={collapsedPriorityByColumn[col.key] ? 'Expand' : 'Collapse'}
+                        title={isPriorityCollapsed(col.key) ? 'Expand' : 'Collapse'}
                       >
                         <button
-                          aria-label={collapsedPriorityByColumn[col.key] ? 'Expand high priority tasks' : 'Collapse high priority tasks'}
+                          aria-label={isPriorityCollapsed(col.key) ? 'Expand high priority tasks' : 'Collapse high priority tasks'}
                           className="text-orange-600 hover:text-orange-700 transition-colors p-0.5 pointer-events-none"
                         >
-                          <svg className={`w-4 h-4 transition-transform ${collapsedPriorityByColumn[col.key] ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
+                          <svg className={`w-4 h-4 transition-transform ${isPriorityCollapsed(col.key) ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 6l7 12H5z" />
                           </svg>
                         </button>
-                        <span className="text-xs font-semibold text-orange-700">High Priority</span>
+                        <span className="text-xs font-semibold text-orange-700">High Priority ({highTasks.length})</span>
                       </div>
 
                       {/* High-priority zone — onDragOver sets priority intent; onDrop is on the outer div */}
-                      {!collapsedPriorityByColumn[col.key] && (
+                      {!isPriorityCollapsed(col.key) && (
                         <div
                           className={`p-2 space-y-2 min-h-[60px] transition-colors rounded-t-lg ${
                             isHighZoneOver ? 'bg-orange-50' : ''
@@ -482,7 +478,7 @@ export function TasksPage() {
                       )}
 
                       {/* Divider */}
-                      {!collapsedPriorityByColumn[col.key] && (
+                      {!isPriorityCollapsed(col.key) && (
                         <div className="flex items-center gap-1 px-2 py-0.5 select-none">
                           <div className="flex-1 h-px bg-orange-200" />
                           <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wide whitespace-nowrap">
@@ -550,7 +546,12 @@ export function TasksPage() {
                     }}
                   >
                     <div className="px-3 py-2.5 border-b border-gray-200 flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-700">{col.title}</span>
+                      <span className="text-sm font-semibold text-gray-700">
+                        {col.title}
+                        {col.dateLabel && (
+                          <span className="block text-xs text-gray-400 font-normal">{col.dateLabel}</span>
+                        )}
+                      </span>
                       <span className="text-xs text-gray-400 font-medium bg-gray-200 rounded-full px-1.5 py-0.5">
                         {colTasks.length}
                       </span>
