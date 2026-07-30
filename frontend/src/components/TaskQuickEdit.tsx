@@ -91,7 +91,7 @@ export function TaskQuickEdit({ task, labels: labelsProp, onSaved, onCancel }: T
           <p className="text-xs text-gray-400">Loading labels…</p>
         ) : (
           EDIT_CATEGORY_ORDER.map((cat) => {
-            const catLabels = labelsByCategory[cat] ?? [];
+            const catLabels = (labelsByCategory[cat] ?? []).slice().sort((a, b) => a.value.localeCompare(b.value));
             if (!catLabels.length) return null;
             return (
               <div key={cat} className="flex flex-wrap gap-1">

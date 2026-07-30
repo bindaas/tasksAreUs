@@ -22,7 +22,7 @@ export function formatDateWithDay(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
   const month = d.toLocaleDateString(undefined, { month: 'long' });
   const day = d.getDate();
-  const dayName = d.toLocaleDateString(undefined, { weekday: 'long' });
+  const dayName = d.toLocaleDateString(undefined, { weekday: 'short' });
   return `${month} ${day}, ${dayName}`;
 }
 

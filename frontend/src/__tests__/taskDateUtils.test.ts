@@ -181,19 +181,19 @@ describe('getDropDate', () => {
 // ── formatDateWithDay ────────────────────────────────────────────────────────────
 
 describe('formatDateWithDay', () => {
-  it('formats date with month, day, and day name', () => {
+  it('formats date with month, day, and abbreviated day name', () => {
     const result = formatDateWithDay('2026-07-27');
-    expect(result).toMatch(/July.*27.*Monday/);
+    expect(result).toMatch(/July.*27.*Mon\b/);
   });
 
-  it('includes correct day name for different dates', () => {
+  it('includes correct abbreviated day name for different dates', () => {
     const result = formatDateWithDay('2026-07-28');
-    expect(result).toMatch(/July.*28.*Tuesday/);
+    expect(result).toMatch(/July.*28.*Tue\b/);
   });
 
   it('handles month transitions', () => {
     const result = formatDateWithDay('2026-08-01');
-    expect(result).toMatch(/August.*1.*Saturday/);
+    expect(result).toMatch(/August.*1.*Sat\b/);
   });
 });
 

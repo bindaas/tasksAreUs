@@ -74,13 +74,13 @@ export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = fal
             const sorted = [...taskLabels].sort(
               (a, b) => (LABEL_CATEGORY_ORDER[a.category] ?? 3) - (LABEL_CATEGORY_ORDER[b.category] ?? 3)
             );
-            return sorted.length > 0 ? (
-              <div className="flex flex-wrap gap-1 mt-2">
+            return (
+              <div className="flex flex-wrap gap-1 mt-2 min-h-[2.75rem]">
                 {sorted.map((label) => (
                   <LabelBadge key={label.id} label={label} small />
                 ))}
               </div>
-            ) : null;
+            );
           }}
           onEdit={() => setIsEditing(true)}
           onComplete={handleComplete}
