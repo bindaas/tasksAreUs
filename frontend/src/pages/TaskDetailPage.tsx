@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getTask, updateTask, deleteTask, completeTask, createTask, listTasks } from '../api/tasks';
-import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
+import type { Task, CreateTaskBody, UpdateTaskBody, Label } from '../api/tasks';
+import { createLabel } from '../api/labels';
 import { useLabels } from '../hooks/useLabels';
 import { useSettings } from '../hooks/useSettings';
 import { TaskForm } from '../components/TaskForm';
@@ -38,7 +39,13 @@ export function TaskDetailPage() {
   // board (edit) or the target board (new) before the form reports in.
   const [liveBoardId, setLiveBoardId] = useState<string | undefined>(undefined);
   const labelsBoardId = liveBoardId ?? (isNew ? defaultBoardId : task?.board_id);
-  const { labels, loading: labelsLoading } = useLabels(labelsBoardId);
+  const { labels, loading: labelsLoading, addLabel } = useLabels(labelsBoardId);
+
+  async function handleCreateLabel(value: string): Promise<Label> {
+    const label = await createLabel('type', value, labelsBoardId);
+    addLabel(label);
+    return label;
+  }
 
   // useLabels's `loading` flag lags one render behind a `labelsBoardId` change
   // (its effect hasn't run yet for the new id), so the very render where
@@ -212,6 +219,7 @@ export function TaskDetailPage() {
             }
             labels={labels}
             labelsLoading={labelsLoading}
+            onCreateLabel={handleCreateLabel}
             boards={boards}
             defaultBoardId={defaultBoardId}
             onBoardIdChange={setLiveBoardId}

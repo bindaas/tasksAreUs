@@ -45,5 +45,9 @@ export function useLabels(boardIdOverride?: string) {
     return acc;
   }, {});
 
-  return { labels, labelsByCategory, loading, error };
+  function addLabel(label: Label) {
+    setLabels((prev) => [...prev, label]);
+  }
+
+  return { labels, labelsByCategory, loading, error, addLabel };
 }

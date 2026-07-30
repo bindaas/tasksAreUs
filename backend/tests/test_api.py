@@ -363,6 +363,24 @@ def main():
     })
     assert_eq("POST /tasks with cross-board label → 422", r.status_code, 422)
 
+    # The same label value can exist independently in two different boards —
+    # uniqueness is scoped to (board_id, category, value), not (user_id, category, value)
+    # (DATA_MODEL_AND_API.MD: labels_board_id_category_value_key). Relevant to PR #58's
+    # inline tag-add feature: a user with tags of the same name on two boards must be able
+    # to create both without a spurious 409.
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "shared-name", "board_id": default_board_id})
+    assert_eq("POST label 'shared-name' to default board → 201", r.status_code, 201)
+    shared_name_default_id = r.json()["id"]
+
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "shared-name", "board_id": isolation_board_id})
+    assert_eq("POST label 'shared-name' to isolation board (same value, different board) → 201", r.status_code, 201)
+    shared_name_isolation_id = r.json()["id"]
+    assert_true("same-value labels in different boards get distinct ids",
+                shared_name_default_id != shared_name_isolation_id)
+
+    client.delete(f"/labels/{shared_name_default_id}", headers=H)
+    client.delete(f"/labels/{shared_name_isolation_id}", headers=H)
+
     # Clean up isolation labels and board
     client.delete(f"/labels/{default_isolation_label_id}", headers=H)
     client.delete(f"/labels/{isolation_label_id}", headers=H)
@@ -537,6 +555,15 @@ def main():
     # POST /labels — empty value → 400
     r = client.post("/labels", headers=H, json={"category": "type", "value": "   "})
     assert_eq("POST /labels empty value → 400", r.status_code, 400)
+
+    # POST /labels — non-existent board_id → 404 (documented in DATA_MODEL_AND_API.MD's
+    # POST /labels error cases, but previously untested). PR #58 adds inline tag creation
+    # from the Edit/Add Task form (TaskForm.tsx's "+ Add" control), which always sends an
+    # explicit board_id — if that board_id is ever stale (e.g. a board deleted in another
+    # tab/device since the form loaded), the request must fail cleanly with 404 rather
+    # than silently creating the label in the wrong place or 500ing.
+    r = client.post("/labels", headers=H, json={"category": "type", "value": "ghost-board-label", "board_id": str(uuid.uuid4())})
+    assert_eq("POST /labels non-existent board_id → 404", r.status_code, 404)
 
     # Newly created label appears in GET /labels
     r = client.get("/labels", headers=H)
