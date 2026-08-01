@@ -166,8 +166,11 @@ class TestIsHpEligibleDate:
     def test_two_days_ahead_eligible(self):
         assert _is_hp_eligible_date(date.today() + timedelta(days=2)) is True
 
-    def test_three_days_ahead_ineligible(self):
-        assert _is_hp_eligible_date(date.today() + timedelta(days=3)) is False
+    @patch("app.services.task_service.date")
+    def test_three_days_ahead_ineligible(self, mock_date):
+        monday = date(2026, 5, 25)
+        mock_date.today.return_value = monday
+        assert _is_hp_eligible_date(monday + timedelta(days=3)) is False
 
     def test_none(self):
         assert _is_hp_eligible_date(None) is False
