@@ -36,6 +36,8 @@ describe('HIGH_PRIORITY_DAILY_LIMIT', () => {
 describe('isFormHighPriorityEligible', () => {
   const today = '2026-06-09';
   const tomorrow = '2026-06-10';
+  const dayAfterTomorrow = '2026-06-11';
+  const beyondDayAfterTomorrow = '2026-06-12';
 
   it('returns true when must_do_by is today', () => {
     expect(isFormHighPriorityEligible('2026-06-09', '', today, tomorrow)).toBe(true);
@@ -49,16 +51,24 @@ describe('isFormHighPriorityEligible', () => {
     expect(isFormHighPriorityEligible('', '2026-06-09', today, tomorrow)).toBe(true);
   });
 
-  it('returns false when must_do_by is past tomorrow', () => {
-    expect(isFormHighPriorityEligible('2026-06-11', '', today, tomorrow)).toBe(false);
+  it('returns true when must_do_by is the day after tomorrow', () => {
+    expect(isFormHighPriorityEligible(dayAfterTomorrow, '', today, tomorrow)).toBe(true);
+  });
+
+  it('returns true when target_date is the day after tomorrow', () => {
+    expect(isFormHighPriorityEligible('', dayAfterTomorrow, today, tomorrow)).toBe(true);
+  });
+
+  it('returns false when must_do_by is past the day after tomorrow', () => {
+    expect(isFormHighPriorityEligible(beyondDayAfterTomorrow, '', today, tomorrow)).toBe(false);
   });
 
   it('returns false when both dates are empty', () => {
     expect(isFormHighPriorityEligible('', '', today, tomorrow)).toBe(false);
   });
 
-  it('returns false when must_do_by is overdue (past today)', () => {
-    expect(isFormHighPriorityEligible('2026-06-01', '', today, tomorrow)).toBe(false);
+  it('returns true when must_do_by is overdue (past today)', () => {
+    expect(isFormHighPriorityEligible('2026-06-01', '', today, tomorrow)).toBe(true);
   });
 
   it('returns true when either date qualifies (must_do_by far but target_date today)', () => {
@@ -67,14 +77,14 @@ describe('isFormHighPriorityEligible', () => {
 });
 
 describe('isHighPriorityEligible', () => {
-  it('returns true for today and tomorrow only', () => {
+  it('returns true for today, tomorrow, and day_after_tomorrow', () => {
     expect(isHighPriorityEligible('today')).toBe(true);
     expect(isHighPriorityEligible('tomorrow')).toBe(true);
+    expect(isHighPriorityEligible('day_after_tomorrow')).toBe(true);
   });
 
   it('returns false for all other columns', () => {
     expect(isHighPriorityEligible('overdue')).toBe(false);
-    expect(isHighPriorityEligible('day_after_tomorrow')).toBe(false);
     expect(isHighPriorityEligible('upcoming')).toBe(false);
     expect(isHighPriorityEligible('nodate')).toBe(false);
   });
