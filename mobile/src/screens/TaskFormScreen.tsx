@@ -48,7 +48,10 @@ const notesMarkdownRules = {
         </Text>
       );
     }
-    return null;
+    // Any other inline-HTML token (e.g. a stray "<" that markdown-it parses
+    // as a tag start) falls back to its literal source text instead of
+    // silently vanishing from the preview.
+    return <Text key={node.key}>{node.content}</Text>;
   },
 };
 

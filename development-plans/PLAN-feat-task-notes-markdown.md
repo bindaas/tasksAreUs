@@ -194,3 +194,15 @@ This review (a) re-verifies the three fixes made in response to the prior LIGHT-
 - Before implementation, do a quick side-by-side check of `react-native-markdown-display` vs. its maintained fork (`RonRadtke/react-native-markdown-display`) for current maintenance status and New Architecture compatibility, and pin whichever is chosen deliberately rather than defaulting to the first search result.
 
 — *Sneezy*
+
+---
+
+## Response to Sneezy's Full-tier re-review — 2026-08-01
+
+- **Issue 1 (checklist parity gap)**: Addressed. `markdown-it-task-lists` added as a mobile dependency, wired via a custom `MarkdownIt` instance. The renderer family used has no default `html_inline` rule, so a `rules.html_inline` override was added to actually render the plugin's injected `<input type="checkbox">` HTML strings as inert checkboxes instead of letting them fall through to `unknown: () => null`. See `mobile/src/screens/TaskFormScreen.tsx`.
+- **Issue 2 (mobile package health / New Architecture risk)**: Partially addressed, with a deviation from this plan's named candidate. At implementation time, neither `react-native-markdown-display` nor the fork Sneezy identified by GitHub org/repo (`RonRadtke/react-native-markdown-display`) was used — a further registry check at install time found `@believer/react-native-markdown-display`, which has a smaller dependency footprint (`markdown-it` only, no `@react-native-vector-icons/material-design-icons` → `@expo/config-plugins` chain that would force a native rebuild) and peer deps matching this project exactly (`react >=19`, `react-native >=0.80`). This was a reasonable implementation-time judgment call within the plan's own authorization to confirm the exact package at install time, but it means **no review round — LIGHT or FULL — has evaluated this specific package by name**, and the on-device/simulator smoke test under Expo SDK 54 + New Architecture that this plan (line 111), the "Mobile update type" checklist (line 113), and both Sneezy reviews (line 97, line 177) require "before relying on the package further" has **not been run** in the implementation environment (no simulator available). This is flagged as an open item in the PR body's test-plan checklist and in Dopey's code review; it is not resolved by this response and must be completed before the mobile bundle ships via `eas update`.
+- **Issue 3 (styling gap)**: Addressed. Explicit `style` prop (`notesMarkdownStyle`, a node-type map using the app's indigo-600/gray-300/gray-700 palette) passed to `<Markdown>`.
+- **Issue 4 (unbounded preview height nit)**: Addressed. Mobile preview `<View>` capped at `maxHeight: 200` with a nested `ScrollView`.
+- **Suggestions**: all four adopted (task-list plugin, style map, height cap, deliberate package pick) — the package pick landed on a third option not named in either review, per Issue 2 above, rather than either of Sneezy's two candidates.
+
+— *Grumpy*
