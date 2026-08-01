@@ -114,7 +114,7 @@ The `recurrence_group_id` column was dropped from the `tasks` table and the `Tas
 **Effective date** is defined as the earliest of `must_do_by` and `target_date` when both are set; otherwise whichever one is non-null; `null` if both are null. This is computed by `getEffectiveDate()` in both `frontend/src/utils/taskDateUtils.ts` and `mobile/src/utils/taskDateUtils.ts`. (Prior to PR #20, `getEffectiveDate` incorrectly returned `target_date` when both were set, regardless of which was earlier. This was a client-side display bug only — the backend never relied on this helper.)
 
 **High-priority rules (enforced by the API):**
-- `is_high_priority = true` is only meaningful when the task's effective date (earliest of `must_do_by` / `target_date`) is overdue, today, tomorrow, day_after_tomorrow, or monday
+- `is_high_priority = true` is only meaningful when the task's effective date (earliest of `must_do_by` / `target_date`) is overdue, today, tomorrow, day_after_tomorrow, or monday (`monday` only counts when today is Friday). The API's `_is_hp_eligible_date()` actually enforced only overdue/today/tomorrow until PR #60 extended it to match; before PR #60 a create/update with a day-after-tomorrow or Monday date silently had `is_high_priority` reset to `false`.
 - The API auto-resets `is_high_priority` to `false` on any create or update if the effective date is outside the overdue/today/tomorrow/day_after_tomorrow/monday range
 - The daily cap is user-configurable via `user_settings.high_priority_daily_limit` (default 3, min 1). The API reads this setting dynamically on each create/update check; falls back to 3 if no row or null
 - Attempting to set a task high-priority when the cap is reached raises HTTP 422. The error message includes the live limit value
