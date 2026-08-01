@@ -924,6 +924,47 @@ def main():
 
     client.delete(f"/tasks/{notes_task_id}", headers=H)
 
+    # ── Tasks: notes preserves Markdown syntax verbatim (PR #59 regression guard) ──
+    # PR #59 added a client-side-only Markdown preview (web: react-markdown; mobile:
+    # @believer/react-native-markdown-display) rendered from the task's `notes`
+    # field. The feature depends entirely on the backend treating `notes` as
+    # opaque plain text — no server-side stripping/escaping/sanitizing of
+    # Markdown syntax characters (headings, emphasis, links, checklists, raw
+    # angle brackets, etc.). These tests lock in that invariant so a future
+    # backend change (e.g. an HTML-escaping/sanitizing pass) can't silently
+    # break Markdown rendering on every client. No data model or API change
+    # accompanies PR #59 — this is purely a regression guard for the existing
+    # `notes` contract the new feature now leans on.
+    print("\n── Tasks: Notes preserves Markdown syntax verbatim (PR #59 regression guard) ──")
+    markdown_notes = (
+        "# Heading\n\n**bold** _italic_ ~~strikethrough~~\n\n"
+        "- [ ] unchecked task\n- [x] checked task\n\n"
+        "[a link](https://example.com/path?x=1&y=2) and <script>window.x=1</script>\n"
+        "`inline code` and a * bullet"
+    )
+    r = client.post("/tasks", headers=H, json={
+        "title": "Markdown notes test task",
+        "notes": markdown_notes,
+        "label_ids": [],
+    })
+    assert_eq("POST task with Markdown-syntax notes → 201", r.status_code, 201)
+    md_task = r.json()
+    md_task_id = md_task["id"]
+    assert_eq("Markdown notes round-trip verbatim on create", md_task["notes"], markdown_notes)
+
+    # GET must also return the exact same string, not a sanitized/escaped variant.
+    r = client.get(f"/tasks/{md_task_id}", headers=H)
+    assert_eq("GET task with Markdown notes → 200", r.status_code, 200)
+    assert_eq("Markdown notes unchanged on GET", r.json()["notes"], markdown_notes)
+
+    # PUT with different Markdown content also round-trips verbatim.
+    updated_markdown_notes = "## Updated\n\n1. one\n2. two\n\n> a quoted line"
+    r = client.put(f"/tasks/{md_task_id}", headers=H, json={"notes": updated_markdown_notes})
+    assert_eq("PUT task with new Markdown-syntax notes → 200", r.status_code, 200)
+    assert_eq("Markdown notes round-trip verbatim on update", r.json()["notes"], updated_markdown_notes)
+
+    client.delete(f"/tasks/{md_task_id}", headers=H)
+
     # ── Drag-drop target_date-only updates (PR #11) ────────────────────────────
     # The frontend now always writes target_date on column drops, never must_do_by.
     # These tests verify the backend contract that supports this behaviour.

@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Markdown, MarkdownIt, type ASTNode } from '@believer/react-native-markdown-display';
+import taskLists from 'markdown-it-task-lists';
 import { getTask, createTask, updateTask } from '../api/tasks';
 import { ApiError } from '../api/client';
 import { listLabels } from '../api/labels';
@@ -27,6 +29,53 @@ function newLinkId(): string {
 
 const CATEGORY_ORDER: Array<'type'> = ['type'];
 const CATEGORY_LABELS: Record<string, string> = { type: 'Tags' };
+
+// markdown-it-task-lists renders `- [ ] item` checkboxes as a raw HTML
+// `<input>` string (an html_inline token) rather than a token type this
+// renderer natively understands — without this override the token falls
+// through to the renderer's `unknown` rule and the checkbox silently
+// disappears (the leading "[ ] " text is also stripped by the plugin, which
+// assumes something will render in its place).
+const notesMarkdownIt = MarkdownIt({ typographer: true }).use(taskLists);
+
+const notesMarkdownRules = {
+  html_inline: (node: ASTNode) => {
+    if (typeof node.content === 'string' && node.content.includes('task-list-item-checkbox')) {
+      const checked = node.content.includes('checked=');
+      return (
+        <Text key={node.key} style={{ color: checked ? '#4f46e5' : '#9ca3af' }}>
+          {checked ? '☑ ' : '☐ '}
+        </Text>
+      );
+    }
+    // Any other inline-HTML token (e.g. a stray "<" that markdown-it parses
+    // as a tag start) falls back to its literal source text instead of
+    // silently vanishing from the preview.
+    return <Text key={node.key}>{node.content}</Text>;
+  },
+};
+
+// NativeWind's `className` does not propagate into this library's internally
+// rendered View/Text tree (same limitation as mobile label badge colors, see
+// ARCHITECTURE.MD), so the preview needs an explicit style map keyed by node
+// type to match the rest of this screen's indigo-600/gray-700 palette.
+const notesMarkdownStyle = {
+  body: { color: '#111827' },
+  heading1: { fontSize: 20, fontWeight: '700' as const, color: '#111827' },
+  heading2: { fontSize: 18, fontWeight: '700' as const, color: '#111827' },
+  heading3: { fontSize: 16, fontWeight: '600' as const, color: '#111827' },
+  heading4: { fontSize: 15, fontWeight: '600' as const, color: '#111827' },
+  heading5: { fontSize: 14, fontWeight: '600' as const, color: '#111827' },
+  heading6: { fontSize: 13, fontWeight: '600' as const, color: '#111827' },
+  link: { color: '#4f46e5', textDecorationLine: 'underline' as const },
+  bullet_list_icon: { color: '#374151' },
+  ordered_list_icon: { color: '#374151' },
+  code_inline: { backgroundColor: '#f3f4f6', borderColor: '#d1d5db', color: '#374151' },
+  code_block: { backgroundColor: '#f3f4f6', borderColor: '#d1d5db', color: '#374151' },
+  fence: { backgroundColor: '#f3f4f6', borderColor: '#d1d5db', color: '#374151' },
+  blockquote: { backgroundColor: '#f9fafb', borderColor: '#d1d5db' },
+  hr: { backgroundColor: '#d1d5db' },
+};
 
 interface Props {
   taskId?: string;
@@ -294,6 +343,28 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
             className="border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
             style={{ minHeight: 160, textAlignVertical: 'top' }}
           />
+          <View
+            className="mt-2 border border-gray-200 rounded-xl px-4 py-3 bg-gray-50"
+            style={{ maxHeight: 200 }}
+          >
+            {notes.trim() === '' ? (
+              <Text className="text-sm text-gray-400 italic">Nothing to preview yet</Text>
+            ) : (
+              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                <Markdown
+                  markdownit={notesMarkdownIt}
+                  rules={notesMarkdownRules}
+                  style={notesMarkdownStyle}
+                  onLinkPress={(url) => {
+                    openTaskLink(url);
+                    return false;
+                  }}
+                >
+                  {notes}
+                </Markdown>
+              </ScrollView>
+            )}
+          </View>
         </View>
 
         {/* Links */}
