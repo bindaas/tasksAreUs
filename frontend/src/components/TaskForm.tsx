@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
 import type { Label, TaskLink } from '../api/tasks';
 import type { Board } from '../api/boards';
@@ -232,13 +234,34 @@ export function TaskForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={7}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-          placeholder="Any additional details..."
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={7}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+            placeholder="Any additional details..."
+          />
+          <div className="h-full max-h-80 overflow-y-auto border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+            {notes.trim() === '' ? (
+              <p className="text-sm text-gray-400 italic">Nothing to preview yet</p>
+            ) : (
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    a: ({ ...props }) => (
+                      <a {...props} target="_blank" rel="noopener noreferrer" />
+                    ),
+                    input: ({ ...props }) => <input {...props} disabled />,
+                  }}
+                >
+                  {notes}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div>
