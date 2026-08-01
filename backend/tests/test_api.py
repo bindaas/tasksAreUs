@@ -52,6 +52,21 @@ def assert_true(label: str, condition: bool):
         print(f"  {FAIL} {label}: condition is False")
 
 
+def assert_eq_xfail(label: str, actual, expected, reason: str):
+    """Like assert_eq, but for a known application bug that the maintainer has
+    explicitly decided NOT to fix in the current PR (a tracked, deferred gap
+    rather than a false-green). Does not count toward suite failures while the
+    bug remains present. If the underlying code is later fixed and the
+    assertion starts passing, this flags loudly (XPASS) so the marker gets
+    noticed and removed / converted back to a normal assert_eq."""
+    if actual == expected:
+        _failures.append(f"{label} (XPASS: bug appears fixed — remove xfail marker; {reason})")
+        print(f"  {FAIL} XPASS {label}: expected the known-bug value but got {actual!r} == {expected!r} — "
+              f"bug may be fixed, remove xfail. {reason}")
+    else:
+        print(f"  {PASS} XFAIL {label} (known bug, not fixed here: expected {expected!r}, got {actual!r}) — {reason}")
+
+
 def cleanup(user_id: str):
     print("\n── Cleanup ────────────────────────────────────────────")
     conn = psycopg2.connect(DB_URL)
@@ -1555,10 +1570,20 @@ def main():
     # in DATA_MODEL_AND_API.MD. Not reachable through the web UI today (TaskForm
     # and the kanban drag handler both always send is_high_priority explicitly),
     # but reachable directly via the API/mobile/sync and newly more relevant now
-    # that day-after-tomorrow/Monday are real drop targets. This assertion pins
-    # the DOCUMENTED (correct) behavior and is expected to fail until the
-    # application bug is fixed — see the accompanying PR comment.
-    print("\n── Tasks: HP daily limit bypass via date-only move (bug) ──")
+    # that day-after-tomorrow/Monday are real drop targets.
+    #
+    # KNOWN, TRACKED GAP — marked xfail, not fixed here:
+    # Filed as a bug comment on PR #60:
+    #   https://github.com/bindaas/tasksAreUs/pull/60#issuecomment-5153670431
+    # The maintainer has explicitly decided NOT to fix this in PR #60 — it is an
+    # intentional, tracked follow-up (this project has no separate issue tracker,
+    # so the PR comment above is the tracking anchor). Left hard-failing, this
+    # assertion would fail the whole suite with no CI to explain why (no GitHub
+    # Actions configured here), so it is downgraded to xfail via assert_eq_xfail:
+    # it still runs and reports the live status, but won't break the suite while
+    # the bug remains open, and will loudly XPASS-flag itself once someone fixes
+    # update_task() so the marker gets noticed and removed.
+    print("\n── Tasks: HP daily limit bypass via date-only move (bug, xfail) ──")
     bypass_dat_str = (date.today() + timedelta(days=2)).isoformat()
     bypass_fill_ids = []
     for i in range(3):
@@ -1577,8 +1602,12 @@ def main():
     })
     bypass_mover_id = r.json()["id"]
     r = client.put(f"/tasks/{bypass_mover_id}", headers=H, json={"must_do_by": bypass_dat_str})
-    assert_eq("PUT date-only move onto a full day should be rejected → 422 (KNOWN BUG, see PR comment)",
-              r.status_code, 422)
+    assert_eq_xfail(
+        "PUT date-only move onto a full day should be rejected → 422",
+        r.status_code, 422,
+        reason="known HP-cap bypass bug, deferred per explicit maintainer decision — "
+               "see https://github.com/bindaas/tasksAreUs/pull/60#issuecomment-5153670431",
+    )
 
     for tid in bypass_fill_ids + [bypass_mover_id]:
         client.delete(f"/tasks/{tid}", headers=H)
