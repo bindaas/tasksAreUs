@@ -1,20 +1,21 @@
 import type { Task } from '../types';
-import type { ColumnKey } from './taskDateUtils';
+import { getColumn, type ColumnKey } from './taskDateUtils';
 
 export const HIGH_PRIORITY_DAILY_LIMIT = 3;
 
+export function isHighPriorityEligible(columnKey: ColumnKey): boolean {
+  return columnKey === 'today' || columnKey === 'tomorrow' || columnKey === 'day_after_tomorrow';
+}
+
+/** Returns true if the form should offer the High priority checkbox given the current date fields. */
 export function isFormHighPriorityEligible(
   mustDoBy: string,
   targetDate: string,
   todayStr: string,
   tomorrowStr: string
 ): boolean {
-  return (mustDoBy !== '' && mustDoBy >= todayStr && mustDoBy <= tomorrowStr) ||
-    (targetDate !== '' && targetDate >= todayStr && targetDate <= tomorrowStr);
-}
-
-export function isHighPriorityEligible(columnKey: ColumnKey): boolean {
-  return columnKey === 'today' || columnKey === 'tomorrow';
+  const col = getColumn({ must_do_by: mustDoBy || null, target_date: targetDate || null }, todayStr, tomorrowStr);
+  return col === 'overdue' || isHighPriorityEligible(col);
 }
 
 export function splitByPriority(tasks: Task[]): { high: Task[]; normal: Task[] } {

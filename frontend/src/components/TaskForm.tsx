@@ -111,10 +111,12 @@ export function TaskForm({
     setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
   }
 
-  const _tom = new Date();
+  const _today = new Date();
+  const todayStr = dateOnly(_today);
+  const _tom = new Date(_today);
   _tom.setDate(_tom.getDate() + 1);
   const tomorrowStr = dateOnly(_tom);
-  const highPriorityEligible = isFormHighPriorityEligible(mustDoBy, targetDate, tomorrowStr);
+  const highPriorityEligible = isFormHighPriorityEligible(mustDoBy, targetDate, todayStr, tomorrowStr);
 
   const labelsByCategory = labels.reduce<Record<LabelCategory, Label[]>>(
     (acc, label) => {
@@ -370,7 +372,7 @@ export function TaskForm({
             <span className="text-sm font-medium text-gray-700">High priority</span>
           </label>
           <span className="text-xs text-orange-500 font-medium">
-            ↑ shown above the line in Overdue / Today / Tomorrow
+            ↑ shown above the line in Overdue / Today / Tomorrow / Day After Tomorrow / Monday
           </span>
         </div>
       )}

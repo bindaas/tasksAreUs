@@ -152,8 +152,8 @@ class TestUpdateLabel:
         assert exc.value.status_code == 404
 
     def test_rejects_duplicate_value(self):
-        label = _make_label("l1", CategoryEnum.mode, "online", "user-1")
-        duplicate = _make_label("l2", CategoryEnum.mode, "phone", "user-1")
+        label = _make_label("l1", CategoryEnum.type, "online", "user-1")
+        duplicate = _make_label("l2", CategoryEnum.type, "phone", "user-1")
         db = MagicMock()
         db.query.return_value.filter.return_value.first.side_effect = [label, duplicate]
 

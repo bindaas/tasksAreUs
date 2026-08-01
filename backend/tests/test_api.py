@@ -52,6 +52,21 @@ def assert_true(label: str, condition: bool):
         print(f"  {FAIL} {label}: condition is False")
 
 
+def assert_eq_xfail(label: str, actual, expected, reason: str):
+    """Like assert_eq, but for a known application bug that the maintainer has
+    explicitly decided NOT to fix in the current PR (a tracked, deferred gap
+    rather than a false-green). Does not count toward suite failures while the
+    bug remains present. If the underlying code is later fixed and the
+    assertion starts passing, this flags loudly (XPASS) so the marker gets
+    noticed and removed / converted back to a normal assert_eq."""
+    if actual == expected:
+        _failures.append(f"{label} (XPASS: bug appears fixed — remove xfail marker; {reason})")
+        print(f"  {FAIL} XPASS {label}: expected the known-bug value but got {actual!r} == {expected!r} — "
+              f"bug may be fixed, remove xfail. {reason}")
+    else:
+        print(f"  {PASS} XFAIL {label} (known bug, not fixed here: expected {expected!r}, got {actual!r}) — {reason}")
+
+
 def cleanup(user_id: str):
     print("\n── Cleanup ────────────────────────────────────────────")
     conn = psycopg2.connect(DB_URL)
@@ -1384,6 +1399,95 @@ def main():
     for tid in [hp_mindate_task_id, hp_mindate_inv_task_id, hp_both_future_task_id]:
         client.delete(f"/tasks/{tid}", headers=H)
 
+    # ── HP eligibility: day-after-tomorrow and Friday-only Monday (PR #60) ─────
+    # PR #60 fixes a bug where _is_hp_eligible_date() only accepted dates up to
+    # tomorrow, so the server silently reset is_high_priority back to false for
+    # tasks dated the day after tomorrow or the Friday-only Monday column, even
+    # though the board already let users drag tasks into those columns' High
+    # Priority zones. These tests pin the corrected server-side window.
+    print("\n── Tasks: HP eligibility for day-after-tomorrow/Monday (PR #60) ──")
+    day_after_tomorrow_str = (date.today() + timedelta(days=2)).isoformat()
+    three_days_str = (date.today() + timedelta(days=3)).isoformat()
+    today_is_friday = date.today().weekday() == 4  # Monday=0 .. Sunday=6
+
+    # POST with must_do_by=day-after-tomorrow, is_high_priority=true → stays true
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP task due day after tomorrow",
+        "must_do_by": day_after_tomorrow_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST high-priority task with day-after-tomorrow date → 201", r.status_code, 201)
+    hp_dat_task = r.json()
+    hp_dat_task_id = hp_dat_task["id"]
+    assert_eq("is_high_priority stays true for day after tomorrow", hp_dat_task["is_high_priority"], True)
+
+    # Same via target_date instead of must_do_by
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP task target_date day after tomorrow",
+        "target_date": day_after_tomorrow_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST high-priority task with target_date=day-after-tomorrow → 201", r.status_code, 201)
+    hp_dat_target_task = r.json()
+    hp_dat_target_task_id = hp_dat_target_task["id"]
+    assert_eq("is_high_priority true via target_date=day-after-tomorrow",
+              hp_dat_target_task["is_high_priority"], True)
+
+    # PUT: dragging an existing HP task from today onto day-after-tomorrow must
+    # NOT auto-reset is_high_priority — this is the exact drag-and-drop bug PR #60 fixes.
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP task starting today, moved to day-after-tomorrow",
+        "must_do_by": today_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST HP task due today (for drag-to-DAT test) → 201", r.status_code, 201)
+    hp_drag_dat_task_id = r.json()["id"]
+    r = client.put(f"/tasks/{hp_drag_dat_task_id}", headers=H, json={"must_do_by": day_after_tomorrow_str})
+    assert_eq("PUT move today HP task to day-after-tomorrow → 200", r.status_code, 200)
+    assert_eq("PUT to day-after-tomorrow preserves is_high_priority=true",
+              r.json()["is_high_priority"], True)
+
+    # today+3 ("the following Monday") is only HP-eligible when today is Friday.
+    # This assertion naturally covers whichever branch is live on the day the
+    # suite runs, without needing to mock server time.
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP task due today+3 (Monday-only-if-Friday)",
+        "must_do_by": three_days_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST high-priority task with today+3 date → 201", r.status_code, 201)
+    hp_plus3_task = r.json()
+    hp_plus3_task_id = hp_plus3_task["id"]
+    if today_is_friday:
+        assert_eq("is_high_priority stays true for today+3 when today is Friday (Monday column)",
+                  hp_plus3_task["is_high_priority"], True)
+    else:
+        assert_eq("is_high_priority auto-reset for today+3 when today is not Friday",
+                  hp_plus3_task["is_high_priority"], False)
+        print("    (Friday-only Monday-eligible branch not exercised — today is not Friday)")
+
+    # today+4 must always be ineligible, Friday or not (one step past the widest window)
+    four_days_str = (date.today() + timedelta(days=4)).isoformat()
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP task due today+4 (always ineligible)",
+        "must_do_by": four_days_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST high-priority task with today+4 date → 201", r.status_code, 201)
+    hp_plus4_task_id = r.json()["id"]
+    assert_eq("is_high_priority auto-reset for today+4 regardless of weekday",
+              r.json()["is_high_priority"], False)
+
+    # Clean up day-after-tomorrow/Monday eligibility test tasks
+    for tid in [hp_dat_task_id, hp_dat_target_task_id, hp_drag_dat_task_id,
+                hp_plus3_task_id, hp_plus4_task_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
+
     # ── High-priority daily limit (PR #7) ─────────────────────────────────────
     print("\n── Tasks: High Priority Daily Limit ────────────────────")
     # Create exactly 3 high-priority tasks for today — all should succeed
@@ -1455,6 +1559,57 @@ def main():
 
     # Clean up all high-priority limit test tasks
     for tid in hp_limit_ids + [hp_limit_put_task_id, hp_limit_tomorrow_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
+
+    # ── HP daily limit bypass via date-only move (found during PR #60 review) ──
+    # update_task() only re-checks the per-day HP cap when is_high_priority=True
+    # is explicitly present in the PUT body (task_service.py line ~178). Moving
+    # an already-high-priority task's date onto a day that is already at the cap
+    # — without re-sending is_high_priority — skips the check entirely, silently
+    # violating the "at most N high-priority tasks per day" invariant documented
+    # in DATA_MODEL_AND_API.MD. Not reachable through the web UI today (TaskForm
+    # and the kanban drag handler both always send is_high_priority explicitly),
+    # but reachable directly via the API/mobile/sync and newly more relevant now
+    # that day-after-tomorrow/Monday are real drop targets.
+    #
+    # KNOWN, TRACKED GAP — marked xfail, not fixed here:
+    # Filed as a bug comment on PR #60:
+    #   https://github.com/bindaas/tasksAreUs/pull/60#issuecomment-5153670431
+    # The maintainer has explicitly decided NOT to fix this in PR #60 — it is an
+    # intentional, tracked follow-up (this project has no separate issue tracker,
+    # so the PR comment above is the tracking anchor). Left hard-failing, this
+    # assertion would fail the whole suite with no CI to explain why (no GitHub
+    # Actions configured here), so it is downgraded to xfail via assert_eq_xfail:
+    # it still runs and reports the live status, but won't break the suite while
+    # the bug remains open, and will loudly XPASS-flag itself once someone fixes
+    # update_task() so the marker gets noticed and removed.
+    print("\n── Tasks: HP daily limit bypass via date-only move (bug, xfail) ──")
+    bypass_dat_str = (date.today() + timedelta(days=2)).isoformat()
+    bypass_fill_ids = []
+    for i in range(3):
+        r = client.post("/tasks", headers=H, json={
+            "title": f"HP bypass fill {i + 1}",
+            "must_do_by": bypass_dat_str,
+            "label_ids": [],
+            "is_high_priority": True,
+        })
+        bypass_fill_ids.append(r.json()["id"])
+    r = client.post("/tasks", headers=H, json={
+        "title": "HP bypass mover (starts today)",
+        "must_do_by": today_str,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    bypass_mover_id = r.json()["id"]
+    r = client.put(f"/tasks/{bypass_mover_id}", headers=H, json={"must_do_by": bypass_dat_str})
+    assert_eq_xfail(
+        "PUT date-only move onto a full day should be rejected → 422",
+        r.status_code, 422,
+        reason="known HP-cap bypass bug, deferred per explicit maintainer decision — "
+               "see https://github.com/bindaas/tasksAreUs/pull/60#issuecomment-5153670431",
+    )
+
+    for tid in bypass_fill_ids + [bypass_mover_id]:
         client.delete(f"/tasks/{tid}", headers=H)
 
     # ── Task completion (one-time) ─────────────────────────────────────────────
