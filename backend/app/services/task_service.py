@@ -29,10 +29,18 @@ def _effective_date(must_do_by: Optional[date], target_date: Optional[date]) -> 
 
 
 def _is_hp_eligible_date(d: Optional[date]) -> bool:
-    """HP is valid for overdue, today, and tomorrow — anything with an effective date <= tomorrow."""
+    """HP is valid for overdue, today, tomorrow, the day after tomorrow, and — on Fridays
+    only — the following Monday. Mirrors the frontend board's high-priority-eligible columns."""
     if d is None:
         return False
-    return d <= date.today() + relativedelta(days=1)
+    today = date.today()
+    if d <= today + relativedelta(days=1):
+        return True
+    if d == today + relativedelta(days=2):
+        return True
+    if today.weekday() == 4 and d == today + relativedelta(days=3):
+        return True
+    return False
 
 
 def _count_high_priority_for_date(
@@ -162,7 +170,7 @@ def update_task(
     if is_high_priority is not None:
         task.is_high_priority = is_high_priority
 
-    # Auto-reset: high priority is only valid for overdue, today, and tomorrow
+    # Auto-reset: high priority is only valid for dates within _is_hp_eligible_date's window
     if not _is_hp_eligible_date(_effective_date(task.must_do_by, task.target_date)):
         task.is_high_priority = False
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { isHighPriorityEligible, isFormHighPriorityEligible, splitByPriority, canAddHighPriority, HIGH_PRIORITY_DAILY_LIMIT } from '../utils/taskPriority';
 import type { Task } from '../api/tasks';
 
@@ -54,43 +54,68 @@ describe('isHighPriorityEligible', () => {
 describe('isFormHighPriorityEligible', () => {
   const TODAY = '2026-06-05';
   const TOMORROW = '2026-06-06';
+  const DAY_AFTER_TOMORROW = '2026-06-07';
   const YESTERDAY = '2026-06-04';
   const NEXT_WEEK = '2026-06-12';
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('returns true when mustDoBy is today', () => {
-    expect(isFormHighPriorityEligible(TODAY, '', TOMORROW)).toBe(true);
+    expect(isFormHighPriorityEligible(TODAY, '', TODAY, TOMORROW)).toBe(true);
   });
 
   it('returns true when mustDoBy is tomorrow', () => {
-    expect(isFormHighPriorityEligible(TOMORROW, '', TOMORROW)).toBe(true);
+    expect(isFormHighPriorityEligible(TOMORROW, '', TODAY, TOMORROW)).toBe(true);
   });
 
   it('returns true when mustDoBy is in the past (overdue)', () => {
-    expect(isFormHighPriorityEligible(YESTERDAY, '', TOMORROW)).toBe(true);
+    expect(isFormHighPriorityEligible(YESTERDAY, '', TODAY, TOMORROW)).toBe(true);
   });
 
-  it('returns false when mustDoBy is after tomorrow (upcoming)', () => {
-    expect(isFormHighPriorityEligible(NEXT_WEEK, '', TOMORROW)).toBe(false);
+  it('returns true when mustDoBy is the day after tomorrow', () => {
+    expect(isFormHighPriorityEligible(DAY_AFTER_TOMORROW, '', TODAY, TOMORROW)).toBe(true);
+  });
+
+  it('returns false when mustDoBy is after day after tomorrow (upcoming)', () => {
+    expect(isFormHighPriorityEligible(NEXT_WEEK, '', TODAY, TOMORROW)).toBe(false);
   });
 
   it('returns true when targetDate is today', () => {
-    expect(isFormHighPriorityEligible('', TODAY, TOMORROW)).toBe(true);
+    expect(isFormHighPriorityEligible('', TODAY, TODAY, TOMORROW)).toBe(true);
   });
 
   it('returns true when targetDate is in the past (overdue)', () => {
-    expect(isFormHighPriorityEligible('', YESTERDAY, TOMORROW)).toBe(true);
+    expect(isFormHighPriorityEligible('', YESTERDAY, TODAY, TOMORROW)).toBe(true);
   });
 
-  it('returns false when targetDate is after tomorrow', () => {
-    expect(isFormHighPriorityEligible('', NEXT_WEEK, TOMORROW)).toBe(false);
+  it('returns true when targetDate is the day after tomorrow', () => {
+    expect(isFormHighPriorityEligible('', DAY_AFTER_TOMORROW, TODAY, TOMORROW)).toBe(true);
+  });
+
+  it('returns false when targetDate is after day after tomorrow', () => {
+    expect(isFormHighPriorityEligible('', NEXT_WEEK, TODAY, TOMORROW)).toBe(false);
   });
 
   it('returns false when both dates are empty', () => {
-    expect(isFormHighPriorityEligible('', '', TOMORROW)).toBe(false);
+    expect(isFormHighPriorityEligible('', '', TODAY, TOMORROW)).toBe(false);
   });
 
   it('returns true when either date qualifies (targetDate overdue, mustDoBy upcoming)', () => {
-    expect(isFormHighPriorityEligible(NEXT_WEEK, YESTERDAY, TOMORROW)).toBe(true);
+    expect(isFormHighPriorityEligible(NEXT_WEEK, YESTERDAY, TODAY, TOMORROW)).toBe(true);
+  });
+
+  it('returns true when mustDoBy is Monday and today is Friday', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-29T12:00:00')); // Friday
+    expect(isFormHighPriorityEligible('2026-06-01', '', '2026-05-29', '2026-05-30')).toBe(true);
+  });
+
+  it('returns false when mustDoBy is Monday but today is not Friday', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-25T12:00:00')); // Monday
+    expect(isFormHighPriorityEligible('2026-06-01', '', '2026-05-25', '2026-05-26')).toBe(false);
   });
 });
 

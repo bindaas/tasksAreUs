@@ -163,11 +163,26 @@ class TestIsHpEligibleDate:
     def test_far_past_is_eligible(self):
         assert _is_hp_eligible_date(date.today() - timedelta(days=30)) is True
 
-    def test_two_days_ahead_ineligible(self):
-        assert _is_hp_eligible_date(date.today() + timedelta(days=2)) is False
+    def test_two_days_ahead_eligible(self):
+        assert _is_hp_eligible_date(date.today() + timedelta(days=2)) is True
+
+    def test_three_days_ahead_ineligible(self):
+        assert _is_hp_eligible_date(date.today() + timedelta(days=3)) is False
 
     def test_none(self):
         assert _is_hp_eligible_date(None) is False
+
+    @patch("app.services.task_service.date")
+    def test_monday_eligible_on_friday(self, mock_date):
+        friday = date(2026, 5, 29)
+        mock_date.today.return_value = friday
+        assert _is_hp_eligible_date(friday + timedelta(days=3)) is True
+
+    @patch("app.services.task_service.date")
+    def test_monday_ineligible_when_not_friday(self, mock_date):
+        monday = date(2026, 5, 25)
+        mock_date.today.return_value = monday
+        assert _is_hp_eligible_date(monday + timedelta(days=3)) is False
 
 
 # ── update_task high-priority auto-reset ──────────────────────────────────────
