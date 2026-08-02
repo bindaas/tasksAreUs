@@ -605,14 +605,17 @@ Accept or reject a belief.
 
 ### Reports
 
+Backs the web/mobile **Archive** view (renamed from "Reports" in PR #63 — UI label and route/screen name only; the endpoint path and router module (`reports.py`) are unchanged for backward compatibility). As of PR #63, `reports.py` is a thin router that delegates entirely to `reports_service.get_completions()` (mirroring `focused_view_service.py`'s router/service split).
+
 #### `GET /reports/completions`
-Get completed tasks within a date range.
+Get completed tasks within a date range, optionally scoped to a single board or grouped across all boards.
 
 **Query params**:
 - `from=YYYY-MM-DD` (required) — lower bound, inclusive (`completed_at >= from`)
 - `to=YYYY-MM-DD` (required) — upper bound, inclusive of the full calendar day (`completed_at < to + 1 day`); tasks completed at any time on `to` are included
 - `label_ids=uuid,uuid` — optional filter
-- `board_id=uuid` (optional) — filter to a specific board; defaults to the user's default board
+- `board_id=uuid` (optional) — filter to a specific board; defaults to the user's default board. Ignored when `all_boards=true`.
+- `all_boards=true|false` (optional, default `false`, added PR #63) — when `true`, returns completions across all of the caller's non-deleted boards, grouped per board in the additive `boards` response field, instead of a single board. Calls `ensure_board_seeded()` first (same lazy-seeding behavior as `GET /boards`) so a brand-new user gets an empty `boards: []` rather than a 404/500.
 
 **Response**
 ```json
@@ -625,9 +628,18 @@ Get completed tasks within a date range.
       "labels": [ ...label objects... ]
     }
   ],
-  "total": 7
+  "total": 7,
+  "boards": [
+    {
+      "board_id": "uuid",
+      "board_name": "Alpha",
+      "board_color": "#6366f1",
+      "completions": [ { "task_id": "uuid", "title": "Laundry", "completed_at": "2026-05-02T18:00:00Z", "labels": [] } ]
+    }
+  ]
 }
 ```
+`boards` is `null`/omitted when `all_boards` is not `true` (single-board response — pre-PR #63 shape, fully backward compatible for existing callers). When `all_boards=true`: `boards` is present (an empty array `[]` for a user with no boards or no matching completions), ordered by the user's custom board order (`sort_order ASC, created_at ASC`, same convention as `GET /boards`/`GET /focused-view/tasks`/`GET /day-view/tasks`); boards with zero matching completions in the date range are omitted from `boards` (same "omit empty groups" convention as the Focused/Day View board grouping). `completions`/`total` are always the full flat list/count across all matching boards regardless of `all_boards` — `boards[].completions` duplicates the same completion objects, grouped.
 
 ---
 

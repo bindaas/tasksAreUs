@@ -5,7 +5,7 @@ import { useAuth } from './hooks/useAuth';
 import { Layout } from './components/Layout';
 import { TasksPage } from './pages/TasksPage';
 import { TaskDetailPage } from './pages/TaskDetailPage';
-import { ReportsPage } from './pages/ReportsPage';
+import { ArchivePage } from './pages/ArchivePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { FilterProvider } from './context/FilterContext';
@@ -97,7 +97,8 @@ function AppRoutes() {
                   <Route element={<Layout />}>
                     <Route path="/" element={<TasksPage />} />
                     <Route path="/tasks/:id" element={<TaskDetailPage />} />
-                    <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="/archive" element={<ArchivePage />} />
+                    <Route path="/reports" element={<Navigate to="/archive" replace />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>

@@ -6,13 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { BoardProvider } from '../context/BoardContext';
 import { TasksScreen } from '../screens/TasksScreen';
-import { ReportsScreen } from '../screens/ReportsScreen';
+import { ArchiveScreen } from '../screens/ArchiveScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 
 export type RootTabParamList = {
   Tasks: undefined;
-  Reports: undefined;
+  Archive: undefined;
   Settings: undefined;
 };
 
@@ -92,8 +92,8 @@ export function AppNavigator() {
             options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>✓</Text> }}
           />
           <Tab.Screen
-            name="Reports"
-            component={ReportsScreen}
+            name="Archive"
+            component={ArchiveScreen}
             options={{ tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>📊</Text> }}
           />
           <Tab.Screen
