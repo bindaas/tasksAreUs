@@ -3,3 +3,4 @@
 **/*.pyc
 backend/pgadmin_pgpass
 backend/pgadmin_servers.json
+.DS_Store
