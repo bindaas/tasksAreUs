@@ -170,7 +170,6 @@ def update_board(
 
     if sort_order is not None:
         board.sort_order = sort_order
-        board.updated_at = datetime.now(timezone.utc)
         db.flush()
         _recompute_default(db, board.user_id)
 
@@ -191,7 +190,7 @@ def delete_board(db: Session, board: Board) -> None:
     if board.is_default:
         raise HTTPException(
             status_code=400,
-            detail="Cannot delete the default board — set another board as default first",
+            detail="Cannot delete the default board — drag another board to the top in Settings to make it default first",
         )
 
     has_tasks = db.query(Task).filter(
