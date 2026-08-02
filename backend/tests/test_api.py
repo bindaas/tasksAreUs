@@ -157,7 +157,9 @@ def main():
     # default board because PR #37 added ensure_board_seeded() to list_boards().
     assert_true("GET /boards returns at least 1 board after cleanup (PR #37: seed-on-GET)", len(boards_list) >= 1)
 
-    # The default board must be first in the list (ordered is_default DESC, created_at ASC)
+    # The default board must be first in the list (ordered sort_order ASC, created_at ASC
+    # as of PR #62 — was is_default DESC, created_at ASC before board order became a
+    # user-draggable custom order with an order-derived default)
     default_board = boards_list[0]
     assert_eq("first board is_default=true", default_board["is_default"], True)
     assert_eq("default board name is 'General tasks'", default_board["name"], "General tasks")
@@ -165,6 +167,8 @@ def main():
     assert_in("board has is_deleted field", "is_deleted", default_board)
     assert_in("board has created_at field", "created_at", default_board)
     assert_in("board has updated_at field", "updated_at", default_board)
+    assert_in("board has sort_order field (PR #62)", "sort_order", default_board)
+    assert_true("board sort_order is numeric (PR #62)", isinstance(default_board["sort_order"], (int, float)))
     assert_eq("default board is_deleted=false", default_board["is_deleted"], False)
     default_board_id = default_board["id"]
 
@@ -180,6 +184,7 @@ def main():
     assert_eq("new board is_default=false", new_board["is_default"], False)
     assert_eq("new board is_deleted=false", new_board["is_deleted"], False)
     assert_in("new board has id", "id", new_board)
+    assert_in("new board has sort_order field (PR #62)", "sort_order", new_board)
     new_board_id = new_board["id"]
 
     # POST /boards — empty name → 400
@@ -210,33 +215,67 @@ def main():
     r = client.put(f"/boards/{new_board_id}", headers=H, json={"name": "  "})
     assert_eq("PUT /boards/:id empty name → 400", r.status_code, 400)
 
-    # PUT /boards/{id} — is_default: true promotes a non-default board
+    # ── Boards: is_default no longer client-writable (PR #62) ──────────────────
+    # Order-driven default: is_default is now a derived field the server maintains
+    # (topmost board by sort_order is the default). BoardUpdate dropped the
+    # is_default field from its schema entirely — Pydantic silently ignores
+    # unknown request-body keys by default, so these requests still succeed (200)
+    # but have zero effect on is_default.
     r = client.put(f"/boards/{new_board_id}", headers=H, json={"is_default": True})
-    assert_eq("PUT /boards/:id set is_default=true → 200", r.status_code, 200)
-    promoted = r.json()
-    assert_eq("promoted board is_default=true", promoted["is_default"], True)
-    # Original default board must no longer be default
-    r = client.get("/boards", headers=H)
-    all_boards = r.json()["boards"]
-    old_default_in_list = next((b for b in all_boards if b["id"] == default_board_id), None)
-    assert_true("old default board found in list", old_default_in_list is not None)
-    if old_default_in_list:
-        assert_eq("old default board demoted", old_default_in_list["is_default"], False)
+    assert_eq("PUT /boards/:id is_default=true → 200 (PR #62: field silently ignored, no longer writable)",
+              r.status_code, 200)
+    assert_eq("is_default unaffected by request body — new_board_id still not default (PR #62)",
+              r.json()["is_default"], False)
 
-    # PUT /boards/{id} — is_default: false on current default → 400
-    r = client.put(f"/boards/{new_board_id}", headers=H, json={"is_default": False})
-    assert_eq("PUT /boards/:id is_default=false on current default → 400", r.status_code, 400)
-    assert_true("400 detail mentions demote restriction",
-                "demote" in r.json().get("detail", "").lower() or "default" in r.json().get("detail", "").lower())
+    r = client.put(f"/boards/{default_board_id}", headers=H, json={"is_default": False})
+    assert_eq("PUT /boards/:id is_default=false on current default → 200, no longer 400 (PR #62: field ignored)",
+              r.status_code, 200)
+    assert_eq("default board still is_default=true — old demote-guard error went away with the field (PR #62)",
+              r.json()["is_default"], True)
 
     # PUT /boards/{id} — 404 for non-existent board
     r = client.put(f"/boards/{str(uuid.uuid4())}", headers=H, json={"name": "Ghost board"})
     assert_eq("PUT /boards/:id non-existent → 404", r.status_code, 404)
 
-    # Restore default_board_id as the default so later tests use the original board
-    r = client.put(f"/boards/{default_board_id}", headers=H, json={"is_default": True})
-    assert_eq("Restore original default board → 200", r.status_code, 200)
-    assert_eq("original board is_default=true again", r.json()["is_default"], True)
+    # ── Boards: custom order & order-driven default (PR #62) ───────────────────
+    print("\n── Boards: custom order & order-driven default (PR #62) ─")
+    # Dragging a board above the current default via an explicit sort_order is now
+    # the only way to change which board is default.
+    r = client.get("/boards", headers=H)
+    boards_before_reorder = r.json()["boards"]
+    default_sort_order_before = next(
+        b["sort_order"] for b in boards_before_reorder if b["id"] == default_board_id
+    )
+    dragged_sort_order = default_sort_order_before - 1.0
+
+    r = client.put(f"/boards/{new_board_id}", headers=H, json={"sort_order": dragged_sort_order})
+    assert_eq("PUT /boards/:id sort_order (drag above default) → 200", r.status_code, 200)
+    reordered = r.json()
+    assert_eq("dragged board's sort_order persisted exactly (PR #62)",
+              reordered["sort_order"], dragged_sort_order)
+    assert_eq("dragging a board above the default promotes it to is_default=true (PR #62)",
+              reordered["is_default"], True)
+
+    # Old default board must now be demoted — _recompute_default() re-derives the
+    # default from the full ordered list, not just the board that moved (the old
+    # default's own row isn't touched by this PUT).
+    r = client.get("/boards", headers=H)
+    all_boards = r.json()["boards"]
+    old_default_in_list = next((b for b in all_boards if b["id"] == default_board_id), None)
+    assert_true("old default board found in list", old_default_in_list is not None)
+    if old_default_in_list:
+        assert_eq("old default board demoted when another board is dragged above it (PR #62)",
+                  old_default_in_list["is_default"], False)
+
+    # GET /boards now reflects the new order (sort_order ASC)
+    assert_eq("GET /boards topmost board is the reordered board (PR #62: sort_order ASC ordering)",
+              all_boards[0]["id"], new_board_id)
+
+    # Restore default_board_id to the top so later tests use the original default board
+    r = client.put(f"/boards/{default_board_id}", headers=H, json={"sort_order": dragged_sort_order - 1.0})
+    assert_eq("Restore original board order → 200", r.status_code, 200)
+    assert_eq("original board is_default=true again after being dragged back to the top (PR #62)",
+              r.json()["is_default"], True)
 
     # ── Boards: color field (PR #36) ──────────────────────────────────────────
     print("\n── Boards: color field (PR #36) ────────────────────────────────")
@@ -2071,6 +2110,26 @@ def main():
     # PR #33: sync response must include boards array
     assert_in("sync changes has boards array (PR #33)", "boards", sync_result["changes"])
     assert_true("sync boards is a list (PR #33)", isinstance(sync_result["changes"]["boards"], list))
+    assert_true("sync boards array is non-empty (last_synced_at is old enough to include all boards)",
+                len(sync_result["changes"]["boards"]) >= 1)
+    if sync_result["changes"]["boards"]:
+        first_sync_board = sync_result["changes"]["boards"][0]
+        assert_in("sync board object includes is_default field (PR #33)", "is_default", first_sync_board)
+        # PR #62: boards.sort_order now drives display order and is_default derivation,
+        # but routers/sync.py's board_dicts (pull payload) was never updated to include
+        # it — it hand-builds each dict with only id/name/is_default/is_deleted/
+        # created_at/updated_at. `color` has had this same gap since PR #36/#37 (never
+        # added here either). No current web/mobile client actually calls /sync (no
+        # api/sync.ts exists on either platform), so this is latent rather than a live
+        # bug today — but a future offline-sync consumer reading boards from this
+        # endpoint would silently miss both fields. Tracked as a known gap, not fixed
+        # here (out of this PR's stated scope) — see xfail below.
+        assert_eq_xfail("sync board object includes sort_order field (PR #62 gap: not wired into sync.py board_dicts)",
+                         "sort_order" in first_sync_board, True,
+                         "routers/sync.py's board_dicts dict-literal was not updated for the new boards.sort_order column")
+        assert_eq_xfail("sync board object includes color field (pre-existing gap since PR #36/#37)",
+                         "color" in first_sync_board, True,
+                         "routers/sync.py's board_dicts dict-literal has never included the color column")
 
     # Verify sync push: sending a task with is_high_priority=true round-trips correctly.
     # PR #31: recurrence_group_id is omitted from the push payload (column dropped).
@@ -2553,6 +2612,19 @@ def main():
     if fv_colored_group is not None:
         assert_eq("board_color reflects PUT value (#ff6600)", fv_colored_group.get("board_color"), "#ff6600")
 
+    # PR #62: board grouping order changed from alphabetical-by-name to sort_order
+    # ASC. "Focused view test board" was created after (and so sorts after)
+    # "General tasks" by sort_order, even though it would sort FIRST alphabetically
+    # ("F" < "G") — proves the ordering actually switched, not just that it happens
+    # to coincide with alphabetical order here.
+    fv_default_idx = next((i for i, b in enumerate(fv_boards_list) if b["board_id"] == default_board_id), None)
+    fv_colored_idx = next((i for i, b in enumerate(fv_boards_list) if b["board_id"] == fv_board_id), None)
+    assert_true("both board groups found in focused view for order check",
+                fv_default_idx is not None and fv_colored_idx is not None)
+    if fv_default_idx is not None and fv_colored_idx is not None:
+        assert_true("focused view groups boards by sort_order ASC, not alphabetically (PR #62)",
+                    fv_default_idx < fv_colored_idx)
+
     # HP task with only target_date (no must_do_by) must also appear in focused view.
     # The service uses or_(must_do_by.in_(window), target_date.in_(window)) —
     # verify the target_date branch works at the integration level.
@@ -2789,6 +2861,17 @@ def main():
         dv_other_task_ids = [t["id"] for t in dv_other_group["tasks"]]
         assert_in("second board's target_date-only task appears in day view",
                   dv_other_board_task_id, dv_other_task_ids)
+
+    # PR #62: same sort_order-vs-alphabetical order-change proof as focused view —
+    # "Day view test board" would sort FIRST alphabetically ("D" < "G") but was
+    # created after "General tasks", so it must sort AFTER by sort_order ASC.
+    dv_default_idx = next((i for i, b in enumerate(dv_boards_list) if b["board_id"] == default_board_id), None)
+    dv_other_idx = next((i for i, b in enumerate(dv_boards_list) if b["board_id"] == dv_board_id), None)
+    assert_true("both board groups found in day view for order check",
+                dv_default_idx is not None and dv_other_idx is not None)
+    if dv_default_idx is not None and dv_other_idx is not None:
+        assert_true("day view groups boards by sort_order ASC, not alphabetically (PR #62)",
+                    dv_default_idx < dv_other_idx)
 
     # reference_date=tomorrow must include the tomorrow task and exclude today's tasks
     r = client.get("/day-view/tasks", headers=H, params={"reference_date": dv_tomorrow_str})
