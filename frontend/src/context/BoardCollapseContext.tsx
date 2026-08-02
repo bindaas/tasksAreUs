@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 
-export type ViewKey = 'overdue' | 'focused' | 'today' | 'tomorrow';
+export type ViewKey = 'overdue' | 'focused' | 'today' | 'tomorrow' | 'archive';
 
 interface BoardCollapseContextValue {
   isCollapsed: (view: ViewKey, boardId: string) => boolean;
@@ -17,6 +17,7 @@ export function BoardCollapseProvider({ children }: { children: ReactNode }) {
     focused: new Set(),
     today: new Set(),
     tomorrow: new Set(),
+    archive: new Set(),
   });
 
   // No identity-reset effect (unlike FilterContext): board ids are UUIDs scoped

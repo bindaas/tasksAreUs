@@ -33,7 +33,7 @@ function GearIcon() {
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Tasks', icon: <ChecklistIcon /> },
-  { to: '/reports', label: 'Reports', icon: <ChartIcon /> },
+  { to: '/archive', label: 'Archive', icon: <ChartIcon /> },
   { to: '/settings', label: 'Settings', icon: <GearIcon /> },
 ];
 

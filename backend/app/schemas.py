@@ -188,9 +188,17 @@ class CompletionItem(BaseModel):
     labels: List[LabelOut]
 
 
+class BoardCompletions(BaseModel):
+    board_id: str
+    board_name: str
+    board_color: Optional[str] = None
+    completions: List[CompletionItem]
+
+
 class CompletionsReport(BaseModel):
     completions: List[CompletionItem]
     total: int
+    boards: Optional[List[BoardCompletions]] = None
 
 
 # ── Settings ──────────────────────────────────────────────────────────────────

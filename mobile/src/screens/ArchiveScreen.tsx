@@ -9,21 +9,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getCompletions } from '../api/reports';
-import { useBoard } from '../context/BoardContext';
-import type { CompletionRecord } from '../types';
-
-function toLocalISO(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+import { ArchiveBoardTabs } from '../components/ArchiveBoardTabs';
+import { ArchiveBoardGroups } from '../components/ArchiveBoardGroups';
+import { dateOnly } from '../utils/taskDateUtils';
+import { getPresetRange, PRESET_LABELS, type PresetKey } from '../utils/dateRangePresets';
+import type { CompletionRecord, BoardCompletions } from '../types';
 
 function todayISO(): string {
-  return toLocalISO(new Date());
+  return dateOnly(new Date());
 }
 
-function sevenDaysAgoISO(): string {
+function thirtyDaysAgoISO(): string {
   const d = new Date();
-  d.setDate(d.getDate() - 6);
-  return toLocalISO(d);
+  d.setDate(d.getDate() - 30);
+  return dateOnly(d);
 }
 
 function formatCompletedAt(iso: string): string {
@@ -33,7 +32,7 @@ function formatCompletedAt(iso: string): string {
     d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
-const LABEL_CATEGORY_ORDER = { type: 0 };
+const LABEL_CATEGORY_ORDER: Record<string, number> = { type: 0 };
 
 function CompletionRow({ record }: { record: CompletionRecord }) {
   const sorted = [...record.labels].sort(
@@ -58,23 +57,29 @@ function CompletionRow({ record }: { record: CompletionRecord }) {
   );
 }
 
-export function ReportsScreen() {
-  const { activeBoard } = useBoard();
-  const [from, setFrom] = useState(sevenDaysAgoISO());
+const PRESETS: PresetKey[] = ['this_month', 'last_month', 'last_three_months'];
+
+export function ArchiveScreen() {
+  const [from, setFrom] = useState(thirtyDaysAgoISO());
   const [to, setTo] = useState(todayISO());
+  const [selectedBoardId, setSelectedBoardId] = useState<string | 'all'>('all');
   const [records, setRecords] = useState<CompletionRecord[]>([]);
+  const [boards, setBoards] = useState<BoardCompletions[] | null>(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fetched, setFetched] = useState(false);
+  const [collapsedBoardIds, setCollapsedBoardIds] = useState<Set<string>>(new Set());
 
   const runReport = useCallback(async () => {
     if (!from || !to) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await getCompletions(from, to, activeBoard?.id);
+      const options = selectedBoardId === 'all' ? { allBoards: true } : { boardId: selectedBoardId };
+      const data = await getCompletions(from, to, options);
       setRecords(data.completions);
+      setBoards(data.boards ?? null);
       setTotal(data.total);
       setFetched(true);
     } catch (e) {
@@ -82,7 +87,26 @@ export function ReportsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [from, to, activeBoard?.id]);
+  }, [from, to, selectedBoardId]);
+
+  function applyPreset(preset: PresetKey) {
+    const range = getPresetRange(preset);
+    setFrom(range.from);
+    setTo(range.to);
+  }
+
+  function toggleBoard(id: string) {
+    setCollapsedBoardIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function setAllCollapsed(ids: string[], collapse: boolean) {
+    setCollapsedBoardIds(collapse ? new Set(ids) : new Set());
+  }
 
   const dateInputClass =
     'flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900 bg-white';
@@ -90,10 +114,25 @@ export function ReportsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
       <View className="px-4 pt-2 pb-4 bg-gray-50">
-        <Text className="text-2xl font-bold text-gray-900">Reports</Text>
+        <Text className="text-2xl font-bold text-gray-900">Archive</Text>
       </View>
 
       <View className="px-4 pb-3">
+        <ArchiveBoardTabs selectedBoardId={selectedBoardId} onSelect={setSelectedBoardId} />
+      </View>
+
+      <View className="px-4 pb-3">
+        <View className="flex-row flex-wrap mb-3" style={{ gap: 6 }}>
+          {PRESETS.map((preset) => (
+            <TouchableOpacity
+              key={preset}
+              onPress={() => applyPreset(preset)}
+              className="border border-gray-300 rounded-full px-3 py-1 bg-white"
+            >
+              <Text className="text-xs font-medium text-gray-600">{PRESET_LABELS[preset]}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <View className="flex-row items-center" style={{ gap: 8 }}>
           <View className="flex-1">
             <Text className="text-xs text-gray-500 mb-1">From</Text>
@@ -157,7 +196,7 @@ export function ReportsScreen() {
             </Text>
           </View>
 
-          {records.length === 0 ? (
+          {(boards ? boards.length === 0 : records.length === 0) ? (
             <View className="flex-1 items-center justify-center px-8">
               <Text className="text-4xl mb-3">📋</Text>
               <Text className="text-gray-400 text-base text-center">
@@ -166,9 +205,16 @@ export function ReportsScreen() {
             </View>
           ) : (
             <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 24 }}>
-              {records.map((r) => (
-                <CompletionRow key={r.task_id} record={r} />
-              ))}
+              {boards ? (
+                <ArchiveBoardGroups
+                  boards={boards}
+                  collapsedBoardIds={collapsedBoardIds}
+                  onToggleBoard={toggleBoard}
+                  onSetAllCollapsed={setAllCollapsed}
+                />
+              ) : (
+                records.map((r) => <CompletionRow key={r.task_id} record={r} />)
+              )}
             </ScrollView>
           )}
         </>

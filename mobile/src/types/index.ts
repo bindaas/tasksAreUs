@@ -88,7 +88,15 @@ export interface CompletionRecord {
   labels: Label[];
 }
 
+export interface BoardCompletions {
+  board_id: string;
+  board_name: string;
+  board_color: string | null;
+  completions: CompletionRecord[];
+}
+
 export interface CompletionsReport {
   completions: CompletionRecord[];
   total: number;
+  boards?: BoardCompletions[] | null;
 }
