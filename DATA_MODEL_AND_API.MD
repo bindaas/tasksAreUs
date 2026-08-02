@@ -38,16 +38,19 @@ Top-level organizational unit. Each user has up to `MAX_BOARDS_PER_USER = 10` bo
 | `id` | VARCHAR | PK (UUID string) |
 | `user_id` | VARCHAR | NOT NULL. FK → users (CASCADE). Indexed. |
 | `name` | VARCHAR | NOT NULL. |
-| `is_default` | BOOLEAN | NOT NULL. Exactly one non-deleted board per user has `is_default = true`. |
+| `is_default` | BOOLEAN | NOT NULL. Exactly one non-deleted board per user has `is_default = true`. Server-derived as of PR #62 — always matches whichever non-deleted board has the lowest `sort_order`; not a directly client-settable field (see "Board ordering and order-driven default" below). |
 | `is_deleted` | BOOLEAN | NOT NULL. Default false. Soft-delete. |
 | `color` | VARCHAR(7) | Nullable. User-configurable hex color string (e.g. `#6366f1`). Added via `ALTER TABLE boards ADD COLUMN IF NOT EXISTS color VARCHAR(7)` in PR #36. |
+| `sort_order` | DOUBLE PRECISION | NOT NULL. Client-computed fractional index (Trello-style) controlling board display order, mirroring `tasks.sort_order` (PR #61). Python-side `Column(default=_sort_order_default)` — the same callable used by `tasks.sort_order`, returning `datetime.now(timezone.utc).timestamp()` — so newly-created boards sort after all existing ones. Added via `ALTER TABLE boards ADD COLUMN IF NOT EXISTS sort_order DOUBLE PRECISION`, backfilled per-user via `ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY is_default DESC, created_at ASC)` (preserves each user's pre-existing on-screen order at deploy time), then `ALTER COLUMN sort_order SET NOT NULL`, in PR #62. |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | |
 
 **Constraints:**
 - Partial unique index `boards_user_id_default_key ON boards (user_id) WHERE is_default = true AND is_deleted = false` — enforces exactly one default board per user. Created via raw SQL in `main.py` lifespan (not expressible via SQLAlchemy `UniqueConstraint`).
 
-**Display order**: `ORDER BY is_default DESC, created_at ASC` — default board first, then creation order.
+**Display order**: `ORDER BY sort_order ASC, created_at ASC` (PR #62, was `is_default DESC, created_at ASC`) — custom drag order first, `created_at` as a tie-break for equal `sort_order` values.
+
+**Board ordering and order-driven default (PR #62):** `sort_order` is settable only via `PUT /boards/{board_id}` — driven by web Settings' drag-and-drop; mobile is read-only for order (renders whatever order the API returns, has no reorder UI, and never writes `sort_order`). Whenever `sort_order` is updated, `board_service._recompute_default()` re-derives `is_default` from the full ordered board list: if the topmost board (`sort_order ASC, created_at ASC`) isn't already the default, it demotes whichever board currently has `is_default = true` and promotes the topmost board, in the same demote-then-promote flush order the previous manual set-default code used (avoids the partial-unique-index `IntegrityError`). This replaces the pre-PR #62 mechanism where `is_default` was set directly via `PUT /boards/{board_id}`; `BoardUpdate.is_default` has been removed from the schema entirely — a client that still sends `{"is_default": true}` gets a normal `200` with the field silently ignored (Pydantic drops unknown fields), matching the `starter_questions` removal precedent (PR #50).
 
 ---
 
@@ -239,14 +242,14 @@ Tracks every Claude API call for cost monitoring.
 ### Boards
 
 #### `GET /boards`
-Returns all non-deleted boards for the current user, ordered default-first then by creation time. Calls `ensure_board_seeded()` before querying — lazily creates the "General tasks" default board (and seeds its 9 default labels) for brand-new users who have not yet hit any other endpoint. This makes `GET /boards` a reliable board-initialisation entry point regardless of call order.
+Returns all non-deleted boards for the current user, ordered by custom drag order (`sort_order ASC, created_at ASC` — PR #62, was `is_default DESC, created_at ASC`; the topmost board is always the default — see "Board ordering and order-driven default" under Table: `boards`). Calls `ensure_board_seeded()` before querying — lazily creates the "General tasks" default board (and seeds its 5 default labels) for brand-new users who have not yet hit any other endpoint. This makes `GET /boards` a reliable board-initialisation entry point regardless of call order.
 
 **Response**
 ```json
 {
   "boards": [
-    { "id": "uuid", "name": "General tasks", "is_default": true, "is_deleted": false, "color": null, "created_at": "...", "updated_at": "..." },
-    { "id": "uuid", "name": "Job search", "is_default": false, "is_deleted": false, "color": "#6366f1", "created_at": "...", "updated_at": "..." }
+    { "id": "uuid", "name": "General tasks", "is_default": true, "is_deleted": false, "color": null, "sort_order": 1.0, "created_at": "...", "updated_at": "..." },
+    { "id": "uuid", "name": "Job search", "is_default": false, "is_deleted": false, "color": "#6366f1", "sort_order": 2.0, "created_at": "...", "updated_at": "..." }
   ]
 }
 ```
@@ -271,22 +274,23 @@ Create a new board for the current user. New boards always start with `is_defaul
 ---
 
 #### `PUT /boards/{board_id}`
-Rename a board, change its default status, and/or set its color. The caller must own the board.
+Rename a board, reorder it, and/or set its color. The caller must own the board.
 
 **Request** (all fields optional)
 ```json
-{ "name": "Personal tasks", "is_default": true, "color": "#6366f1" }
+{ "name": "Personal tasks", "sort_order": 42.5, "color": "#6366f1" }
 ```
 
-Setting `is_default: true` atomically demotes the previously-default board and promotes this one (single DB transaction). Setting `is_default: false` on the current default returns `400`. Setting `is_default: false` on a non-default board is a no-op.
+`is_default` is not a writable field (removed in PR #62 — see "Board ordering and order-driven default" under Table: `boards`); a client that still sends it gets a normal `200` with the field silently ignored.
+
+`sort_order` (PR #62) sets the board's position in the user's custom drag order. When the update changes which board is topmost (`sort_order ASC, created_at ASC`), the server atomically demotes the previously-default board and promotes the new topmost board to `is_default = true` (single DB transaction, via `board_service._recompute_default()`).
 
 The `color` field accepts a 7-character hex string (e.g. `#6366f1`) or `null` to clear the color. Omitting `color` entirely leaves the existing value unchanged (sentinel logic via `model_fields_set` in the router + `_UNSET` sentinel in `board_service.update_board()`). Validated by a Pydantic `field_validator` on `BoardUpdate` (regex `^#[0-9a-fA-F]{6}$`).
 
-**Response** — updated board object (includes `color` field)
+**Response** — updated board object (includes `color` and `sort_order` fields)
 
 **Error cases**
 - `400` — name is empty/whitespace
-- `400` — `is_default: false` sent on the current default board
 - `400` — `color` provided but not a valid 7-character hex string
 - `404` — board not found or not owned by caller
 
@@ -721,7 +725,7 @@ Returns `is_high_priority = true` pending tasks that have `must_do_by` or `targe
 ```
 
 - Boards with zero qualifying tasks are omitted from the response.
-- Boards are ordered alphabetically by name.
+- Boards are ordered by the user's custom board order (`sort_order ASC, created_at ASC` — changed PR #62, was alphabetically by name).
 - Within each board group, tasks are sorted by `is_high_priority DESC` (high-priority first), then `sort_order` ASC (changed PR #61 — the same manual position set by drag-to-reorder on the web All view's kanban board, or the `created_at` backfill for tasks that predate PR #61; was `updated_at` DESC as of PR #47). This view has no reorder UI of its own — it only reflects whatever order was last set elsewhere.
 - `board_color` is `null` when the user has not configured a color; clients should substitute a default from a fixed palette.
 
@@ -753,7 +757,7 @@ Returns pending tasks (any priority) whose `must_do_by` or `target_date` falls o
 ```
 
 - Boards with zero qualifying tasks are omitted from the response.
-- Boards are ordered alphabetically by name.
+- Boards are ordered by the user's custom board order (`sort_order ASC, created_at ASC` — changed PR #62, was alphabetically by name).
 - Within each board group, tasks are sorted by `is_high_priority DESC` (high-priority first), then a tiebreak that depends on `overdue` (changed PR #61): `sort_order` ASC when `overdue=false` (Today/Tomorrow — same manual position as Focused View, set by drag-to-reorder on the web All view), or `updated_at` DESC when `overdue=true` (Overdue — unchanged from PR #47, since Overdue tasks aren't reorderable).
 - Completed and soft-deleted tasks are excluded.
 
@@ -791,7 +795,7 @@ Push local changes to the server and pull server changes since last sync. Uses l
 ```
 `changes.settings` was removed from both the push and pull payloads in PR #50 — `SyncChanges.settings` no longer exists on the schema, and `starter_questions` (the only field it ever carried) was removed end-to-end.
 
-**Board sync notes**: Task objects in the pull response always include `board_id`. Stale clients that push tasks without `board_id` have them assigned to the user's default board. Cross-board label assignments in sync push payloads are silently dropped (only labels matching the task's board are applied). The pull response includes a `boards` array of boards updated since `last_synced_at`; clients that do not yet support boards can ignore this field.
+**Board sync notes**: Task objects in the pull response always include `board_id`. Stale clients that push tasks without `board_id` have them assigned to the user's default board. Cross-board label assignments in sync push payloads are silently dropped (only labels matching the task's board are applied). The pull response includes a `boards` array of boards updated since `last_synced_at`; clients that do not yet support boards can ignore this field. Each board dict is hand-built in `sync.py` with only `id`, `name`, `is_default`, `is_deleted`, `created_at`, `updated_at` — `color` (since PR #36/#37) and `sort_order` (since PR #62) are both omitted from this payload, unlike `BoardOut`/`GET /boards`, which include them. No current web or mobile client pushes/pulls boards via `/sync` (neither platform has a boards sync API module), so this is a latent gap rather than a user-facing one today.
 
 **Board move via sync (PR #40)**: pushing an existing task with a `board_id` that differs from its current one moves the task to that board — mirroring `PUT /tasks/{id}`'s move behavior. The sync push path validates ownership item-by-item via `_owned_board_id()` (`db.query(Board.id).filter(Board.id == ..., Board.user_id == ..., Board.is_deleted == False)`) rather than calling `board_service.get_board_or_404()`, since raising mid-batch would fail every other change in the same push; an unowned, nonexistent, or soft-deleted `board_id` is silently ignored (existing task keeps its current board; a new task falls back to the default board), matching the same drop-invalid-item convention already used for links and cross-board labels in this router. Labels not valid for the new board are dropped by the existing label-reconciliation step (which runs after the board_id write and filters by `Label.board_id == task.board_id`), the same as a REST move.
 
