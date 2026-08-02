@@ -69,6 +69,7 @@ class Board(Base):
     is_default = Column(Boolean, default=False, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
     color = Column(String(7), nullable=True)
+    sort_order = Column(DOUBLE_PRECISION, nullable=False, default=_sort_order_default)
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

@@ -253,7 +253,11 @@ class TestGetFocusedTasks:
         assert result[0]["board_name"] == "Alpha"
         assert result[0]["tasks"] == [task]
 
-    def test_boards_ordered_alphabetically(self):
+    def test_boards_preserve_query_order(self):
+        # db.query is fully mocked (see _setup_db), so this doesn't exercise the
+        # real Board.sort_order.asc() SQL ordering — it only confirms
+        # _query_board_grouped_tasks emits results in the same order as the
+        # (already-ordered) `boards` list it was given.
         board_z = _make_board("bz", name="Zebra")
         board_a = _make_board("ba", name="Alpha")
         task_z = _make_task("t1", "bz", target_date=self.TODAY)
@@ -364,7 +368,11 @@ class TestGetDayViewTasks:
 
         assert result == []
 
-    def test_boards_ordered_alphabetically(self):
+    def test_boards_preserve_query_order(self):
+        # db.query is fully mocked (see _setup_db), so this doesn't exercise the
+        # real Board.sort_order.asc() SQL ordering — it only confirms
+        # _query_board_grouped_tasks emits results in the same order as the
+        # (already-ordered) `boards` list it was given.
         board_z = _make_board("bz", name="Zebra")
         board_a = _make_board("ba", name="Alpha")
         task_z = _make_task("t1", "bz", target_date=self.TODAY)

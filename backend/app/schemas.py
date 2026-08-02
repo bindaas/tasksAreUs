@@ -16,6 +16,7 @@ class BoardOut(BaseModel):
     is_default: bool
     is_deleted: bool
     color: Optional[str] = None
+    sort_order: float
     created_at: datetime
     updated_at: datetime
 
@@ -26,8 +27,8 @@ class BoardCreate(BaseModel):
 
 class BoardUpdate(BaseModel):
     name: Optional[str] = None
-    is_default: Optional[bool] = None
     color: Optional[str] = None
+    sort_order: Optional[float] = None
 
     @field_validator("color")
     @classmethod

@@ -11,6 +11,7 @@ interface TaskCardProps {
   task: Task;
   labels: Label[];
   onRefresh: () => void;
+  boardColor: string;
   draggable?: boolean;
   onTogglePriority?: () => void;
   onCardDragOver?: (edge: 'above' | 'below') => void;
@@ -20,7 +21,7 @@ interface TaskCardProps {
 const LABEL_CATEGORY_ORDER: Record<string, number> = { type: 0 };
 
 export function TaskCard({
-  task, labels, onRefresh, draggable: isDraggable = false, onTogglePriority,
+  task, labels, onRefresh, boardColor, draggable: isDraggable = false, onTogglePriority,
   onCardDragOver, dropIndicator = null,
 }: TaskCardProps) {
   const navigate = useNavigate();
@@ -54,6 +55,7 @@ export function TaskCard({
       } ${dragging ? 'opacity-40' : ''} ${
         dropIndicator === 'above' ? 'border-t-2 border-t-indigo-500' : ''
       } ${dropIndicator === 'below' ? 'border-b-2 border-b-indigo-500' : ''}`}
+      style={{ borderLeftColor: boardColor, borderLeftWidth: 4 }}
       draggable={!isEditing && isDraggable && task.state === 'pending'}
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', task.id);

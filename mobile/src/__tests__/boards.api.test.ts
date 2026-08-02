@@ -52,15 +52,6 @@ describe('boards API', () => {
     });
   });
 
-  it('updateBoard calls PUT /boards/:id with is_default', async () => {
-    mockApiFetch.mockResolvedValue(makeBoard({ id: 'b2', is_default: true }));
-    await updateBoard('b2', { is_default: true });
-    expect(mockApiFetch).toHaveBeenCalledWith('/boards/b2', {
-      method: 'PUT',
-      body: JSON.stringify({ is_default: true }),
-    });
-  });
-
   it('updateBoard calls PUT /boards/:id with a hex color', async () => {
     mockApiFetch.mockResolvedValue(makeBoard({ color: '#6366f1' }));
     await updateBoard('b1', { color: '#6366f1' });

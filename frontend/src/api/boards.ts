@@ -6,6 +6,7 @@ export interface Board {
   is_default: boolean;
   is_deleted: boolean;
   color?: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -23,7 +24,7 @@ export async function createBoard(name: string): Promise<Board> {
 
 export async function updateBoard(
   id: string,
-  body: { name?: string; is_default?: boolean; color?: string | null }
+  body: { name?: string; sort_order?: number; color?: string | null }
 ): Promise<Board> {
   return apiFetch<Board>(`/boards/${id}`, {
     method: 'PUT',

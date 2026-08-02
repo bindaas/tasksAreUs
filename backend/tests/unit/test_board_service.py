@@ -160,49 +160,19 @@ class TestUpdateBoard:
         board = _make_board("b1", "user-1", name="Old name")
         db.refresh.side_effect = lambda b: None
 
-        update_board(db, board, name="New name", is_default=None)
+        update_board(db, board, name="New name")
 
         assert board.name == "New name"
         db.commit.assert_called_once()
+        db.query.assert_not_called()  # no sort_order → no _recompute_default lookup
 
     def test_rejects_empty_name(self):
         db = MagicMock()
         board = _make_board("b1", "user-1")
 
         with pytest.raises(HTTPException) as exc:
-            update_board(db, board, name="  ", is_default=None)
+            update_board(db, board, name="  ")
         assert exc.value.status_code == 400
-
-    def test_promotes_to_default(self):
-        db = MagicMock()
-        board = _make_board("b2", "user-1", is_default=False)
-        old_default = _make_board("b1", "user-1", is_default=True)
-        db.query.return_value.filter.return_value.first.return_value = old_default
-        db.refresh.side_effect = lambda b: None
-
-        update_board(db, board, name=None, is_default=True)
-
-        assert board.is_default is True
-        assert old_default.is_default is False
-        db.commit.assert_called_once()
-
-    def test_rejects_demoting_default_board(self):
-        db = MagicMock()
-        board = _make_board("b1", "user-1", is_default=True)
-
-        with pytest.raises(HTTPException) as exc:
-            update_board(db, board, name=None, is_default=False)
-        assert exc.value.status_code == 400
-
-    def test_noop_when_is_default_false_on_non_default(self):
-        db = MagicMock()
-        board = _make_board("b2", "user-1", is_default=False)
-        db.refresh.side_effect = lambda b: None
-
-        update_board(db, board, name=None, is_default=False)
-
-        assert board.is_default is False
-        db.commit.assert_called_once()
 
     def test_sets_color_when_provided(self):
         db = MagicMock()
@@ -210,7 +180,7 @@ class TestUpdateBoard:
         board.color = None
         db.refresh.side_effect = lambda b: None
 
-        update_board(db, board, name=None, is_default=None, color="#aabbcc")
+        update_board(db, board, name=None, color="#aabbcc")
 
         assert board.color == "#aabbcc"
         db.commit.assert_called_once()
@@ -221,7 +191,7 @@ class TestUpdateBoard:
         board.color = "#aabbcc"
         db.refresh.side_effect = lambda b: None
 
-        update_board(db, board, name=None, is_default=None, color=None)
+        update_board(db, board, name=None, color=None)
 
         assert board.color is None
         db.commit.assert_called_once()
@@ -232,9 +202,53 @@ class TestUpdateBoard:
         board.color = "#aabbcc"
         db.refresh.side_effect = lambda b: None
 
-        update_board(db, board, name=None, is_default=None)  # no color kwarg
+        update_board(db, board, name=None)  # no color kwarg
 
         assert board.color == "#aabbcc"
+
+    def test_sort_order_promotes_new_topmost_to_default(self):
+        db = MagicMock()
+        board = _make_board("b2", "user-1", is_default=False)
+        old_default = _make_board("b1", "user-1", is_default=True)
+        db.refresh.side_effect = lambda b: None
+        # board b2's new sort_order makes it topmost in the full ordered list
+        db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [board, old_default]
+
+        update_board(db, board, name=None, sort_order=0.5)
+
+        assert board.sort_order == 0.5
+        assert board.is_default is True
+        assert old_default.is_default is False
+        db.commit.assert_called_once()
+
+    def test_sort_order_demotes_default_dragged_away_from_top(self):
+        db = MagicMock()
+        # board b1 is the current default, being dragged away from the top —
+        # no other board's row is directly touched by this PUT, so
+        # _recompute_default must re-derive the new default from the full list.
+        board = _make_board("b1", "user-1", is_default=True)
+        other = _make_board("b2", "user-1", is_default=False)
+        db.refresh.side_effect = lambda b: None
+        db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [other, board]
+
+        update_board(db, board, name=None, sort_order=99.0)
+
+        assert board.sort_order == 99.0
+        assert board.is_default is False
+        assert other.is_default is True
+
+    def test_sort_order_noop_when_topmost_unchanged(self):
+        db = MagicMock()
+        topmost = _make_board("b1", "user-1", is_default=True)
+        board = _make_board("b2", "user-1", is_default=False)
+        db.refresh.side_effect = lambda b: None
+        db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [topmost, board]
+
+        update_board(db, board, name=None, sort_order=5.0)
+
+        assert board.sort_order == 5.0
+        assert board.is_default is False
+        assert topmost.is_default is True
 
 
 # ── delete_board ──────────────────────────────────────────────────────────────

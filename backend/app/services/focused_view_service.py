@@ -160,13 +160,13 @@ def get_focused_tasks(
         boards = db.query(Board).filter(
             Board.user_id == user_id,
             Board.is_deleted == False,
-        ).order_by(Board.name.asc()).all()
+        ).order_by(Board.sort_order.asc(), Board.created_at.asc()).all()
     else:
         boards = db.query(Board).filter(
             Board.id.in_(config.selected_board_ids or []),
             Board.user_id == user_id,
             Board.is_deleted == False,
-        ).order_by(Board.name.asc()).all()
+        ).order_by(Board.sort_order.asc(), Board.created_at.asc()).all()
 
     window = date_window(config.day_range, reference_date)
     date_filter = or_(
@@ -185,7 +185,7 @@ def get_day_view_tasks(
     boards = db.query(Board).filter(
         Board.user_id == user_id,
         Board.is_deleted == False,
-    ).order_by(Board.name.asc()).all()
+    ).order_by(Board.sort_order.asc(), Board.created_at.asc()).all()
 
     if overdue:
         date_filter = or_(

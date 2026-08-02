@@ -245,6 +245,24 @@ async def lifespan(app: FastAPI):
         ))
         conn.commit()
 
+    # ── Board column ordering migration ─────────────────────────────────────────
+    with engine.connect() as conn:
+        conn.execute(text(
+            "ALTER TABLE boards ADD COLUMN IF NOT EXISTS sort_order DOUBLE PRECISION"
+        ))
+        conn.execute(text("""
+            UPDATE boards SET sort_order = sub.rn
+            FROM (
+              SELECT id, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY is_default DESC, created_at ASC) AS rn
+              FROM boards
+            ) sub
+            WHERE boards.id = sub.id AND boards.sort_order IS NULL
+        """))
+        conn.execute(text(
+            "ALTER TABLE boards ALTER COLUMN sort_order SET NOT NULL"
+        ))
+        conn.commit()
+
     yield
 
 

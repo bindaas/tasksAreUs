@@ -27,6 +27,7 @@ import {
 } from '../utils/taskDateUtils';
 import { isHighPriorityEligible, splitByPriority, canAddHighPriority } from '../utils/taskPriority';
 import { computeInsertSortOrder } from '../utils/taskOrder';
+import { getBoardColor } from '../utils/boardColor';
 import { useSettings } from '../hooks/useSettings';
 import { viewLabel, type ViewMode } from '../utils/viewLabel';
 
@@ -46,6 +47,10 @@ export function TasksPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { selectedLabelIds, toggleLabel, clearLabels } = useFilter();
   const { boards, activeBoard, setActiveBoard } = useBoard();
+  const activeBoardColor = useMemo(
+    () => getBoardColor(activeBoard?.color, Math.max(0, boards.findIndex((b) => b.id === activeBoard?.id))),
+    [activeBoard, boards],
+  );
   const { viewMode, setViewMode } = useView();
   const { isCollapsed: isPriorityCollapsed, toggleColumn: togglePriorityCollapse } = useColumnPriorityCollapse();
   const [searchQuery, setSearchQuery] = useState('');
@@ -495,6 +500,7 @@ export function TasksPage() {
                           ) : (
                             highTasks.map((task) => (
                               <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
+                                boardColor={activeBoardColor}
                                 onTogglePriority={isHighPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
                                 onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
                                 dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
@@ -535,6 +541,7 @@ export function TasksPage() {
                         ) : (
                           normalTasks.map((task) => (
                             <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
+                              boardColor={activeBoardColor}
                               onTogglePriority={isHighPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
                               onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
                               dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
@@ -593,6 +600,7 @@ export function TasksPage() {
                       ) : (
                         colTasks.map((task) => (
                           <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
+                            boardColor={activeBoardColor}
                             onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
                             dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
                           />

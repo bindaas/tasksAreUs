@@ -14,7 +14,7 @@ export async function createBoard(name: string): Promise<Board> {
 
 export async function updateBoard(
   id: string,
-  body: { name?: string; is_default?: boolean; color?: string | null }
+  body: { name?: string; color?: string | null }
 ): Promise<Board> {
   return apiFetch<Board>(`/boards/${id}`, {
     method: 'PUT',

@@ -5,12 +5,13 @@ import type { Label } from '../api/tasks';
 import { useAuth } from '../hooks/useAuth';
 import { useBoard } from '../context/BoardContext';
 import type { Board } from '../api/boards';
+import { computeBoardInsertSortOrder } from '../utils/boardOrder';
 
 function BoardEditor({
   boards,
   activeBoard,
   onRename,
-  onSetDefault,
+  onReorder,
   onSetColor,
   onDelete,
   onAdd,
@@ -18,7 +19,7 @@ function BoardEditor({
   boards: Board[];
   activeBoard: Board | null;
   onRename: (id: string, name: string) => Promise<void>;
-  onSetDefault: (id: string) => Promise<void>;
+  onReorder: (id: string, sortOrder: number) => Promise<void>;
   onSetColor: (id: string, color: string | null) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onAdd: (name: string) => Promise<Board>;
@@ -29,6 +30,9 @@ function BoardEditor({
   const [newName, setNewName] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [dragOverEdge, setDragOverEdge] = useState<'above' | 'below' | null>(null);
   const colorInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const colorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -65,13 +69,23 @@ function BoardEditor({
     }
   }
 
-  async function handleSetDefault(id: string) {
+  function clearDragState() {
+    setDraggingId(null);
+    setDragOverId(null);
+    setDragOverEdge(null);
+  }
+
+  async function handleDrop(targetId: string | null, edge: 'above' | 'below' | null) {
+    const draggedId = draggingId;
+    clearDragState();
+    if (!draggedId) return;
+    const sortOrder = computeBoardInsertSortOrder(boards, draggedId, targetId, edge);
     setBusy(true);
     setErr(null);
     try {
-      await onSetDefault(id);
+      await onReorder(draggedId, sortOrder);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to set default board');
+      setErr(e instanceof Error ? e.message : 'Failed to reorder board');
     } finally {
       setBusy(false);
     }
@@ -109,18 +123,40 @@ function BoardEditor({
     <div className="mb-5">
       {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
       <div className="space-y-1.5">
-        {boards.map((board) => (
-          <div key={board.id} className="flex items-center gap-2">
-            <button
-              onClick={() => !board.is_default && handleSetDefault(board.id)}
-              disabled={busy || board.is_default}
-              title={board.is_default ? 'Default board' : 'Set as default'}
-              className={`shrink-0 ${board.is_default ? 'text-amber-400 cursor-default' : 'text-gray-300 hover:text-amber-400'} disabled:opacity-50`}
-            >
+        {boards.map((board, idx) => {
+          const isDragOver = dragOverId === board.id && draggingId !== board.id;
+          return (
+          <div
+            key={board.id}
+            draggable={!busy && editingId !== board.id}
+            onDragStart={(e) => {
+              e.dataTransfer.setData('text/plain', board.id);
+              e.dataTransfer.effectAllowed = 'move';
+              setDraggingId(board.id);
+            }}
+            onDragEnd={clearDragState}
+            onDragOver={(e) => {
+              if (!draggingId) return;
+              e.preventDefault();
+              const rect = e.currentTarget.getBoundingClientRect();
+              const edge = e.clientY < rect.top + rect.height / 2 ? 'above' : 'below';
+              setDragOverId(board.id);
+              setDragOverEdge(edge);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleDrop(board.id, dragOverEdge);
+            }}
+            className={`flex items-center gap-2 select-none ${draggingId === board.id ? 'opacity-40' : ''} ${
+              isDragOver && dragOverEdge === 'above' ? 'border-t-2 border-t-indigo-500' : 'border-t-2 border-t-transparent'
+            } ${isDragOver && dragOverEdge === 'below' ? 'border-b-2 border-b-indigo-500' : ''}`}
+          >
+            <span className="shrink-0 text-gray-300 cursor-grab" title="Drag to reorder">⠿</span>
+            <span className={`shrink-0 w-4 h-4 flex items-center justify-center ${idx === 0 ? 'text-amber-400' : 'text-transparent'}`} title={idx === 0 ? 'Default board' : undefined}>
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
-            </button>
+            </span>
 
             {editingId === board.id ? (
               <>
@@ -191,7 +227,8 @@ function BoardEditor({
               </>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {addingNew ? (
           <div className="flex items-center gap-2 mt-1">
@@ -401,7 +438,7 @@ function LabelEditor({
 
 export function SettingsPage() {
   const { user, signInWithGoogle, sendMagicLink, signOut } = useAuth();
-  const { boards, activeBoard, renameBoard, setDefaultBoard, setColorBoard, deleteBoard, createBoard } = useBoard();
+  const { boards, activeBoard, renameBoard, reorderBoard, setColorBoard, deleteBoard, createBoard } = useBoard();
   const isAnonymous = user?.isAnonymous === true;
 
   // Local to Settings — deliberately not synced to BoardContext's activeBoard,
@@ -562,14 +599,14 @@ export function SettingsPage() {
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-1">Boards</h3>
             <p className="text-xs text-gray-500 mb-3">
-              Manage your boards. The starred board is your default — you return to it on every app open.
+              Manage your boards. Drag to reorder — the top board is your default and appears first in the All view.
             </p>
             <div className="border border-gray-200 rounded-lg p-3">
               <BoardEditor
                 boards={boards}
                 activeBoard={activeBoard}
                 onRename={renameBoard}
-                onSetDefault={setDefaultBoard}
+                onReorder={reorderBoard}
                 onSetColor={setColorBoard}
                 onDelete={deleteBoard}
                 onAdd={createBoard}
@@ -601,7 +638,7 @@ export function SettingsPage() {
             <div className="border border-gray-200 rounded-lg p-3 space-y-1">
               <LabelEditor
                 category="type"
-                labels={typeLabels}
+                labels={[...typeLabels].sort((a, b) => a.value.localeCompare(b.value))}
                 onAdd={handleAddLabel}
                 onRename={handleRenameLabel}
                 onDelete={handleDeleteLabel}

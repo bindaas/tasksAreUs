@@ -58,12 +58,12 @@ describe('boards API', () => {
       });
     });
 
-    it('calls PUT /boards/{id} with is_default', async () => {
-      mockApiFetch.mockResolvedValue({ id: 'b2', name: 'Job search', is_default: true, is_deleted: false, created_at: '', updated_at: '' });
-      await updateBoard('b2', { is_default: true });
+    it('calls PUT /boards/{id} with sort_order', async () => {
+      mockApiFetch.mockResolvedValue({ id: 'b2', name: 'Job search', is_default: false, is_deleted: false, sort_order: 1.5, created_at: '', updated_at: '' });
+      await updateBoard('b2', { sort_order: 1.5 });
       expect(mockApiFetch).toHaveBeenCalledWith('/boards/b2', {
         method: 'PUT',
-        body: JSON.stringify({ is_default: true }),
+        body: JSON.stringify({ sort_order: 1.5 }),
       });
     });
 
