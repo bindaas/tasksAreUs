@@ -40,12 +40,28 @@ export function groupTasksForList(tasks: Task[], referenceDate: Date = new Date(
   }
 
   for (const key of SECTION_ORDER) {
-    buckets[key].sort((a, b) => {
-      if (a.is_high_priority !== b.is_high_priority) {
-        return a.is_high_priority ? -1 : 1;
-      }
-      return b.updated_at.localeCompare(a.updated_at);
-    });
+    if (key === 'overdue') {
+      buckets[key].sort((a, b) => {
+        if (a.is_high_priority !== b.is_high_priority) {
+          return a.is_high_priority ? -1 : 1;
+        }
+        return b.updated_at.localeCompare(a.updated_at);
+      });
+    } else if (key === 'upcoming') {
+      buckets[key].sort((a, b) => {
+        if (!a.target_date && !b.target_date) return 0;
+        if (!a.target_date) return 1;
+        if (!b.target_date) return -1;
+        return a.target_date < b.target_date ? -1 : a.target_date > b.target_date ? 1 : 0;
+      });
+    } else {
+      buckets[key].sort((a, b) => {
+        if (a.is_high_priority !== b.is_high_priority) {
+          return a.is_high_priority ? -1 : 1;
+        }
+        return a.sort_order - b.sort_order;
+      });
+    }
   }
 
   return SECTION_ORDER

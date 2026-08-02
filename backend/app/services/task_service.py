@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 
-from ..models import Label, StateEnum, Task, TaskLabel, UserSettings
+from ..models import Label, StateEnum, Task, TaskLabel, UserSettings, _sort_order_default
 from . import board_service as board_svc
 
 
@@ -144,7 +144,11 @@ def update_task(
     high_priority_limit: int = HIGH_PRIORITY_DAILY_LIMIT,
     links: Optional[List[Dict[str, Any]]] = None,
     board_id: Optional[str] = None,
+    sort_order: Optional[float] = None,
 ) -> Task:
+    old_effective = _effective_date(task.must_do_by, task.target_date)
+    board_changed = board_id is not None and board_id != task.board_id
+
     if board_id is not None and board_id != task.board_id:
         board_svc.get_board_or_404(db, board_id, task.user_id)
         task.board_id = board_id
@@ -191,6 +195,13 @@ def update_task(
         labels = _resolve_labels(db, label_ids, task.user_id, task.board_id)
         for label in labels:
             db.add(TaskLabel(task_id=task.id, label_id=label.id))
+
+    if sort_order is not None:
+        task.sort_order = sort_order
+    else:
+        new_effective = _effective_date(task.must_do_by, task.target_date)
+        if new_effective != old_effective or board_changed:
+            task.sort_order = _sort_order_default()
 
     task.updated_at = datetime.now(timezone.utc)
     db.commit()

@@ -13,11 +13,16 @@ interface TaskCardProps {
   onRefresh: () => void;
   draggable?: boolean;
   onTogglePriority?: () => void;
+  onCardDragOver?: (edge: 'above' | 'below') => void;
+  dropIndicator?: 'above' | 'below' | null;
 }
 
 const LABEL_CATEGORY_ORDER: Record<string, number> = { type: 0 };
 
-export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = false, onTogglePriority }: TaskCardProps) {
+export function TaskCard({
+  task, labels, onRefresh, draggable: isDraggable = false, onTogglePriority,
+  onCardDragOver, dropIndicator = null,
+}: TaskCardProps) {
   const navigate = useNavigate();
   const mustOverdue = isOverdue(task.must_do_by);
   const [dragging, setDragging] = useState(false);
@@ -46,7 +51,9 @@ export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = fal
     <div
       className={`bg-white border border-gray-200 rounded-lg p-3 transition-shadow select-none ${
         isEditing ? 'border-indigo-300 shadow-md' : 'cursor-pointer hover:shadow-md'
-      } ${dragging ? 'opacity-40' : ''}`}
+      } ${dragging ? 'opacity-40' : ''} ${
+        dropIndicator === 'above' ? 'border-t-2 border-t-indigo-500' : ''
+      } ${dropIndicator === 'below' ? 'border-b-2 border-b-indigo-500' : ''}`}
       draggable={!isEditing && isDraggable && task.state === 'pending'}
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', task.id);
@@ -54,6 +61,16 @@ export function TaskCard({ task, labels, onRefresh, draggable: isDraggable = fal
         setDragging(true);
       }}
       onDragEnd={() => setDragging(false)}
+      onDragOver={
+        isDraggable && !isEditing
+          ? (e) => {
+              e.preventDefault();
+              const rect = e.currentTarget.getBoundingClientRect();
+              const edge = e.clientY < rect.top + rect.height / 2 ? 'above' : 'below';
+              onCardDragOver?.(edge);
+            }
+          : undefined
+      }
       onClick={() => { if (!isEditing) navigate(`/tasks/${task.id}`); }}
     >
       {isEditing ? (

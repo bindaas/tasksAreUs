@@ -7,7 +7,7 @@ import pytest
 
 from fastapi import HTTPException
 
-from app.models import StateEnum
+from app.models import StateEnum, Task, _sort_order_default
 from app.services.task_service import (
     HIGH_PRIORITY_DAILY_LIMIT,
     _count_high_priority_for_date,
@@ -582,3 +582,96 @@ class TestUpdateTaskBoardId:
 
         assert task.board_id == "board-1"
         mock_board_svc.get_board_or_404.assert_not_called()
+
+
+# ── update_task sort_order (explicit set vs. auto-reset-to-bottom) ─────────────
+
+class TestUpdateTaskSortOrder:
+    def _make_task(self, must_do_by=None, target_date=None, board_id="board-1", sort_order=100.0):
+        task = MagicMock()
+        task.id = "task-1"
+        task.user_id = "user-1"
+        task.board_id = board_id
+        task.must_do_by = must_do_by
+        task.target_date = target_date
+        task.sort_order = sort_order
+        task.labels = []
+        return task
+
+    def _make_db(self):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.delete.return_value = None
+        db.commit.return_value = None
+        db.refresh.side_effect = lambda t: None
+        return db
+
+    def test_explicit_sort_order_is_set(self):
+        task = self._make_task()
+        db = self._make_db()
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, sort_order=42.5)
+        assert task.sort_order == 42.5
+
+    def test_explicit_sort_order_wins_even_with_date_change(self):
+        today = date.today()
+        future = today + timedelta(days=7)
+        task = self._make_task(must_do_by=today)
+        db = self._make_db()
+        update_task(db, task, title=None, notes=None, must_do_by=future,
+                    target_date=None, label_ids=None, sort_order=42.5)
+        assert task.sort_order == 42.5
+
+    def test_auto_reset_when_effective_date_changes(self):
+        today = date.today()
+        future = today + timedelta(days=7)
+        task = self._make_task(must_do_by=today, sort_order=100.0)
+        db = self._make_db()
+        update_task(db, task, title=None, notes=None, must_do_by=future,
+                    target_date=None, label_ids=None)
+        assert task.sort_order != 100.0
+        assert isinstance(task.sort_order, float)
+
+    def test_no_reset_when_effective_date_unchanged(self):
+        today = date.today()
+        task = self._make_task(must_do_by=today, sort_order=100.0)
+        db = self._make_db()
+        update_task(db, task, title="New title", notes=None, must_do_by=None,
+                    target_date=None, label_ids=None)
+        assert task.sort_order == 100.0
+
+    @patch("app.services.task_service.board_svc")
+    def test_auto_reset_when_board_changes(self, mock_board_svc):
+        task = self._make_task(board_id="board-1", sort_order=100.0)
+        db = self._make_db()
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, board_id="board-2")
+        assert task.sort_order != 100.0
+        assert isinstance(task.sort_order, float)
+
+    @patch("app.services.task_service.board_svc")
+    def test_no_reset_when_board_id_same_as_current(self, mock_board_svc):
+        task = self._make_task(board_id="board-1", sort_order=100.0)
+        db = self._make_db()
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, board_id="board-1")
+        assert task.sort_order == 100.0
+
+    @patch("app.services.task_service.board_svc")
+    def test_no_reset_when_board_id_omitted(self, mock_board_svc):
+        task = self._make_task(board_id="board-1", sort_order=100.0)
+        db = self._make_db()
+        update_task(db, task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, board_id=None)
+        assert task.sort_order == 100.0
+
+
+# ── Task.sort_order column default ──────────────────────────────────────────────
+
+class TestSortOrderDefault:
+    def test_column_default_is_sort_order_default(self):
+        default_fn = Task.__table__.c.sort_order.default.arg
+        assert default_fn.__name__ == "_sort_order_default"
+        assert Task.__table__.c.sort_order.nullable is False
+
+    def test_sort_order_default_returns_a_float(self):
+        assert isinstance(_sort_order_default(), float)

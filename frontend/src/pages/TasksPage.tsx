@@ -26,6 +26,7 @@ import {
   isFriday,
 } from '../utils/taskDateUtils';
 import { isHighPriorityEligible, splitByPriority, canAddHighPriority } from '../utils/taskPriority';
+import { computeInsertSortOrder } from '../utils/taskOrder';
 import { useSettings } from '../hooks/useSettings';
 import { viewLabel, type ViewMode } from '../utils/viewLabel';
 
@@ -50,6 +51,8 @@ export function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
   const [dragOverPriority, setDragOverPriority] = useState<'high' | 'normal' | null>(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [dragOverEdge, setDragOverEdge] = useState<'above' | 'below' | null>(null);
 
   const { tasks, loading, error, refetch } = useTasks('pending');
   const { labels, labelsByCategory } = useLabels();
@@ -180,17 +183,33 @@ export function TasksPage() {
       map[getColumn(task, today, tomorrow)].push(task);
     }
     for (const key of Object.keys(map) as ColumnKey[]) {
-      map[key].sort((a, b) => {
-        if (a.is_high_priority !== b.is_high_priority) {
-          return a.is_high_priority ? -1 : 1;
-        }
-        const aDate = getEffectiveDate(a);
-        const bDate = getEffectiveDate(b);
-        if (!aDate && !bDate) return 0;
-        if (!aDate) return 1;
-        if (!bDate) return -1;
-        return aDate < bDate ? -1 : aDate > bDate ? 1 : 0;
-      });
+      if (key === 'overdue') {
+        map[key].sort((a, b) => {
+          if (a.is_high_priority !== b.is_high_priority) {
+            return a.is_high_priority ? -1 : 1;
+          }
+          const aDate = getEffectiveDate(a);
+          const bDate = getEffectiveDate(b);
+          if (!aDate && !bDate) return 0;
+          if (!aDate) return 1;
+          if (!bDate) return -1;
+          return aDate < bDate ? -1 : aDate > bDate ? 1 : 0;
+        });
+      } else if (key === 'upcoming') {
+        map[key].sort((a, b) => {
+          if (!a.target_date && !b.target_date) return 0;
+          if (!a.target_date) return 1;
+          if (!b.target_date) return -1;
+          return a.target_date < b.target_date ? -1 : a.target_date > b.target_date ? 1 : 0;
+        });
+      } else {
+        map[key].sort((a, b) => {
+          if (a.is_high_priority !== b.is_high_priority) {
+            return a.is_high_priority ? -1 : 1;
+          }
+          return a.sort_order - b.sort_order;
+        });
+      }
     }
     return map;
   }, [filteredTasks, today, tomorrow]);
@@ -237,11 +256,15 @@ export function TasksPage() {
     const newDate = getDropDate(columnKey);
     const isHighPriority = isHighPriorityEligible(columnKey) && priority === 'high';
 
+    const { high, normal } = splitByPriority(columnTasks[columnKey]);
+    const zoneTasks = priority === 'high' ? high : normal;
+    const sortOrder = computeInsertSortOrder(zoneTasks, taskId, dragOverTaskId, dragOverEdge);
+
     try {
       if (columnKey === 'nodate') {
-        await updateTask(taskId, { must_do_by: null, target_date: null, is_high_priority: false });
+        await updateTask(taskId, { must_do_by: null, target_date: null, is_high_priority: false, sort_order: sortOrder });
       } else {
-        await updateTask(taskId, { target_date: newDate, is_high_priority: isHighPriority });
+        await updateTask(taskId, { target_date: newDate, is_high_priority: isHighPriority, sort_order: sortOrder });
       }
       refetch();
     } catch (err) {
@@ -252,6 +275,8 @@ export function TasksPage() {
   function clearDragState() {
     setDragOverColumn(null);
     setDragOverPriority(null);
+    setDragOverTaskId(null);
+    setDragOverEdge(null);
   }
 
   return (
@@ -471,6 +496,8 @@ export function TasksPage() {
                             highTasks.map((task) => (
                               <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
                                 onTogglePriority={isHighPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
+                                onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
+                                dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
                               />
                             ))
                           )}
@@ -509,6 +536,8 @@ export function TasksPage() {
                           normalTasks.map((task) => (
                             <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
                               onTogglePriority={isHighPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
+                              onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
+                              dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
                             />
                           ))
                         )}
@@ -563,7 +592,10 @@ export function TasksPage() {
                         </div>
                       ) : (
                         colTasks.map((task) => (
-                          <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable />
+                          <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
+                            onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
+                            dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
+                          />
                         ))
                       )}
                     </div>

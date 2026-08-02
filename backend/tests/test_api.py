@@ -675,12 +675,16 @@ def main():
     # PR #33: board_id must be present in task response
     assert_in("task response has board_id field (PR #33)", "board_id", task)
     assert_eq("task board_id is the default board (PR #33)", task["board_id"], default_board_id)
+    # PR #61: sort_order must be present and auto-populated on create
+    assert_in("task response has sort_order field (PR #61)", "sort_order", task)
+    assert_true("task sort_order is a float (PR #61)", isinstance(task["sort_order"], float))
 
     r = client.get(f"/tasks/{task_id}", headers=H)
     assert_eq("GET /tasks/:id → 200", r.status_code, 200)
     fetched = r.json()
     assert_eq("fetched task id", fetched["id"], task_id)
     assert_eq("GET /tasks/:id target_date preserved", fetched["target_date"], tomorrow)
+    assert_in("GET /tasks/:id has sort_order field (PR #61)", "sort_order", fetched)
 
     r = client.put(f"/tasks/{task_id}", headers=H, json={
         "title": "Return library books (updated)",
@@ -1101,6 +1105,7 @@ def main():
     move_task_id = move_task["id"]
     assert_eq("move task starts on board A", move_task["board_id"], move_board_a_id)
     assert_eq("move task starts with board A's label", len(move_task["labels"]), 1)
+    move_task_initial_sort_order = move_task["sort_order"]
 
     # PUT board_id to move the task to board B, WITHOUT sending label_ids — labels
     # must be unconditionally cleared server-side (board A's label is invalid on board B)
@@ -1110,6 +1115,9 @@ def main():
     assert_eq("task board_id updated to board B", moved_task["board_id"], move_board_b_id)
     assert_eq("labels cleared on board move even without label_ids in the request",
               moved_task["labels"], [])
+    # PR #61: sort_order auto-resets to the bottom of the destination list on a board move
+    assert_true("sort_order auto-resets to bottom when board changes (PR #61)",
+                moved_task["sort_order"] != move_task_initial_sort_order)
 
     # GET /tasks?board_id=board_a must no longer include the moved task; board_b must
     r = client.get("/tasks", headers=H, params={"board_id": move_board_a_id})
@@ -1143,14 +1151,20 @@ def main():
         assert_eq("attached label matches board A's label", moved_back_task["labels"][0]["id"], move_label_a_id)
 
     # PUT with board_id equal to the task's current board is a no-op (labels untouched)
+    move_task_sort_order_before_noop = moved_back_task["sort_order"]
     r = client.put(f"/tasks/{move_task_id}", headers=H, json={"board_id": move_board_a_id})
     assert_eq("PUT board_id same as current board → 200 (no-op)", r.status_code, 200)
     assert_eq("labels untouched when board_id equals current board", len(r.json()["labels"]), 1)
+    # PR #61: board_id equal to current board must NOT count as a "board changed" event
+    assert_eq("sort_order unchanged when board_id equals current board (no-op) (PR #61)",
+              r.json()["sort_order"], move_task_sort_order_before_noop)
 
     # Omitting board_id entirely leaves the task's board unchanged
     r = client.put(f"/tasks/{move_task_id}", headers=H, json={"title": "Move-between-boards test task (renamed)"})
     assert_eq("PUT omitting board_id → 200", r.status_code, 200)
     assert_eq("board_id unchanged when omitted from PUT body", r.json()["board_id"], move_board_a_id)
+    assert_eq("sort_order unchanged when board_id omitted from PUT body (PR #61)",
+              r.json()["sort_order"], move_task_sort_order_before_noop)
 
     # Moving to a board that doesn't exist → 404
     r = client.put(f"/tasks/{move_task_id}", headers=H, json={"board_id": str(uuid.uuid4())})
@@ -1175,6 +1189,92 @@ def main():
     client.delete(f"/labels/{move_label_b_id}", headers=H)
     client.delete(f"/boards/{move_board_a_id}", headers=H)
     client.delete(f"/boards/{move_board_b_id}", headers=H)
+
+    # ── Tasks: Column ordering / sort_order (PR #61) ────────────────────────────
+    # Adds a fractional-index `sort_order` column, client-computed, no server
+    # renumbering. update_task() sets it explicitly when the caller supplies a
+    # value (drag-to-a-position), and auto-resets it to "bottom of list" (a fresh,
+    # much larger epoch-seconds float) whenever the task's effective date or board
+    # changes and the caller did NOT explicitly supply a new sort_order.
+    print("\n── Tasks: Column ordering (sort_order) (PR #61) ────────")
+
+    r = client.post("/tasks", headers=H, json={
+        "title": "Sort order test task",
+        "label_ids": [],
+        "board_id": default_board_id,
+    })
+    assert_eq("POST /tasks for sort_order test → 201", r.status_code, 201)
+    so_task_id = r.json()["id"]
+    assert_true("new task's sort_order looks like an epoch-seconds float (PR #61)",
+                r.json()["sort_order"] > 1_000_000_000)
+
+    # PUT with an explicit sort_order places the task at exactly that value
+    r = client.put(f"/tasks/{so_task_id}", headers=H, json={"sort_order": 42.5})
+    assert_eq("PUT /tasks/:id explicit sort_order → 200", r.status_code, 200)
+    assert_eq("explicit sort_order persisted exactly (PR #61)", r.json()["sort_order"], 42.5)
+
+    # An unrelated field update (no date/board change, sort_order omitted) preserves it
+    r = client.put(f"/tasks/{so_task_id}", headers=H, json={"title": "Sort order test task (renamed)"})
+    assert_eq("PUT /tasks/:id unrelated field update → 200", r.status_code, 200)
+    assert_eq("sort_order preserved when neither date nor board changes (PR #61)",
+              r.json()["sort_order"], 42.5)
+
+    # Changing the effective date (must_do_by) without an explicit sort_order
+    # auto-resets it to the bottom of the list (a fresh, much larger value)
+    r = client.put(f"/tasks/{so_task_id}", headers=H, json={"must_do_by": tomorrow})
+    assert_eq("PUT /tasks/:id date change (no explicit sort_order) → 200", r.status_code, 200)
+    so_after_date_change = r.json()["sort_order"]
+    assert_true("sort_order auto-resets to bottom on effective-date change (PR #61)",
+                so_after_date_change != 42.5 and so_after_date_change > 1_000_000_000)
+
+    # An explicit sort_order supplied alongside a date change wins over auto-reset
+    r = client.put(f"/tasks/{so_task_id}", headers=H, json={"must_do_by": next_week, "sort_order": 7.25})
+    assert_eq("PUT /tasks/:id date change + explicit sort_order → 200", r.status_code, 200)
+    assert_eq("explicit sort_order wins over auto-reset even with a simultaneous date change (PR #61)",
+              r.json()["sort_order"], 7.25)
+
+    client.delete(f"/tasks/{so_task_id}", headers=H)
+
+    # ── Tasks: sort_order drives real ordering in Day View (PR #61) ─────────────
+    # Unit tests (test_focused_view_service.py) only assert the SQL clause shape
+    # (does "sort_order" appear in the compiled order_by args); they cannot prove
+    # actual row ordering against real data. This is the only place that does.
+    print("\n── Tasks: sort_order drives Day View ordering (PR #61) ──")
+
+    so_order_today = date.today().isoformat()
+    r = client.post("/tasks", headers=H, json={
+        "title": "Order test A", "must_do_by": so_order_today, "label_ids": [], "board_id": default_board_id,
+    })
+    assert_eq("POST order test task A → 201", r.status_code, 201)
+    order_task_a_id = r.json()["id"]
+
+    r = client.post("/tasks", headers=H, json={
+        "title": "Order test B", "must_do_by": so_order_today, "label_ids": [], "board_id": default_board_id,
+    })
+    assert_eq("POST order test task B → 201", r.status_code, 201)
+    order_task_b_id = r.json()["id"]
+
+    # Force B to sort ahead of A via a smaller explicit sort_order
+    r = client.put(f"/tasks/{order_task_b_id}", headers=H, json={"sort_order": 1.0})
+    assert_eq("PUT order test task B sort_order=1.0 → 200", r.status_code, 200)
+    r = client.put(f"/tasks/{order_task_a_id}", headers=H, json={"sort_order": 2.0})
+    assert_eq("PUT order test task A sort_order=2.0 → 200", r.status_code, 200)
+
+    r = client.get("/day-view/tasks", headers=H, params={"reference_date": so_order_today})
+    assert_eq("GET /day-view/tasks for sort_order ordering check → 200", r.status_code, 200)
+    order_group = next((b for b in r.json()["boards"] if b["board_id"] == default_board_id), None)
+    assert_true("default board group present for sort_order ordering check", order_group is not None)
+    if order_group is not None:
+        order_ids = [t["id"] for t in order_group["tasks"]]
+        a_pos = order_ids.index(order_task_a_id) if order_task_a_id in order_ids else None
+        b_pos = order_ids.index(order_task_b_id) if order_task_b_id in order_ids else None
+        assert_true("both order-test tasks found in day view", a_pos is not None and b_pos is not None)
+        if a_pos is not None and b_pos is not None:
+            assert_true("day view orders same-priority tasks by sort_order ascending (PR #61)",
+                        b_pos < a_pos)
+
+    client.delete(f"/tasks/{order_task_a_id}", headers=H)
+    client.delete(f"/tasks/{order_task_b_id}", headers=H)
 
     # ── Due-date filter params ─────────────────────────────────────────────────
     print("\n── Tasks: Due-date filter params ───────────────────────")
@@ -1966,6 +2066,8 @@ def main():
                     "recurrence_group_id" not in first_sync_task)
         # PR #33: board_id must be present in sync task objects
         assert_in("sync task object includes board_id field (PR #33)", "board_id", first_sync_task)
+        # PR #61: sort_order must be present in sync task objects
+        assert_in("sync task object includes sort_order field (PR #61)", "sort_order", first_sync_task)
     # PR #33: sync response must include boards array
     assert_in("sync changes has boards array (PR #33)", "boards", sync_result["changes"])
     assert_true("sync boards is a list (PR #33)", isinstance(sync_result["changes"]["boards"], list))
@@ -2199,6 +2301,71 @@ def main():
     for tid in [sync_links_task_id, sync_bad_link_task_id, sync_overcap_task_id]:
         client.delete(f"/tasks/{tid}", headers=H)
 
+    # ── Sync: sort_order auto-reset (PR #61) ────────────────────────────────────
+    # sync.py bypasses task_service.update_task() entirely (raw dicts, hand-rolled
+    # field application), so it duplicates the "reset sort_order to bottom on an
+    # effective-date change" rule independently — this proves that duplicate is
+    # actually wired up against a real row, not just the mocked-session unit tests.
+    print("\n── Sync: sort_order auto-reset (PR #61) ─────────────────")
+
+    sync_so_task_id = str(uuid.uuid4())
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_so_task_id,
+                "user_id": test_user_id,
+                "title": "Sync sort_order reset test task",
+                "state": "pending",
+                "must_do_by": None,
+                "target_date": None,
+                "notes": None,
+                "is_high_priority": False,
+                "is_deleted": False,
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+            "beliefs": [],
+        },
+    })
+    assert_eq("POST /sync push new task (sort_order reset setup) → 200", r.status_code, 200)
+    r = client.get(f"/tasks/{sync_so_task_id}", headers=H)
+    assert_eq("GET synced sort_order test task → 200", r.status_code, 200)
+    sync_so_initial = r.json()["sort_order"]
+
+    # Push an update (client wins via a strictly newer updated_at) that changes
+    # must_do_by — sort_order must auto-reset even though the push never mentions it.
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_so_task_id,
+                "user_id": test_user_id,
+                "title": "Sync sort_order reset test task",
+                "state": "pending",
+                "must_do_by": today_str,
+                "target_date": None,
+                "notes": None,
+                "is_high_priority": False,
+                "is_deleted": False,
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+            "beliefs": [],
+        },
+    })
+    assert_eq("POST /sync push date change (sort_order reset) → 200", r.status_code, 200)
+    r = client.get(f"/tasks/{sync_so_task_id}", headers=H)
+    assert_eq("GET after sync date-change push → 200", r.status_code, 200)
+    assert_true("sync push auto-resets sort_order on effective-date change (PR #61)",
+                r.json()["sort_order"] != sync_so_initial)
+
+    client.delete(f"/tasks/{sync_so_task_id}", headers=H)
+
     # ── Focused View: config (PR #36) ─────────────────────────────────────────
     print("\n── Focused View: config (PR #36) ────────────────────────────────")
 
@@ -2409,8 +2576,13 @@ def main():
         fv_target_task_ids = [t["id"] for t in fv_target_group["tasks"]]
         assert_in("target_date-only HP task appears in focused view", fv_target_only_task_id, fv_target_task_ids)
 
-        # PR #47: Verify high-priority tasks are sorted by updated_at DESC
-        # Both tasks are HP, so order should be by updated_at DESC (most recent first)
+        # PR #61: Focused View's same-priority tiebreak changed from updated_at DESC
+        # (PR #47) to sort_order ASC. Both tasks are HP with no explicit sort_order
+        # ever set, so creation order decides it: sort_order defaults to a
+        # monotonically-increasing "now" timestamp, so the EARLIER-created task
+        # (fv_hp_task_id) has the smaller sort_order and sorts first — the inverse
+        # of the old PR #47 updated_at-DESC behavior, which favored the
+        # most-recently-created task.
         fv_target_only_pos = None
         fv_hp_original_pos = None
         for idx, task in enumerate(fv_target_group["tasks"]):
@@ -2421,8 +2593,8 @@ def main():
         assert_true("target_date-only HP task position found", fv_target_only_pos is not None)
         assert_true("original HP task position found", fv_hp_original_pos is not None)
         if fv_target_only_pos is not None and fv_hp_original_pos is not None:
-            assert_true("target_date-only task appears before original task (PR #47: sorted by updated_at DESC)",
-                        fv_target_only_pos < fv_hp_original_pos)
+            assert_true("original HP task appears before later-created task (PR #61: sorted by sort_order ASC)",
+                        fv_hp_original_pos < fv_target_only_pos)
 
     # Complete the HP task on the default board — done tasks must NOT appear
     r = client.post(f"/tasks/{fv_hp_task_id}/complete", headers=H)

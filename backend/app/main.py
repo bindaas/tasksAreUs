@@ -232,6 +232,19 @@ async def lifespan(app: FastAPI):
         conn.commit()
         logger.info("Mode label migration completed: deleted all Mode labels and updated ENUM type")
 
+    # ── Task column ordering migration ──────────────────────────────────────────
+    with engine.connect() as conn:
+        conn.execute(text(
+            "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS sort_order DOUBLE PRECISION"
+        ))
+        conn.execute(text(
+            "UPDATE tasks SET sort_order = EXTRACT(EPOCH FROM created_at) WHERE sort_order IS NULL"
+        ))
+        conn.execute(text(
+            "ALTER TABLE tasks ALTER COLUMN sort_order SET NOT NULL"
+        ))
+        conn.commit()
+
     yield
 
 

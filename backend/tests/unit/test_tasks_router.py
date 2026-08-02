@@ -19,7 +19,7 @@ def _make_task(**overrides) -> Task:
         id="task-1", user_id="user-1", board_id="board-1", title="Test", notes=None,
         state=StateEnum.pending, must_do_by=None, target_date=None,
         completed_at=None, is_high_priority=False, is_deleted=False,
-        links=[], created_at=now, updated_at=now,
+        links=[], sort_order=100.0, created_at=now, updated_at=now,
     )
     defaults.update(overrides)
     return Task(**defaults)
@@ -123,3 +123,29 @@ class TestUpdateTaskBoardIdWiring:
 
         _, kwargs = mock_svc.update_task.call_args
         assert kwargs["board_id"] is None
+
+
+class TestUpdateTaskSortOrderWiring:
+    @patch("app.routers.tasks._get_high_priority_limit", return_value=3)
+    @patch("app.routers.tasks.svc")
+    def test_provided_sort_order_reaches_task_service(self, mock_svc, _limit):
+        mock_svc.get_task_or_404.return_value = _make_task()
+        mock_svc.update_task.return_value = _make_task()
+        body = TaskUpdate(sort_order=42.5)
+
+        update_task(task_id="task-1", body=body, db=MagicMock(), user_id="user-1")
+
+        _, kwargs = mock_svc.update_task.call_args
+        assert kwargs["sort_order"] == 42.5
+
+    @patch("app.routers.tasks._get_high_priority_limit", return_value=3)
+    @patch("app.routers.tasks.svc")
+    def test_omitted_sort_order_passes_none(self, mock_svc, _limit):
+        mock_svc.get_task_or_404.return_value = _make_task()
+        mock_svc.update_task.return_value = _make_task()
+        body = TaskUpdate(title="New title")
+
+        update_task(task_id="task-1", body=body, db=MagicMock(), user_id="user-1")
+
+        _, kwargs = mock_svc.update_task.call_args
+        assert kwargs["sort_order"] is None

@@ -35,6 +35,7 @@ export interface Task {
   is_high_priority: boolean;
   is_deleted: boolean;
   links: TaskLink[];
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }

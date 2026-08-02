@@ -6,7 +6,7 @@ from sqlalchemy import (
     Boolean, Column, Date, DateTime, Enum, ForeignKey,
     Integer, Numeric, String, Text, UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID, DOUBLE_PRECISION
 from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.sql import func
 
@@ -17,6 +17,10 @@ def _uuid():
 
 def _now():
     return datetime.now(timezone.utc)
+
+
+def _sort_order_default():
+    return datetime.now(timezone.utc).timestamp()
 
 
 class Base(DeclarativeBase):
@@ -101,6 +105,7 @@ class Task(Base):
     is_high_priority = Column(Boolean, default=False, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
     links = Column(JSONB, nullable=False, default=list)
+    sort_order = Column(DOUBLE_PRECISION, nullable=False, default=_sort_order_default)
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

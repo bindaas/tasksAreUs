@@ -106,6 +106,7 @@ def _query_board_grouped_tasks(
     boards: List[Board],
     date_filter,
     high_priority_only: bool,
+    order_by_sort_order: bool = False,
 ) -> List[dict]:
     """Query pending tasks matching `date_filter`, grouped by the given (already-ordered) boards.
 
@@ -127,7 +128,8 @@ def _query_board_grouped_tasks(
     if high_priority_only:
         filters.append(Task.is_high_priority == True)
 
-    tasks = db.query(Task).filter(*filters).order_by(Task.is_high_priority.desc(), Task.updated_at.desc()).all()
+    tiebreak = Task.sort_order.asc() if order_by_sort_order else Task.updated_at.desc()
+    tasks = db.query(Task).filter(*filters).order_by(Task.is_high_priority.desc(), tiebreak).all()
 
     tasks_by_board: dict[str, list] = {b.id: [] for b in boards}
     for task in tasks:
@@ -171,7 +173,7 @@ def get_focused_tasks(
         Task.must_do_by.in_(window),
         Task.target_date.in_(window),
     )
-    return _query_board_grouped_tasks(db, user_id, boards, date_filter, high_priority_only=True)
+    return _query_board_grouped_tasks(db, user_id, boards, date_filter, high_priority_only=True, order_by_sort_order=True)
 
 
 def get_day_view_tasks(
@@ -196,4 +198,6 @@ def get_day_view_tasks(
             Task.target_date == reference_date,
         )
 
-    return _query_board_grouped_tasks(db, user_id, boards, date_filter, high_priority_only=False)
+    return _query_board_grouped_tasks(
+        db, user_id, boards, date_filter, high_priority_only=False, order_by_sort_order=not overdue
+    )
