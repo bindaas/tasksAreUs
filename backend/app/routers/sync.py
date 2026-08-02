@@ -8,9 +8,10 @@ from pydantic import ValidationError
 
 from ..database import get_db
 from ..dependencies import get_current_user
-from ..models import Belief, Board, Label, Task, TaskLabel
+from ..models import Belief, Board, Label, Task, TaskLabel, _sort_order_default
 from ..schemas import MAX_TASK_LINKS, SyncChanges, SyncRequest, SyncResponse, TaskLabelSync, TaskLink
 from ..services import board_service as board_svc
+from ..services.task_service import _effective_date
 
 
 def _validate_sync_links(raw_links: Any) -> List[Dict[str, Any]]:
@@ -125,6 +126,8 @@ def sync(
                 server_ts = server_ts.replace(tzinfo=timezone.utc)
             if client_updated_at > server_ts:
                 # Client wins
+                old_board_id = server_task.board_id
+                old_effective = _effective_date(server_task.must_do_by, server_task.target_date)
                 server_task.title = t_data.get("title", server_task.title)
                 server_task.notes = t_data.get("notes", server_task.notes)
                 server_task.state = t_data.get("state", server_task.state)
@@ -146,6 +149,10 @@ def sync(
                     if new_board_id:
                         server_task.board_id = new_board_id
                 label_updates[task_id] = t_data.get("label_ids", [])
+
+                new_effective = _effective_date(server_task.must_do_by, server_task.target_date)
+                if new_effective != old_effective or server_task.board_id != old_board_id:
+                    server_task.sort_order = _sort_order_default()
 
     db.flush()
 
@@ -205,6 +212,7 @@ def sync(
             "is_high_priority": t.is_high_priority,
             "is_deleted": t.is_deleted,
             "links": t.links or [],
+            "sort_order": t.sort_order,
             "created_at": t.created_at.isoformat(),
             "updated_at": t.updated_at.isoformat(),
             "label_ids": [l.id for l in t.labels],

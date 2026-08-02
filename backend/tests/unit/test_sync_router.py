@@ -6,7 +6,7 @@ guard against links being silently dropped on push/pull, or a client
 bypassing max-3/scheme/length validation via the sync path.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 from app.models import Belief, Board, StateEnum, Task, TaskLabel, UserSettings
@@ -60,7 +60,7 @@ def _make_task(**overrides) -> Task:
         notes=None, state=StateEnum.pending, must_do_by=None, target_date=None,
         completed_at=None, is_high_priority=False, is_deleted=False,
         links=[{"id": "old", "url": "https://old.example.com", "description": "Old"}],
-        created_at=now, updated_at=now,
+        sort_order=100.0, created_at=now, updated_at=now,
     )
     defaults.update(overrides)
     return Task(**defaults)
@@ -238,3 +238,60 @@ class TestSyncPullLinks:
         response = sync(_sync_request([]), db, "user-1")
 
         assert response.changes.tasks[0]["links"] == []
+
+
+class TestSyncPullSortOrder:
+    def test_pull_response_includes_sort_order(self):
+        task = _make_task(sort_order=55.5)
+        db = _make_db(task_all=[task])
+        response = sync(_sync_request([]), db, "user-1")
+
+        assert response.changes.tasks[0]["sort_order"] == 55.5
+
+
+class TestSyncPushSortOrder:
+    def test_date_change_resets_sort_order_to_bottom(self):
+        existing = _make_task(
+            must_do_by=None, target_date=None, sort_order=100.0,
+            updated_at=datetime.now(timezone.utc) - timedelta(days=2),
+        )
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing",
+            "target_date": (date.today() + timedelta(days=1)).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.sort_order != 100.0
+
+    def test_no_date_or_board_change_preserves_sort_order(self):
+        existing = _make_task(
+            sort_order=100.0, updated_at=datetime.now(timezone.utc) - timedelta(days=2)
+        )
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing, retitled",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.sort_order == 100.0
+
+    def test_board_change_resets_sort_order_to_bottom(self):
+        existing = _make_task(
+            board_id="board-1", sort_order=100.0,
+            updated_at=datetime.now(timezone.utc) - timedelta(days=2),
+        )
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing",
+            "board_id": "board-2",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.sort_order != 100.0

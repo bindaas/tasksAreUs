@@ -8,6 +8,7 @@ from fastapi import HTTPException
 
 from app.models import Board, FocusedViewConfig, StateEnum, Task
 from app.services.focused_view_service import (
+    _query_board_grouped_tasks,
     date_window,
     get_day_view_tasks,
     get_focused_tasks,
@@ -438,3 +439,89 @@ class TestGetDayViewTasksDateFilterClause:
         clause = str(args[-1])
         assert "must_do_by =" in clause
         assert "must_do_by <" not in clause
+
+
+# ── order_by_sort_order tiebreak ────────────────────────────────────────────────
+
+class TestQueryBoardGroupedTasksOrdering:
+    TODAY = date(2026, 6, 28)
+
+    def _capture_order_by(self, order_by_sort_order: bool) -> str:
+        db = MagicMock()
+        task_query = MagicMock()
+        task_query.filter.return_value.order_by.return_value.all.return_value = []
+        db.query.return_value = task_query
+
+        _query_board_grouped_tasks(
+            db, "user-1", [_make_board("b1")], Task.target_date == self.TODAY,
+            high_priority_only=False, order_by_sort_order=order_by_sort_order,
+        )
+
+        args, _ = task_query.filter.return_value.order_by.call_args
+        return " ".join(str(a) for a in args)
+
+    def test_order_by_sort_order_true_uses_sort_order(self):
+        clause = self._capture_order_by(True)
+        assert "sort_order" in clause
+
+    def test_order_by_sort_order_false_uses_updated_at(self):
+        clause = self._capture_order_by(False)
+        assert "updated_at" in clause
+        assert "sort_order" not in clause
+
+    def test_order_by_sort_order_defaults_to_false(self):
+        db = MagicMock()
+        task_query = MagicMock()
+        task_query.filter.return_value.order_by.return_value.all.return_value = []
+        db.query.return_value = task_query
+
+        _query_board_grouped_tasks(
+            db, "user-1", [_make_board("b1")], Task.target_date == self.TODAY,
+            high_priority_only=False,
+        )
+
+        args, _ = task_query.filter.return_value.order_by.call_args
+        clause = " ".join(str(a) for a in args)
+        assert "updated_at" in clause
+        assert "sort_order" not in clause
+
+    def _setup_two_query_db(self, board, task):
+        db = MagicMock()
+        board_mock = MagicMock()
+        board_mock.filter.return_value.order_by.return_value.all.return_value = [board]
+        task_mock = MagicMock()
+        task_mock.filter.return_value.order_by.return_value.all.return_value = [task]
+        db.query.side_effect = [board_mock, task_mock]
+        return db, task_mock
+
+    def test_get_focused_tasks_orders_by_sort_order(self):
+        board = _make_board("b1", name="Alpha")
+        task = _make_task("t1", "b1", target_date=self.TODAY)
+        db, task_mock = self._setup_two_query_db(board, task)
+
+        get_focused_tasks(db, "user-1", _make_config(), self.TODAY)
+
+        args, _ = task_mock.filter.return_value.order_by.call_args
+        assert "sort_order" in " ".join(str(a) for a in args)
+
+    def test_get_day_view_tasks_overdue_false_orders_by_sort_order(self):
+        board = _make_board("b1", name="Alpha")
+        task = _make_task("t1", "b1", target_date=self.TODAY)
+        db, task_mock = self._setup_two_query_db(board, task)
+
+        get_day_view_tasks(db, "user-1", self.TODAY, overdue=False)
+
+        args, _ = task_mock.filter.return_value.order_by.call_args
+        assert "sort_order" in " ".join(str(a) for a in args)
+
+    def test_get_day_view_tasks_overdue_true_orders_by_updated_at(self):
+        board = _make_board("b1", name="Alpha")
+        task = _make_task("t1", "b1", must_do_by=self.TODAY - timedelta(days=1))
+        db, task_mock = self._setup_two_query_db(board, task)
+
+        get_day_view_tasks(db, "user-1", self.TODAY, overdue=True)
+
+        args, _ = task_mock.filter.return_value.order_by.call_args
+        clause = " ".join(str(a) for a in args)
+        assert "updated_at" in clause
+        assert "sort_order" not in clause

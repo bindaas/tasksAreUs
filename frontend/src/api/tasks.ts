@@ -25,6 +25,7 @@ export interface Task {
   is_high_priority: boolean;
   is_deleted: boolean;
   links: TaskLink[];
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -55,6 +56,10 @@ export interface UpdateTaskBody {
   // Omitting leaves the task's board unchanged; any value (including the current
   // board) triggers the backend's move logic, which clears labels on an actual move.
   board_id?: string;
+  // Omitting lets the server decide (unchanged, or auto-reset to bottom on a date/board
+  // change). An explicit value places the task at a specific position — only sent by
+  // All-view drag-and-drop.
+  sort_order?: number;
 }
 
 export interface CompleteTaskBody {
