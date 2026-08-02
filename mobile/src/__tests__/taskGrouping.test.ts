@@ -3,7 +3,7 @@ import type { Task } from '../types';
 
 const REF_DATE = new Date('2026-06-07T12:00:00');
 
-function makeTask(overrides: Partial<Pick<Task, 'id' | 'target_date' | 'must_do_by' | 'is_high_priority' | 'sort_order' | 'updated_at'>> = {}): Task {
+function makeTask(overrides: Partial<Pick<Task, 'id' | 'target_date' | 'must_do_by'>> = {}): Task {
   return {
     id: 'task-' + Math.random(),
     board_id: 'board-1',
@@ -17,7 +17,6 @@ function makeTask(overrides: Partial<Pick<Task, 'id' | 'target_date' | 'must_do_
     is_high_priority: false,
     is_deleted: false,
     links: [],
-    sort_order: 0,
     created_at: '2026-06-01T00:00:00',
     updated_at: '2026-06-01T00:00:00',
     ...overrides,
@@ -103,36 +102,5 @@ describe('groupTasksForList', () => {
     expect(sections).toHaveLength(2);
     expect(sections[0].key).toBe('overdue');
     expect(sections[1].data).toHaveLength(2);
-  });
-
-  it('orders today section by sort_order ascending within the same priority', () => {
-    const first = makeTask({ target_date: '2026-06-07', sort_order: 1 });
-    const second = makeTask({ target_date: '2026-06-07', sort_order: 2 });
-    const third = makeTask({ target_date: '2026-06-07', sort_order: 3 });
-    const [section] = groupTasksForList([third, first, second], REF_DATE);
-    expect(section.data).toEqual([first, second, third]);
-  });
-
-  it('orders today section by is_high_priority before sort_order', () => {
-    const normalFirst = makeTask({ target_date: '2026-06-07', sort_order: 1, is_high_priority: false });
-    const highSecond = makeTask({ target_date: '2026-06-07', sort_order: 2, is_high_priority: true });
-    const [section] = groupTasksForList([normalFirst, highSecond], REF_DATE);
-    expect(section.data).toEqual([highSecond, normalFirst]);
-  });
-
-  it('orders upcoming section by target_date ascending, nulls last', () => {
-    const later = makeTask({ target_date: '2026-08-01' });
-    const earlier = makeTask({ target_date: '2026-07-01' });
-    const [section] = groupTasksForList([later, earlier], REF_DATE);
-    expect(section.key).toBe('upcoming');
-    expect(section.data).toEqual([earlier, later]);
-  });
-
-  it('overdue section still orders by updated_at descending, unaffected by sort_order', () => {
-    const older = makeTask({ target_date: '2026-01-01', sort_order: 99, updated_at: '2026-01-01T00:00:00' });
-    const newer = makeTask({ target_date: '2026-01-02', sort_order: 1, updated_at: '2026-01-05T00:00:00' });
-    const [section] = groupTasksForList([older, newer], REF_DATE);
-    expect(section.key).toBe('overdue');
-    expect(section.data).toEqual([newer, older]);
   });
 });

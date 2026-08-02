@@ -21,7 +21,6 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     is_high_priority: false,
     is_deleted: false,
     links: [],
-    sort_order: 0,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
     ...overrides,
