@@ -71,28 +71,40 @@ export function ArchiveScreen() {
   const [fetched, setFetched] = useState(false);
   const [collapsedBoardIds, setCollapsedBoardIds] = useState<Set<string>>(new Set());
 
-  const runReport = useCallback(async () => {
-    if (!from || !to) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const options = selectedBoardId === 'all' ? { allBoards: true } : { boardId: selectedBoardId };
-      const data = await getCompletions(from, to, options);
-      setRecords(data.completions);
-      setBoards(data.boards ?? null);
-      setTotal(data.total);
-      setFetched(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load report');
-    } finally {
-      setLoading(false);
-    }
-  }, [from, to, selectedBoardId]);
+  const runReport = useCallback(
+    async (overrideFrom?: string, overrideTo?: string, overrideBoardId?: string | 'all') => {
+      const f = overrideFrom ?? from;
+      const t = overrideTo ?? to;
+      const b = overrideBoardId ?? selectedBoardId;
+      if (!f || !t) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const options = b === 'all' ? { allBoards: true } : { boardId: b };
+        const data = await getCompletions(f, t, options);
+        setRecords(data.completions);
+        setBoards(data.boards ?? null);
+        setTotal(data.total);
+        setFetched(true);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load report');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [from, to, selectedBoardId]
+  );
 
   function applyPreset(preset: PresetKey) {
     const range = getPresetRange(preset);
     setFrom(range.from);
     setTo(range.to);
+    runReport(range.from, range.to, selectedBoardId);
+  }
+
+  function selectBoard(boardId: string | 'all') {
+    setSelectedBoardId(boardId);
+    if (fetched) runReport(from, to, boardId);
   }
 
   function toggleBoard(id: string) {
@@ -118,7 +130,7 @@ export function ArchiveScreen() {
       </View>
 
       <View className="px-4 pb-3">
-        <ArchiveBoardTabs selectedBoardId={selectedBoardId} onSelect={setSelectedBoardId} />
+        <ArchiveBoardTabs selectedBoardId={selectedBoardId} onSelect={selectBoard} />
       </View>
 
       <View className="px-4 pb-3">
@@ -160,7 +172,7 @@ export function ArchiveScreen() {
           </View>
           <View style={{ paddingTop: 16 }}>
             <TouchableOpacity
-              onPress={runReport}
+              onPress={() => runReport()}
               disabled={loading || !from || !to}
               className="bg-indigo-600 rounded-xl px-4 py-2"
               style={{ opacity: loading || !from || !to ? 0.5 : 1 }}

@@ -98,6 +98,7 @@ function AppRoutes() {
                     <Route path="/" element={<TasksPage />} />
                     <Route path="/tasks/:id" element={<TaskDetailPage />} />
                     <Route path="/archive" element={<ArchivePage />} />
+                    <Route path="/reports" element={<Navigate to="/archive" replace />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
