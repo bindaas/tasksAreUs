@@ -102,6 +102,7 @@ Core entity. One-time and recurring task instances are both stored here.
 | `is_high_priority` | BOOLEAN | Default false. Only meaningful when effective date (earliest of `must_do_by` / `target_date`) is overdue, today, tomorrow, day_after_tomorrow, or monday |
 | `is_deleted` | BOOLEAN | Default false. Soft delete |
 | `links` | JSONB | NOT NULL. Default `[]`. Array of up to `MAX_TASK_LINKS = 3` objects: `{"id": string, "url": string, "description": string}`. Added via `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS links JSONB NOT NULL DEFAULT '[]'::jsonb` in PR #39. |
+| `sort_order` | DOUBLE PRECISION | NOT NULL. Client-computed fractional index (Trello-style) controlling manual task order within a date-bucketed priority zone. No SQL-level `DEFAULT`; every ORM insert gets a value via the Python-side `Column(default=_sort_order_default)` callable (`models.py`), which returns `datetime.now(timezone.utc).timestamp()` — the same value used whenever the column is auto-reset (see rules below). Added via `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS sort_order DOUBLE PRECISION`, backfilled from `EXTRACT(EPOCH FROM created_at)` for existing rows, then `ALTER COLUMN sort_order SET NOT NULL`, in PR #61. |
 | `created_at` | TIMESTAMP | |
 | `updated_at` | TIMESTAMP | Used for last-write-wins conflict resolution |
 
@@ -127,6 +128,13 @@ The `recurrence_group_id` column was dropped from the `tasks` table and the `Tas
 - On `PUT /tasks/{id}`, `links` uses full-replace semantics matching `label_ids`: omitting the field leaves existing links unchanged; providing any list — including `[]` — fully replaces the set
 - Exceeding the cap or failing field validation on `POST`/`PUT /tasks` returns `422` (Pydantic-level validation error)
 - The `/sync` push path re-validates each link independently (`SyncChanges.tasks` are raw dicts and bypass Pydantic validation) — an invalid item is dropped rather than failing the whole array, and the result is capped at `MAX_TASK_LINKS`
+
+**Sort order rules (PR #61):**
+- `sort_order` is only ever set by the web All-view kanban's drag-and-drop (`PUT /tasks/{id}` with an explicit `sort_order`); no UI writes it anywhere else, and mobile never writes it.
+- On `PUT /tasks/{id}` and `/sync` push, an explicit `sort_order` in the request always wins — it is set directly, even when the same request also changes the task's effective date or `board_id`.
+- When `sort_order` is omitted, the server auto-resets it to a fresh "now" value (`_sort_order_default()`) if the task's effective date (earliest of `must_do_by`/`target_date`) or `board_id` actually changed as part of the same update — this covers a Task Form date edit, a board move, and a mobile date-drag, none of which send `sort_order` themselves. If neither changed, `sort_order` is left untouched.
+- Since real time only moves forward, `_sort_order_default()` is always guaranteed to sort after any previously-assigned value in the same list — no query of sibling rows is needed to compute a "bottom of list" position.
+- No server-side bounds validation is applied to an explicit `sort_order` value (`TaskUpdate.sort_order` is a plain `Optional[float]`) — the field accepts any finite or non-finite float a client sends.
 
 ---
 
@@ -429,6 +437,7 @@ List tasks for the current user.
       "links": [
         { "id": "link-uuid", "url": "https://library.example.com/account", "description": "Library account" }
       ],
+      "sort_order": 1747044000.123,
       "created_at": "2026-05-06T10:00:00Z",
       "updated_at": "2026-05-06T10:00:00Z"
     }
@@ -484,7 +493,8 @@ Update a task's fields or labels.
   "links": [
     { "id": "link-uuid", "url": "https://library.example.com/account", "description": "Library account" }
   ],
-  "board_id": "uuid"
+  "board_id": "uuid",
+  "sort_order": 42.5
 }
 ```
 
@@ -495,6 +505,8 @@ To clear a date field to null, include the field explicitly as `null` in the JSO
 `links` uses full-replace semantics: omitting it leaves the task's existing links unchanged; providing any list — including `[]` — fully replaces the set. Both `TaskForm` (web) and `TaskFormScreen` (mobile) always include `links` in the update payload so that removing the last link actually clears it.
 
 `board_id` (added PR #40) moves the task to a different board. `None`/omitted leaves the board unchanged (not full-replace like `links`). When `board_id` is provided and differs from the task's current board: the destination board must exist, be owned by the caller, and not be soft-deleted (`404` otherwise); the task's existing labels are unconditionally cleared (labels are board-scoped and not valid across boards); if `label_ids` is also present in the same request, it is resolved against the *new* board_id and applied after the move (`422` if any id doesn't belong to the destination board). Sending `board_id` equal to the task's current board is a no-op — labels are left untouched.
+
+`sort_order` (added PR #61) is `None`/omitted by default, meaning "let the server decide": if this same request also changes the task's effective date or `board_id`, the server auto-resets `sort_order` to a fresh "bottom of list" value; otherwise it's left unchanged. Supplying an explicit float sets `sort_order` to exactly that value and always wins over the auto-reset, even when the same request also changes the date or board. See "Sort order rules" under Table: `tasks`.
 
 **Response**: updated task object
 
@@ -710,7 +722,7 @@ Returns `is_high_priority = true` pending tasks that have `must_do_by` or `targe
 
 - Boards with zero qualifying tasks are omitted from the response.
 - Boards are ordered alphabetically by name.
-- Within each board group, tasks are sorted by `is_high_priority DESC` (high-priority first), then `updated_at` DESC (as of PR #47).
+- Within each board group, tasks are sorted by `is_high_priority DESC` (high-priority first), then `sort_order` ASC (changed PR #61 — the same manual position set by drag-to-reorder on the web All view's kanban board, or the `created_at` backfill for tasks that predate PR #61; was `updated_at` DESC as of PR #47). This view has no reorder UI of its own — it only reflects whatever order was last set elsewhere.
 - `board_color` is `null` when the user has not configured a color; clients should substitute a default from a fixed palette.
 
 ---
@@ -742,7 +754,7 @@ Returns pending tasks (any priority) whose `must_do_by` or `target_date` falls o
 
 - Boards with zero qualifying tasks are omitted from the response.
 - Boards are ordered alphabetically by name.
-- Within each board group, tasks are sorted by `is_high_priority DESC` (high-priority first), then `updated_at` DESC (as of PR #47).
+- Within each board group, tasks are sorted by `is_high_priority DESC` (high-priority first), then a tiebreak that depends on `overdue` (changed PR #61): `sort_order` ASC when `overdue=false` (Today/Tomorrow — same manual position as Focused View, set by drag-to-reorder on the web All view), or `updated_at` DESC when `overdue=true` (Overdue — unchanged from PR #47, since Overdue tasks aren't reorderable).
 - Completed and soft-deleted tasks are excluded.
 
 ---
@@ -757,7 +769,7 @@ Push local changes to the server and pull server changes since last sync. Uses l
 {
   "last_synced_at": "2026-05-06T08:00:00Z",
   "changes": {
-    "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board on create, unchanged on update; present on update = move the task to that board and clear its labels); links optional (omitted = unchanged on update, present = replace, including [])... ],
+    "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board on create, unchanged on update; present on update = move the task to that board and clear its labels); links optional (omitted = unchanged on update, present = replace, including []); sort_order not sent by any current client (mobile never writes it) but if present on an update it is not read by the sync push path — sort_order can only be set via `PUT /tasks/{id}`, not `/sync`... ],
     "task_labels": [ ...task_label objects... ],
     "beliefs": [ ...belief objects... ],
     "boards": []
@@ -770,7 +782,7 @@ Push local changes to the server and pull server changes since last sync. Uses l
 {
   "synced_at": "2026-05-06T10:05:00Z",
   "changes": {
-    "tasks": [ ...server-side task objects updated since last_synced_at, each including board_id and links... ],
+    "tasks": [ ...server-side task objects updated since last_synced_at, each including board_id, links, and sort_order... ],
     "task_labels": [ ... ],
     "beliefs": [ ... ],
     "boards": [ ...board objects updated since last_synced_at... ]
@@ -784,3 +796,5 @@ Push local changes to the server and pull server changes since last sync. Uses l
 **Board move via sync (PR #40)**: pushing an existing task with a `board_id` that differs from its current one moves the task to that board — mirroring `PUT /tasks/{id}`'s move behavior. The sync push path validates ownership item-by-item via `_owned_board_id()` (`db.query(Board.id).filter(Board.id == ..., Board.user_id == ..., Board.is_deleted == False)`) rather than calling `board_service.get_board_or_404()`, since raising mid-batch would fail every other change in the same push; an unowned, nonexistent, or soft-deleted `board_id` is silently ignored (existing task keeps its current board; a new task falls back to the default board), matching the same drop-invalid-item convention already used for links and cross-board labels in this router. Labels not valid for the new board are dropped by the existing label-reconciliation step (which runs after the board_id write and filters by `Label.board_id == task.board_id`), the same as a REST move.
 
 **Link sync notes**: Task objects in the pull response always include `links`. Push payloads are raw dicts and bypass the `TaskCreate`/`TaskUpdate` Pydantic validation that `POST`/`PUT /tasks` get for free, so each pushed task's `links` array is re-validated server-side (see Link rules under Table: `tasks`) — unlike the REST endpoints, an individually invalid link (bad scheme, empty description, oversized field) is dropped rather than rejecting the whole push, and the result is capped at `MAX_TASK_LINKS`. On update, `links` follows the same full-replace convention as the REST endpoints: the key must be present in the pushed task dict to change the stored links (its absence means unchanged), not merely non-empty.
+
+**Sort order sync notes (PR #61)**: Task objects in the pull response always include `sort_order`. The push path does not accept an explicit client-supplied `sort_order` — no current client (mobile) ever sends one, and there is no reorder UI outside the web All view, which writes via `PUT /tasks/{id}` directly. `sync.py`'s "client wins" branch instead independently replicates `task_service.update_task()`'s auto-reset rule by hand (this router bypasses `task_service` and applies fields directly): it captures the task's `board_id` and effective date (via the imported `task_service._effective_date()`) before mutating, and if either changed as a result of the push, sets `server_task.sort_order` to a fresh "bottom of list" value afterward. This matters for an offline mobile date-drag queued locally and later pushed via `/sync` — without it, the synced task would land with a stale `sort_order` instead of the bottom of its new bucket, as an online drag would produce.
