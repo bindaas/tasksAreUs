@@ -30,7 +30,6 @@ function BoardSection() {
     activeBoard,
     createBoard,
     renameBoard,
-    setDefaultBoard,
     setColorBoard,
     deleteBoard,
   } = useBoard();
@@ -55,18 +54,6 @@ function BoardSection() {
       setEditingId(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Rename failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleSetDefault(id: string) {
-    setBusy(true);
-    setError(null);
-    try {
-      await setDefaultBoard(id);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to set default');
     } finally {
       setBusy(false);
     }
@@ -157,15 +144,6 @@ function BoardSection() {
                   <Text className="text-amber-400 text-xs">★</Text>
                 )}
                 <Text className="flex-1 text-sm text-gray-700">{board.name}</Text>
-                {!board.is_default && (
-                  <TouchableOpacity
-                    onPress={() => handleSetDefault(board.id)}
-                    disabled={busy}
-                    style={{ opacity: busy ? 0.4 : 1 }}
-                  >
-                    <Text className="text-xs text-gray-400">Default</Text>
-                  </TouchableOpacity>
-                )}
                 <TouchableOpacity
                   onPress={() => { setEditingId(board.id); setEditValue(board.name); setError(null); }}
                   disabled={busy}

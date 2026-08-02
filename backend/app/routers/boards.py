@@ -19,7 +19,7 @@ def list_boards(
     boards = db.query(Board).filter(
         Board.user_id == user_id,
         Board.is_deleted == False,
-    ).order_by(Board.is_default.desc(), Board.created_at.asc()).all()
+    ).order_by(Board.sort_order.asc(), Board.created_at.asc()).all()
     return {"boards": [BoardOut.model_validate(b) for b in boards]}
 
 
@@ -42,7 +42,7 @@ def update_board(
 ):
     board = svc.get_board_or_404(db, board_id, user_id)
     color_kwarg = {"color": body.color} if "color" in body.model_fields_set else {}
-    board = svc.update_board(db, board, body.name, body.is_default, **color_kwarg)
+    board = svc.update_board(db, board, body.name, sort_order=body.sort_order, **color_kwarg)
     return BoardOut.model_validate(board)
 
 

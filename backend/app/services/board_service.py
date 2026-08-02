@@ -123,12 +123,41 @@ def create_board(db: Session, user_id: str, name: str) -> Board:
     return board
 
 
+def _recompute_default(db: Session, user_id: str) -> None:
+    """Ensure is_default matches whichever board is topmost in sort_order.
+
+    Must re-derive from the full ordered list rather than just the moved board:
+    dragging the current default away from the top touches no other board's
+    row, so "is the default still correct" can't be inferred from a single
+    board's before/after state. Uses flush only — update_board() owns the
+    single commit at the end of the request.
+    """
+    boards = db.query(Board).filter(
+        Board.user_id == user_id,
+        Board.is_deleted == False,
+    ).order_by(Board.sort_order.asc(), Board.created_at.asc()).all()
+    if not boards:
+        return
+    topmost = boards[0]
+    if topmost.is_default:
+        return
+
+    old_default = next((b for b in boards if b.is_default), None)
+    if old_default:
+        old_default.is_default = False
+        old_default.updated_at = datetime.now(timezone.utc)
+        db.flush()  # clear old default before setting new one — avoids partial-index IntegrityError
+    topmost.is_default = True
+    topmost.updated_at = datetime.now(timezone.utc)
+    db.flush()
+
+
 def update_board(
     db: Session,
     board: Board,
     name: Optional[str],
-    is_default: Optional[bool],
     color: object = _UNSET,
+    sort_order: Optional[float] = None,
 ) -> Board:
     if name is not None:
         name = name.strip()
@@ -136,26 +165,14 @@ def update_board(
             raise HTTPException(status_code=400, detail="Board name cannot be empty")
         board.name = name
 
-    if is_default is False and board.is_default:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot demote the default board — set another board as default first",
-        )
-
-    if is_default is True and not board.is_default:
-        old_default = db.query(Board).filter(
-            Board.user_id == board.user_id,
-            Board.is_default == True,
-            Board.id != board.id,
-        ).first()
-        if old_default:
-            old_default.is_default = False
-            old_default.updated_at = datetime.now(timezone.utc)
-            db.flush()  # clear old default before setting new one — avoids partial-index IntegrityError
-        board.is_default = True
-
     if color is not _UNSET:
         board.color = color  # None clears the color; a hex string sets it
+
+    if sort_order is not None:
+        board.sort_order = sort_order
+        board.updated_at = datetime.now(timezone.utc)
+        db.flush()
+        _recompute_default(db, board.user_id)
 
     board.updated_at = datetime.now(timezone.utc)
     db.commit()

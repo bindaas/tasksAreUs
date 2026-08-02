@@ -3,13 +3,8 @@ import type { FocusedBoard } from '../api/focusedView';
 import { FocusedTaskCard } from './FocusedTaskCard';
 import { useBoardCollapse, type ViewKey } from '../context/BoardCollapseContext';
 import { filterBoards } from '../utils/taskFilters';
+import { getBoardColor } from '../utils/boardColor';
 import { EmptyState, FolderIcon } from './EmptyState';
-
-const PALETTE = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
-
-function boardColor(board: FocusedBoard, index: number): string {
-  return board.board_color ?? PALETTE[index % PALETTE.length];
-}
 
 export function BoardGroupedTasks({
   boards,
@@ -43,7 +38,7 @@ export function BoardGroupedTasks({
         </button>
       </div>
       {filteredBoards.map((board, idx) => {
-        const color = boardColor(board, idx);
+        const color = getBoardColor(board.board_color, idx);
         const collapsed = isCollapsed(viewKey, board.board_id);
         return (
           <div key={board.board_id}>
