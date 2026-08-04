@@ -5,8 +5,8 @@
     "semantic_hash": "5cde579d9330cc115cf895718a75ca0f"
   },
   ".claude/settings.local.json": {
-    "mtime": 1785807296.5619984,
-    "ast_hash": "eab43bda2a2cdad17c2192dcc6d01fd7",
+    "mtime": 1785881895.134868,
+    "ast_hash": "28677c4fdd4eecf5273ef79564d73e40",
     "semantic_hash": ""
   },
   "backend/app/__init__.py": {
@@ -15,9 +15,9 @@
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "backend/app/config.py": {
-    "mtime": 1780871469.1598525,
-    "ast_hash": "50017c5330ad24ba25d84023f0cb6eb2",
-    "semantic_hash": "50017c5330ad24ba25d84023f0cb6eb2"
+    "mtime": 1785880734.9069562,
+    "ast_hash": "5a5c14e95fa1f8ad3819f64df8672714",
+    "semantic_hash": ""
   },
   "backend/app/database.py": {
     "mtime": 1778419004.2157469,
@@ -30,24 +30,19 @@
     "semantic_hash": "8d4e595d583aea1a437098b1b5827619"
   },
   "backend/app/main.py": {
-    "mtime": 1785807941.044552,
-    "ast_hash": "8ac61f90ecf26eb7748136e37fa054f6",
+    "mtime": 1785880661.0239751,
+    "ast_hash": "d801fb7ae99455147621a13b05405b3c",
     "semantic_hash": ""
   },
   "backend/app/models.py": {
-    "mtime": 1785691424.838993,
-    "ast_hash": "f120e6ea2dea89a6e45c2f3288d36e91",
-    "semantic_hash": "f120e6ea2dea89a6e45c2f3288d36e91"
+    "mtime": 1785880686.1648176,
+    "ast_hash": "a23c9e38a61867a599fa211364039874",
+    "semantic_hash": ""
   },
   "backend/app/routers/__init__.py": {
     "mtime": 1778418999.2169864,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
-  },
-  "backend/app/routers/beliefs.py": {
-    "mtime": 1780616031.5088816,
-    "ast_hash": "91bbf75e2506328622cc5aafe4c1fd7b",
-    "semantic_hash": "91bbf75e2506328622cc5aafe4c1fd7b"
   },
   "backend/app/routers/boards.py": {
     "mtime": 1785691424.8394928,
@@ -80,9 +75,9 @@
     "semantic_hash": "76f4cdf9de09546ed9e03a3f984deeac"
   },
   "backend/app/routers/sync.py": {
-    "mtime": 1785677814.8677416,
-    "ast_hash": "3c3a1fdfa15e223007397048c1715ec9",
-    "semantic_hash": "3c3a1fdfa15e223007397048c1715ec9"
+    "mtime": 1785880724.1377125,
+    "ast_hash": "f2cb4ad7ad9e7029af222c0813307a0d",
+    "semantic_hash": ""
   },
   "backend/app/routers/tasks.py": {
     "mtime": 1785803432.1592956,
@@ -90,19 +85,14 @@
     "semantic_hash": ""
   },
   "backend/app/schemas.py": {
-    "mtime": 1785706677.5172935,
-    "ast_hash": "bea16c5777f6026eb080af1ca74daf34",
-    "semantic_hash": "bea16c5777f6026eb080af1ca74daf34"
+    "mtime": 1785880704.5766973,
+    "ast_hash": "f76298adf9e3b4141fd324eddc0505c7",
+    "semantic_hash": ""
   },
   "backend/app/services/__init__.py": {
     "mtime": 1778418998.3385322,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
-  },
-  "backend/app/services/ai_service.py": {
-    "mtime": 1783985112.9657972,
-    "ast_hash": "74fb611d49260c9c1b32108b3b9d566f",
-    "semantic_hash": "74fb611d49260c9c1b32108b3b9d566f"
   },
   "backend/app/services/board_service.py": {
     "mtime": 1785691424.8400364,
@@ -130,9 +120,9 @@
     "semantic_hash": ""
   },
   "backend/scripts/purge_test_data.py": {
-    "mtime": 1783985112.9659135,
-    "ast_hash": "69584d6e950a755307d83d780462729b",
-    "semantic_hash": "69584d6e950a755307d83d780462729b"
+    "mtime": 1785880758.2985404,
+    "ast_hash": "2bdb015f86979c1270fc540c857142b5",
+    "semantic_hash": ""
   },
   "backend/scripts/reset_focused_view_config_default.py": {
     "mtime": 1783034135.80575,
@@ -140,9 +130,9 @@
     "semantic_hash": "3ecfc3b2f13c4c81af2edcf33e8235c4"
   },
   "backend/scripts/sync_local_to_railway.py": {
-    "mtime": 1783985112.9660535,
-    "ast_hash": "9f0ac93b47b8c16568cff28347bfc1df",
-    "semantic_hash": "9f0ac93b47b8c16568cff28347bfc1df"
+    "mtime": 1785880779.531506,
+    "ast_hash": "9036723740447d81828614d36037febe",
+    "semantic_hash": ""
   },
   "backend/tests/__init__.py": {
     "mtime": 1778418999.5259976,
@@ -195,9 +185,9 @@
     "semantic_hash": "49b4b9756b39754fab0a7bcfb042575e"
   },
   "backend/tests/unit/test_sync_router.py": {
-    "mtime": 1785677814.8709211,
-    "ast_hash": "be7fd316ffdd88a3de38b832aae0bb0b",
-    "semantic_hash": "be7fd316ffdd88a3de38b832aae0bb0b"
+    "mtime": 1785880791.62088,
+    "ast_hash": "e4a96f23572c5ae85c9a5ac20184b8d6",
+    "semantic_hash": ""
   },
   "backend/tests/unit/test_task_service.py": {
     "mtime": 1785803432.1603522,
@@ -905,9 +895,9 @@
     "semantic_hash": "93905da1825fffb8939e0ce7ed4f7284"
   },
   "backend/requirements.txt": {
-    "mtime": 1780616031.5121667,
-    "ast_hash": "8d4aeebb09a6a5e6b54891bfdc8b39d1",
-    "semantic_hash": "8d4aeebb09a6a5e6b54891bfdc8b39d1"
+    "mtime": 1785880746.6561997,
+    "ast_hash": "c7a8a95ab98a38ac13249731afe81418",
+    "semantic_hash": ""
   },
   "development-plans/NOTE-mobile-stale-board-state.md": {
     "mtime": 1783123904.0071497,
@@ -1080,9 +1070,9 @@
     "semantic_hash": "df837634ff60ac66554c282fa66f9a6c"
   },
   "railway_migration.md": {
-    "mtime": 1780183838.3472447,
-    "ast_hash": "a2eec37983ef9cf75ecc9f01df8ed70d",
-    "semantic_hash": "a2eec37983ef9cf75ecc9f01df8ed70d"
+    "mtime": 1785880808.9043334,
+    "ast_hash": "f6b91ecc5df446b08e6fdc97bfecbe96",
+    "semantic_hash": ""
   },
   "scripts/MODE_LABEL_REMOVAL.md": {
     "mtime": 1783985112.9695196,
@@ -1137,6 +1127,21 @@
   "development-plans/PLAN-fix-archive-view-usability.md": {
     "mtime": 1785803432.160784,
     "ast_hash": "a747b8ce2daa3dde2f9a36dfa5575db6",
+    "semantic_hash": ""
+  },
+  "development-plans/PLAN-chore-modularize-test-suite.md": {
+    "mtime": 1785880151.9229245,
+    "ast_hash": "97e48a86801d126b7f2530f2f9845e3a",
+    "semantic_hash": ""
+  },
+  "development-plans/PLAN-chore-remove-beliefs-and-llm.md": {
+    "mtime": 1785809231.2377636,
+    "ast_hash": "b1d33821111ba204a39ae04d2ab04eca",
+    "semantic_hash": ""
+  },
+  "development-plans/PLAN-chore-remove-mode-label-dead-code.md": {
+    "mtime": 1785807941.0456352,
+    "ast_hash": "e1eded93c99d89c8f45b1b543b86db2f",
     "semantic_hash": ""
   }
 }
