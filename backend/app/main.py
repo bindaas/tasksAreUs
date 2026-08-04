@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from .config import settings as app_settings
 from .database import SessionLocal, engine
 from .models import Base, Board, Label, Task, User
-from .routers import beliefs, boards, day_view, focused_view, labels, reports, settings, sync, tasks
+from .routers import boards, day_view, focused_view, labels, reports, settings, sync, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +166,10 @@ async def lifespan(app: FastAPI):
         conn.execute(text("DROP TABLE IF EXISTS messages"))
         conn.execute(text("DROP TABLE IF EXISTS conversations"))
         conn.execute(text("ALTER TABLE user_settings DROP COLUMN IF EXISTS starter_questions"))
+
+        # ── Beliefs/LLM removal — drop beliefs and ai_cost_log tables ──
+        conn.execute(text("DROP TABLE IF EXISTS beliefs"))
+        conn.execute(text("DROP TABLE IF EXISTS ai_cost_log"))
         conn.commit()
 
     # ── Board migration — Step C: DML — create boards for existing users ───────
@@ -252,7 +256,6 @@ PREFIX = "/api/v1"
 app.include_router(boards.router, prefix=PREFIX)
 app.include_router(labels.router, prefix=PREFIX)
 app.include_router(tasks.router, prefix=PREFIX)
-app.include_router(beliefs.router, prefix=PREFIX)
 app.include_router(reports.router, prefix=PREFIX)
 app.include_router(settings.router, prefix=PREFIX)
 app.include_router(sync.router, prefix=PREFIX)

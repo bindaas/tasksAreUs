@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from ..database import get_db
 from ..dependencies import get_current_user
-from ..models import Belief, Board, Label, Task, TaskLabel, _sort_order_default
+from ..models import Board, Label, Task, TaskLabel, _sort_order_default
 from ..schemas import MAX_TASK_LINKS, SyncChanges, SyncRequest, SyncResponse, TaskLabelSync, TaskLink
 from ..services import board_service as board_svc
 from ..services.task_service import _effective_date
@@ -169,23 +169,6 @@ def sync(
                 for label in valid_labels:
                     db.add(TaskLabel(task_id=task_id, label_id=label.id))
 
-    # ── Apply incoming belief changes ──────────────────────────────────────────
-    for b_data in body.changes.beliefs:
-        belief_id = b_data.get("id")
-        client_updated_at = _parse_dt(b_data.get("updated_at"))
-        if not belief_id or not client_updated_at:
-            continue
-        server_belief = db.query(Belief).filter(
-            Belief.id == belief_id, Belief.user_id == user_id
-        ).first()
-        if server_belief:
-            server_ts = server_belief.updated_at
-            if server_ts.tzinfo is None:
-                server_ts = server_ts.replace(tzinfo=timezone.utc)
-            if client_updated_at > server_ts:
-                server_belief.status = b_data.get("status", server_belief.status)
-                server_belief.updated_at = client_updated_at
-
     db.commit()
 
     # ── Build server-side changes since last_synced_at ─────────────────────────
@@ -220,23 +203,6 @@ def sync(
         for l in t.labels:
             task_label_list.append(TaskLabelSync(task_id=t.id, label_id=l.id))
 
-    server_beliefs = db.query(Belief).filter(
-        Belief.user_id == user_id,
-        Belief.updated_at > last_synced_at,
-    ).all()
-    belief_dicts = [
-        {
-            "id": b.id,
-            "task_id": b.task_id,
-            "belief_type": b.belief_type.value if hasattr(b.belief_type, "value") else b.belief_type,
-            "label_id": b.label_id,
-            "estimated_minutes": b.estimated_minutes,
-            "status": b.status.value if hasattr(b.status, "value") else b.status,
-            "updated_at": b.updated_at.isoformat(),
-        }
-        for b in server_beliefs
-    ]
-
     server_boards = db.query(Board).filter(
         Board.user_id == user_id,
         Board.updated_at > last_synced_at,
@@ -258,7 +224,6 @@ def sync(
         changes=SyncChanges(
             tasks=task_dicts,
             task_labels=task_label_list,
-            beliefs=belief_dicts,
             boards=board_dicts,
         ),
     )
