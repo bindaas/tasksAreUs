@@ -223,3 +223,21 @@ def complete_task(db: Session, task: Task, notes: Optional[str]) -> tuple[Task, 
     db.commit()
     db.refresh(task)
     return task, None
+
+
+def reopen_task(db: Session, task: Task) -> Task:
+    if task.state != StateEnum.done:
+        raise HTTPException(status_code=422, detail="Task is not completed")
+
+    task.state = StateEnum.pending
+    task.completed_at = None
+    # Unlike update_task(), deliberately skip _is_hp_eligible_date() here: that check
+    # only matters if eligibility could have narrowed while the task sat done, but
+    # _is_hp_eligible_date() treats every date <= today + 1 as eligible, so eligibility
+    # can only expand with time, never contract. If that window's shape ever changes,
+    # this assumption needs revisiting.
+    task.sort_order = _sort_order_default()
+    task.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(task)
+    return task

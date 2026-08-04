@@ -110,3 +110,7 @@ export async function completeTask(
     body: JSON.stringify(body),
   });
 }
+
+export async function reopenTask(id: string): Promise<Task> {
+  return apiFetch<Task>(`/tasks/${id}/reopen`, { method: 'POST' });
+}

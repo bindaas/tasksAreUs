@@ -16,6 +16,7 @@ from app.services.task_service import (
     _is_hp_eligible_date,
     complete_task,
     create_task,
+    reopen_task,
     update_task,
 )
 
@@ -51,6 +52,64 @@ class TestCompleteTask:
         with pytest.raises(HTTPException) as exc_info:
             complete_task(db, task, notes=None)
         assert exc_info.value.status_code == 422
+
+
+# ── reopen_task ─────────────────────────────────────────────────────────────
+
+class TestReopenTask:
+    def _make_task(self, state=StateEnum.done, is_high_priority=False, sort_order=1.0):
+        task = MagicMock()
+        task.state = state
+        task.completed_at = "2026-08-01T12:00:00Z"
+        task.is_high_priority = is_high_priority
+        task.sort_order = sort_order
+        return task
+
+    def _make_db(self):
+        db = MagicMock()
+        db.commit = MagicMock()
+        db.refresh = MagicMock()
+        return db
+
+    def test_resets_state_and_completed_at(self):
+        task = self._make_task()
+        db = self._make_db()
+        result = reopen_task(db, task)
+        assert result is task
+        assert task.state == StateEnum.pending
+        assert task.completed_at is None
+
+    def test_resets_sort_order(self):
+        task = self._make_task(sort_order=1.0)
+        db = self._make_db()
+        reopen_task(db, task)
+        assert task.sort_order != 1.0
+        assert task.sort_order == pytest.approx(_sort_order_default(), abs=5)
+
+    def test_raises_422_if_not_completed(self):
+        task = self._make_task(state=StateEnum.pending)
+        db = self._make_db()
+        with pytest.raises(HTTPException) as exc_info:
+            reopen_task(db, task)
+        assert exc_info.value.status_code == 422
+
+    def test_is_high_priority_survives_unchanged_even_over_daily_cap(self):
+        # No re-validation against the daily high-priority limit happens on reopen —
+        # a task that was high-priority when completed stays high-priority when
+        # reopened, even if that would now exceed HIGH_PRIORITY_DAILY_LIMIT for its
+        # date. This is a deliberate choice (see task_service.reopen_task's comment),
+        # not an oversight — pin it down so it doesn't regress silently.
+        task = self._make_task(is_high_priority=True)
+        db = self._make_db()
+        reopen_task(db, task)
+        assert task.is_high_priority is True
+
+    def test_commits_and_refreshes(self):
+        task = self._make_task()
+        db = self._make_db()
+        reopen_task(db, task)
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once_with(task)
 
 
 # ── update_task date clearing ─────────────────────────────────────────────────

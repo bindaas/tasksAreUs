@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getTask, updateTask, deleteTask, completeTask, createTask, listTasks } from '../api/tasks';
+import { getTask, updateTask, deleteTask, completeTask, reopenTask, createTask, listTasks } from '../api/tasks';
 import type { Task, CreateTaskBody, UpdateTaskBody, Label } from '../api/tasks';
 import { createLabel } from '../api/labels';
 import { useLabels } from '../hooks/useLabels';
@@ -150,6 +150,18 @@ export function TaskDetailPage() {
     }
   }
 
+  async function handleReopen() {
+    if (!task) return;
+    setSaving(true);
+    try {
+      await reopenTask(task.id);
+      navigate(-1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark task as incomplete');
+      setSaving(false);
+    }
+  }
+
   async function handleDelete() {
     if (!task) return;
     if (!confirm('Are you sure you want to delete this task?')) return;
@@ -244,6 +256,18 @@ export function TaskDetailPage() {
                 className="w-full bg-white text-red-600 border border-red-300 rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Delete Task
+              </button>
+            </div>
+          )}
+
+          {!isNew && task && task.state === 'done' && (
+            <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
+              <button
+                onClick={handleReopen}
+                disabled={saving}
+                className="w-full bg-white text-indigo-600 border border-indigo-300 rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Mark as Incomplete
               </button>
             </div>
           )}
