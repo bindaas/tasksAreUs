@@ -1942,14 +1942,23 @@ def main():
 
     # ── Soft delete ────────────────────────────────────────────────────────────
     print("\n── Tasks: Soft Delete ──────────────────────────────────")
+    # rec_task_id was completed (state=done) above and never reopened — DELETE
+    # is deliberately state-agnostic (delete_task() has no state check), which
+    # is exactly the invariant the web "Delete Task" button on a completed
+    # task's detail page (PR #65) relies on. Assert the precondition explicitly
+    # rather than relying on it being true "by accident" of test ordering.
+    r = client.get(f"/tasks/{rec_task_id}", headers=H)
+    assert_eq("task is done before delete (PR #65 precondition)", r.json()["state"], "done")
     r = client.delete(f"/tasks/{rec_task_id}", headers=H)
-    assert_eq("DELETE /tasks/:id → 204", r.status_code, 204)
+    assert_eq("DELETE /tasks/:id on a done task → 204 (PR #65: no state restriction)", r.status_code, 204)
     r = client.get(f"/tasks/{rec_task_id}", headers=H)
     assert_eq("deleted task is 404", r.status_code, 404)
 
     r = client.get("/tasks", headers=H, params={"include_deleted": "true"})
     deleted_ids = [t["id"] for t in r.json()["tasks"] if t["is_deleted"]]
     assert_in("soft deleted task present with include_deleted", rec_task_id, deleted_ids)
+    deleted_task = next(t for t in r.json()["tasks"] if t["id"] == rec_task_id)
+    assert_eq("soft-deleted done task retains state=done", deleted_task["state"], "done")
 
     # ── Beliefs ────────────────────────────────────────────────────────────────
     print("\n── Beliefs ─────────────────────────────────────────────")

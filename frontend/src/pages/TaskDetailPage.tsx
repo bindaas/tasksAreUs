@@ -269,6 +269,13 @@ export function TaskDetailPage() {
               >
                 Mark as Incomplete
               </button>
+              <button
+                onClick={handleDelete}
+                disabled={saving}
+                className="w-full bg-white text-red-600 border border-red-300 rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Delete Task
+              </button>
             </div>
           )}
         </>
