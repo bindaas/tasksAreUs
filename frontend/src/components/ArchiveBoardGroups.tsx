@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { BoardCompletions, CompletionRecord } from '../api/reports';
 import { LabelBadge } from './LabelBadge';
 import { useBoardCollapse } from '../context/BoardCollapseContext';
@@ -15,9 +16,12 @@ function formatDateTime(isoStr: string): string {
 }
 
 function CompletionCard({ item, color }: { item: CompletionRecord; color: string }) {
+  const navigate = useNavigate();
+  const sortedLabels = [...item.labels].sort((a, b) => a.value.localeCompare(b.value));
   return (
     <div
-      className="bg-white border border-gray-200 rounded-lg p-4 border-l-4"
+      onClick={() => navigate(`/tasks/${item.task_id}`)}
+      className="bg-white border border-gray-200 rounded-lg p-4 border-l-4 cursor-pointer hover:shadow-md transition-shadow"
       style={{ borderLeftColor: color }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -31,9 +35,9 @@ function CompletionCard({ item, color }: { item: CompletionRecord; color: string
           </svg>
         </div>
       </div>
-      {item.labels.length > 0 && (
+      {sortedLabels.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {item.labels.map((label) => (
+          {sortedLabels.map((label) => (
             <LabelBadge key={label.id} label={label} small />
           ))}
         </div>

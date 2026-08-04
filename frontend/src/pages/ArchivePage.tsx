@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getCompletions, type CompletionRecord, type BoardCompletions } from '../api/reports';
 import { LabelBadge } from '../components/LabelBadge';
 import { ArchiveBoardTabs } from '../components/ArchiveBoardTabs';
@@ -20,6 +21,7 @@ function formatDateTime(isoStr: string): string {
 const PRESETS: PresetKey[] = ['this_month', 'last_month', 'last_three_months'];
 
 export function ArchivePage() {
+  const navigate = useNavigate();
   const today = new Date();
   const thirtyDaysAgo = new Date(today);
   thirtyDaysAgo.setDate(today.getDate() - 30);
@@ -133,30 +135,37 @@ export function ArchivePage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {completions.map((item) => (
-                <div key={item.task_id} className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        Completed {formatDateTime(item.completed_at)}
-                      </p>
+              {completions.map((item) => {
+                const sortedLabels = [...item.labels].sort((a, b) => a.value.localeCompare(b.value));
+                return (
+                  <div
+                    key={item.task_id}
+                    onClick={() => navigate(`/tasks/${item.task_id}`)}
+                    className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Completed {formatDateTime(item.completed_at)}
+                        </p>
+                      </div>
+                      <div className="shrink-0">
+                        <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="shrink-0">
-                      <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
+                    {sortedLabels.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {sortedLabels.map((label) => (
+                          <LabelBadge key={label.id} label={label} small />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {item.labels.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {item.labels.map((label) => (
-                        <LabelBadge key={label.id} label={label} small />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>

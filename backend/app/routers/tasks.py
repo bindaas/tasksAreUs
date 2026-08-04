@@ -140,3 +140,14 @@ def complete_task(
         completed_task=TaskOut.model_validate(completed),
         next_task=TaskOut.model_validate(next_task) if next_task else None,
     )
+
+
+@router.post("/{task_id}/reopen", response_model=TaskOut)
+def reopen_task(
+    task_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    task = svc.get_task_or_404(db, task_id, user_id)
+    task = svc.reopen_task(db, task)
+    return TaskOut.model_validate(task)

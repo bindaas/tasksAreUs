@@ -1783,6 +1783,163 @@ def main():
     r = client.post(f"/tasks/{rec_task_id}/complete", headers=H)
     assert_eq("Complete already-done task → 422", r.status_code, 422)
 
+    # ── Tasks: Reopen completed task (PR #64) ──────────────────────────────────
+    # POST /tasks/{id}/reopen is the inverse of /complete: sets state back to
+    # pending, clears completed_at, and resets sort_order to the bottom of its
+    # list (same _sort_order_default() convention update_task() uses on
+    # date/board changes). is_high_priority is deliberately left untouched — no
+    # re-check of _is_hp_eligible_date() or the daily high-priority cap runs on
+    # reopen — see task_service.reopen_task()'s code comment.
+    print("\n── Tasks: Reopen completed task (PR #64) ────────────────")
+
+    # 422 when the task is not currently done
+    r = client.post("/tasks", headers=H, json={"title": "Reopen 422 pending guard task", "label_ids": []})
+    assert_eq("POST reopen-guard pending task → 201", r.status_code, 201)
+    reopen_guard_task_id = r.json()["id"]
+    r = client.post(f"/tasks/{reopen_guard_task_id}/reopen", headers=H)
+    assert_eq("POST /tasks/:id/reopen on pending task → 422", r.status_code, 422)
+    assert_true("422 detail explains task is not completed",
+                "not completed" in r.json().get("detail", "").lower())
+    client.delete(f"/tasks/{reopen_guard_task_id}", headers=H)
+
+    # 404 for a non-existent task
+    r = client.post(f"/tasks/{uuid.uuid4()}/reopen", headers=H)
+    assert_eq("POST /tasks/:id/reopen non-existent task → 404", r.status_code, 404)
+
+    # No auth → 401
+    r = client.post(f"/tasks/{uuid.uuid4()}/reopen")
+    assert_eq("POST /tasks/:id/reopen with no auth → 401", r.status_code, 401)
+
+    # Happy path: create + complete a fresh HP task, capture its sort_order while
+    # done, then reopen it and verify state/completed_at/sort_order/is_high_priority.
+    r = client.post("/tasks", headers=H, json={
+        "title": "Reopen test task",
+        "must_do_by": today_str,
+        "label_ids": [type_labels["household"]],
+        "is_high_priority": True,
+    })
+    assert_eq("POST reopen test task → 201", r.status_code, 201)
+    reopen_task_obj = r.json()
+    reopen_task_id = reopen_task_obj["id"]
+    assert_eq("reopen test task starts pending", reopen_task_obj["state"], "pending")
+
+    r = client.post(f"/tasks/{reopen_task_id}/complete", headers=H)
+    assert_eq("Complete reopen test task → 200", r.status_code, 200)
+    completed_reopen_task = r.json()["completed_task"]
+    assert_eq("reopen test task now done", completed_reopen_task["state"], "done")
+    assert_true("reopen test task has completed_at set", completed_reopen_task["completed_at"] is not None)
+    sort_order_while_done = completed_reopen_task["sort_order"]
+
+    # While still done, the task must appear in the completions report (Archive) —
+    # confirms the completion this test is about to reverse was actually recorded.
+    reopen_report_from = (date.today() - timedelta(days=1)).isoformat()
+    reopen_report_to = (date.today() + timedelta(days=1)).isoformat()  # tomorrow — see completed_at-vs-DATE cast note above
+    r = client.get("/reports/completions", headers=H, params={"from": reopen_report_from, "to": reopen_report_to})
+    assert_eq("GET /reports/completions before reopen → 200", r.status_code, 200)
+    report_ids_before_reopen = [c["task_id"] for c in r.json()["completions"]]
+    assert_in("completed task appears in Archive before reopen", reopen_task_id, report_ids_before_reopen)
+
+    r = client.post(f"/tasks/{reopen_task_id}/reopen", headers=H)
+    assert_eq("POST /tasks/:id/reopen → 200", r.status_code, 200)
+    reopened = r.json()
+    assert_eq("reopened task id unchanged", reopened["id"], reopen_task_id)
+    assert_eq("reopened task state is pending", reopened["state"], "pending")
+    assert_eq("reopened task completed_at cleared", reopened["completed_at"], None)
+    # No re-validation against _is_hp_eligible_date() or the daily cap happens on
+    # reopen (deliberate; see task_service.reopen_task()'s code comment) — the
+    # flag simply survives.
+    assert_eq("reopened task is_high_priority unchanged (no re-eligibility check)",
+              reopened["is_high_priority"], True)
+    assert_true("reopened task sort_order changed (reset to bottom of list)",
+                reopened["sort_order"] != sort_order_while_done)
+    assert_eq("reopened task labels untouched", len(reopened["labels"]), 1)
+
+    # GET /tasks/:id reflects the reopened state
+    r = client.get(f"/tasks/{reopen_task_id}", headers=H)
+    assert_eq("GET /tasks/:id after reopen → 200", r.status_code, 200)
+    assert_eq("GET reflects pending state after reopen", r.json()["state"], "pending")
+    assert_eq("GET reflects cleared completed_at after reopen", r.json()["completed_at"], None)
+
+    # A reopened task must reappear in the default pending-state task list
+    r = client.get("/tasks", headers=H, params={"state": "pending"})
+    pending_ids_after_reopen = [t["id"] for t in r.json()["tasks"]]
+    assert_true("reopened task appears in pending task list", reopen_task_id in pending_ids_after_reopen)
+
+    # ...and must disappear from the Archive completions report over the same
+    # date range, since completed_at (what the report filters on) is now null.
+    r = client.get("/reports/completions", headers=H, params={"from": reopen_report_from, "to": reopen_report_to})
+    assert_eq("GET /reports/completions after reopen → 200", r.status_code, 200)
+    report_ids_after_reopen = [c["task_id"] for c in r.json()["completions"]]
+    assert_true("reopened task no longer appears in Archive after reopen",
+                reopen_task_id not in report_ids_after_reopen)
+
+    # Reopening an already-reopened (pending) task again → 422
+    r = client.post(f"/tasks/{reopen_task_id}/reopen", headers=H)
+    assert_eq("POST /tasks/:id/reopen on already-pending task → 422", r.status_code, 422)
+
+    client.delete(f"/tasks/{reopen_task_id}", headers=H)
+
+    # ── Tasks: Reopen bypasses daily HP cap re-check (PR #64) ──────────────────
+    # _count_high_priority_for_date() only counts Task.state == pending rows, so
+    # a completed HP task doesn't count toward the day's cap while it sits done.
+    # Fill a day's cap with pending HP tasks, then reopen a separately-completed
+    # HP task for the same day — this pushes that day over the configured limit,
+    # but reopen must succeed anyway since it deliberately skips the daily
+    # high-priority limit check (mirrors complete_task() never re-validating
+    # priority either).
+    print("\n── Tasks: Reopen bypasses daily HP cap re-check (PR #64) ──")
+    # Reuse today_str (always HP-eligible, d <= today+1) rather than an arbitrary
+    # future offset — _is_hp_eligible_date() only accepts today/tomorrow/day-
+    # after-tomorrow (and Friday-only Monday); a date further out would silently
+    # fail eligibility and never become high-priority in the first place, making
+    # this whole cap-bypass scenario impossible to set up.
+    hp_cap_day = today_str
+
+    r = client.post("/tasks", headers=H, json={
+        "title": "Reopen HP cap boundary task",
+        "must_do_by": hp_cap_day,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST HP cap boundary task → 201", r.status_code, 201)
+    hp_cap_boundary_id = r.json()["id"]
+
+    r = client.post(f"/tasks/{hp_cap_boundary_id}/complete", headers=H)
+    assert_eq("Complete HP cap boundary task → 200", r.status_code, 200)
+
+    hp_cap_fill_ids = []
+    for i in range(3):
+        r = client.post("/tasks", headers=H, json={
+            "title": f"Reopen HP cap fill {i + 1}",
+            "must_do_by": hp_cap_day,
+            "label_ids": [],
+            "is_high_priority": True,
+        })
+        assert_eq(f"POST HP cap fill task {i + 1}/3 → 201", r.status_code, 201)
+        hp_cap_fill_ids.append(r.json()["id"])
+
+    # Sanity check: a brand-new 4th HP task for the same day is correctly
+    # rejected — confirms the day really is at the cap before testing reopen's
+    # bypass of it.
+    r = client.post("/tasks", headers=H, json={
+        "title": "Reopen HP cap sanity check (should fail)",
+        "must_do_by": hp_cap_day,
+        "label_ids": [],
+        "is_high_priority": True,
+    })
+    assert_eq("POST 4th new HP task for a full day → 422 (sanity check)", r.status_code, 422)
+
+    r = client.post(f"/tasks/{hp_cap_boundary_id}/reopen", headers=H)
+    assert_eq("POST /tasks/:id/reopen over daily HP cap → 200 (deliberately not re-checked)",
+              r.status_code, 200)
+    reopened_over_cap = r.json()
+    assert_eq("reopened-over-cap task state is pending", reopened_over_cap["state"], "pending")
+    assert_eq("reopened-over-cap task is_high_priority still true",
+              reopened_over_cap["is_high_priority"], True)
+
+    for tid in hp_cap_fill_ids + [hp_cap_boundary_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
+
     # ── Soft delete ────────────────────────────────────────────────────────────
     print("\n── Tasks: Soft Delete ──────────────────────────────────")
     r = client.delete(f"/tasks/{rec_task_id}", headers=H)

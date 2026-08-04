@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 from app.models import StateEnum, Task
-from app.routers.tasks import create_task, update_task
+from app.routers.tasks import create_task, reopen_task, update_task
 from app.schemas import TaskCreate, TaskLink, TaskUpdate
 
 
@@ -149,3 +149,20 @@ class TestUpdateTaskSortOrderWiring:
 
         _, kwargs = mock_svc.update_task.call_args
         assert kwargs["sort_order"] is None
+
+
+# ── reopen_task ──────────────────────────────────────────────────────────────
+
+class TestReopenTaskWiring:
+    @patch("app.routers.tasks.svc")
+    def test_looks_up_task_before_reopening(self, mock_svc):
+        looked_up = _make_task(state=StateEnum.done)
+        mock_svc.get_task_or_404.return_value = looked_up
+        mock_svc.reopen_task.return_value = _make_task(state=StateEnum.pending)
+
+        reopen_task(task_id="task-1", db=MagicMock(), user_id="user-1")
+
+        assert mock_svc.get_task_or_404.call_args.args[1:] == ("task-1", "user-1")
+        # reopen_task must receive the exact object get_task_or_404 returned,
+        # proving the lookup result feeds into the reopen call.
+        assert mock_svc.reopen_task.call_args.args[1] is looked_up

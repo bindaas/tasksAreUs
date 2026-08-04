@@ -138,6 +138,7 @@ The `recurrence_group_id` column was dropped from the `tasks` table and the `Tas
 - When `sort_order` is omitted, the server auto-resets it to a fresh "now" value (`_sort_order_default()`) if the task's effective date (earliest of `must_do_by`/`target_date`) or `board_id` actually changed as part of the same update — this covers a Task Form date edit, a board move, and a mobile date-drag, none of which send `sort_order` themselves. If neither changed, `sort_order` is left untouched.
 - Since real time only moves forward, `_sort_order_default()` is always guaranteed to sort after any previously-assigned value in the same list — no query of sibling rows is needed to compute a "bottom of list" position.
 - No server-side bounds validation is applied to an explicit `sort_order` value (`TaskUpdate.sort_order` is a plain `Optional[float]`) — the field accepts any finite or non-finite float a client sends.
+- `POST /tasks/{task_id}/reopen` (PR #64) also resets `sort_order` to a fresh `_sort_order_default()` value unconditionally, mirroring the auto-reset behavior of an effective-date/board change on `PUT /tasks/{id}`, so a reopened task lands at the bottom of its pending list rather than retaining its stale pre-completion position.
 
 ---
 
@@ -304,7 +305,7 @@ Soft-delete a board (`is_deleted = true`). The caller must own the board.
 **Error cases**
 - `400` — board is the only non-deleted board (minimum 1 required)
 - `400` — board is the current default (promote another board to default first)
-- `400` — board has pending tasks (delete the tasks first)
+- `400` — board has non-deleted tasks, regardless of state (delete the tasks first)
 - `400` — board has labels (delete the labels first)
 - `404` — board not found or not owned by caller
 
@@ -541,6 +542,22 @@ Mark a task as done.
 }
 ```
 `next_task` is always `null`. The field is retained in the response schema for backward compatibility.
+
+---
+
+#### `POST /tasks/{task_id}/reopen`
+Mark a `done` task as `pending` again (added PR #64). The inverse of `POST /tasks/{task_id}/complete`.
+
+- Sets `state = pending` and `completed_at = null`
+- Resets `sort_order` to a fresh "bottom of list" value (`_sort_order_default()`), the same convention `PUT /tasks/{id}` applies when a task's effective date or board changes
+- `is_high_priority` is left unchanged — reopening does not re-run the high-priority date-eligibility check (`_is_hp_eligible_date()`) or the daily high-priority cap check. This is safe because `_is_hp_eligible_date()` treats every date `<= today + 1` as eligible, so eligibility can only expand as time passes while a task sits `done`, never contract
+- No request body
+
+**Response**: the updated task object (same shape as `GET /tasks/{task_id}`)
+
+**Error cases**
+- `404` — task not found or not owned by caller
+- `422` — task is not currently `done`
 
 ---
 
