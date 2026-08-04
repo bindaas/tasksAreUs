@@ -1138,20 +1138,5 @@
     "mtime": 1785803432.160784,
     "ast_hash": "a747b8ce2daa3dde2f9a36dfa5575db6",
     "semantic_hash": ""
-  },
-  "development-plans/PLAN-chore-modularize-test-suite.md": {
-    "mtime": 1785880151.9229245,
-    "ast_hash": "97e48a86801d126b7f2530f2f9845e3a",
-    "semantic_hash": ""
-  },
-  "development-plans/PLAN-chore-remove-beliefs-and-llm.md": {
-    "mtime": 1785809231.2377636,
-    "ast_hash": "b1d33821111ba204a39ae04d2ab04eca",
-    "semantic_hash": ""
-  },
-  "development-plans/PLAN-chore-remove-mode-label-dead-code.md": {
-    "mtime": 1785807941.0456352,
-    "ast_hash": "e1eded93c99d89c8f45b1b543b86db2f",
-    "semantic_hash": ""
   }
 }
