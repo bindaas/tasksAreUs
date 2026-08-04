@@ -24,10 +24,8 @@ All four changes are already on disk and committed to `main`.
 
 ### 3. Configure environment variables on the app service
 ```
-ANTHROPIC_API_KEY = sk-ant-...
 DATABASE_URL      = ${{Postgres.DATABASE_URL}}
 ```
-`CLAUDE_MODEL` is optional — defaults to `claude-sonnet-4-6`.
 
 ### 4. Deploy
 - Railway auto-builds on push to `main` (reads `railway.toml` → uses root `Dockerfile`)
@@ -69,7 +67,7 @@ Replace `$RAILWAY_DATABASE_PUBLIC_URL` with the actual URL from step above (or e
 
 ### User ID note
 
-User `id` is a random UUID and is the foreign key for all tasks, beliefs, settings, etc. A `pg_dump` + restore preserves the exact `id` — your data stays intact. **Do not skip the migration and rely on re-login**: the app would create a new `id` for your `device_uuid` and none of your existing tasks would be associated with it.
+User `id` is a random UUID and is the foreign key for all tasks, settings, etc. A `pg_dump` + restore preserves the exact `id` — your data stays intact. **Do not skip the migration and rely on re-login**: the app would create a new `id` for your `device_uuid` and none of your existing tasks would be associated with it.
 
 ### System test user
 

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     Boolean, Column, Date, DateTime, Enum, ForeignKey,
-    Integer, Numeric, String, Text, UniqueConstraint,
+    Integer, String, Text, UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID, DOUBLE_PRECISION
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -34,17 +34,6 @@ class CategoryEnum(str, enum.Enum):
 class StateEnum(str, enum.Enum):
     pending = "pending"
     done = "done"
-
-
-class BeliefTypeEnum(str, enum.Enum):
-    label_suggestion = "label_suggestion"
-    time_estimate = "time_estimate"
-
-
-class BeliefStatusEnum(str, enum.Enum):
-    pending = "pending"
-    accepted = "accepted"
-    rejected = "rejected"
 
 
 class User(Base):
@@ -113,22 +102,6 @@ class Task(Base):
     labels = relationship("Label", secondary="task_labels", lazy="joined")
 
 
-class Belief(Base):
-    __tablename__ = "beliefs"
-
-    id = Column(String, primary_key=True, default=_uuid)
-    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    task_id = Column(String, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
-    belief_type = Column(Enum(BeliefTypeEnum), nullable=False)
-    label_id = Column(String, ForeignKey("labels.id"), nullable=True)
-    estimated_minutes = Column(Integer, nullable=True)
-    status = Column(Enum(BeliefStatusEnum), default=BeliefStatusEnum.pending, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
-
-    label = relationship("Label", lazy="joined")
-
-
 class UserSettings(Base):
     __tablename__ = "user_settings"
 
@@ -150,19 +123,6 @@ class FocusedViewConfig(Base):
     day_range = Column(String, nullable=False, default="today_tomorrow")
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
-
-
-class AICostLog(Base):
-    __tablename__ = "ai_cost_log"
-
-    id = Column(String, primary_key=True, default=_uuid)
-    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    feature = Column(String, nullable=False)
-    model = Column(String, nullable=False)
-    input_tokens = Column(Integer, nullable=False)
-    output_tokens = Column(Integer, nullable=False)
-    estimated_cost_usd = Column(Numeric(10, 6), nullable=False)
-    created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
 
 
 # LABEL_SEED contains only Type labels (Mode labels removed in chore/remove-mode-labels)

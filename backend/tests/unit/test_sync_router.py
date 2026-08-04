@@ -9,7 +9,7 @@ bypassing max-3/scheme/length validation via the sync path.
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
-from app.models import Belief, Board, StateEnum, Task, TaskLabel, UserSettings
+from app.models import Board, StateEnum, Task, TaskLabel, UserSettings
 from app.routers.sync import sync
 from app.schemas import SyncChanges, SyncRequest
 
@@ -29,8 +29,6 @@ def _make_db(task_first=None, task_all=None, board_exists=True):
         if model is Task:
             q.first.return_value = task_first
             q.all.return_value = task_all or []
-        elif model is Belief:
-            q.all.return_value = []
         elif model is UserSettings:
             q.first.return_value = None
         elif model is Board:

@@ -158,22 +158,7 @@ A task may have **multiple labels within the same category** (e.g. both `online`
 
 ---
 
-### Table: `beliefs`
-AI-generated suggestions (labels, time estimates) awaiting user validation.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID | PK |
-| `user_id` | UUID | FK → users |
-| `task_id` | UUID | FK → tasks |
-| `belief_type` | ENUM | `label_suggestion`, `time_estimate` |
-| `label_id` | UUID | Nullable. FK → labels. Set when belief_type = label_suggestion |
-| `estimated_minutes` | INTEGER | Nullable. Set when belief_type = time_estimate |
-| `status` | ENUM | `pending`, `accepted`, `rejected` |
-| `created_at` | TIMESTAMP | |
-| `updated_at` | TIMESTAMP | |
-
-**Weighting rule**: accepted beliefs are weighted more heavily than pending/rejected beliefs when generating future suggestions.
+**Beliefs/ai_cost_log removal (PR #67):** The `beliefs` table (AI-generated label/time-estimate suggestions awaiting accept/reject) and the `ai_cost_log` table (which tracked every Claude API call for cost monitoring) were dropped entirely, along with the `Belief`/`AICostLog` SQLAlchemy models, `BeliefOut`/`BeliefUpdate` Pydantic schemas, the `/tasks/{task_id}/beliefs/*` and `/beliefs/{belief_id}` routes, `ai_service.py` (the app's only Claude/Anthropic integration), and the `anthropic` SDK dependency — the app now makes no LLM calls of any kind. The Beliefs UI had no entry point on web or mobile prior to this PR. Both tables were dropped via `DROP TABLE IF EXISTS` in `main.py`'s startup migration (no backup taken — accepted, same precedent as the `conversations`/`messages` removal in PR #50).
 
 ---
 
@@ -212,24 +197,6 @@ Per-user configuration. One row per user.
 | `updated_at` | TIMESTAMP | |
 
 **`starter_questions` removal (PR #50):** The `starter_questions` JSONB column (array of up to 5 strings, previously fed the Chat screen's quick-start chips) was dropped via `ALTER TABLE user_settings DROP COLUMN IF EXISTS starter_questions` in `main.py`'s startup migration, orphaned once the Chat UI it fed was removed from web (PR #41) and mobile (PR #46).
-
----
-
-### Table: `ai_cost_log`
-Tracks every Claude API call for cost monitoring.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID | PK |
-| `user_id` | UUID | FK → users |
-| `feature` | VARCHAR | e.g. `label_suggestion`, `time_estimate`, `journal_parse`. The `conversation` feature value is no longer logged as of PR #50 (chat removal) but may still appear on historical rows. |
-| `model` | VARCHAR | e.g. `claude-sonnet-4-6` |
-| `input_tokens` | INTEGER | |
-| `output_tokens` | INTEGER | |
-| `estimated_cost_usd` | NUMERIC(10,6) | |
-| `created_at` | TIMESTAMP | |
-
----
 
 ---
 
@@ -563,56 +530,9 @@ Mark a `done` task as `pending` again (added PR #64). The inverse of `POST /task
 
 ---
 
-### Beliefs
+### Beliefs — removed (PR #67)
 
-#### `POST /tasks/{task_id}/beliefs/generate`
-Ask the AI to generate beliefs (label suggestions + time estimate) for a task. Results are stored as `pending` beliefs.
-
-**Response**
-```json
-{
-  "beliefs": [
-    {
-      "id": "uuid",
-      "belief_type": "label_suggestion",
-      "label": { "id": "uuid", "category": "mode", "value": "online" },
-      "estimated_minutes": null,
-      "status": "pending"
-    },
-    {
-      "id": "uuid",
-      "belief_type": "time_estimate",
-      "label": null,
-      "estimated_minutes": 30,
-      "status": "pending"
-    }
-  ]
-}
-```
-
----
-
-#### `GET /tasks/{task_id}/beliefs`
-Get all beliefs for a task.
-
-**Query params**: `?status=pending|accepted|rejected`
-
-**Response**
-```json
-{ "beliefs": [ ...belief objects... ] }
-```
-
----
-
-#### `PUT /beliefs/{belief_id}`
-Accept or reject a belief.
-
-**Request**
-```json
-{ "status": "accepted" }
-```
-
-**Response**: updated belief object
+`POST /tasks/{task_id}/beliefs/generate`, `GET /tasks/{task_id}/beliefs`, and `PUT /beliefs/{belief_id}` were deleted entirely in PR #67, along with the `beliefs`/`ai_cost_log` tables, `ai_service.py`, and the `anthropic` SDK dependency. The Beliefs UI had no entry point on web or mobile prior to this PR. All three routes now 404 (no route registered).
 
 ---
 
@@ -806,7 +726,6 @@ Push local changes to the server and pull server changes since last sync. Uses l
   "changes": {
     "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board on create, unchanged on update; present on update = move the task to that board and clear its labels); links optional (omitted = unchanged on update, present = replace, including []); sort_order not sent by any current client (mobile never writes it) but if present on an update it is not read by the sync push path — sort_order can only be set via `PUT /tasks/{id}`, not `/sync`... ],
     "task_labels": [ ...task_label objects... ],
-    "beliefs": [ ...belief objects... ],
     "boards": []
   }
 }
@@ -819,12 +738,13 @@ Push local changes to the server and pull server changes since last sync. Uses l
   "changes": {
     "tasks": [ ...server-side task objects updated since last_synced_at, each including board_id, links, and sort_order... ],
     "task_labels": [ ... ],
-    "beliefs": [ ... ],
     "boards": [ ...board objects updated since last_synced_at... ]
   }
 }
 ```
 `changes.settings` was removed from both the push and pull payloads in PR #50 — `SyncChanges.settings` no longer exists on the schema, and `starter_questions` (the only field it ever carried) was removed end-to-end.
+
+`changes.beliefs` was removed from both the push and pull payloads in PR #67 — `SyncChanges.beliefs` no longer exists on the schema (the Beliefs feature was removed entirely). A stale client that still sends a top-level `beliefs` key in its push payload gets a normal `200` with the field silently ignored (Pydantic's default `extra="ignore"` behavior).
 
 **Board sync notes**: Task objects in the pull response always include `board_id`. Stale clients that push tasks without `board_id` have them assigned to the user's default board. Cross-board label assignments in sync push payloads are silently dropped (only labels matching the task's board are applied). The pull response includes a `boards` array of boards updated since `last_synced_at`; clients that do not yet support boards can ignore this field. Each board dict is hand-built in `sync.py` with only `id`, `name`, `is_default`, `is_deleted`, `created_at`, `updated_at` — `color` (since PR #36/#37) and `sort_order` (since PR #62) are both omitted from this payload, unlike `BoardOut`/`GET /boards`, which include them. No current web or mobile client pushes/pulls boards via `/sync` (neither platform has a boards sync API module), so this is a latent gap rather than a user-facing one today.
 

@@ -162,23 +162,6 @@ class CompleteTaskResponse(BaseModel):
     next_task: Optional[TaskOut] = None
 
 
-# ── Beliefs ───────────────────────────────────────────────────────────────────
-
-class BeliefOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: str
-    belief_type: str
-    label: Optional[LabelOut] = None
-    estimated_minutes: Optional[int] = None
-    status: str
-    created_at: datetime
-    updated_at: datetime
-
-
-class BeliefUpdate(BaseModel):
-    status: str  # accepted | rejected
-
-
 # ── Reports ───────────────────────────────────────────────────────────────────
 
 class CompletionItem(BaseModel):
@@ -221,7 +204,6 @@ class TaskLabelSync(BaseModel):
 class SyncChanges(BaseModel):
     tasks: List[Dict[str, Any]] = []
     task_labels: List[TaskLabelSync] = []
-    beliefs: List[Dict[str, Any]] = []
     boards: List[Dict[str, Any]] = []
 
 

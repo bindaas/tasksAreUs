@@ -79,7 +79,11 @@ def cleanup(user_id: str):
     # PR #50: conversations/messages tables were dropped entirely (chat removal) —
     # deleting from them here would fail with "relation does not exist" against a
     # DB that has run this PR's startup migration.
-    for table in ["ai_cost_log", "beliefs", "tasks", "user_settings", "focused_view_configs"]:
+    # PR #67: beliefs/ai_cost_log tables were dropped entirely (Beliefs/LLM removal) —
+    # same failure mode as above (UndefinedTable) if left in this list. This is the
+    # second time this exact mistake class has hit this loop — if a future PR drops
+    # another table, remove it from this list in the same PR that drops it, not after.
+    for table in ["tasks", "user_settings", "focused_view_configs"]:
         cur.execute(f"DELETE FROM {table} WHERE user_id = %s", (user_id,))
     # Per-user labels created by PR #15 (mode/type labels with user_id set)
     cur.execute("DELETE FROM labels WHERE user_id = %s", (user_id,))
@@ -1994,31 +1998,27 @@ def main():
     deleted_task = next(t for t in r.json()["tasks"] if t["id"] == rec_task_id)
     assert_eq("soft-deleted done task retains state=done", deleted_task["state"], "done")
 
-    # ── Beliefs ────────────────────────────────────────────────────────────────
-    print("\n── Beliefs ─────────────────────────────────────────────")
+    # ── Beliefs — removed (PR #67) ────────────────────────────────────────────
+    # The Beliefs feature (and all LLM/Anthropic integration) was removed entirely
+    # in PR #67: routers/beliefs.py, services/ai_service.py, the Belief/AICostLog
+    # models, and the beliefs/ai_cost_log tables are all gone. Mirrors the
+    # "Conversations — removed (PR #50)" pattern below: assert the routes now 404
+    # instead of exercising behavior that no longer exists.
+    print("\n── Beliefs — removed (PR #67) ───────────────────────────")
     r = client.post("/tasks", headers=H, json={
         "title": "Pay electricity bill online",
         "label_ids": [],
     })
     belief_task_id = r.json()["id"]
 
-    if os.getenv("ANTHROPIC_API_KEY"):
-        r = client.post(f"/tasks/{belief_task_id}/beliefs/generate", headers=H)
-        assert_eq("POST beliefs/generate → 200", r.status_code, 200)
-        beliefs = r.json()["beliefs"]
-        print(f"    Generated {len(beliefs)} belief(s)")
-        assert_true("at least one belief generated", len(beliefs) >= 1)
+    r = client.post(f"/tasks/{belief_task_id}/beliefs/generate", headers=H)
+    assert_eq("POST /tasks/:id/beliefs/generate → 404 (route removed, PR #67)", r.status_code, 404)
+    r = client.get(f"/tasks/{belief_task_id}/beliefs", headers=H)
+    assert_eq("GET /tasks/:id/beliefs → 404 (route removed, PR #67)", r.status_code, 404)
+    r = client.put(f"/beliefs/{uuid.uuid4()}", headers=H, json={"status": "accepted"})
+    assert_eq("PUT /beliefs/:id → 404 (route removed, PR #67)", r.status_code, 404)
 
-        if beliefs:
-            belief_id = beliefs[0]["id"]
-            r = client.put(f"/beliefs/{belief_id}", headers=H, json={"status": "accepted"})
-            assert_eq("PUT /beliefs/:id → 200", r.status_code, 200)
-            assert_eq("belief status accepted", r.json()["status"], "accepted")
-
-        r = client.get(f"/tasks/{belief_task_id}/beliefs", headers=H, params={"status": "accepted"})
-        assert_eq("GET task beliefs → 200", r.status_code, 200)
-    else:
-        print("  (skipping belief AI tests — ANTHROPIC_API_KEY not set)")
+    client.delete(f"/tasks/{belief_task_id}", headers=H)
 
     # ── target_date-only task (PR #4: must not be excluded from pending queries
     # just because must_do_by is unset; originally added to cover the now-removed
@@ -2447,7 +2447,7 @@ def main():
     last_synced = "2020-01-01T00:00:00Z"
     r = client.post("/sync", headers=H, json={
         "last_synced_at": last_synced,
-        "changes": {"tasks": [], "task_labels": [], "beliefs": []},
+        "changes": {"tasks": [], "task_labels": []},
     })
     assert_eq("POST /sync → 200", r.status_code, 200)
     sync_result = r.json()
@@ -2455,6 +2455,9 @@ def main():
     assert_in("sync has changes", "changes", sync_result)
     assert_true("sync returns tasks", isinstance(sync_result["changes"]["tasks"], list))
     assert_true("completed tasks in sync response", len(sync_result["changes"]["tasks"]) >= 2)
+    # PR #67: SyncResponse no longer includes a "beliefs" key (Beliefs feature removed)
+    assert_true("sync response no longer has beliefs key (PR #67: Beliefs removed)",
+                "beliefs" not in sync_result["changes"])
     # Verify is_high_priority field is included in sync task objects (PR #6)
     # PR #31: recurrence_group_id column dropped — must not appear in sync task objects
     if sync_result["changes"]["tasks"]:
@@ -2513,7 +2516,6 @@ def main():
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }],
             "task_labels": [],
-            "beliefs": [],
         },
     })
     assert_eq("POST /sync with is_high_priority task → 200", r.status_code, 200)
@@ -2533,6 +2535,9 @@ def main():
     # PR #31: backward-compat check — old mobile clients may still send recurrence_group_id
     # in their sync payload. The server must accept (200) and silently discard the field.
     # PR #33: old clients also omit board_id; the sync router must default to the default board.
+    # PR #67: a stale client built before the Beliefs removal may still send a top-level
+    # "beliefs": [] key in changes (SyncChanges no longer declares that field) — Pydantic's
+    # default extra="ignore" behavior means this must be silently dropped, not rejected.
     stale_sync_task_id = str(uuid.uuid4())
     r = client.post("/sync", headers=H, json={
         "last_synced_at": "2020-01-01T00:00:00Z",
@@ -2554,10 +2559,10 @@ def main():
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }],
             "task_labels": [],
-            "beliefs": [],
+            "beliefs": [],  # stale client field (PR #67: removed from SyncChanges schema)
         },
     })
-    assert_eq("POST /sync with stale recurrence_group_id field → 200 (PR #31 backward compat)",
+    assert_eq("POST /sync with stale recurrence_group_id + beliefs fields → 200 (PR #31/#67 backward compat)",
               r.status_code, 200)
     r = client.get(f"/tasks/{stale_sync_task_id}", headers=H)
     assert_eq("GET stale-sync task → 200", r.status_code, 200)
@@ -2600,7 +2605,6 @@ def main():
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }],
             "task_labels": [],
-            "beliefs": [],
         },
     })
     assert_eq("POST /sync push new task with links → 200", r.status_code, 200)
@@ -2632,7 +2636,6 @@ def main():
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }],
             "task_labels": [],
-            "beliefs": [],
         },
     })
     assert_eq("POST /sync push task with bad-scheme link → 200 (push succeeds)", r.status_code, 200)
@@ -2666,7 +2669,6 @@ def main():
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }],
             "task_labels": [],
-            "beliefs": [],
         },
     })
     assert_eq("POST /sync push task with 5 links → 200 (truncates, doesn't reject)", r.status_code, 200)
@@ -2694,7 +2696,6 @@ def main():
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }],
             "task_labels": [],
-            "beliefs": [],
         },
     })
     assert_eq("POST /sync push update omitting links field → 200", r.status_code, 200)
@@ -2706,7 +2707,7 @@ def main():
     # Pull: the sync response includes links for tasks updated since last_synced_at
     r = client.post("/sync", headers=H, json={
         "last_synced_at": "2020-01-01T00:00:00Z",
-        "changes": {"tasks": [], "task_labels": [], "beliefs": []},
+        "changes": {"tasks": [], "task_labels": []},
     })
     assert_eq("POST /sync pull after link pushes → 200", r.status_code, 200)
     pulled_tasks = {t["id"]: t for t in r.json()["changes"]["tasks"]}
@@ -2745,7 +2746,6 @@ def main():
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }],
             "task_labels": [],
-            "beliefs": [],
         },
     })
     assert_eq("POST /sync push new task (sort_order reset setup) → 200", r.status_code, 200)
@@ -2773,7 +2773,6 @@ def main():
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }],
             "task_labels": [],
-            "beliefs": [],
         },
     })
     assert_eq("POST /sync push date change (sort_order reset) → 200", r.status_code, 200)
