@@ -61,6 +61,8 @@ All labels are per-board (and per-user). There are no global rows. On first acce
 
 **Mode label removal (completed — PR #51):** The `mode` category has been fully removed from the system. All existing Mode labels (online, phone, outdoor, email) were deleted via startup migration. `POST /labels` with `category=mode` and `GET /labels?category=mode` now return `400 Unknown category`.
 
+**Mode-removal migration cleanup (PR #66):** `main.py`'s startup migration block that additionally attempted to rebuild the Postgres `categoryenum` type to drop `'mode'` as a valid enum value was deleted as dead code — its `IF EXISTS` guard checked for a type named `category_enum` (underscore), which never matched SQLAlchemy's actual generated type name, `categoryenum` (no underscore), so that half of the migration never executed in any environment. The block's separate, unconditional `DELETE FROM labels WHERE category = 'mode'` statement had already run successfully on every boot and emptied all `mode` rows (confirmed against production: 0 `mode` rows in `labels`). Net effect: no behavior change. Residual, out-of-scope state: the Postgres `categoryenum` type itself still nominally includes an unused `mode` value in production (confirmed via `SELECT enumlabel FROM pg_enum ... WHERE typname = 'categoryenum'`); no corrective migration exists for this as of PR #66.
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | PK |
@@ -113,7 +115,7 @@ Core entity. One-time and recurring task instances are both stored here.
 
 Recurrence logic has been fully removed. `FREQUENCY_VALUES`, `_get_frequency_label()`, and `_next_due_date()` were deleted from `task_service.py` in PR #30. `complete_task()` always returns `next_task: null` — no follow-on task is ever created.
 
-The `recurrence_group_id` column was dropped from the `tasks` table and the `TaskOut` schema in PR #31 (idempotent `DROP COLUMN IF EXISTS` in `main.py` lifespan; also in the SQL migration script). The sync router silently ignores `recurrence_group_id` if a stale client includes it in a push payload.
+The `recurrence_group_id` column was dropped from the `tasks` table and the `TaskOut` schema in PR #31 (idempotent `DROP COLUMN IF EXISTS` in `main.py` lifespan; the one-time SQL migration script that also performed this drop, `backend/scripts/migrate_drop_frequency_labels.sql`, was deleted as already-executed dead code in PR #66). The sync router silently ignores `recurrence_group_id` if a stale client includes it in a push payload.
 
 **Effective date** is defined as the earliest of `must_do_by` and `target_date` when both are set; otherwise whichever one is non-null; `null` if both are null. This is computed by `getEffectiveDate()` in both `frontend/src/utils/taskDateUtils.ts` and `mobile/src/utils/taskDateUtils.ts`. (Prior to PR #20, `getEffectiveDate` incorrectly returned `target_date` when both were set, regardless of which was earlier. This was a client-side display bug only — the backend never relied on this helper.)
 
