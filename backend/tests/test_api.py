@@ -591,6 +591,40 @@ def main():
     r = client.post("/labels", headers=H, json={"category": "mode", "value": "in-person"})
     assert_eq("POST /labels (mode) → 400 (PR #51: mode removed)", r.status_code, 400)
 
+    # ── Labels: Mode migration dead-code removal (PR #66) ─────────────────────
+    # PR #66 deletes the startup migration block in main.py that tried to rebuild
+    # the `categoryenum` Postgres enum type to drop 'mode'. Static analysis (Sneezy's
+    # plan review) plus direct production/dev-DB verification (Grumpy's response on
+    # the plan) confirmed that block never actually executed anywhere: it checked
+    # for a type named `category_enum` (underscore) while SQLAlchemy's real default
+    # name for `Column(Enum(CategoryEnum))` is `categoryenum` (no underscore). Only
+    # the unconditional `DELETE FROM labels WHERE category = 'mode'` on the line
+    # above the broken `IF EXISTS` block ever ran — which is why zero `mode` rows
+    # remain in `labels` even though the enum type itself was never actually
+    # rebuilt. The maintainer explicitly decided NOT to fix the enum-level typo in
+    # PR #66 (out of scope, "future ticket") — so the Postgres enum type still
+    # nominally permits an unused 'mode' member. Pinned here via assert_eq_xfail so
+    # a future corrective migration gets caught (XPASS) and this marker removed.
+    print("\n── Labels: Mode migration dead-code removal (PR #66) ────")
+    _mode_conn = psycopg2.connect(DB_URL)
+    _mode_cur = _mode_conn.cursor()
+    _mode_cur.execute(
+        "SELECT enumlabel FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid "
+        "WHERE t.typname = 'categoryenum'"
+    )
+    categoryenum_members = sorted(row[0] for row in _mode_cur.fetchall())
+    _mode_cur.close()
+    _mode_conn.close()
+    assert_eq_xfail(
+        "categoryenum Postgres type no longer nominally permits 'mode'",
+        categoryenum_members, ["type"],
+        reason="known latent defect, deliberately deferred in PR #66 — the mode-removal "
+               "migration block deleted in that PR never ran due to a category_enum vs. "
+               "categoryenum type-name mismatch, so the enum type was never actually "
+               "rebuilt (only the label row DELETE, unaffected by the typo, ever ran); "
+               "see PR #66's description for the full investigation",
+    )
+
     # POST /labels — create a type label
     r = client.post("/labels", headers=H, json={"category": "type", "value": "school"})
     assert_eq("POST /labels (type) → 201", r.status_code, 201)
