@@ -5,8 +5,8 @@
     "semantic_hash": "5cde579d9330cc115cf895718a75ca0f"
   },
   ".claude/settings.local.json": {
-    "mtime": 1785806591.6928532,
-    "ast_hash": "b92a82258822b4d3a2e3a2363fefd275",
+    "mtime": 1785807296.5619984,
+    "ast_hash": "eab43bda2a2cdad17c2192dcc6d01fd7",
     "semantic_hash": ""
   },
   "backend/app/__init__.py": {
@@ -30,8 +30,8 @@
     "semantic_hash": "8d4e595d583aea1a437098b1b5827619"
   },
   "backend/app/main.py": {
-    "mtime": 1785806988.8517256,
-    "ast_hash": "9e02eeda126b1cbc14fa82425b6fb1f5",
+    "mtime": 1785807941.044552,
+    "ast_hash": "8ac61f90ecf26eb7748136e37fa054f6",
     "semantic_hash": ""
   },
   "backend/app/models.py": {
@@ -150,8 +150,8 @@
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "backend/tests/test_api.py": {
-    "mtime": 1785804529.88108,
-    "ast_hash": "131ed0e8c717af7fe687e2b0e4e6b566",
+    "mtime": 1785807941.0452437,
+    "ast_hash": "49541ffb5dcb74760842b732a167a8e9",
     "semantic_hash": ""
   },
   "backend/tests/unit/__init__.py": {
@@ -795,8 +795,8 @@
     "semantic_hash": "1326cabde0579e40fec2028105973f50"
   },
   "mobile/src/utils/labelColors.ts": {
-    "mtime": 1785806988.8520136,
-    "ast_hash": "72b1d65fc7f07d13c5fcc51d111cb99a",
+    "mtime": 1785807941.0458128,
+    "ast_hash": "b73818a2880547c672a27b9017c2ad65",
     "semantic_hash": ""
   },
   "mobile/src/utils/taskDateUtils.ts": {
@@ -855,8 +855,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1785804529.8797276,
-    "ast_hash": "10713517f516096b8c5c5b871708fe31",
+    "mtime": 1785807941.0427887,
+    "ast_hash": "2491063886d32639ef33442cb8c74a1a",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -870,13 +870,13 @@
     "semantic_hash": "49412aa4174d2b5ce6f76e13f4f10179"
   },
   "DATA_MODEL_AND_API.MD": {
-    "mtime": 1785803432.1583073,
-    "ast_hash": "b6b3522a1d946e94e036172dc03f5e2e",
+    "mtime": 1785807941.0432801,
+    "ast_hash": "841149bb19b94fd2dad5586ed32c4094",
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1785804529.8803437,
-    "ast_hash": "faa7dbeb0a848c3053f1f2745b7e6455",
+    "mtime": 1785807941.04424,
+    "ast_hash": "e17dd2960831c68016c2de415818714b",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1137,11 +1137,6 @@
   "development-plans/PLAN-fix-archive-view-usability.md": {
     "mtime": 1785803432.160784,
     "ast_hash": "a747b8ce2daa3dde2f9a36dfa5575db6",
-    "semantic_hash": ""
-  },
-  "backend/scripts/migrate_drop_frequency_labels.sql": {
-    "mtime": 1785806988.851881,
-    "ast_hash": "74008cf0f314cd069926f50a9c017db0",
     "semantic_hash": ""
   }
 }
