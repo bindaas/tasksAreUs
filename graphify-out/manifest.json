@@ -5,8 +5,8 @@
     "semantic_hash": "5cde579d9330cc115cf895718a75ca0f"
   },
   ".claude/settings.local.json": {
-    "mtime": 1785803397.3776011,
-    "ast_hash": "c527fe5b2d199432c152e468f05c33f8",
+    "mtime": 1785806591.6928532,
+    "ast_hash": "b92a82258822b4d3a2e3a2363fefd275",
     "semantic_hash": ""
   },
   "backend/app/__init__.py": {
@@ -30,9 +30,9 @@
     "semantic_hash": "8d4e595d583aea1a437098b1b5827619"
   },
   "backend/app/main.py": {
-    "mtime": 1785691424.8386128,
+    "mtime": 1785806988.8517256,
     "ast_hash": "9e02eeda126b1cbc14fa82425b6fb1f5",
-    "semantic_hash": "9e02eeda126b1cbc14fa82425b6fb1f5"
+    "semantic_hash": ""
   },
   "backend/app/models.py": {
     "mtime": 1785691424.838993,
@@ -129,11 +129,6 @@
     "ast_hash": "940e6b508bcef81dcda268ac87e1d1a3",
     "semantic_hash": ""
   },
-  "backend/scripts/migrate_drop_frequency_labels.sql": {
-    "mtime": 1782573046.8912418,
-    "ast_hash": "74008cf0f314cd069926f50a9c017db0",
-    "semantic_hash": "74008cf0f314cd069926f50a9c017db0"
-  },
   "backend/scripts/purge_test_data.py": {
     "mtime": 1783985112.9659135,
     "ast_hash": "69584d6e950a755307d83d780462729b",
@@ -155,8 +150,8 @@
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "backend/tests/test_api.py": {
-    "mtime": 1785803432.1601505,
-    "ast_hash": "69a8af1a3d05a9e7ccf634904fe69d23",
+    "mtime": 1785804529.88108,
+    "ast_hash": "131ed0e8c717af7fe687e2b0e4e6b566",
     "semantic_hash": ""
   },
   "backend/tests/unit/__init__.py": {
@@ -480,8 +475,8 @@
     "semantic_hash": "84f364beb89b50a31627b348c00ab6a7"
   },
   "frontend/src/pages/TaskDetailPage.tsx": {
-    "mtime": 1785803432.162114,
-    "ast_hash": "e2a29c1ddc20badc312111e42228993b",
+    "mtime": 1785804529.8812883,
+    "ast_hash": "67c7a32b9ac9f0e129849f798dbeae60",
     "semantic_hash": ""
   },
   "frontend/src/pages/TasksPage.tsx": {
@@ -800,9 +795,9 @@
     "semantic_hash": "1326cabde0579e40fec2028105973f50"
   },
   "mobile/src/utils/labelColors.ts": {
-    "mtime": 1783472094.1967893,
+    "mtime": 1785806988.8520136,
     "ast_hash": "72b1d65fc7f07d13c5fcc51d111cb99a",
-    "semantic_hash": "72b1d65fc7f07d13c5fcc51d111cb99a"
+    "semantic_hash": ""
   },
   "mobile/src/utils/taskDateUtils.ts": {
     "mtime": 1781190090.271453,
@@ -860,8 +855,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1785803432.158004,
-    "ast_hash": "fe8a4842940927252a321a6af9660933",
+    "mtime": 1785804529.8797276,
+    "ast_hash": "10713517f516096b8c5c5b871708fe31",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -880,8 +875,8 @@
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1785803432.1589966,
-    "ast_hash": "d70f75b929a9106e7b99bf2b993ed14f",
+    "mtime": 1785804529.8803437,
+    "ast_hash": "faa7dbeb0a848c3053f1f2745b7e6455",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1138,5 +1133,15 @@
     "mtime": 1780871469.162199,
     "ast_hash": "a0221927d413d0780f6c1ca052125f4d",
     "semantic_hash": "a0221927d413d0780f6c1ca052125f4d"
+  },
+  "development-plans/PLAN-fix-archive-view-usability.md": {
+    "mtime": 1785803432.160784,
+    "ast_hash": "a747b8ce2daa3dde2f9a36dfa5575db6",
+    "semantic_hash": ""
+  },
+  "backend/scripts/migrate_drop_frequency_labels.sql": {
+    "mtime": 1785806988.851881,
+    "ast_hash": "74008cf0f314cd069926f50a9c017db0",
+    "semantic_hash": ""
   }
 }
