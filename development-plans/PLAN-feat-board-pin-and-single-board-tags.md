@@ -3,7 +3,7 @@
 ## Status
 **State:** Ready for PR
 **Last updated:** 2026-08-05 by Grumpy
-**Next step:** Open PR against main
+**Next step:** PR #69 open (https://github.com/bindaas/tasksAreUs/pull/69) — awaiting review chain (/full-review or individual agents)
 **Blocked on:** n/a
 
 ### Implementation notes (deviations from plan)
