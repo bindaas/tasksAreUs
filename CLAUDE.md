@@ -9,7 +9,6 @@
 ```bash
 cd backend && docker-compose up -d
 cd backend && DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tasksareus python3 -m tests.integration.run_all
-cd backend && ANTHROPIC_API_KEY=... DATABASE_URL=... python3 -m tests.integration.run_all  # AI tests
 cd backend && uvicorn app.main:app --reload  # local, no Docker
 ```
 Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`.

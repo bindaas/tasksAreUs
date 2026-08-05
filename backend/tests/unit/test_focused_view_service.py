@@ -403,7 +403,7 @@ class TestGetDayViewTasks:
 # edit silently inverting the "earliest of must_do_by/target_date" comparison (`<` vs `==`)
 # or dropping a field from the OR — the class of bug a canned-return-value mock would never
 # catch. Real end-to-end date-boundary behavior (including NULL handling) is covered by the
-# integration suite in backend/tests/test_api.py.
+# integration suite in backend/tests/integration/.
 
 class TestGetDayViewTasksDateFilterClause:
     TODAY = date(2026, 6, 28)
