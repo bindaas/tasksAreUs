@@ -88,7 +88,7 @@ export function TaskCardBody({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline truncate max-w-[10rem]"
+          className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline break-words max-w-full"
         >
           🔗 {link.description}
         </a>

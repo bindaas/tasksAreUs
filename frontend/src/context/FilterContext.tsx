@@ -6,12 +6,15 @@ interface FilterContextValue {
   selectedLabelIds: Set<string>;
   toggleLabel: (id: string) => void;
   clearLabels: () => void;
+  matchMode: 'AND' | 'OR';
+  setMatchMode: (mode: 'AND' | 'OR') => void;
 }
 
 const FilterContext = createContext<FilterContextValue | null>(null);
 
 export function FilterProvider({ children }: { children: ReactNode }) {
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
+  const [matchMode, setMatchMode] = useState<'AND' | 'OR'>('OR');
   const { user } = useAuthContext();
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <FilterContext.Provider value={{ selectedLabelIds, toggleLabel, clearLabels }}>
+    <FilterContext.Provider value={{ selectedLabelIds, toggleLabel, clearLabels, matchMode, setMatchMode }}>
       {children}
     </FilterContext.Provider>
   );

@@ -11,10 +11,15 @@ export function filterTasks(
   tasks: Task[],
   selectedLabelIds: Set<string>,
   searchQuery: string,
+  matchMode: 'AND' | 'OR' = 'OR',
 ): Task[] {
   let result = tasks;
   if (selectedLabelIds.size > 0) {
-    result = result.filter((task) => task.labels.some((l) => selectedLabelIds.has(l.id)));
+    result = result.filter((task) =>
+      matchMode === 'AND'
+        ? [...selectedLabelIds].every((id) => task.labels.some((l) => l.id === id))
+        : task.labels.some((l) => selectedLabelIds.has(l.id)),
+    );
   }
   if (searchQuery.trim()) {
     result = result.filter((task) => matchesSearch(task, searchQuery));
