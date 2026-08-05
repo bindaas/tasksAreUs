@@ -105,7 +105,7 @@ export function BoardGroupedTasks({
                 <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
                 <h3 className="text-sm font-semibold text-gray-700 truncate">{board.board_name}</h3>
                 <span className="text-xs text-gray-400 font-medium bg-gray-100 rounded-full px-1.5 py-0.5 shrink-0">
-                  {board.tasks.length}
+                  {displayTasks.length}
                 </span>
               </button>
               <button
@@ -120,11 +120,15 @@ export function BoardGroupedTasks({
               </button>
             </div>
             {!collapsed && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {displayTasks.map((task) => (
-                  <FocusedTaskCard key={task.id} task={task} boardColor={color} onRefresh={onRefresh} />
-                ))}
-              </div>
+              board.board_id === singleVisibleBoard?.board_id && displayTasks.length === 0 ? (
+                <EmptyState icon={<FolderIcon />} message="No tasks match this filter" />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {displayTasks.map((task) => (
+                    <FocusedTaskCard key={task.id} task={task} boardColor={color} onRefresh={onRefresh} />
+                  ))}
+                </div>
+              )
             )}
           </div>
         );
