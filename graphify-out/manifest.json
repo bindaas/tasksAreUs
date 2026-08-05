@@ -5,8 +5,8 @@
     "semantic_hash": "5cde579d9330cc115cf895718a75ca0f"
   },
   ".claude/settings.local.json": {
-    "mtime": 1785881895.134868,
-    "ast_hash": "28677c4fdd4eecf5273ef79564d73e40",
+    "mtime": 1785887860.6192274,
+    "ast_hash": "b47c186c05cf360b4e1b30ae55a09161",
     "semantic_hash": ""
   },
   "backend/app/__init__.py": {
@@ -25,9 +25,9 @@
     "semantic_hash": "bc991664420d0f57e18c85fa605fffd4"
   },
   "backend/app/dependencies.py": {
-    "mtime": 1780871469.1600277,
-    "ast_hash": "8d4e595d583aea1a437098b1b5827619",
-    "semantic_hash": "8d4e595d583aea1a437098b1b5827619"
+    "mtime": 1785888684.5348644,
+    "ast_hash": "e4292cbd811fa7974d1b68b83d69c1a3",
+    "semantic_hash": ""
   },
   "backend/app/main.py": {
     "mtime": 1785882863.0449643,
@@ -139,11 +139,6 @@
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "backend/tests/test_api.py": {
-    "mtime": 1785882863.0471435,
-    "ast_hash": "e4364e5377bcdd6e7873e8248cb3fe96",
-    "semantic_hash": ""
-  },
   "backend/tests/unit/__init__.py": {
     "mtime": 1779718067.5097172,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
@@ -165,9 +160,9 @@
     "semantic_hash": "4a8fb5e9dfd4f547d515132081781a39"
   },
   "backend/tests/unit/test_focused_view_service.py": {
-    "mtime": 1785691424.8415732,
-    "ast_hash": "c302c2db80e67edce3be59730e8a1b07",
-    "semantic_hash": "c302c2db80e67edce3be59730e8a1b07"
+    "mtime": 1785888684.5395892,
+    "ast_hash": "0241ebce7ba43ae53521dce417e8e9c3",
+    "semantic_hash": ""
   },
   "backend/tests/unit/test_labels_router.py": {
     "mtime": 1785626198.193757,
@@ -845,8 +840,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1785882863.0430026,
-    "ast_hash": "35f7d04199679525101d6bf18e7e74b6",
+    "mtime": 1785888684.533721,
+    "ast_hash": "a9045221ea7df41e943645e4e52b9323",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -855,9 +850,9 @@
     "semantic_hash": "f24aa361a9505f6e65de99ffcc788ad3"
   },
   "CLAUDE.md": {
-    "mtime": 1783173723.6522331,
-    "ast_hash": "49412aa4174d2b5ce6f76e13f4f10179",
-    "semantic_hash": "49412aa4174d2b5ce6f76e13f4f10179"
+    "mtime": 1785888684.5342135,
+    "ast_hash": "81978dbb974cc8398f7cb57461e27c34",
+    "semantic_hash": ""
   },
   "DATA_MODEL_AND_API.MD": {
     "mtime": 1785882863.0433342,
@@ -870,9 +865,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1785283029.7206345,
-    "ast_hash": "1b9e39622b00e7c4fae5f2902dc31a67",
-    "semantic_hash": "1b9e39622b00e7c4fae5f2902dc31a67"
+    "mtime": 1785888684.5345623,
+    "ast_hash": "74d6b0ff762bace5f2116763a3314c2c",
+    "semantic_hash": ""
   },
   "REQUIREMENTS_HUMAN.MD": {
     "mtime": 1778130151.3793442,
@@ -1070,8 +1065,8 @@
     "semantic_hash": "df837634ff60ac66554c282fa66f9a6c"
   },
   "railway_migration.md": {
-    "mtime": 1785882863.0482042,
-    "ast_hash": "f6b91ecc5df446b08e6fdc97bfecbe96",
+    "mtime": 1785888684.5398605,
+    "ast_hash": "f404dc0fef28ff474f6adeff3ad47fca",
     "semantic_hash": ""
   },
   "scripts/MODE_LABEL_REMOVAL.md": {
