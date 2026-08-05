@@ -60,8 +60,42 @@ describe('filterTasks — label filter', () => {
       makeTask({ id: '2', labels: [labelB] }),
       makeTask({ id: '3', labels: [] }),
     ];
-    const result = filterTasks(tasks, new Set(['label-a', 'label-b']), '');
+    const result = filterTasks(tasks, new Set(['label-a', 'label-b']), '', 'OR');
     expect(result.map((t) => t.id)).toEqual(['1', '2']);
+  });
+});
+
+// ── AND/OR match mode ─────────────────────────────────────────────────────────
+
+describe('filterTasks — AND/OR match mode', () => {
+  it('AND mode keeps only tasks that have all selected labels', () => {
+    const tasks = [
+      makeTask({ id: '1', labels: [labelA, labelB] }),
+      makeTask({ id: '2', labels: [labelA] }),
+      makeTask({ id: '3', labels: [labelB] }),
+    ];
+    const result = filterTasks(tasks, new Set(['label-a', 'label-b']), '', 'AND');
+    expect(result.map((t) => t.id)).toEqual(['1']);
+  });
+
+  it('AND mode excludes a task that has only one of the selected labels', () => {
+    const tasks = [
+      makeTask({ id: '1', labels: [labelA] }),
+      makeTask({ id: '2', labels: [labelB] }),
+    ];
+    const result = filterTasks(tasks, new Set(['label-a', 'label-b']), '', 'AND');
+    expect(result).toHaveLength(0);
+  });
+
+  it('AND is the default mode when no 4th arg is given', () => {
+    const tasks = [
+      makeTask({ id: '1', labels: [labelA, labelB] }),
+      makeTask({ id: '2', labels: [labelA] }),
+    ];
+    const withDefault = filterTasks(tasks, new Set(['label-a', 'label-b']), '');
+    const withExplicitAnd = filterTasks(tasks, new Set(['label-a', 'label-b']), '', 'AND');
+    expect(withDefault.map((t) => t.id)).toEqual(withExplicitAnd.map((t) => t.id));
+    expect(withDefault.map((t) => t.id)).toEqual(['1']);
   });
 });
 

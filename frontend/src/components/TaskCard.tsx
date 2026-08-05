@@ -90,9 +90,10 @@ export function TaskCard({
           priorityBadge="toggle"
           onTogglePriority={onTogglePriority}
           renderLabels={(taskLabels) => {
-            const sorted = [...taskLabels].sort(
-              (a, b) => (LABEL_CATEGORY_ORDER[a.category] ?? 3) - (LABEL_CATEGORY_ORDER[b.category] ?? 3)
-            );
+            const sorted = [...taskLabels].sort((a, b) => {
+              const catDiff = (LABEL_CATEGORY_ORDER[a.category] ?? 3) - (LABEL_CATEGORY_ORDER[b.category] ?? 3);
+              return catDiff !== 0 ? catDiff : a.value.localeCompare(b.value);
+            });
             return (
               <div className="flex flex-wrap gap-1 mt-2 min-h-[2.75rem]">
                 {sorted.map((label) => (

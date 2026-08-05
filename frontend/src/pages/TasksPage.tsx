@@ -36,7 +36,7 @@ import { viewLabel, type ViewMode } from '../utils/viewLabel';
 export function TasksPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { selectedLabelIds, toggleLabel, clearLabels } = useFilter();
+  const { selectedLabelIds, toggleLabel, clearLabels, matchMode, setMatchMode } = useFilter();
   const { boards, activeBoard, setActiveBoard } = useBoard();
   const activeBoardColor = useMemo(
     () => getBoardColor(activeBoard?.color, Math.max(0, boards.findIndex((b) => b.id === activeBoard?.id))),
@@ -169,8 +169,8 @@ export function TasksPage() {
   }
 
   const filteredTasks = useMemo(
-    () => filterTasks(tasks, selectedLabelIds, searchQuery),
-    [tasks, selectedLabelIds, searchQuery],
+    () => filterTasks(tasks, selectedLabelIds, searchQuery, matchMode),
+    [tasks, selectedLabelIds, searchQuery, matchMode],
   );
 
   const columnTasks = useMemo(() => {
@@ -336,6 +336,8 @@ export function TasksPage() {
               selectedLabelIds={selectedLabelIds}
               onToggle={toggleLabel}
               onClear={clearLabels}
+              matchMode={matchMode}
+              onMatchModeChange={setMatchMode}
             />
           )}
 
@@ -360,10 +362,15 @@ export function TasksPage() {
 
           {!loading && !error && viewMode === 'all' && (
             filteredTasks.length === 0 ? (
-              <EmptyState
-                icon={<FolderIcon />}
-                message={selectedLabelIds.size > 0 || searchQuery.trim() ? 'No tasks match this filter' : 'No pending tasks'}
-              />
+              selectedLabelIds.size > 0 || searchQuery.trim() ? (
+                <EmptyState icon={<FolderIcon />} message="No tasks match this filter" />
+              ) : (
+                <EmptyState
+                  icon={<FolderIcon />}
+                  message="No pending tasks"
+                  action={{ label: 'New Task', onClick: handleFabClick }}
+                />
+              )
             ) : (
               /* Pending tasks: 6-column kanban board */
               <div className="overflow-x-auto -mx-4 px-4 pb-4">

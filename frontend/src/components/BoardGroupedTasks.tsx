@@ -27,6 +27,7 @@ export function BoardGroupedTasks({
   const singleVisibleBoard = findSingleVisibleBoard(filteredBoards, (id) => isCollapsed(viewKey, id));
   const { labelsByCategory } = useLabels(singleVisibleBoard?.board_id ?? '');
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
+  const [matchMode, setMatchMode] = useState<'AND' | 'OR'>('AND');
 
   // Resets local chip selection whenever the qualifying board changes (including
   // when it disappears), so a stale selection never silently applies to a
@@ -37,6 +38,7 @@ export function BoardGroupedTasks({
   if (labelResetKey !== (singleVisibleBoard?.board_id ?? null)) {
     setLabelResetKey(singleVisibleBoard?.board_id ?? null);
     setSelectedLabelIds(new Set());
+    setMatchMode('AND');
   }
 
   // Auto-recovery for a vanished pin target: if the pinned board is no longer
@@ -83,6 +85,8 @@ export function BoardGroupedTasks({
           selectedLabelIds={selectedLabelIds}
           onToggle={toggleLocalLabel}
           onClear={() => setSelectedLabelIds(new Set())}
+          matchMode={matchMode}
+          onMatchModeChange={setMatchMode}
         />
       )}
       {filteredBoards.map((board, idx) => {
@@ -91,7 +95,7 @@ export function BoardGroupedTasks({
         const pinned = isPinned(viewKey, board.board_id);
         const displayTasks =
           board.board_id === singleVisibleBoard?.board_id
-            ? filterTasks(board.tasks, selectedLabelIds, '')
+            ? filterTasks(board.tasks, selectedLabelIds, '', matchMode)
             : board.tasks;
         return (
           <div key={board.board_id}>

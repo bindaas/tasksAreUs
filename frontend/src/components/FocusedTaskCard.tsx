@@ -56,10 +56,11 @@ export function FocusedTaskCard({ task, boardColor, onRefresh }: { task: Task; b
             layout="stacked"
             dateDisplay={{ mode: 'effective', effectiveDate }}
             priorityBadge="static"
-            renderLabels={(labels) =>
-              labels.length > 0 ? (
+            renderLabels={(labels) => {
+              const sorted = [...labels].sort((a, b) => a.value.localeCompare(b.value));
+              return sorted.length > 0 ? (
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {labels.map((label) => (
+                  {sorted.map((label) => (
                     <span
                       key={label.id}
                       className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${LABEL_COLORS[label.category] ?? 'bg-gray-100 text-gray-600'}`}
@@ -68,8 +69,8 @@ export function FocusedTaskCard({ task, boardColor, onRefresh }: { task: Task; b
                     </span>
                   ))}
                 </div>
-              ) : null
-            }
+              ) : null;
+            }}
             onEdit={() => setIsEditing(true)}
             onComplete={handleComplete}
             onDelete={handleDelete}
