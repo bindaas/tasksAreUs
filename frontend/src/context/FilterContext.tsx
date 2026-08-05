@@ -14,7 +14,7 @@ const FilterContext = createContext<FilterContextValue | null>(null);
 
 export function FilterProvider({ children }: { children: ReactNode }) {
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
-  const [matchMode, setMatchMode] = useState<'AND' | 'OR'>('OR');
+  const [matchMode, setMatchMode] = useState<'AND' | 'OR'>('AND');
   const { user } = useAuthContext();
 
   useEffect(() => {

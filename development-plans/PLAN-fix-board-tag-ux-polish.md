@@ -66,13 +66,13 @@ Six small, independent UX fixes on the web Tasks page. **Frontend-only** (`front
 ### 5. AND/OR toggle for tag filtering
 - **Problem:** `taskFilters.ts` lines 10-23 (`filterTasks`) hardcodes OR semantics: `task.labels.some((l) => selectedLabelIds.has(l.id))`. There is no mode concept anywhere — `FilterContext.tsx` (lines 5-9) holds only `selectedLabelIds`/`toggleLabel`/`clearLabels`, and `BoardGroupedTasks.tsx` (lines 29, 54-61) keeps its own local `selectedLabelIds` with the same OR-only behavior via the same `filterTasks` call (line 94). Both call sites need the new mode, since both independently render `LabelFilterChips` and call `filterTasks`.
 - **Fix:**
-  1. `taskFilters.ts`: add an optional 4th parameter, default `'OR'` (preserves current behavior for any caller not yet updated):
+  1. `taskFilters.ts`: add an optional 4th parameter, default `'AND'` (changed post-implementation at user request — see "Follow-up" note below; originally `'OR'` to preserve prior single-mode behavior):
      ```ts
      export function filterTasks(
        tasks: Task[],
        selectedLabelIds: Set<string>,
        searchQuery: string,
-       matchMode: 'AND' | 'OR' = 'OR',
+       matchMode: 'AND' | 'OR' = 'AND',
      ): Task[] {
        let result = tasks;
        if (selectedLabelIds.size > 0) {
@@ -88,10 +88,12 @@ Six small, independent UX fixes on the web Tasks page. **Frontend-only** (`front
        return result;
      }
      ```
-  2. `FilterContext.tsx`: add `matchMode: 'AND' | 'OR'` state (default `'OR'`) and `setMatchMode: (mode: 'AND' | 'OR') => void`, exposed alongside the existing values. Not reset on uid change (only the label *selection* is identity-scoped; the mode preference isn't tied to which labels are picked).
+  2. `FilterContext.tsx`: add `matchMode: 'AND' | 'OR'` state (default `'AND'`) and `setMatchMode: (mode: 'AND' | 'OR') => void`, exposed alongside the existing values. Not reset on uid change (only the label *selection* is identity-scoped; the mode preference isn't tied to which labels are picked).
   3. `LabelFilterChips.tsx`: add props `matchMode: 'AND' | 'OR'` and `onMatchModeChange: (mode: 'AND' | 'OR') => void`. Render a small two-way toggle (e.g. `AND | OR` pill buttons, same visual weight as "Clear filters") inside the same row as the chips (per item 2), positioned before "Clear filters". Shown only when `selectedLabelIds.size > 1` — matching the existing convention that "Clear filters" itself only renders when `selectedLabelIds.size > 0` — since AND vs. OR is behaviorally identical with 0 or 1 selected tags, and showing it only when it matters avoids dead UI.
   4. `TasksPage.tsx`: destructure `matchMode, setMatchMode` from `useFilter()` (line 39), pass both to `<LabelFilterChips>` (lines 333-338), and pass `matchMode` as the 4th argument to `filterTasks` (line 172) — **and add `matchMode` to the `useMemo` dependency array at line 173** (currently `[tasks, selectedLabelIds, searchQuery]`). Without this, toggling AND/OR won't recompute `filteredTasks` until some other dependency changes, since `filterTasks` is called inside a `useMemo` here (unlike `BoardGroupedTasks.tsx`'s equivalent call, which runs unmemoized inside a `.map()` and needs no dependency-array change).
-  5. `BoardGroupedTasks.tsx`: add local `const [matchMode, setMatchMode] = useState<'AND' | 'OR'>('OR')`, reset it alongside `selectedLabelIds` in the existing board-change reset block (lines 36-40) so a mode chosen for one board doesn't silently apply to the next, pass both to `<LabelFilterChips>` (lines 81-86), and pass `matchMode` as the 4th argument to the `filterTasks` call at line 94.
+  5. `BoardGroupedTasks.tsx`: add local `const [matchMode, setMatchMode] = useState<'AND' | 'OR'>('AND')`, reset it (to `'AND'`) alongside `selectedLabelIds` in the existing board-change reset block (lines 36-40) so a mode chosen for one board doesn't silently apply to the next, pass both to `<LabelFilterChips>` (lines 81-86), and pass `matchMode` as the 4th argument to the `filterTasks` call at line 94.
+
+- **Follow-up (2026-08-05, post-PR-#70-open):** user requested the default mode be `AND` instead of `OR` before merge. Changed all three initialization points above (`taskFilters.ts`'s default param, `FilterContext.tsx`'s initial state, `BoardGroupedTasks.tsx`'s initial state and per-board reset) from `'OR'` to `'AND'`. Since this feature was not yet merged to `main` (still on PR #70), this is a pre-merge design finalization, not a behavioral regression against any shipped default. Two tests in `taskFilters.test.ts` were updated accordingly: the OR-semantics test in the "label filter" describe block now passes `'OR'` explicitly (previously relied on the default), and the "explicit OR matches default" test was replaced with an "AND is the default" test.
 
 ### 6. Longer link-description text on task cards
 - **Problem:** `TaskCardBody.tsx` line 91 truncates each task-link's description to a single line capped at `max-w-[10rem]` (160px) with `truncate` (ellipsis): `className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline truncate max-w-[10rem]"`. On kanban cards (`w-52 sm:w-60`, 208-240px wide) this clips most descriptions well before the card's actual available width.

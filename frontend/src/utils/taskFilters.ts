@@ -11,7 +11,7 @@ export function filterTasks(
   tasks: Task[],
   selectedLabelIds: Set<string>,
   searchQuery: string,
-  matchMode: 'AND' | 'OR' = 'OR',
+  matchMode: 'AND' | 'OR' = 'AND',
 ): Task[] {
   let result = tasks;
   if (selectedLabelIds.size > 0) {
