@@ -6,6 +6,7 @@ import { TaskCard } from '../components/TaskCard';
 import { FocusedView } from '../components/FocusedView';
 import { DayView } from '../components/DayView';
 import { BoardTabs } from '../components/BoardTabs';
+import { LabelFilterChips } from '../components/LabelFilterChips';
 import { EmptyState, FolderIcon } from '../components/EmptyState';
 import { updateTask } from '../api/tasks';
 import { getDayViewTasks } from '../api/dayView';
@@ -14,7 +15,7 @@ import { useBoard } from '../context/BoardContext';
 import { useView } from '../context/ViewContext';
 import { useColumnPriorityCollapse } from '../context/ColumnPriorityCollapseContext';
 import type { Board } from '../api/boards';
-import type { Label, Task } from '../api/tasks';
+import type { Task } from '../api/tasks';
 import { filterTasks } from '../utils/taskFilters';
 import {
   type ColumnKey,
@@ -30,16 +31,6 @@ import { computeInsertSortOrder } from '../utils/taskOrder';
 import { getBoardColor } from '../utils/boardColor';
 import { useSettings } from '../hooks/useSettings';
 import { viewLabel, type ViewMode } from '../utils/viewLabel';
-
-type LabelCategory = 'type';
-const CATEGORIES: LabelCategory[] = ['type'];
-
-const CATEGORY_COLORS: Record<LabelCategory, { active: string; inactive: string }> = {
-  type: {
-    active: 'bg-purple-600 text-white border-purple-600',
-    inactive: 'bg-white text-purple-700 border-purple-300 hover:bg-purple-50',
-  },
-};
 
 
 export function TasksPage() {
@@ -340,41 +331,12 @@ export function TasksPage() {
 
           {/* Label filter chips — only shown for the All (kanban) view */}
           {viewMode === 'all' && (
-            <div className="mb-4 space-y-2">
-              {CATEGORIES.map((cat) => {
-                const catLabels = ((labelsByCategory[cat] ?? []) as Label[]).slice().sort((a, b) => a.value.localeCompare(b.value));
-                if (catLabels.length === 0) return null;
-                const colors = CATEGORY_COLORS[cat];
-                return (
-                  <div key={cat} className="flex flex-wrap gap-1.5 items-center justify-end">
-                    {catLabels.map((label) => {
-                      const active = selectedLabelIds.has(label.id);
-                      return (
-                        <button
-                          key={label.id}
-                          onClick={() => toggleLabel(label.id)}
-                          className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors ${
-                            active ? colors.active : colors.inactive
-                          }`}
-                        >
-                          {label.value}
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-              {selectedLabelIds.size > 0 && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={clearLabels}
-                    className="text-xs text-gray-500 hover:text-gray-700 underline"
-                  >
-                    Clear filters
-                  </button>
-                </div>
-              )}
-            </div>
+            <LabelFilterChips
+              labelsByCategory={labelsByCategory}
+              selectedLabelIds={selectedLabelIds}
+              onToggle={toggleLabel}
+              onClear={clearLabels}
+            />
           )}
 
           {loading && viewMode === 'all' && (
