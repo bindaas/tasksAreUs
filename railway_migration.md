@@ -71,25 +71,25 @@ User `id` is a random UUID and is the foreign key for all tasks, settings, etc. 
 
 ### System test user
 
-No migration needed. `test_api.py` creates the system test user (`device_uuid = 00000000-0000-0000-0000-000000000000`) automatically via `POST /users` on first run — that endpoint is idempotent and will just create a fresh entry on Railway.
+No migration needed. `backend/tests/integration/ctx.py` creates the system test user (`device_uuid = 00000000-0000-0000-0000-000000000000`) automatically via `POST /users` on first run — that endpoint is idempotent and will just create a fresh entry on Railway.
 
 ---
 
 ## Running tests against Railway
 
-`test_api.py` already supports both local and Railway via env vars:
+`backend/tests/integration/run_all.py` already supports both local and Railway via env vars:
 
 ```bash
 # Local (defaults)
 cd backend
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tasksareus \
-  python3 tests/test_api.py
+  python3 -m tests.integration.run_all
 
 # Railway
 cd backend
 BASE_URL=https://<your-app>.railway.app/api/v1 \
 DATABASE_URL=postgresql://postgres:<password>@<host>.railway.app:5432/railway \
-  python3 tests/test_api.py
+  python3 -m tests.integration.run_all
 ```
 
 `DATABASE_URL` must point to the same Postgres the app is using — the tests connect directly to clean up test data after each run. Use `DATABASE_PUBLIC_URL` from the Railway dashboard (same URL used for migration above).

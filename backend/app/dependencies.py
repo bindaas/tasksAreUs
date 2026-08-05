@@ -38,8 +38,8 @@ def get_firebase_claims(
 
     Note: get_firebase_claims and get_current_user bypass paths are intentionally
     disconnected — the synthetic uid returned here cannot be resolved to a User row.
-    No endpoint in test_api.py routes through get_firebase_claims, so this branch
-    exists only for completeness."""
+    No endpoint in the integration test suite (backend/tests/integration/) routes
+    through get_firebase_claims, so this branch exists only for completeness."""
     if _test_auth_bypass() and x_user_id:
         return {"uid": f"test-bypass-{x_user_id}", "email": None, "name": None, "firebase": {"sign_in_provider": "test"}}
     if not authorization or not authorization.startswith("Bearer "):
@@ -55,9 +55,10 @@ def get_current_user(
     """Resolve caller to an internal user_id UUID via Firebase Bearer token.
 
     Bypass: when TEST_AUTH_BYPASS=true, X-User-ID is accepted directly and the
-    user row must already exist (no auto-create). test_api.py uses the seeded
-    system user (00000000-0000-0000-0000-000000000000) which is inserted at
-    server startup, so no extra setup step is required."""
+    user row must already exist (no auto-create). The integration test suite
+    (backend/tests/integration/) uses the seeded system user
+    (00000000-0000-0000-0000-000000000000) which is inserted at server startup,
+    so no extra setup step is required."""
     if _test_auth_bypass() and x_user_id:
         user = db.query(User).filter(User.id == x_user_id).first()
         if user is None:

@@ -22,7 +22,7 @@
 - For all the permissions you asked me and I said yes- add it to the settings so that you dont have to ask me again in the next session    
 ## Railway-Test
 
-- BASE_URL=https://tasksareus-production.up.railway.app/api/v1 DATABASE_URL=postgresql://postgres:vutcOZXtrMlhjmIPbbNGvamdnLdGwwNJ@interchange.proxy.rlwy.net:38123/railway python3 tests/test_api.py
+- BASE_URL=https://tasksareus-production.up.railway.app/api/v1 DATABASE_URL=postgresql://postgres:vutcOZXtrMlhjmIPbbNGvamdnLdGwwNJ@interchange.proxy.rlwy.net:38123/railway python3 -m tests.integration.run_all
 
 
 ## Local-URLs
@@ -47,7 +47,7 @@
 
 
 ## Local-Test
-- DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tasksareus python3 tests/test_api.py
+- DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tasksareus python3 -m tests.integration.run_all
 
 
 ## Railway-Deploy

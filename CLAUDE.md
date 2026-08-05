@@ -8,8 +8,7 @@
 
 ```bash
 cd backend && docker-compose up -d
-cd backend && DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tasksareus python3 tests/test_api.py
-cd backend && ANTHROPIC_API_KEY=... DATABASE_URL=... python3 tests/test_api.py  # AI tests
+cd backend && DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tasksareus python3 -m tests.integration.run_all
 cd backend && uvicorn app.main:app --reload  # local, no Docker
 ```
 Copy `backend/.env.example` → `backend/.env`; set `ANTHROPIC_API_KEY`.
@@ -23,7 +22,7 @@ See `PRODUCT_REQUIREMENTS_DOCUMENT.MD` for product requirements, feature status,
 ## Project Conventions
 
 ### Test ownership
-- **Never modify `backend/tests/test_api.py`** — owned exclusively by the `/test-review` skill (Sleepy).
+- **Never modify `backend/tests/integration/`** — owned exclusively by the `/test-review` skill (Sleepy).
 - **Backend unit tests**: `backend/tests/unit/` using pytest (mock SQLAlchemy sessions with `unittest.mock.MagicMock` — no DB required)
 - **Frontend unit tests**: `frontend/src/__tests__/` using Vitest; target pure utility functions in `frontend/src/utils/`
 
@@ -33,7 +32,7 @@ Railway builds a single Docker image (see root `Dockerfile`) that compiles `fron
 - **Does not trigger**: `mobile/`, `.claude/`, docs, `backend/tests/`, `frontend/src/__tests__/`
 
 ### Branch rules
-- **`backend/tests/test_api.py` belongs on the feature branch** — Sleepy's test changes must be committed to the PR branch and merged via PR, never directly to main.
+- **`backend/tests/integration/` belongs on the feature branch** — Sleepy's test changes must be committed to the PR branch and merged via PR, never directly to main.
 
 ### PR signature
 - **Always** end every PR body with a horizontal rule and signature: `— *Grumpy*`
@@ -48,7 +47,7 @@ Every agent signs its PR body or comment. All posts are made under your GitHub a
 |------|------|
 | **Grumpy** | Main assistant (Claude) — implements features, creates PRs |
 | **Dopey** | `code-review` agent — code correctness, architecture fit, security |
-| **Sleepy** | `test-review` agent — owns `test_api.py`, runs tests, posts QE verdict |
+| **Sleepy** | `test-review` agent — owns `backend/tests/integration/`, runs tests, posts QE verdict |
 | **Bashful** | `requirements-review` agent — keeps `PRODUCT_REQUIREMENTS_DOCUMENT.MD` current |
 | **Doc** | `arch-review` agent — keeps `ARCHITECTURE.MD` and `DATA_MODEL_AND_API.MD` current |
 | **Sneezy** | `plan-review` agent — reviews development plan files; appends critique directly to the plan file |
