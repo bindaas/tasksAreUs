@@ -126,10 +126,10 @@ def _query_board_grouped_tasks(
         date_filter,
     ]
     if high_priority_only:
-        filters.append(Task.is_high_priority == True)
+        filters.append(Task.priority == "high")
 
     tiebreak = Task.sort_order.asc() if order_by_sort_order else Task.updated_at.desc()
-    tasks = db.query(Task).filter(*filters).order_by(Task.is_high_priority.desc(), tiebreak).all()
+    tasks = db.query(Task).filter(*filters).order_by((Task.priority == "high").desc(), tiebreak).all()
 
     tasks_by_board: dict[str, list] = {b.id: [] for b in boards}
     for task in tasks:

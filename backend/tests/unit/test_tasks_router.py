@@ -18,7 +18,7 @@ def _make_task(**overrides) -> Task:
     defaults = dict(
         id="task-1", user_id="user-1", board_id="board-1", title="Test", notes=None,
         state=StateEnum.pending, must_do_by=None, target_date=None,
-        completed_at=None, is_high_priority=False, is_deleted=False,
+        completed_at=None, is_high_priority=False, priority="normal", is_deleted=False,
         links=[], sort_order=100.0, created_at=now, updated_at=now,
     )
     defaults.update(overrides)

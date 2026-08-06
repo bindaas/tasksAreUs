@@ -11,7 +11,11 @@ from ..dependencies import get_current_user
 from ..models import Board, Label, Task, TaskLabel, _sort_order_default
 from ..schemas import MAX_TASK_LINKS, SyncChanges, SyncRequest, SyncResponse, TaskLabelSync, TaskLink
 from ..services import board_service as board_svc
-from ..services.task_service import _effective_date
+from ..services.task_service import (
+    _effective_date,
+    _resolve_priority_on_create,
+    _resolve_priority_on_update,
+)
 
 
 def _validate_sync_links(raw_links: Any) -> List[Dict[str, Any]]:
@@ -96,6 +100,9 @@ def sync(
             task_board_id = _owned_board_id(db, t_data.get("board_id"), user_id) or (
                 board_svc.get_default_board_id(db, user_id)
             )
+            new_task_priority = _resolve_priority_on_create(
+                t_data.get("priority"), t_data.get("is_high_priority", False)
+            )
             task = Task(
                 id=task_id,
                 user_id=user_id,
@@ -104,7 +111,8 @@ def sync(
                 notes=t_data.get("notes"),
                 state=t_data.get("state", "pending"),
                 is_deleted=t_data.get("is_deleted", False),
-                is_high_priority=t_data.get("is_high_priority", False),
+                is_high_priority=(new_task_priority == "high"),
+                priority=new_task_priority,
                 links=_validate_sync_links(t_data.get("links")),
                 updated_at=client_updated_at,
                 created_at=_parse_dt(t_data.get("created_at")) or now,
@@ -132,7 +140,12 @@ def sync(
                 server_task.notes = t_data.get("notes", server_task.notes)
                 server_task.state = t_data.get("state", server_task.state)
                 server_task.is_deleted = t_data.get("is_deleted", server_task.is_deleted)
-                server_task.is_high_priority = t_data.get("is_high_priority", server_task.is_high_priority)
+                # Field-resolution rule (see PLAN-feat-priority-tiers.md — Sneezy Blocker fix):
+                # a legacy is_high_priority write must not silently demote an existing 'medium'.
+                server_task.priority = _resolve_priority_on_update(
+                    t_data.get("priority"), t_data.get("is_high_priority"), server_task.priority
+                )
+                server_task.is_high_priority = (server_task.priority == "high")
                 if "links" in t_data:
                     server_task.links = _validate_sync_links(t_data.get("links"))
                 server_task.updated_at = client_updated_at
@@ -193,6 +206,7 @@ def sync(
             "target_date": t.target_date.isoformat() if t.target_date else None,
             "completed_at": t.completed_at.isoformat() if t.completed_at else None,
             "is_high_priority": t.is_high_priority,
+            "priority": t.priority,
             "is_deleted": t.is_deleted,
             "links": t.links or [],
             "sort_order": t.sort_order,

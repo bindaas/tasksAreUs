@@ -1,9 +1,9 @@
 # Development Plan: feat-priority-tiers
 
 ## Status
-**State:** In progress
+**State:** In progress — PR1 (backend) implemented, tests passing; PR2 (web) and PR3 (mobile) not started.
 **Last updated:** 2026-08-06 by Grumpy
-**Next step:** User approved ("yes, proceed"). All 5 of Sneezy's findings have inline "→ Addressed" resolutions in the Review section below. Starting PR1 (backend) on branch `feat-priority-tiers-backend`: models.py, schemas.py, task_service.py, focused_view_service.py, routers/sync.py, main.py migration block, backend unit tests.
+**Next step:** PR1 complete on branch `feat-priority-tiers-backend`: `tasks.priority` column + migration, schema changes, field-resolution rule (medium-preserving), generalized eligibility/cap logic, `focused_view_service.py`/`routers/sync.py` updated, 246/246 backend unit tests passing (added ~24 new tests covering tier auto-reset, cap-only-for-High, the medium-preserving legacy rule on both REST and sync paths, and the overdue+cap discrepancy pinned down per Sneezy's Risk finding). Commit PR1, then start PR2 (web) on a fresh branch off this one (or off main once PR1 merges) — see PR2 section above.
 **Blocked on:** n/a — implementation underway.
 
 ---

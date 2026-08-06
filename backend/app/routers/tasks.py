@@ -71,6 +71,7 @@ def create_task(
         target_date=body.target_date,
         label_ids=body.label_ids,
         is_high_priority=body.is_high_priority,
+        priority=body.priority,
         high_priority_limit=_get_high_priority_limit(db, user_id),
         links=[l.model_dump() for l in body.links],
     )
@@ -106,6 +107,7 @@ def update_task(
         clear_must_do_by='must_do_by' in body.model_fields_set and body.must_do_by is None,
         clear_target_date='target_date' in body.model_fields_set and body.target_date is None,
         is_high_priority=body.is_high_priority,
+        priority=body.priority,
         high_priority_limit=_get_high_priority_limit(db, user_id),
         links=[l.model_dump() for l in body.links] if body.links is not None else None,
         board_id=body.board_id,

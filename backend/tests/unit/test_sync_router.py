@@ -56,7 +56,7 @@ def _make_task(**overrides) -> Task:
     defaults = dict(
         id="task-1", user_id="user-1", board_id="board-1", title="Existing",
         notes=None, state=StateEnum.pending, must_do_by=None, target_date=None,
-        completed_at=None, is_high_priority=False, is_deleted=False,
+        completed_at=None, is_high_priority=False, priority="normal", is_deleted=False,
         links=[{"id": "old", "url": "https://old.example.com", "description": "Old"}],
         sort_order=100.0, created_at=now, updated_at=now,
     )
@@ -293,3 +293,91 @@ class TestSyncPushSortOrder:
         sync(_sync_request(payload), db, "user-1")
 
         assert existing.sort_order != 100.0
+
+
+class TestSyncPushPriority:
+    """Field-resolution rule for the tri-state `priority` field, exercised via the actual
+    /sync push path — see PLAN-feat-priority-tiers.md's Sneezy Blocker fix. This path has
+    the identical unconditional-if-present shape as an old mobile client's REST update, so
+    it needs the same medium-preserving guard, verified here independently of
+    test_task_service.py's REST-path coverage.
+    """
+
+    def test_legacy_is_high_priority_does_not_overwrite_existing_medium(self):
+        existing = _make_task(priority="medium", updated_at=datetime.now(timezone.utc) - timedelta(days=2))
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Unrelated edit",
+            "is_high_priority": True,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.priority == "medium"
+        assert existing.is_high_priority is False
+
+    def test_explicit_priority_field_takes_precedence_over_legacy_field(self):
+        existing = _make_task(priority="medium", updated_at=datetime.now(timezone.utc) - timedelta(days=2))
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing",
+            "priority": "normal",
+            "is_high_priority": True,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.priority == "normal"
+
+    def test_legacy_is_high_priority_true_still_toggles_normal_to_high(self):
+        existing = _make_task(priority="normal", updated_at=datetime.now(timezone.utc) - timedelta(days=2))
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing",
+            "is_high_priority": True,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.priority == "high"
+        assert existing.is_high_priority is True
+
+    def test_new_task_from_legacy_client_maps_is_high_priority_to_priority(self):
+        db = _make_db(task_first=None)
+        payload = [{
+            "id": "task-new",
+            "title": "New task",
+            "is_high_priority": True,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        added_task = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], Task))
+        assert added_task.priority == "high"
+        assert added_task.is_high_priority is True
+
+    def test_new_task_from_new_client_uses_priority_field_directly(self):
+        db = _make_db(task_first=None)
+        payload = [{
+            "id": "task-new",
+            "title": "New task",
+            "priority": "medium",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        added_task = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], Task))
+        assert added_task.priority == "medium"
+        assert added_task.is_high_priority is False
+
+    def test_outbound_serialization_includes_both_fields(self):
+        existing = _make_task(priority="high", is_high_priority=True)
+        db = _make_db(task_all=[existing])
+        result = sync(_sync_request([]), db, "user-1")
+
+        synced_task = result.changes.tasks[0]
+        assert synced_task["priority"] == "high"
+        assert synced_task["is_high_priority"] is True

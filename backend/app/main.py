@@ -246,6 +246,21 @@ async def lifespan(app: FastAPI):
         ))
         conn.commit()
 
+    # ── Priority tiers migration — is_high_priority boolean -> priority tri-state ──
+    # priority's default ('normal') is a constant, unlike sort_order's per-row computed
+    # default, so it can be added NOT NULL DEFAULT in one statement (no separate backfill
+    # step needed for existing rows before tightening to NOT NULL). is_high_priority is
+    # kept as a mirrored/derived column (not dropped) for backward compat with mobile
+    # clients that haven't picked up the OTA update yet — see PLAN-feat-priority-tiers.md.
+    with engine.connect() as conn:
+        conn.execute(text(
+            "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority VARCHAR NOT NULL DEFAULT 'normal'"
+        ))
+        conn.execute(text(
+            "UPDATE tasks SET priority = 'high' WHERE is_high_priority = true AND priority = 'normal'"
+        ))
+        conn.commit()
+
     yield
 
 
