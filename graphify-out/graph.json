@@ -145,8 +145,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_config",
-      "community": 56,
-      "community_name": "dependencies.py",
+      "community": 29,
+      "community_name": "main.py",
       "norm_label": "config.py"
     },
     {
@@ -156,8 +156,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "backend_app_config_settings",
-      "community": 56,
-      "community_name": "dependencies.py",
+      "community": 29,
+      "community_name": "main.py",
       "norm_label": "settings"
     },
     {
@@ -167,8 +167,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "basesettings",
-      "community": 56,
-      "community_name": "dependencies.py",
+      "community": 29,
+      "community_name": "main.py",
       "norm_label": "basesettings"
     },
     {
@@ -178,8 +178,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_database",
-      "community": 56,
-      "community_name": "dependencies.py",
+      "community": 29,
+      "community_name": "main.py",
       "norm_label": "database.py"
     },
     {
@@ -189,8 +189,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "backend_app_database_get_db",
-      "community": 56,
-      "community_name": "dependencies.py",
+      "community": 29,
+      "community_name": "main.py",
       "norm_label": "get_db()"
     },
     {
@@ -200,8 +200,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_dependencies",
-      "community": 56,
-      "community_name": "dependencies.py",
+      "community": 29,
+      "community_name": "main.py",
       "norm_label": "dependencies.py"
     },
     {
@@ -365,8 +365,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "fastapi",
-      "community": 56,
-      "community_name": "dependencies.py",
+      "community": 29,
+      "community_name": "main.py",
       "norm_label": "fastapi"
     },
     {
@@ -486,8 +486,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "backend_app_models_categoryenum",
-      "community": 46,
-      "community_name": "models.py",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "categoryenum"
     },
     {
@@ -497,8 +497,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "str",
-      "community": 46,
-      "community_name": "models.py",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "str"
     },
     {
@@ -695,8 +695,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_boards_py_delete",
-      "community": 20,
-      "community_name": "test_board_service.py",
+      "community": 24,
+      "community_name": "boards.py",
       "norm_label": "delete"
     },
     {
@@ -706,8 +706,8 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "backend_app_routers_boards_delete_board",
-      "community": 20,
-      "community_name": "test_board_service.py",
+      "community": 24,
+      "community_name": "boards.py",
       "norm_label": "delete_board()"
     },
     {
@@ -717,8 +717,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_routers_day_view",
-      "community": 56,
-      "community_name": "dependencies.py",
+      "community": 29,
+      "community_name": "main.py",
       "norm_label": "day_view.py"
     },
     {
@@ -773,7 +773,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_focused_view",
       "community": 56,
-      "community_name": "dependencies.py",
+      "community_name": "focused_view.py",
       "norm_label": "focused_view.py"
     },
     {
@@ -784,7 +784,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_focused_view_py_get",
       "community": 56,
-      "community_name": "dependencies.py",
+      "community_name": "focused_view.py",
       "norm_label": "get"
     },
     {
@@ -795,7 +795,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_focused_view_get_config",
       "community": 56,
-      "community_name": "dependencies.py",
+      "community_name": "focused_view.py",
       "norm_label": "get_config()"
     },
     {
@@ -806,7 +806,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_focused_view_py_session",
       "community": 56,
-      "community_name": "dependencies.py",
+      "community_name": "focused_view.py",
       "norm_label": "session"
     },
     {
@@ -817,7 +817,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_focused_view_py_put",
       "community": 56,
-      "community_name": "dependencies.py",
+      "community_name": "focused_view.py",
       "norm_label": "put"
     },
     {
@@ -828,7 +828,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_focused_view_update_config",
       "community": 56,
-      "community_name": "dependencies.py",
+      "community_name": "focused_view.py",
       "norm_label": "update_config()"
     },
     {
@@ -839,7 +839,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_focused_view_get_focused_tasks",
       "community": 56,
-      "community_name": "dependencies.py",
+      "community_name": "focused_view.py",
       "norm_label": "get_focused_tasks()"
     },
     {
@@ -850,7 +850,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_focused_view_py_date",
       "community": 56,
-      "community_name": "dependencies.py",
+      "community_name": "focused_view.py",
       "norm_label": "date"
     },
     {
@@ -860,8 +860,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_routers_labels",
-      "community": 46,
-      "community_name": "models.py",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "labels.py"
     },
     {
@@ -871,8 +871,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_labels_py_get",
-      "community": 113,
-      "community_name": "TestDeleteLabel",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "get"
     },
     {
@@ -882,8 +882,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "backend_app_routers_labels_list_labels",
-      "community": 113,
-      "community_name": "TestDeleteLabel",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "list_labels()"
     },
     {
@@ -893,8 +893,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_labels_py_session",
-      "community": 113,
-      "community_name": "TestDeleteLabel",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "session"
     },
     {
@@ -905,7 +905,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_labels_py_post",
       "community": 19,
-      "community_name": "create_label",
+      "community_name": "labels.py",
       "norm_label": "post"
     },
     {
@@ -916,7 +916,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_labels_create_label",
       "community": 19,
-      "community_name": "create_label",
+      "community_name": "labels.py",
       "norm_label": "create_label()"
     },
     {
@@ -948,8 +948,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_labels_py_delete",
-      "community": 113,
-      "community_name": "TestDeleteLabel",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "delete"
     },
     {
@@ -959,8 +959,8 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "backend_app_routers_labels_delete_label",
-      "community": 113,
-      "community_name": "TestDeleteLabel",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "delete_label()"
     },
     {
@@ -970,8 +970,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_routers_reports",
-      "community": 56,
-      "community_name": "dependencies.py",
+      "community": 29,
+      "community_name": "main.py",
       "norm_label": "reports.py"
     },
     {
@@ -1025,8 +1025,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_routers_settings",
-      "community": 25,
-      "community_name": "schemas.py",
+      "community": 113,
+      "community_name": "settings.py",
       "norm_label": "settings.py"
     },
     {
@@ -1036,8 +1036,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "backend_app_routers_settings_get_or_create_settings",
-      "community": 25,
-      "community_name": "schemas.py",
+      "community": 113,
+      "community_name": "settings.py",
       "norm_label": "_get_or_create_settings()"
     },
     {
@@ -1047,8 +1047,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_settings_py_session",
-      "community": 25,
-      "community_name": "schemas.py",
+      "community": 113,
+      "community_name": "settings.py",
       "norm_label": "session"
     },
     {
@@ -1058,8 +1058,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_settings_py_get",
-      "community": 25,
-      "community_name": "schemas.py",
+      "community": 113,
+      "community_name": "settings.py",
       "norm_label": "get"
     },
     {
@@ -1069,8 +1069,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "backend_app_routers_settings_get_settings",
-      "community": 25,
-      "community_name": "schemas.py",
+      "community": 113,
+      "community_name": "settings.py",
       "norm_label": "get_settings()"
     },
     {
@@ -1080,8 +1080,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_settings_py_put",
-      "community": 25,
-      "community_name": "schemas.py",
+      "community": 113,
+      "community_name": "settings.py",
       "norm_label": "put"
     },
     {
@@ -1091,8 +1091,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "backend_app_routers_settings_update_settings",
-      "community": 25,
-      "community_name": "schemas.py",
+      "community": 113,
+      "community_name": "settings.py",
       "norm_label": "update_settings()"
     },
     {
@@ -1466,7 +1466,7 @@
       "_origin": "ast",
       "id": "backend_app_schemas_labelcreate",
       "community": 19,
-      "community_name": "create_label",
+      "community_name": "labels.py",
       "norm_label": "labelcreate"
     },
     {
@@ -1652,8 +1652,8 @@
       "source_location": "L189",
       "_origin": "ast",
       "id": "backend_app_schemas_settingsout",
-      "community": 25,
-      "community_name": "schemas.py",
+      "community": 113,
+      "community_name": "settings.py",
       "norm_label": "settingsout"
     },
     {
@@ -1663,8 +1663,8 @@
       "source_location": "L193",
       "_origin": "ast",
       "id": "backend_app_schemas_settingsupdate",
-      "community": 25,
-      "community_name": "schemas.py",
+      "community": 113,
+      "community_name": "settings.py",
       "norm_label": "settingsupdate"
     },
     {
@@ -1719,7 +1719,7 @@
       "_origin": "ast",
       "id": "backend_app_schemas_focusedviewconfigout",
       "community": 56,
-      "community_name": "dependencies.py",
+      "community_name": "focused_view.py",
       "norm_label": "focusedviewconfigout"
     },
     {
@@ -1730,7 +1730,7 @@
       "_origin": "ast",
       "id": "backend_app_schemas_focusedviewconfigupdate",
       "community": 56,
-      "community_name": "dependencies.py",
+      "community_name": "focused_view.py",
       "norm_label": "focusedviewconfigupdate"
     },
     {
@@ -1751,8 +1751,8 @@
       "source_location": "L243",
       "_origin": "ast",
       "id": "backend_app_schemas_focusedviewtasksout",
-      "community": 56,
-      "community_name": "dependencies.py",
+      "community": 25,
+      "community_name": "schemas.py",
       "norm_label": "focusedviewtasksout"
     },
     {
@@ -4600,8 +4600,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router",
-      "community": 46,
-      "community_name": "models.py",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "test_labels_router.py"
     },
     {
@@ -4678,7 +4678,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testcreatelabel",
       "community": 19,
-      "community_name": "create_label",
+      "community_name": "labels.py",
       "norm_label": "testcreatelabel"
     },
     {
@@ -4689,7 +4689,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testcreatelabel_test_creates_type_label",
       "community": 19,
-      "community_name": "create_label",
+      "community_name": "labels.py",
       "norm_label": ".test_creates_type_label()"
     },
     {
@@ -4700,7 +4700,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testcreatelabel_test_rejects_mode_category",
       "community": 19,
-      "community_name": "create_label",
+      "community_name": "labels.py",
       "norm_label": ".test_rejects_mode_category()"
     },
     {
@@ -4711,7 +4711,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testcreatelabel_test_rejects_frequency_category",
       "community": 19,
-      "community_name": "create_label",
+      "community_name": "labels.py",
       "norm_label": ".test_rejects_frequency_category()"
     },
     {
@@ -4722,7 +4722,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testcreatelabel_test_rejects_unknown_category",
       "community": 19,
-      "community_name": "create_label",
+      "community_name": "labels.py",
       "norm_label": ".test_rejects_unknown_category()"
     },
     {
@@ -4733,7 +4733,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testcreatelabel_test_rejects_empty_value",
       "community": 19,
-      "community_name": "create_label",
+      "community_name": "labels.py",
       "norm_label": ".test_rejects_empty_value()"
     },
     {
@@ -4744,7 +4744,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testcreatelabel_test_rejects_duplicate",
       "community": 19,
-      "community_name": "create_label",
+      "community_name": "labels.py",
       "norm_label": ".test_rejects_duplicate()"
     },
     {
@@ -4809,8 +4809,8 @@
       "source_location": "L167",
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testdeletelabel",
-      "community": 113,
-      "community_name": "TestDeleteLabel",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "testdeletelabel"
     },
     {
@@ -4820,8 +4820,8 @@
       "source_location": "L168",
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testdeletelabel_test_deletes_own_label",
-      "community": 113,
-      "community_name": "TestDeleteLabel",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": ".test_deletes_own_label()"
     },
     {
@@ -4831,8 +4831,8 @@
       "source_location": "L178",
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testdeletelabel_test_rejects_wrong_owner",
-      "community": 113,
-      "community_name": "TestDeleteLabel",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": ".test_rejects_wrong_owner()"
     },
     {
@@ -4842,8 +4842,8 @@
       "source_location": "L187",
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_testdeletelabel_test_rejects_not_found",
-      "community": 113,
-      "community_name": "TestDeleteLabel",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": ".test_rejects_not_found()"
     },
     {
@@ -4853,8 +4853,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_tests_unit_test_labels_router_rationale_1",
-      "community": 46,
-      "community_name": "models.py",
+      "community": 19,
+      "community_name": "labels.py",
       "norm_label": "unit tests for labels router \u2014 no database required."
     },
     {
@@ -7834,7 +7834,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_app",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "src/app.tsx"
     },
@@ -7845,7 +7845,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "frontend_src_app_emailconfirmationpage",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "emailconfirmationpage()"
     },
@@ -7856,7 +7856,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "frontend_src_app_approutes",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "approutes()"
     },
@@ -7867,7 +7867,7 @@
       "source_location": "L115",
       "_origin": "ast",
       "id": "frontend_src_app_app",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "app()"
     },
@@ -7878,8 +7878,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_boardcolor_test",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "boardcolor.test.ts"
     },
     {
@@ -7890,7 +7890,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_boardorder_test",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "boardorder.test.ts"
     },
     {
@@ -7901,7 +7901,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_boardorder_test_makeboard",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "makeboard()"
     },
     {
@@ -7912,7 +7912,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_boardvisibility_test",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "boardvisibility.test.ts"
     },
     {
@@ -7923,7 +7923,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_boardvisibility_test_makeboard",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "makeboard()"
     },
     {
@@ -7934,7 +7934,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_boards_api_test",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "frontend/src/__tests__/boards.api.test.ts"
     },
     {
@@ -7945,7 +7945,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_boards_api_test_mockapifetch",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "mockapifetch"
     },
     {
@@ -7955,8 +7955,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_client_test",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 112,
+      "community_name": "frontend/src/api/client.ts",
       "norm_label": "client.test.ts"
     },
     {
@@ -7966,8 +7966,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_tests_client_test_mockauth",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 112,
+      "community_name": "frontend/src/api/client.ts",
       "norm_label": "mockauth"
     },
     {
@@ -7977,8 +7977,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "frontend_src_tests_client_test_mockfetch",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 112,
+      "community_name": "frontend/src/api/client.ts",
       "norm_label": "mockfetch"
     },
     {
@@ -7988,8 +7988,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "frontend_src_tests_client_test_okresponse",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 112,
+      "community_name": "frontend/src/api/client.ts",
       "norm_label": "okresponse()"
     },
     {
@@ -7999,8 +7999,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "frontend_src_tests_client_test_errorresponse",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 112,
+      "community_name": "frontend/src/api/client.ts",
       "norm_label": "errorresponse()"
     },
     {
@@ -8022,7 +8022,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskdateutils_test",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/__tests__/taskdateutils.test.ts"
     },
     {
@@ -8033,7 +8033,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskdateutils_test_mocknow",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "mocknow()"
     },
     {
@@ -8044,7 +8044,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskfilters_test",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "frontend/src/__tests__/taskfilters.test.ts"
     },
     {
@@ -8055,7 +8055,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskfilters_test_maketask",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "maketask()"
     },
     {
@@ -8066,7 +8066,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskfilters_test_labela",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "labela"
     },
     {
@@ -8077,18 +8077,18 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskfilters_test_labelb",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "labelb"
     },
     {
       "label": "makeBoard()",
       "file_type": "code",
       "source_file": "frontend/src/__tests__/taskFilters.test.ts",
-      "source_location": "L114",
+      "source_location": "L148",
       "_origin": "ast",
       "id": "frontend_src_tests_taskfilters_test_makeboard",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "makeboard()"
     },
     {
@@ -8143,7 +8143,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskpriority_test",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/__tests__/taskpriority.test.ts"
     },
     {
@@ -8154,7 +8154,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskpriority_test_maketask",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "maketask()"
     },
     {
@@ -8186,8 +8186,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_viewlabel_test",
-      "community": 114,
-      "community_name": "ViewContext.tsx",
+      "community": 22,
+      "community_name": "TasksPage.tsx",
       "norm_label": "viewlabel.test.ts"
     },
     {
@@ -8198,7 +8198,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_boards",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "frontend/src/api/boards.ts"
     },
     {
@@ -8209,7 +8209,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_boards_board",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "board"
     },
     {
@@ -8220,7 +8220,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_boards_getboards",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "getboards()"
     },
     {
@@ -8231,7 +8231,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_boards_createboard",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "createboard()"
     },
     {
@@ -8242,7 +8242,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_boards_updateboard",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "updateboard()"
     },
     {
@@ -8253,7 +8253,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_boards_deleteboard",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "deleteboard()"
     },
     {
@@ -8263,8 +8263,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_api_client",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 112,
+      "community_name": "frontend/src/api/client.ts",
       "norm_label": "frontend/src/api/client.ts"
     },
     {
@@ -8286,7 +8286,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_dayview",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "frontend/src/api/dayview.ts"
     },
     {
@@ -8297,7 +8297,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_dayview_getdayviewtasks",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "getdayviewtasks()"
     },
     {
@@ -8308,7 +8308,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_focusedview",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "frontend/src/api/focusedview.ts"
     },
     {
@@ -8319,7 +8319,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_focusedview_focusedboard",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "focusedboard"
     },
     {
@@ -8330,7 +8330,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_focusedview_getfocusedviewtasks",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "getfocusedviewtasks()"
     },
     {
@@ -8362,8 +8362,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "frontend_src_api_labels_listlabels",
-      "community": 45,
-      "community_name": "Task",
+      "community": 87,
+      "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "listlabels()"
     },
     {
@@ -8725,8 +8725,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_archiveboardtabs",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "frontend/src/components/archiveboardtabs.tsx"
     },
     {
@@ -8736,8 +8736,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "frontend_src_components_archiveboardtabs_archiveboardtabs",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "archiveboardtabs()"
     },
     {
@@ -8748,7 +8748,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_boardgroupedtasks",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "frontend/src/components/boardgroupedtasks.tsx"
     },
     {
@@ -8759,7 +8759,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "boardgroupedtasks()"
     },
     {
@@ -8769,8 +8769,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_boardtabs",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "frontend/src/components/boardtabs.tsx"
     },
     {
@@ -8780,8 +8780,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_components_boardtabs_boardtabs",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "boardtabs()"
     },
     {
@@ -8792,7 +8792,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_dayview",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "frontend/src/components/dayview.tsx"
     },
     {
@@ -8803,7 +8803,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_dayview_dayview",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "dayview()"
     },
     {
@@ -8814,7 +8814,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_emptystate",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "emptystate.tsx"
     },
     {
@@ -8825,29 +8825,29 @@
       "_origin": "ast",
       "id": "frontend_src_components_emptystate_emptystate",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "emptystate()"
     },
     {
       "label": "FolderIcon()",
       "file_type": "code",
       "source_file": "frontend/src/components/EmptyState.tsx",
-      "source_location": "L28",
+      "source_location": "L38",
       "_origin": "ast",
       "id": "frontend_src_components_emptystate_foldericon",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "foldericon()"
     },
     {
       "label": "StarIcon()",
       "file_type": "code",
       "source_file": "frontend/src/components/EmptyState.tsx",
-      "source_location": "L41",
+      "source_location": "L51",
       "_origin": "ast",
       "id": "frontend_src_components_emptystate_staricon",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "staricon()"
     },
     {
@@ -8891,7 +8891,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_focusedview",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "frontend/src/components/focusedview.tsx"
     },
     {
@@ -8902,7 +8902,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_focusedview_focusedview",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "focusedview()"
     },
     {
@@ -8912,8 +8912,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_labelbadge",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 45,
+      "community_name": "Task",
       "norm_label": "labelbadge.tsx"
     },
     {
@@ -8923,8 +8923,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "frontend_src_components_labelbadge_category_colors",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 45,
+      "community_name": "Task",
       "norm_label": "category_colors"
     },
     {
@@ -8934,8 +8934,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "frontend_src_components_labelbadge_labelbadgeprops",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 45,
+      "community_name": "Task",
       "norm_label": "labelbadgeprops"
     },
     {
@@ -8945,8 +8945,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_components_labelbadge_labelbadge",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 45,
+      "community_name": "Task",
       "norm_label": "labelbadge()"
     },
     {
@@ -8957,7 +8957,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "labelfilterchips.tsx"
     },
     {
@@ -8968,7 +8968,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips_labelcategory",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "labelcategory"
     },
     {
@@ -8979,7 +8979,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips_categories",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "categories"
     },
     {
@@ -8990,7 +8990,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips_category_colors",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "category_colors"
     },
     {
@@ -9001,7 +9001,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips_labelfilterchips",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "labelfilterchips()"
     },
     {
@@ -9012,7 +9012,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_layout",
       "community": 21,
-      "community_name": "src/App.tsx",
+      "community_name": "Layout.tsx",
       "norm_label": "layout.tsx"
     },
     {
@@ -9023,7 +9023,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_layout_navitem",
       "community": 21,
-      "community_name": "src/App.tsx",
+      "community_name": "Layout.tsx",
       "norm_label": "navitem"
     },
     {
@@ -9034,7 +9034,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_layout_checklisticon",
       "community": 21,
-      "community_name": "src/App.tsx",
+      "community_name": "Layout.tsx",
       "norm_label": "checklisticon()"
     },
     {
@@ -9045,7 +9045,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_layout_charticon",
       "community": 21,
-      "community_name": "src/App.tsx",
+      "community_name": "Layout.tsx",
       "norm_label": "charticon()"
     },
     {
@@ -9056,7 +9056,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_layout_gearicon",
       "community": 21,
-      "community_name": "src/App.tsx",
+      "community_name": "Layout.tsx",
       "norm_label": "gearicon()"
     },
     {
@@ -9067,7 +9067,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_layout_nav_items",
       "community": 21,
-      "community_name": "src/App.tsx",
+      "community_name": "Layout.tsx",
       "norm_label": "nav_items"
     },
     {
@@ -9078,7 +9078,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_layout_navlinkitem",
       "community": 21,
-      "community_name": "src/App.tsx",
+      "community_name": "Layout.tsx",
       "norm_label": "navlinkitem()"
     },
     {
@@ -9089,7 +9089,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_layout_layout",
       "community": 21,
-      "community_name": "src/App.tsx",
+      "community_name": "Layout.tsx",
       "norm_label": "layout()"
     },
     {
@@ -9198,8 +9198,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "frontend_src_components_taskform_taskformprops",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 45,
+      "community_name": "Task",
       "norm_label": "taskformprops"
     },
     {
@@ -9297,7 +9297,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_context_authcontext",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "frontend/src/context/authcontext.tsx"
     },
@@ -9308,7 +9308,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "frontend_src_context_authcontext_authcontextvalue",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "authcontextvalue"
     },
@@ -9319,7 +9319,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "frontend_src_context_authcontext_authcontext",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "authcontext"
     },
@@ -9330,7 +9330,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "frontend_src_context_authcontext_authprovider",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "authprovider()"
     },
@@ -9341,7 +9341,7 @@
       "source_location": "L126",
       "_origin": "ast",
       "id": "frontend_src_context_authcontext_useauthcontext",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "useauthcontext()"
     },
@@ -9353,7 +9353,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "boardcollapsecontext.tsx"
     },
     {
@@ -9364,7 +9364,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext_viewkey",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "viewkey"
     },
     {
@@ -9375,7 +9375,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext_boardcollapsecontextvalue",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "boardcollapsecontextvalue"
     },
     {
@@ -9386,7 +9386,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext_boardcollapsecontext",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "boardcollapsecontext"
     },
     {
@@ -9396,8 +9396,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext_boardcollapseprovider",
-      "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "src/App.tsx",
       "norm_label": "boardcollapseprovider()"
     },
     {
@@ -9408,7 +9408,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext_useboardcollapse",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "useboardcollapse()"
     },
     {
@@ -9419,7 +9419,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_boardcontext",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "frontend/src/context/boardcontext.tsx"
     },
     {
@@ -9430,7 +9430,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_boardcontext_boardcontextvalue",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "boardcontextvalue"
     },
     {
@@ -9441,7 +9441,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_boardcontext_boardcontext",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "boardcontext"
     },
     {
@@ -9452,7 +9452,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_boardcontext_boardprovider",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "boardprovider()"
     },
     {
@@ -9462,8 +9462,8 @@
       "source_location": "L123",
       "_origin": "ast",
       "id": "frontend_src_context_boardcontext_useboard",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "useboard()"
     },
     {
@@ -9474,7 +9474,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "columnprioritycollapsecontext.tsx"
     },
     {
@@ -9485,7 +9485,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext_columnprioritycollapsecontextvalue",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "columnprioritycollapsecontextvalue"
     },
     {
@@ -9496,7 +9496,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext_columnprioritycollapsecontext",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "columnprioritycollapsecontext"
     },
     {
@@ -9506,8 +9506,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext_columnprioritycollapseprovider",
-      "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community": 7,
+      "community_name": "src/App.tsx",
       "norm_label": "columnprioritycollapseprovider()"
     },
     {
@@ -9518,7 +9518,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext_usecolumnprioritycollapse",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "usecolumnprioritycollapse()"
     },
     {
@@ -9528,7 +9528,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_context_filtercontext",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "filtercontext.tsx"
     },
@@ -9539,7 +9539,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_context_filtercontext_filtercontextvalue",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "filtercontextvalue"
     },
@@ -9547,10 +9547,10 @@
       "label": "FilterContext",
       "file_type": "code",
       "source_file": "frontend/src/context/FilterContext.tsx",
-      "source_location": "L11",
+      "source_location": "L13",
       "_origin": "ast",
       "id": "frontend_src_context_filtercontext_filtercontext",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "filtercontext"
     },
@@ -9558,10 +9558,10 @@
       "label": "FilterProvider()",
       "file_type": "code",
       "source_file": "frontend/src/context/FilterContext.tsx",
-      "source_location": "L13",
+      "source_location": "L15",
       "_origin": "ast",
       "id": "frontend_src_context_filtercontext_filterprovider",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "filterprovider()"
     },
@@ -9569,11 +9569,11 @@
       "label": "useFilter()",
       "file_type": "code",
       "source_file": "frontend/src/context/FilterContext.tsx",
-      "source_location": "L43",
+      "source_location": "L46",
       "_origin": "ast",
       "id": "frontend_src_context_filtercontext_usefilter",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "usefilter()"
     },
     {
@@ -9583,8 +9583,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_context_viewcontext",
-      "community": 114,
-      "community_name": "ViewContext.tsx",
+      "community": 22,
+      "community_name": "TasksPage.tsx",
       "norm_label": "viewcontext.tsx"
     },
     {
@@ -9594,8 +9594,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_context_viewcontext_viewcontextvalue",
-      "community": 114,
-      "community_name": "ViewContext.tsx",
+      "community": 22,
+      "community_name": "TasksPage.tsx",
       "norm_label": "viewcontextvalue"
     },
     {
@@ -9605,8 +9605,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "frontend_src_context_viewcontext_viewcontext",
-      "community": 114,
-      "community_name": "ViewContext.tsx",
+      "community": 22,
+      "community_name": "TasksPage.tsx",
       "norm_label": "viewcontext"
     },
     {
@@ -9616,8 +9616,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_context_viewcontext_viewprovider",
-      "community": 114,
-      "community_name": "ViewContext.tsx",
+      "community": 22,
+      "community_name": "TasksPage.tsx",
       "norm_label": "viewprovider()"
     },
     {
@@ -9627,8 +9627,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "frontend_src_context_viewcontext_useview",
-      "community": 114,
-      "community_name": "ViewContext.tsx",
+      "community": 22,
+      "community_name": "TasksPage.tsx",
       "norm_label": "useview()"
     },
     {
@@ -9638,8 +9638,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_firebase",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 112,
+      "community_name": "frontend/src/api/client.ts",
       "norm_label": "frontend/src/firebase.ts"
     },
     {
@@ -9649,8 +9649,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "frontend_src_firebase_firebaseconfig",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 112,
+      "community_name": "frontend/src/api/client.ts",
       "norm_label": "firebaseconfig"
     },
     {
@@ -9660,8 +9660,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "frontend_src_firebase_app",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 112,
+      "community_name": "frontend/src/api/client.ts",
       "norm_label": "app"
     },
     {
@@ -9671,8 +9671,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "frontend_src_firebase_auth",
-      "community": 87,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 112,
+      "community_name": "frontend/src/api/client.ts",
       "norm_label": "auth"
     },
     {
@@ -9682,7 +9682,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_hooks_useauth",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "frontend/src/hooks/useauth.ts"
     },
@@ -9693,7 +9693,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "frontend_src_hooks_useauth_useauth",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "useauth"
     },
@@ -9704,8 +9704,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_hooks_uselabels",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 87,
+      "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "uselabels.ts"
     },
     {
@@ -9715,8 +9715,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "frontend_src_hooks_uselabels_uselabels",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "uselabels()"
     },
     {
@@ -9770,7 +9770,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_main",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "main.tsx"
     },
@@ -9825,7 +9825,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_pages_loginpage",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "loginpage.tsx"
     },
@@ -9836,7 +9836,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "frontend_src_pages_loginpage_loginpage",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "loginpage()"
     },
@@ -9848,7 +9848,7 @@
       "_origin": "ast",
       "id": "frontend_src_pages_settingspage",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "settingspage.tsx"
     },
     {
@@ -9859,7 +9859,7 @@
       "_origin": "ast",
       "id": "frontend_src_pages_settingspage_boardeditor",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "boardeditor()"
     },
     {
@@ -9870,7 +9870,7 @@
       "_origin": "ast",
       "id": "frontend_src_pages_settingspage_configurablecategory",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "configurablecategory"
     },
     {
@@ -9881,7 +9881,7 @@
       "_origin": "ast",
       "id": "frontend_src_pages_settingspage_labeleditor",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "labeleditor()"
     },
     {
@@ -9891,7 +9891,7 @@
       "source_location": "L439",
       "_origin": "ast",
       "id": "frontend_src_pages_settingspage_settingspage",
-      "community": 21,
+      "community": 7,
       "community_name": "src/App.tsx",
       "norm_label": "settingspage()"
     },
@@ -9913,8 +9913,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "frontend_src_pages_taskdetailpage_taskdetailpage",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "taskdetailpage()"
     },
     {
@@ -9924,7 +9924,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_pages_taskspage",
-      "community": 12,
+      "community": 22,
       "community_name": "TasksPage.tsx",
       "norm_label": "taskspage.tsx"
     },
@@ -9936,7 +9936,7 @@
       "_origin": "ast",
       "id": "frontend_src_pages_taskspage_taskspage",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "taskspage()"
     },
     {
@@ -9946,8 +9946,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_boardcolor",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "boardcolor.ts"
     },
     {
@@ -9957,8 +9957,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_boardcolor_palette",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "palette"
     },
     {
@@ -9968,8 +9968,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "frontend_src_utils_boardcolor_getboardcolor",
-      "community": 50,
-      "community_name": "useBoard",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "getboardcolor()"
     },
     {
@@ -9980,7 +9980,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_boardorder",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "boardorder.ts"
     },
     {
@@ -9991,7 +9991,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_boardorder_computeboardinsertsortorder",
       "community": 7,
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "norm_label": "computeboardinsertsortorder()"
     },
     {
@@ -10002,7 +10002,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_boardvisibility",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "boardvisibility.ts"
     },
     {
@@ -10013,7 +10013,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_boardvisibility_effectivecollapsed",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "effectivecollapsed()"
     },
     {
@@ -10024,7 +10024,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_boardvisibility_findsinglevisibleboard",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "findsinglevisibleboard()"
     },
     {
@@ -10090,7 +10090,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/utils/taskdateutils.ts"
     },
     {
@@ -10101,7 +10101,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_columnkey",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "columnkey"
     },
     {
@@ -10112,7 +10112,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_dateonly",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "dateonly()"
     },
     {
@@ -10134,7 +10134,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_formatdatewithday",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "formatdatewithday()"
     },
     {
@@ -10145,7 +10145,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_isfriday",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "isfriday()"
     },
     {
@@ -10167,7 +10167,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_geteffectivedate",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "geteffectivedate()"
     },
     {
@@ -10178,7 +10178,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_getcolumn",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "getcolumn()"
     },
     {
@@ -10189,7 +10189,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_getdropdate",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "getdropdate()"
     },
     {
@@ -10200,7 +10200,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskfilters",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "frontend/src/utils/taskfilters.ts"
     },
     {
@@ -10211,7 +10211,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskfilters_matchessearch",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "matchessearch()"
     },
     {
@@ -10222,18 +10222,18 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskfilters_filtertasks",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "filtertasks()"
     },
     {
       "label": "filterBoards()",
       "file_type": "code",
       "source_file": "frontend/src/utils/taskFilters.ts",
-      "source_location": "L25",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "frontend_src_utils_taskfilters_filterboards",
       "community": 12,
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "norm_label": "filterboards()"
     },
     {
@@ -10321,7 +10321,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/utils/taskpriority.ts"
     },
     {
@@ -10332,7 +10332,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_high_priority_daily_limit",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "high_priority_daily_limit"
     },
     {
@@ -10343,7 +10343,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_ishighpriorityeligible",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "ishighpriorityeligible()"
     },
     {
@@ -10354,7 +10354,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_isformhighpriorityeligible",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "isformhighpriorityeligible()"
     },
     {
@@ -10365,7 +10365,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_splitbypriority",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "splitbypriority()"
     },
     {
@@ -10376,7 +10376,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_canaddhighpriority",
       "community": 22,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "norm_label": "canaddhighpriority()"
     },
     {
@@ -10386,8 +10386,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_viewlabel",
-      "community": 114,
-      "community_name": "ViewContext.tsx",
+      "community": 22,
+      "community_name": "TasksPage.tsx",
       "norm_label": "viewlabel.ts"
     },
     {
@@ -10397,8 +10397,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_viewlabel_viewmode",
-      "community": 114,
-      "community_name": "ViewContext.tsx",
+      "community": 22,
+      "community_name": "TasksPage.tsx",
       "norm_label": "viewmode"
     },
     {
@@ -10408,8 +10408,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "frontend_src_utils_viewlabel_view_labels",
-      "community": 114,
-      "community_name": "ViewContext.tsx",
+      "community": 22,
+      "community_name": "TasksPage.tsx",
       "norm_label": "view_labels"
     },
     {
@@ -10419,8 +10419,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "frontend_src_utils_viewlabel_viewlabel",
-      "community": 114,
-      "community_name": "ViewContext.tsx",
+      "community": 22,
+      "community_name": "TasksPage.tsx",
       "norm_label": "viewlabel()"
     },
     {
@@ -11692,7 +11692,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "mobile_package_dependencies_react_navigation_native",
-      "community": 116,
+      "community": 114,
       "community_name": "@react-navigation/native",
       "norm_label": "@react-navigation/native"
     },
@@ -11703,7 +11703,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "react_navigation_native",
-      "community": 116,
+      "community": 114,
       "community_name": "@react-navigation/native",
       "norm_label": "@react-navigation/native"
     },
@@ -15620,10 +15620,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "plan-fix-board-tag-ux-polish.md",
-      "id": "development_plans_plan_fix_board_tag_ux_polish"
+      "norm_label": "plan-fix-board-tag-ux-polish.md"
     },
     {
       "label": "PLAN-fix-board-tag-ux-polish",
@@ -15631,10 +15631,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "plan-fix-board-tag-ux-polish",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish"
+      "norm_label": "plan-fix-board-tag-ux-polish"
     },
     {
       "label": "Status",
@@ -15642,10 +15642,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L3",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_status",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "status",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_status"
+      "norm_label": "status"
     },
     {
       "label": "Branch",
@@ -15653,10 +15653,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L11",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_branch",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "branch",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_branch"
+      "norm_label": "branch"
     },
     {
       "label": "Scope",
@@ -15664,10 +15664,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L14",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_scope",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "scope",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_scope"
+      "norm_label": "scope"
     },
     {
       "label": "Background / current behavior",
@@ -15675,10 +15675,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L17",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_background_current_behavior",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "background / current behavior",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_background_current_behavior"
+      "norm_label": "background / current behavior"
     },
     {
       "label": "Items and fixes",
@@ -15686,10 +15686,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L23",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_items_and_fixes",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "items and fixes",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_items_and_fixes"
+      "norm_label": "items and fixes"
     },
     {
       "label": "1. Centered \"New Task\" button on an empty board",
@@ -15697,10 +15697,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L25",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_1_centered_new_task_button_on_an_empty_board",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "1. centered \"new task\" button on an empty board",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_1_centered_new_task_button_on_an_empty_board"
+      "norm_label": "1. centered \"new task\" button on an empty board"
     },
     {
       "label": "2. Tag filter link on the same row as the tag chips",
@@ -15708,10 +15708,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L33",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_2_tag_filter_link_on_the_same_row_as_the_tag_chips",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "2. tag filter link on the same row as the tag chips",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_2_tag_filter_link_on_the_same_row_as_the_tag_chips"
+      "norm_label": "2. tag filter link on the same row as the tag chips"
     },
     {
       "label": "3. Browser tab title",
@@ -15719,10 +15719,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L37",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_3_browser_tab_title",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "3. browser tab title",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_3_browser_tab_title"
+      "norm_label": "3. browser tab title"
     },
     {
       "label": "4. Alphabetical tag order on task cards, all views",
@@ -15730,10 +15730,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L40",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_4_alphabetical_tag_order_on_task_cards_all_views",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "4. alphabetical tag order on task cards, all views",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_4_alphabetical_tag_order_on_task_cards_all_views"
+      "norm_label": "4. alphabetical tag order on task cards, all views"
     },
     {
       "label": "5. AND/OR toggle for tag filtering",
@@ -15741,10 +15741,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L66",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_5_and_or_toggle_for_tag_filtering",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "5. and/or toggle for tag filtering",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_5_and_or_toggle_for_tag_filtering"
+      "norm_label": "5. and/or toggle for tag filtering"
     },
     {
       "label": "6. Longer link-description text on task cards",
@@ -15752,10 +15752,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L98",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_6_longer_link_description_text_on_task_cards",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "6. longer link-description text on task cards",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_6_longer_link_description_text_on_task_cards"
+      "norm_label": "6. longer link-description text on task cards"
     },
     {
       "label": "Files to modify",
@@ -15763,10 +15763,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L102",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_files_to_modify",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "files to modify",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_files_to_modify"
+      "norm_label": "files to modify"
     },
     {
       "label": "Data model changes",
@@ -15774,10 +15774,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L114",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_data_model_changes",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "data model changes",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_data_model_changes"
+      "norm_label": "data model changes"
     },
     {
       "label": "API / contract changes",
@@ -15785,10 +15785,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L117",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_api_contract_changes",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "api / contract changes",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_api_contract_changes"
+      "norm_label": "api / contract changes"
     },
     {
       "label": "Test changes",
@@ -15796,10 +15796,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L120",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_test_changes",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "test changes",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_test_changes"
+      "norm_label": "test changes"
     },
     {
       "label": "Deployment",
@@ -15807,10 +15807,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L128",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_deployment",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "deployment",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_deployment"
+      "norm_label": "deployment"
     },
     {
       "label": "Manual verification plan",
@@ -15818,10 +15818,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L131",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_manual_verification_plan",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "manual verification plan",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_manual_verification_plan"
+      "norm_label": "manual verification plan"
     },
     {
       "label": "Sneezy's Review \u2014 2026-08-05",
@@ -15829,10 +15829,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L143",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_sneezy_s_review_2026_08_05",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "sneezy's review \u2014 2026-08-05",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_sneezy_s_review_2026_08_05"
+      "norm_label": "sneezy's review \u2014 2026-08-05"
     },
     {
       "label": "Issues",
@@ -15840,10 +15840,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L149",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_issues",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "issues",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_issues"
+      "norm_label": "issues"
     },
     {
       "label": "Unverified assumptions",
@@ -15851,10 +15851,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L157",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_unverified_assumptions",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "unverified assumptions",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_unverified_assumptions"
+      "norm_label": "unverified assumptions"
     },
     {
       "label": "Suggestions",
@@ -15862,10 +15862,10 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L163",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_suggestions",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "suggestions",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_suggestions"
+      "norm_label": "suggestions"
     },
     {
       "label": "Grumpy's response \u2014 2026-08-05",
@@ -15873,10 +15873,230 @@
       "source_file": "development-plans/PLAN-fix-board-tag-ux-polish.md",
       "source_location": "L171",
       "_origin": "ast",
+      "id": "development_plans_plan_fix_board_tag_ux_polish_grumpy_s_response_2026_08_05",
       "community": 42,
       "community_name": "PLAN-fix-board-tag-ux-polish",
-      "norm_label": "grumpy's response \u2014 2026-08-05",
-      "id": "development_plans_plan_fix_board_tag_ux_polish_grumpy_s_response_2026_08_05"
+      "norm_label": "grumpy's response \u2014 2026-08-05"
+    },
+    {
+      "label": "PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "plan-fix-tag-filter-layout-and-link-wrap.md"
+    },
+    {
+      "label": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "plan-fix-tag-filter-layout-and-link-wrap"
+    },
+    {
+      "label": "Status",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_status",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "status"
+    },
+    {
+      "label": "Branch",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_branch",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "branch"
+    },
+    {
+      "label": "Scope",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_scope",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "scope"
+    },
+    {
+      "label": "Background / current behavior",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_background_current_behavior",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "background / current behavior"
+    },
+    {
+      "label": "Items and fixes",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_items_and_fixes",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "items and fixes"
+    },
+    {
+      "label": "1. Tag filter row: wrong side, wrong order",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_1_tag_filter_row_wrong_side_wrong_order",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "1. tag filter row: wrong side, wrong order"
+    },
+    {
+      "label": "2. Link description on task cards wraps too soon, despite available space",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_2_link_description_on_task_cards_wraps_too_soon_despite_available_space",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "2. link description on task cards wraps too soon, despite available space"
+    },
+    {
+      "label": "Files to modify",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_files_to_modify",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "files to modify"
+    },
+    {
+      "label": "Data model changes",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L57",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_data_model_changes",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "data model changes"
+    },
+    {
+      "label": "API / contract changes",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L60",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_api_contract_changes",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "api / contract changes"
+    },
+    {
+      "label": "Test changes",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L63",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_test_changes",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "test changes"
+    },
+    {
+      "label": "Deployment",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L66",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_deployment",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "deployment"
+    },
+    {
+      "label": "Manual verification plan",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L69",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_manual_verification_plan",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "manual verification plan"
+    },
+    {
+      "label": "Sneezy's Review \u2014 2026-08-05",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L78",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_sneezy_s_review_2026_08_05",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "sneezy's review \u2014 2026-08-05"
+    },
+    {
+      "label": "Issues",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L84",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_issues",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "issues"
+    },
+    {
+      "label": "Unverified assumptions",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L89",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_unverified_assumptions",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "unverified assumptions"
+    },
+    {
+      "label": "Suggestions",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L97",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_suggestions",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "suggestions"
+    },
+    {
+      "label": "Grumpy's response \u2014 2026-08-05",
+      "file_type": "document",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L104",
+      "_origin": "ast",
+      "id": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_grumpy_s_response_2026_08_05",
+      "community": 50,
+      "community_name": "PLAN-fix-tag-filter-layout-and-link-wrap",
+      "norm_label": "grumpy's response \u2014 2026-08-05"
     },
     {
       "label": "run skill (SKILL.md) \u2014 project launcher",
@@ -16817,10 +17037,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 112,
+      "community": 46,
       "norm_label": "plan: remove mode labels completely",
       "_origin": "semantic",
-      "community_name": "PLAN: Drop Frequency Labels \u2014 PR 3: DB Migration",
+      "community_name": "models.py",
       "id": "development_plans_plan_chore_remove_mode_labels_doc"
     },
     {
@@ -16847,10 +17067,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 112,
+      "community": 46,
       "norm_label": "ui naming change: type \u2192 tags",
       "_origin": "semantic",
-      "community_name": "PLAN: Drop Frequency Labels \u2014 PR 3: DB Migration",
+      "community_name": "models.py",
       "id": "development_plans_plan_chore_remove_mode_labels_type_to_tags_rename"
     },
     {
@@ -16862,10 +17082,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 112,
+      "community": 46,
       "norm_label": "mobile/src/screens/reportsscreen.tsx",
       "_origin": "semantic",
-      "community_name": "PLAN: Drop Frequency Labels \u2014 PR 3: DB Migration",
+      "community_name": "models.py",
       "id": "mobile_src_screens_reportsscreen"
     },
     {
@@ -16877,10 +17097,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 112,
+      "community": 46,
       "norm_label": "plan: remove frequency label logic from backend (pr 2 of 3)",
       "_origin": "semantic",
-      "community_name": "PLAN: Drop Frequency Labels \u2014 PR 3: DB Migration",
+      "community_name": "models.py",
       "id": "development_plans_plan_drop_frequency_labels_backend_doc"
     },
     {
@@ -16892,10 +17112,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 112,
+      "community": 46,
       "norm_label": "recurring task logic removal (complete_task always returns none)",
       "_origin": "semantic",
-      "community_name": "PLAN: Drop Frequency Labels \u2014 PR 3: DB Migration",
+      "community_name": "models.py",
       "id": "development_plans_plan_drop_frequency_labels_backend_recurrence_removal"
     },
     {
@@ -16907,10 +17127,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 112,
+      "community": 46,
       "norm_label": "ensure_seeded() sentinel swap (frequency\u2192mode)",
       "_origin": "semantic",
-      "community_name": "PLAN: Drop Frequency Labels \u2014 PR 3: DB Migration",
+      "community_name": "models.py",
       "id": "development_plans_plan_drop_frequency_labels_backend_sentinel_swap"
     },
     {
@@ -16922,10 +17142,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 12,
+      "community": 16,
       "norm_label": "plan: rename reports \u2192 archive, add date-range presets and board filtering",
       "_origin": "semantic",
-      "community_name": "TasksPage.tsx",
+      "community_name": "ArchivePage.tsx",
       "id": "development_plans_plan_feat_archive_view_doc"
     },
     {
@@ -16937,10 +17157,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 25,
+      "community": 16,
       "norm_label": "all_boards additive query param design",
       "_origin": "semantic",
-      "community_name": "schemas.py",
+      "community_name": "ArchivePage.tsx",
       "id": "development_plans_plan_feat_archive_view_all_boards_param"
     },
     {
@@ -16952,10 +17172,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 12,
+      "community": 16,
       "norm_label": "board-grouped collapsible rendering (mirrors today view)",
       "_origin": "semantic",
-      "community_name": "TasksPage.tsx",
+      "community_name": "ArchivePage.tsx",
       "id": "development_plans_plan_feat_archive_view_board_grouped_rendering"
     },
     {
@@ -16970,7 +17190,7 @@
       "community": 12,
       "norm_label": "plan: feat-board-collapse-mobile \u2014 collapsible boards (mobile)",
       "_origin": "semantic",
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "id": "development_plans_plan_feat_board_collapse_mobile_doc"
     },
     {
@@ -16985,7 +17205,7 @@
       "community": 12,
       "norm_label": "collapse state lifted into tasksscreen (mobile, no unmount)",
       "_origin": "semantic",
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "id": "development_plans_plan_feat_board_collapse_mobile_collapse_state_design"
     },
     {
@@ -17000,7 +17220,7 @@
       "community": 12,
       "norm_label": "plan: feat-board-collapse-web \u2014 collapsible boards (web)",
       "_origin": "semantic",
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "id": "development_plans_plan_feat_board_collapse_web_doc"
     },
     {
@@ -17015,7 +17235,7 @@
       "community": 12,
       "norm_label": "boardcollapsecontext (modeled on filtercontext)",
       "_origin": "semantic",
-      "community_name": "TasksPage.tsx",
+      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
       "id": "development_plans_plan_feat_board_collapse_web_boardcollapsecontext"
     },
     {
@@ -17030,7 +17250,7 @@
       "community": 7,
       "norm_label": "plan: custom board order + board-color styling + alphabetical tags",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "id": "development_plans_plan_feat_board_order_and_color_doc"
     },
     {
@@ -17045,7 +17265,7 @@
       "community": 7,
       "norm_label": "custom board order (sort_order, order-driven default board)",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "id": "development_plans_plan_feat_board_order_and_color_custom_order"
     },
     {
@@ -17057,10 +17277,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 50,
+      "community": 16,
       "norm_label": "board color everywhere (taskcard/boardtabs accents)",
       "_origin": "semantic",
-      "community_name": "useBoard",
+      "community_name": "ArchivePage.tsx",
       "id": "development_plans_plan_feat_board_order_and_color_board_color"
     },
     {
@@ -17075,7 +17295,7 @@
       "community": 7,
       "norm_label": "tasks.sort_order fractional-index precedent (pr #61)",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "id": "development_plans_plan_feat_board_order_and_color_tasks_sort_order_precedent"
     },
     {
@@ -17087,10 +17307,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 112,
+      "community": 46,
       "norm_label": "plan: drop frequency labels \u2014 pr 3: db migration",
       "_origin": "semantic",
-      "community_name": "PLAN: Drop Frequency Labels \u2014 PR 3: DB Migration",
+      "community_name": "models.py",
       "id": "development_plans_plan_feat_drop_frequency_labels_migration_doc"
     },
     {
@@ -17102,10 +17322,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 112,
+      "community": 46,
       "norm_label": "sql migration: purge frequency data + drop enum value + drop recurrence_group_id",
       "_origin": "semantic",
-      "community_name": "PLAN: Drop Frequency Labels \u2014 PR 3: DB Migration",
+      "community_name": "models.py",
       "id": "development_plans_plan_feat_drop_frequency_labels_migration_sql_migration"
     },
     {
@@ -17117,10 +17337,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 112,
+      "community": 46,
       "norm_label": "backend/scripts/migrate_drop_frequency_labels.sql",
       "_origin": "semantic",
-      "community_name": "PLAN: Drop Frequency Labels \u2014 PR 3: DB Migration",
+      "community_name": "models.py",
       "id": "backend_scripts_migrate_drop_frequency_labels_sql"
     },
     {
@@ -17135,7 +17355,7 @@
       "community": 22,
       "norm_label": "development plan: enhance all view with priority collapse & date display",
       "_origin": "semantic",
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "id": "development_plans_plan_feat_enhance_day_views_with_priority_collapse_doc"
     },
     {
@@ -17150,7 +17370,7 @@
       "community": 22,
       "norm_label": "monday column (friday-only) + priority split/collapse",
       "_origin": "semantic",
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "TasksPage.tsx",
       "id": "development_plans_plan_feat_enhance_day_views_with_priority_collapse_monday_column"
     },
     {
@@ -17192,10 +17412,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 12,
+      "community": 7,
       "norm_label": "plan: feat-focused-view-web (pr 2 of 3)",
       "_origin": "semantic",
-      "community_name": "TasksPage.tsx",
+      "community_name": "src/App.tsx",
       "id": "development_plans_plan_feat_focused_view_web_doc"
     },
     {
@@ -17207,10 +17427,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 12,
+      "community": 7,
       "norm_label": "native input[type=color] auto-save picker (routes through setcolorboard)",
       "_origin": "semantic",
-      "community_name": "TasksPage.tsx",
+      "community_name": "src/App.tsx",
       "id": "development_plans_plan_feat_focused_view_web_color_picker"
     },
     {
@@ -17222,10 +17442,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 56,
       "norm_label": "development plan: feat-focused-view (backend, pr 1 of 3)",
       "_origin": "semantic",
-      "community_name": "models.py",
+      "community_name": "focused_view.py",
       "id": "development_plans_plan_feat_focused_view_doc"
     },
     {
@@ -17237,10 +17457,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 56,
       "norm_label": "focused_view_configs table + unique(user_id) upsert design",
       "_origin": "semantic",
-      "community_name": "models.py",
+      "community_name": "focused_view.py",
       "id": "development_plans_plan_feat_focused_view_config_table"
     },
     {
@@ -17252,10 +17472,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 112,
+      "community": 46,
       "norm_label": "plan: frontend & mobile type cleanup (pr 4, follow-up)",
       "_origin": "semantic",
-      "community_name": "PLAN: Drop Frequency Labels \u2014 PR 3: DB Migration",
+      "community_name": "models.py",
       "id": "development_plans_plan_feat_frontend_mobile_type_cleanup_doc"
     },
     {
@@ -17282,10 +17502,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 14,
+      "community": 87,
       "norm_label": "plan-feat-inline-tag-add",
       "_origin": "semantic",
-      "community_name": "TaskForm.tsx",
+      "community_name": "frontend/src/api/tasks.ts",
       "id": "development_plans_plan_feat_inline_tag_add_doc"
     },
     {
@@ -17297,10 +17517,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 14,
+      "community": 87,
       "norm_label": "inline tag creation from taskform (avoid settings trip)",
       "_origin": "semantic",
-      "community_name": "TaskForm.tsx",
+      "community_name": "frontend/src/api/tasks.ts",
       "id": "development_plans_plan_feat_inline_tag_add_inline_create"
     },
     {
@@ -17315,7 +17535,7 @@
       "community": 7,
       "norm_label": "plan: feat-multi-board-frontend (pr 2/3)",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "id": "development_plans_plan_feat_multi_board_frontend_doc"
     },
     {
@@ -17330,7 +17550,7 @@
       "community": 7,
       "norm_label": "boardcontext + boardswitcher ui design",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "id": "development_plans_plan_feat_multi_board_frontend_boardcontext_design"
     },
     {
@@ -17345,7 +17565,7 @@
       "community": 7,
       "norm_label": "frontend/src/components/boardswitcher.tsx",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "id": "frontend_src_components_boardswitcher"
     },
     {
@@ -17360,7 +17580,7 @@
       "community": 7,
       "norm_label": "plan-feat-multi-board-backend (pr #33, external, merged)",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "src/App.tsx",
       "id": "development_plans_plan_feat_multi_board_backend_doc"
     },
     {
@@ -42522,7 +42742,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/__tests__/taskFilters.test.ts",
-      "source_location": "L114",
+      "source_location": "L148",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_tests_taskfilters_test",
@@ -45989,7 +46209,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L89",
+      "source_location": "L93",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
@@ -46025,7 +46245,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L94",
+      "source_location": "L98",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
@@ -46283,7 +46503,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/EmptyState.tsx",
-      "source_location": "L28",
+      "source_location": "L38",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_emptystate",
@@ -46294,7 +46514,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/EmptyState.tsx",
-      "source_location": "L41",
+      "source_location": "L51",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_emptystate",
@@ -47477,7 +47697,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/context/FilterContext.tsx",
-      "source_location": "L15",
+      "source_location": "L18",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_context_filtercontext_filterprovider",
@@ -48033,7 +48253,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/context/FilterContext.tsx",
-      "source_location": "L11",
+      "source_location": "L13",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_context_filtercontext",
@@ -48055,7 +48275,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/context/FilterContext.tsx",
-      "source_location": "L13",
+      "source_location": "L15",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_context_filtercontext",
@@ -48066,7 +48286,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/context/FilterContext.tsx",
-      "source_location": "L43",
+      "source_location": "L46",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_context_filtercontext",
@@ -49369,7 +49589,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/pages/TasksPage.tsx",
-      "source_location": "L376",
+      "source_location": "L383",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_pages_taskspage_taskspage",
@@ -49381,7 +49601,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/pages/TasksPage.tsx",
-      "source_location": "L379",
+      "source_location": "L386",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_pages_taskspage_taskspage",
@@ -49777,7 +49997,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskFilters.ts",
-      "source_location": "L25",
+      "source_location": "L30",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskfilters",
@@ -49811,7 +50031,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskFilters.ts",
-      "source_location": "L28",
+      "source_location": "L33",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskfilters_filterboards",
@@ -49823,7 +50043,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskFilters.ts",
-      "source_location": "L20",
+      "source_location": "L25",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskfilters_filtertasks",
@@ -58854,9 +59074,9 @@
       "source_location": "L1",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58865,9 +59085,9 @@
       "source_location": "L117",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_api_contract_changes"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_api_contract_changes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58876,9 +59096,9 @@
       "source_location": "L17",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_background_current_behavior"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_background_current_behavior",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58887,9 +59107,9 @@
       "source_location": "L11",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_branch"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_branch",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58898,9 +59118,9 @@
       "source_location": "L114",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_data_model_changes"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_data_model_changes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58909,9 +59129,9 @@
       "source_location": "L128",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_deployment"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_deployment",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58920,9 +59140,9 @@
       "source_location": "L102",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_files_to_modify"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_files_to_modify",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58931,9 +59151,9 @@
       "source_location": "L171",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_grumpy_s_response_2026_08_05"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_grumpy_s_response_2026_08_05",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58942,9 +59162,9 @@
       "source_location": "L23",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_items_and_fixes"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_items_and_fixes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58953,9 +59173,9 @@
       "source_location": "L131",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_manual_verification_plan"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_manual_verification_plan",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58964,9 +59184,9 @@
       "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_scope"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_scope",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58975,9 +59195,9 @@
       "source_location": "L143",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_sneezy_s_review_2026_08_05"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_sneezy_s_review_2026_08_05",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58986,9 +59206,9 @@
       "source_location": "L3",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_status"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_status",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -58997,9 +59217,9 @@
       "source_location": "L120",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_plan_fix_board_tag_ux_polish",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_test_changes"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_test_changes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -59008,9 +59228,9 @@
       "source_location": "L25",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_items_and_fixes",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_1_centered_new_task_button_on_an_empty_board"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_1_centered_new_task_button_on_an_empty_board",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -59019,9 +59239,9 @@
       "source_location": "L33",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_items_and_fixes",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_2_tag_filter_link_on_the_same_row_as_the_tag_chips"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_2_tag_filter_link_on_the_same_row_as_the_tag_chips",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -59030,9 +59250,9 @@
       "source_location": "L37",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_items_and_fixes",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_3_browser_tab_title"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_3_browser_tab_title",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -59041,9 +59261,9 @@
       "source_location": "L40",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_items_and_fixes",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_4_alphabetical_tag_order_on_task_cards_all_views"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_4_alphabetical_tag_order_on_task_cards_all_views",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -59052,9 +59272,9 @@
       "source_location": "L66",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_items_and_fixes",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_5_and_or_toggle_for_tag_filtering"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_5_and_or_toggle_for_tag_filtering",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -59063,9 +59283,9 @@
       "source_location": "L98",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_items_and_fixes",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_6_longer_link_description_text_on_task_cards"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_6_longer_link_description_text_on_task_cards",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -59074,9 +59294,9 @@
       "source_location": "L149",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_sneezy_s_review_2026_08_05",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_issues"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_issues",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -59085,9 +59305,9 @@
       "source_location": "L163",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_sneezy_s_review_2026_08_05",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_suggestions"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_suggestions",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -59096,9 +59316,218 @@
       "source_location": "L157",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "development_plans_plan_fix_board_tag_ux_polish_sneezy_s_review_2026_08_05",
-      "target": "development_plans_plan_fix_board_tag_ux_polish_unverified_assumptions"
+      "target": "development_plans_plan_fix_board_tag_ux_polish_unverified_assumptions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L60",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_api_contract_changes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L17",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_background_current_behavior",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_branch",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L57",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_data_model_changes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L66",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_deployment",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L53",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_files_to_modify",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L104",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_grumpy_s_response_2026_08_05",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L20",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_items_and_fixes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L69",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_manual_verification_plan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L14",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_scope",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L78",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_sneezy_s_review_2026_08_05",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_status",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L63",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_plan_fix_tag_filter_layout_and_link_wrap",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_test_changes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L22",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_items_and_fixes",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_1_tag_filter_row_wrong_side_wrong_order",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L29",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_items_and_fixes",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_2_link_description_on_task_cards_wraps_too_soon_despite_available_space",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L84",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_sneezy_s_review_2026_08_05",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_issues",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L97",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_sneezy_s_review_2026_08_05",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_suggestions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md",
+      "source_location": "L89",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_sneezy_s_review_2026_08_05",
+      "target": "development_plans_plan_fix_tag_filter_layout_and_link_wrap_unverified_assumptions",
+      "confidence_score": 1.0
     },
     {
       "relation": "references",
@@ -61578,5 +62007,5 @@
       "source_file": "development-plans/PLAN-fix-focused-card-parity-and-notes-bug.md"
     }
   ],
-  "built_at_commit": "742c01247c4789e5f84d877588b0e288fb516286"
+  "built_at_commit": "494c33caa30f63d214ee5ee63c2e8b6ae6334a2a"
 }

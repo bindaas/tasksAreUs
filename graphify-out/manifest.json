@@ -370,8 +370,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/TaskCardBody.tsx": {
-    "mtime": 1785973695.5129068,
-    "ast_hash": "f4de2dad49028290cce5db0c4a62f1df",
+    "mtime": 1785975469.752183,
+    "ast_hash": "017646e55e5fe744b8c7053da311db0c",
     "semantic_hash": ""
   },
   "frontend/src/components/TaskForm.tsx": {
@@ -840,8 +840,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1785973695.5091913,
-    "ast_hash": "7d845c2e37bfe1fd016e102c4656f9d0",
+    "mtime": 1785975469.7494226,
+    "ast_hash": "68f2b8ddc405b481b296f4804e9433f8",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -860,8 +860,8 @@
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1785973695.5095303,
-    "ast_hash": "05a056dd25d910412280640f1e948def",
+    "mtime": 1785975469.750731,
+    "ast_hash": "56c85fdcb8dc1c9490c01bfce9da19a9",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1225,8 +1225,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/LabelFilterChips.tsx": {
-    "mtime": 1785973695.5117807,
-    "ast_hash": "7e56ab1320efb9ba1db089f59eea3c1d",
+    "mtime": 1785975469.7519274,
+    "ast_hash": "4432c8472384859ac7bf797d85746036",
     "semantic_hash": ""
   },
   "frontend/src/utils/boardVisibility.ts": {
@@ -1237,6 +1237,11 @@
   "development-plans/PLAN-feat-board-pin-and-single-board-tags.md": {
     "mtime": 1785970933.9365752,
     "ast_hash": "1e8564c302ae7af212a7f79d495cf2d0",
+    "semantic_hash": ""
+  },
+  "development-plans/PLAN-fix-board-tag-ux-polish.md": {
+    "mtime": 1785973695.509665,
+    "ast_hash": "fe85f9df3ba0b481cac0cb4c86407dcf",
     "semantic_hash": ""
   }
 }

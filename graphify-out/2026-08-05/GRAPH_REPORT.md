@@ -1,16 +1,16 @@
 # Graph Report - tasksAreUs  (2026-08-05)
 
 ## Corpus Check
-- 237 files · ~262,535 words
+- 238 files · ~265,705 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1583 nodes · 3737 edges · 117 communities (71 shown, 46 thin omitted)
+- 1603 nodes · 3752 edges · 116 communities (70 shown, 46 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 196 edges (avg confidence: 0.55)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ede94298`
+- Built from commit: `494c33ca`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -22,22 +22,22 @@
 - LabelUpdate
 - PLAN: Remove Beliefs Feature and All LLM/Anthropic Integration
 - PLAN-feat-tasks-view-redesign-mobile.md (external)
-- SettingsPage.tsx
+- src/App.tsx
 - test_task_service.py
 - TasksScreen.tsx
 - Task
 - _make_board
-- TasksPage.tsx
+- frontend/src/components/BoardGroupedTasks.tsx
 - expo
 - TaskForm.tsx
 - get_current_user
 - ArchivePage.tsx
 - ArchiveScreen.tsx
 - Task
-- create_label
+- labels.py
 - test_board_service.py
-- src/App.tsx
-- frontend/src/utils/taskDateUtils.ts
+- Layout.tsx
+- TasksPage.tsx
 - compilerOptions
 - boards.py
 - schemas.py
@@ -60,18 +60,18 @@
 - PLAN-fix-board-tag-ux-polish
 - devDependencies
 - patch
-- Task
+- dependencies.py
 - models.py
 - _is_hp_eligible_date
 - task_service.py
 - PLAN: Board pin + single-board tag filter chips
-- useBoard
+- PLAN-fix-tag-filter-layout-and-link-wrap
 - scripts
 - purge_test_data.py
 - mobile/tsconfig.json
 - frontend/package.json
 - metro.config.js
-- dependencies.py
+- focused_view.py
 - frontend/tsconfig.json
 - markdown-it-task-lists.d.ts
 - @eslint/js
@@ -117,11 +117,10 @@
 - Mobile App Icon (Blank/Placeholder)
 - Splash Icon (blank/white)
 - get_completions
-- PLAN: Drop Frequency Labels — PR 3: DB Migration
-- TestDeleteLabel
-- ViewContext.tsx
+- frontend/src/api/client.ts
+- settings.py
+- @believer/react-native-markdown-display
 - _get_high_priority_limit
-- @react-navigation/native
 
 ## God Nodes (most connected - your core abstractions)
 1. `Task` - 60 edges
@@ -161,7 +160,7 @@
 - **Multi-board feature epic: backend/data-model plan plus mobile follow-on** — development_plans_plan_feat_multi_board_doc, development_plans_plan_feat_multi_board_mobile_doc, development_plans_plan_feat_multi_board_boards_table [INFERRED 0.85]
 - **Recurring bug class: conditionally omitting a field on save silently fails to clear it (notes / links)** — development_plans_plan_fix_focused_card_parity_and_notes_bug_notes_truthiness_bug, development_plans_plan_feat_task_links_full_replace_semantics, development_plans_plan_feat_tasks_view_redesign_mobile_notes_bug_foldin [INFERRED 0.80]
 
-## Communities (117 total, 46 thin omitted)
+## Communities (116 total, 46 thin omitted)
 
 ### Community 0 - "._make_db"
 Cohesion: 0.15
@@ -191,9 +190,9 @@ Nodes (26): API Contract Changes, Backend (`backend/app/`), Confidence & Risk As
 Cohesion: 0.05
 Nodes (48): Rationale: seeding sentinel scoped per-board (ensure_board_seeded), not per-user, so new boards start empty while the original 'General tasks' board still seeds, boards table data model (multi-board feature), PLAN: feat-multi-board — Multiple Boards, Mobile BoardContext (mirrors web BoardContext, no FilterContext equivalent), PLAN: Multi-board Mobile Support (PR 3/3), Rationale: OTA (eas update) deployment for JS/TS-only mobile changes, no native/app.json/eas.json touched, Rationale: partial unique index UNIQUE(user_id) WHERE is_default=true, created via raw SQL in lifespan block since create_all() can't express partial indexes, _resolve_labels(label_ids, user_id, board_id, db) — cross-board label validation (+40 more)
 
-### Community 7 - "SettingsPage.tsx"
-Cohesion: 0.14
-Nodes (20): Custom Board Order (sort_order, order-driven default board), Plan: Custom board order + board-color styling + alphabetical tags, tasks.sort_order Fractional-Index Precedent (PR #61), PLAN-feat-multi-board-backend (PR #33, external, merged), BoardContext + BoardSwitcher UI Design, PLAN: feat-multi-board-frontend (PR 2/3), Board, createBoard() (+12 more)
+### Community 7 - "src/App.tsx"
+Cohesion: 0.09
+Nodes (37): Custom Board Order (sort_order, order-driven default board), Plan: Custom board order + board-color styling + alphabetical tags, tasks.sort_order Fractional-Index Precedent (PR #61), Native input[type=color] Auto-Save Picker (routes through setColorBoard), Plan: feat-focused-view-web (PR 2 of 3), PLAN-feat-multi-board-backend (PR #33, external, merged), BoardContext + BoardSwitcher UI Design, PLAN: feat-multi-board-frontend (PR 2/3) (+29 more)
 
 ### Community 8 - "test_task_service.py"
 Cohesion: 0.13
@@ -211,25 +210,25 @@ Nodes (41): Base, Board, Task, TaskLabel, UserSettings, _owned_board_id(), _pars
 Cohesion: 0.23
 Nodes (6): delete_board(), update_board(), _make_board(), Board, TestDeleteBoard, TestUpdateBoard
 
-### Community 12 - "TasksPage.tsx"
-Cohesion: 0.09
-Nodes (33): Board-Grouped Collapsible Rendering (mirrors Today view), PLAN: Rename Reports → Archive, add date-range presets and board filtering, Collapse State Lifted into TasksScreen (mobile, no unmount), PLAN: feat-board-collapse-mobile — Collapsible boards (mobile), BoardCollapseContext (modeled on FilterContext), PLAN: feat-board-collapse-web — Collapsible boards (web), Native input[type=color] Auto-Save Picker (routes through setColorBoard), Plan: feat-focused-view-web (PR 2 of 3) (+25 more)
+### Community 12 - "frontend/src/components/BoardGroupedTasks.tsx"
+Cohesion: 0.10
+Nodes (28): Collapse State Lifted into TasksScreen (mobile, no unmount), PLAN: feat-board-collapse-mobile — Collapsible boards (mobile), BoardCollapseContext (modeled on FilterContext), PLAN: feat-board-collapse-web — Collapsible boards (web), getDayViewTasks(), FocusedBoard, getFocusedViewTasks(), BoardGroupedTasks() (+20 more)
 
 ### Community 13 - "expo"
 Cohesion: 0.06
 Nodes (30): backgroundColor, foregroundImage, adaptiveIcon, package, projectId, expo, android, extra (+22 more)
 
 ### Community 14 - "TaskForm.tsx"
-Cohesion: 0.21
-Nodes (12): PLAN-feat-inline-tag-add, Inline Tag Creation from TaskForm (avoid Settings trip), TaskLink, CATEGORY_DISPLAY_NAMES, CATEGORY_ORDER, LabelCategory, newLinkId(), TaskForm() (+4 more)
+Cohesion: 0.25
+Nodes (10): TaskLink, CATEGORY_DISPLAY_NAMES, CATEGORY_ORDER, LabelCategory, newLinkId(), TaskForm(), isBlankLink(), isValidLinkUrl() (+2 more)
 
 ### Community 15 - "get_current_user"
-Cohesion: 0.13
-Nodes (14): get_current_user(), get_firebase_claims(), Session, Evaluated per-request so the flag can be toggled without a server restart., Validate Bearer token and return decoded claims. Does NOT touch the DB. Used by…, Resolve caller to an internal user_id UUID via Firebase Bearer token. Bypass:…, _test_auth_bypass(), _verify_firebase_token() (+6 more)
+Cohesion: 0.21
+Nodes (7): get_current_user(), Session, Resolve caller to an internal user_id UUID via Firebase Bearer token. Bypass:…, _firebase_claims(), _make_db(), TestAuthBypass, TestGetCurrentUser
 
 ### Community 16 - "ArchivePage.tsx"
-Cohesion: 0.14
-Nodes (18): BoardCompletions, CompletionRecord, CompletionsReport, getCompletions(), GetCompletionsOptions, ArchiveBoardGroups(), CompletionCard(), formatDateTime() (+10 more)
+Cohesion: 0.11
+Nodes (26): all_boards Additive Query Param Design, Board-Grouped Collapsible Rendering (mirrors Today view), PLAN: Rename Reports → Archive, add date-range presets and board filtering, Board Color Everywhere (TaskCard/BoardTabs accents), BoardCompletions, CompletionRecord, CompletionsReport, getCompletions() (+18 more)
 
 ### Community 17 - "ArchiveScreen.tsx"
 Cohesion: 0.10
@@ -239,33 +238,33 @@ Nodes (25): getCompletions(), GetCompletionsOptions, ArchiveBoardGroups(), board
 Cohesion: 0.14
 Nodes (13): TaskCardBodyProps, TaskQuickEditProps, labelA, labelB, REF_DATE, Label, Task, filterTasks() (+5 more)
 
-### Community 19 - "create_label"
-Cohesion: 0.47
-Nodes (4): create_label(), post, LabelCreate, TestCreateLabel
+### Community 19 - "labels.py"
+Cohesion: 0.18
+Nodes (13): CategoryEnum, create_label(), delete_label(), list_labels(), delete, get, post, Session (+5 more)
 
 ### Community 20 - "test_board_service.py"
-Cohesion: 0.11
-Nodes (18): delete_board(), delete, create_board(), ensure_board_seeded(), get_board_or_404(), get_default_board_id(), Board, Session (+10 more)
+Cohesion: 0.12
+Nodes (16): create_board(), ensure_board_seeded(), get_board_or_404(), get_default_board_id(), Board, Session, Ensure is_default matches whichever board is topmost in sort_order. Must re-…, Return board_id after validating ownership, or the default board if board_id is… (+8 more)
 
-### Community 21 - "src/App.tsx"
-Cohesion: 0.13
-Nodes (16): App(), AppRoutes(), EmailConfirmationPage(), Layout(), NAV_ITEMS, NavItem, AuthContext, AuthContextValue (+8 more)
+### Community 21 - "Layout.tsx"
+Cohesion: 0.25
+Nodes (3): Layout(), NAV_ITEMS, NavItem
 
-### Community 22 - "frontend/src/utils/taskDateUtils.ts"
-Cohesion: 0.17
-Nodes (19): Development Plan: Enhance All View with Priority Collapse & Date Display, Monday Column (Friday-only) + Priority Split/Collapse, ColumnPriorityCollapseContext, ColumnPriorityCollapseContextValue, ColumnPriorityCollapseProvider(), useColumnPriorityCollapse(), TasksPage(), ColumnKey (+11 more)
+### Community 22 - "TasksPage.tsx"
+Cohesion: 0.12
+Nodes (29): Development Plan: Enhance All View with Priority Collapse & Date Display, Monday Column (Friday-only) + Priority Split/Collapse, TaskCard(), TaskCardBodyProps, ColumnPriorityCollapseContext, ColumnPriorityCollapseContextValue, useColumnPriorityCollapse(), useView() (+21 more)
 
 ### Community 23 - "compilerOptions"
 Cohesion: 0.09
 Nodes (22): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, jsx, lib, module, moduleDetection, moduleResolution (+14 more)
 
 ### Community 24 - "boards.py"
-Cohesion: 0.31
-Nodes (10): create_board(), list_boards(), get, post, put, Session, update_board(), BoardCreate (+2 more)
+Cohesion: 0.26
+Nodes (12): create_board(), delete_board(), list_boards(), delete, get, post, put, Session (+4 more)
 
 ### Community 25 - "schemas.py"
-Cohesion: 0.18
-Nodes (20): _get_or_create_settings(), get_settings(), get, put, Session, update_settings(), BoardCompletions, CompletionItem (+12 more)
+Cohesion: 0.30
+Nodes (11): BoardCompletions, CompletionItem, CompletionsReport, FocusedViewBoardGroup, LabelOut, SyncResponse, TaskLabelSync, Task (+3 more)
 
 ### Community 26 - "index.ts"
 Cohesion: 0.14
@@ -297,7 +296,7 @@ Nodes (24): API_BASE_URL, apiFetch(), getDayViewTasks(), createLabel(), deleteLa
 
 ### Community 33 - "dependencies"
 Cohesion: 0.13
-Nodes (15): @believer/react-native-markdown-display, expo, expo-auth-session, expo-crypto, dependencies, @believer/react-native-markdown-display, expo, expo-auth-session (+7 more)
+Nodes (15): expo, expo-auth-session, expo-crypto, dependencies, expo, expo-auth-session, expo-crypto, @react-native-async-storage/async-storage (+7 more)
 
 ### Community 34 - "dependencies"
 Cohesion: 0.13
@@ -343,13 +342,13 @@ Nodes (9): @babel/core, jest-expo, devDependencies, @babel/core, jest-expo, @typ
 Cohesion: 0.17
 Nodes (3): patch, TestHighPriorityDailyLimit, TestUpdateTaskBoardId
 
-### Community 45 - "Task"
-Cohesion: 0.16
-Nodes (17): Narrow Label.category Union / Remove Dead recurrence_group_id Type, listLabels(), Label, Task, FocusedTaskCard(), LABEL_COLORS, LABEL_CATEGORY_ORDER, TaskCard() (+9 more)
+### Community 45 - "dependencies.py"
+Cohesion: 0.17
+Nodes (11): Settings, get_db(), get_firebase_claims(), Evaluated per-request so the flag can be toggled without a server restart., Validate Bearer token and return decoded claims. Does NOT touch the DB. Used by…, _test_auth_bypass(), _verify_firebase_token(), Unit tests for dependencies.py — Firebase auth path. (+3 more)
 
 ### Community 46 - "models.py"
-Cohesion: 0.21
-Nodes (12): CategoryEnum, Label, Board CRUD, seeding, and board-cap enforcement., Session, Label seeding helper — called by board_service during board initialisation., Seed all LABEL_SEED entries into a specific board. Idempotent., seed_board_labels(), Unit tests for labels router — no database required. (+4 more)
+Cohesion: 0.13
+Nodes (17): Label, Board CRUD, seeding, and board-cap enforcement., Session, Label seeding helper — called by board_service during board initialisation., Seed all LABEL_SEED entries into a specific board. Idempotent., seed_board_labels(), backend/scripts/migrate_drop_frequency_labels.sql, PLAN: Remove Mode Labels Completely (+9 more)
 
 ### Community 47 - "_is_hp_eligible_date"
 Cohesion: 0.29
@@ -363,9 +362,9 @@ Nodes (7): _sort_order_default(), complete_task(), Task, reopen_task(), TestComp
 Cohesion: 0.11
 Nodes (18): 1. Pin (`BoardCollapseContext.tsx`), 2. Single-board tag chips (`BoardGroupedTasks.tsx`), 3. Pin button UI (`BoardGroupedTasks.tsx`), Data model changes, Deployment order, Design, Files touched, Grumpy's response to Sneezy's review — 2026-08-04 (+10 more)
 
-### Community 50 - "useBoard"
-Cohesion: 0.31
-Nodes (8): Board Color Everywhere (TaskCard/BoardTabs accents), ArchiveBoardTabs(), BoardTabs(), useBoard(), useLabels(), TaskDetailPage(), getBoardColor(), PALETTE
+### Community 50 - "PLAN-fix-tag-filter-layout-and-link-wrap"
+Cohesion: 0.10
+Nodes (19): 1. Tag filter row: wrong side, wrong order, 2. Link description on task cards wraps too soon, despite available space, API / contract changes, Background / current behavior, Branch, Data model changes, Deployment, Files to modify (+11 more)
 
 ### Community 51 - "scripts"
 Cohesion: 0.29
@@ -383,36 +382,32 @@ Nodes (4): name, private, type, version
 Cohesion: 0.40
 Nodes (4): config, { getDefaultConfig }, path, { withNativeWind }
 
-### Community 56 - "dependencies.py"
-Cohesion: 0.20
-Nodes (14): Settings, get_db(), get_config(), get_focused_tasks(), date, get, put, Session (+6 more)
+### Community 56 - "focused_view.py"
+Cohesion: 0.24
+Nodes (12): get_config(), get_focused_tasks(), date, get, put, Session, update_config(), FocusedViewConfigOut (+4 more)
 
 ### Community 87 - "frontend/src/api/tasks.ts"
 Cohesion: 0.10
-Nodes (28): apiFetch(), createLabel(), deleteLabel(), LabelCategory, updateLabel(), getSettings(), Settings, updateSettings() (+20 more)
+Nodes (37): Narrow Label.category Union / Remove Dead recurrence_group_id Type, PLAN-feat-inline-tag-add, Inline Tag Creation from TaskForm (avoid Settings trip), apiFetch(), createLabel(), deleteLabel(), LabelCategory, listLabels() (+29 more)
 
 ### Community 111 - "get_completions"
 Cohesion: 0.50
 Nodes (4): get_completions(), date, get, Session
 
-### Community 112 - "PLAN: Drop Frequency Labels — PR 3: DB Migration"
-Cohesion: 0.22
-Nodes (10): backend/scripts/migrate_drop_frequency_labels.sql, PLAN: Remove Mode Labels Completely, UI Naming Change: Type → Tags, Plan: Remove Frequency Label Logic from Backend (PR 2 of 3), Recurring Task Logic Removal (complete_task always returns None), ensure_seeded() Sentinel Swap (frequency→mode), PLAN: Drop Frequency Labels — PR 3: DB Migration, SQL Migration: purge frequency data + drop enum value + drop recurrence_group_id (+2 more)
+### Community 112 - "frontend/src/api/client.ts"
+Cohesion: 0.15
+Nodes (9): getSettings(), Settings, updateSettings(), app, auth, firebaseConfig, useSettings(), mockAuth (+1 more)
 
-### Community 113 - "TestDeleteLabel"
-Cohesion: 0.28
-Nodes (6): delete_label(), list_labels(), delete, get, Session, TestDeleteLabel
-
-### Community 114 - "ViewContext.tsx"
-Cohesion: 0.27
-Nodes (7): useView(), ViewContext, ViewContextValue, ViewProvider(), VIEW_LABELS, viewLabel(), ViewMode
+### Community 113 - "settings.py"
+Cohesion: 0.42
+Nodes (8): _get_or_create_settings(), get_settings(), get, put, Session, update_settings(), SettingsOut, SettingsUpdate
 
 ## Ambiguous Edges - Review These
 - `Day View` → `Overdue View proposal (archived plan; proposed separate /overdue-view/tasks endpoint)`  [AMBIGUOUS]
   archive/PLAN-feat-overdue-view-colors-actions.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **351 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+346 more)
+- **368 isolated node(s):** `Status`, `Branch`, `Scope`, `Background / current behavior`, `1. Tag filter row: wrong side, wrong order` (+363 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **46 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -421,12 +416,12 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `Day View` and `Overdue View proposal (archived plan; proposed separate /overdue-view/tasks endpoint)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `Development Plan: feat-focused-view (backend, PR 1 of 3)` connect `models.py` to `schemas.py`, `TasksPage.tsx`, `mobile/src/api/focusedView.ts`?**
-  _High betweenness centrality (0.142) - this node is a cross-community bridge._
-- **Why does `Plan: feat-focused-view-mobile (PR 3 of 3)` connect `mobile/src/api/focusedView.ts` to `apiFetch`, `TasksScreen.tsx`, `TasksPage.tsx`, `models.py`?**
-  _High betweenness centrality (0.130) - this node is a cross-community bridge._
-- **Why does `Custom Board Order (sort_order, order-driven default board)` connect `SettingsPage.tsx` to `boards.py`, `StateEnum`, `models.py`?**
-  _High betweenness centrality (0.079) - this node is a cross-community bridge._
+- **Why does `Plan: feat-focused-view-mobile (PR 3 of 3)` connect `mobile/src/api/focusedView.ts` to `focused_view.py`, `TasksScreen.tsx`, `apiFetch`, `src/App.tsx`?**
+  _High betweenness centrality (0.146) - this node is a cross-community bridge._
+- **Why does `Development Plan: feat-focused-view (backend, PR 1 of 3)` connect `focused_view.py` to `schemas.py`, `src/App.tsx`, `models.py`, `mobile/src/api/focusedView.ts`?**
+  _High betweenness centrality (0.146) - this node is a cross-community bridge._
+- **Why does `Custom Board Order (sort_order, order-driven default board)` connect `src/App.tsx` to `boards.py`, `StateEnum`, `models.py`?**
+  _High betweenness centrality (0.070) - this node is a cross-community bridge._
 - **Are the 39 inferred relationships involving `Task` (e.g. with `TestCreateBoard` and `TestDeleteBoard`) actually correct?**
   _`Task` has 39 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 31 inferred relationships involving `StateEnum` (e.g. with `TestDateWindow` and `TestGetDayViewTasks`) actually correct?**
