@@ -161,17 +161,17 @@ export function TaskCardBody({
   }
 
   return (
-    <div className="flex items-start justify-between gap-2">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
           {priorityIndicator}
           {titleEl}
         </div>
-        {dateEl}
-        {renderLabels(task.labels)}
-        {linksEl}
+        {actionsEl}
       </div>
-      {actionsEl}
-    </div>
+      {dateEl}
+      {renderLabels(task.labels)}
+      {linksEl}
+    </>
   );
 }

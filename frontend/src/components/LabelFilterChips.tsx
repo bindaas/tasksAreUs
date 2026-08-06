@@ -26,26 +26,7 @@ export function LabelFilterChips({
   onMatchModeChange: (mode: 'AND' | 'OR') => void;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap gap-1.5 items-center justify-end">
-      {CATEGORIES.map((cat) => {
-        const catLabels = ((labelsByCategory[cat] ?? []) as Label[]).slice().sort((a, b) => a.value.localeCompare(b.value));
-        if (catLabels.length === 0) return null;
-        const colors = CATEGORY_COLORS[cat];
-        return catLabels.map((label) => {
-          const active = selectedLabelIds.has(label.id);
-          return (
-            <button
-              key={label.id}
-              onClick={() => onToggle(label.id)}
-              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors ${
-                active ? colors.active : colors.inactive
-              }`}
-            >
-              {label.value}
-            </button>
-          );
-        });
-      })}
+    <div className="mb-4 flex flex-wrap gap-1.5 items-center justify-start">
       {selectedLabelIds.size > 1 && (
         <div className="flex rounded-full border border-gray-200 overflow-hidden text-xs font-medium">
           {(['AND', 'OR'] as const).map((mode) => (
@@ -66,6 +47,25 @@ export function LabelFilterChips({
           Clear filters
         </button>
       )}
+      {CATEGORIES.map((cat) => {
+        const catLabels = ((labelsByCategory[cat] ?? []) as Label[]).slice().sort((a, b) => a.value.localeCompare(b.value));
+        if (catLabels.length === 0) return null;
+        const colors = CATEGORY_COLORS[cat];
+        return catLabels.map((label) => {
+          const active = selectedLabelIds.has(label.id);
+          return (
+            <button
+              key={label.id}
+              onClick={() => onToggle(label.id)}
+              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors ${
+                active ? colors.active : colors.inactive
+              }`}
+            >
+              {label.value}
+            </button>
+          );
+        });
+      })}
     </div>
   );
 }
