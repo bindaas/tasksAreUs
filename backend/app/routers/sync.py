@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -41,6 +41,22 @@ def _validate_sync_links(raw_links: Any) -> List[Dict[str, Any]]:
         if len(valid) == MAX_TASK_LINKS:
             break
     return valid
+
+_VALID_PRIORITY_TIERS = {"high", "medium", "normal"}
+
+
+def _validate_sync_priority(raw_priority: Any) -> Optional[str]:
+    """Validate a sync client's raw `priority` value, treating anything invalid (or
+    missing) as "not sent" so it falls through to the legacy `is_high_priority`
+    resolution rather than being trusted and written straight to the DB. `tasks.priority`
+    is a plain VARCHAR with no DB-level CHECK constraint, and TaskOut.priority is a
+    strict Pydantic Literal — an unvalidated value would 500 every subsequent read of
+    that task (GET /tasks, GET/PUT /tasks/{id}, complete, reopen). See Dopey's Must Fix
+    on PR #72 / PLAN-feat-priority-tiers.md."""
+    if raw_priority in _VALID_PRIORITY_TIERS:
+        return raw_priority
+    return None
+
 
 def _owned_board_id(db: Session, board_id: Any, user_id: str) -> str | None:
     """Return board_id if it's a real, non-deleted board owned by user_id, else None.
@@ -101,7 +117,7 @@ def sync(
                 board_svc.get_default_board_id(db, user_id)
             )
             new_task_priority = _resolve_priority_on_create(
-                t_data.get("priority"), t_data.get("is_high_priority", False)
+                _validate_sync_priority(t_data.get("priority")), t_data.get("is_high_priority", False)
             )
             task = Task(
                 id=task_id,
@@ -143,7 +159,7 @@ def sync(
                 # Field-resolution rule (see PLAN-feat-priority-tiers.md — Sneezy Blocker fix):
                 # a legacy is_high_priority write must not silently demote an existing 'medium'.
                 server_task.priority = _resolve_priority_on_update(
-                    t_data.get("priority"), t_data.get("is_high_priority"), server_task.priority
+                    _validate_sync_priority(t_data.get("priority")), t_data.get("is_high_priority"), server_task.priority
                 )
                 server_task.is_high_priority = (server_task.priority == "high")
                 if "links" in t_data:

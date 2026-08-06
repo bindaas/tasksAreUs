@@ -373,6 +373,54 @@ class TestSyncPushPriority:
         assert added_task.priority == "medium"
         assert added_task.is_high_priority is False
 
+    def test_new_task_with_invalid_priority_string_falls_back_to_legacy_field(self):
+        # Dopey's Must Fix on PR #72: an untrusted sync payload's raw `priority` must be
+        # validated before being persisted — TaskOut.priority is a strict Pydantic Literal,
+        # so an unvalidated garbage string would 500 every subsequent read of that task.
+        db = _make_db(task_first=None)
+        payload = [{
+            "id": "task-new",
+            "title": "New task",
+            "priority": "urgent-garbage",
+            "is_high_priority": True,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        added_task = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], Task))
+        assert added_task.priority == "high"  # falls through to the legacy is_high_priority mapping
+        assert added_task.is_high_priority is True
+
+    def test_existing_task_with_invalid_priority_string_falls_back_to_legacy_field(self):
+        existing = _make_task(priority="normal", updated_at=datetime.now(timezone.utc) - timedelta(days=2))
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing",
+            "priority": "urgent-garbage",
+            "is_high_priority": True,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.priority == "high"  # falls through to the legacy is_high_priority mapping
+
+    def test_existing_task_with_invalid_priority_string_does_not_overwrite_medium(self):
+        # The invalid priority is dropped (treated as "not sent"), so the medium-preserving
+        # legacy rule still applies underneath it.
+        existing = _make_task(priority="medium", updated_at=datetime.now(timezone.utc) - timedelta(days=2))
+        db = _make_db(task_first=existing)
+        payload = [{
+            "id": "task-1",
+            "title": "Existing",
+            "priority": "urgent-garbage",
+            "is_high_priority": False,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }]
+        sync(_sync_request(payload), db, "user-1")
+
+        assert existing.priority == "medium"
+
     def test_outbound_serialization_includes_both_fields(self):
         existing = _make_task(priority="high", is_high_priority=True)
         db = _make_db(task_all=[existing])
