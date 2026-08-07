@@ -1,6 +1,7 @@
 """Day View (PR #40): all-priority, all-board single-date task listing,
 independent of the Focused View config; board ordering (PR #62) and
-high-priority-first sorting (PR #47).
+high-priority-first sorting (PR #47); Medium tier appears (any-priority view)
+but gets no special ordering precedence over Normal (PR #72).
 
 Reads ctx.default_board_id.
 """
@@ -53,6 +54,21 @@ def run(ctx):
     })
     assert_eq("POST day view normal-priority task (default board) → 201", r.status_code, 201)
     dv_normal_task_id = r.json()["id"]
+
+    # Medium-priority task due today (PR #72) — day view shows ALL priorities
+    # (unlike Focused View, which is High-only), so Medium must also appear.
+    # It must get no special sort precedence over Normal — only
+    # `priority == 'high'` ranks first in _query_board_grouped_tasks()'s ORDER BY.
+    r = client.post("/tasks", headers=H, json={
+        "title": "Day view medium-priority task today",
+        "must_do_by": dv_today_str,
+        "label_ids": [],
+        "priority": "medium",
+        "board_id": default_board_id,
+    })
+    assert_eq("POST day view medium-priority task (default board) → 201", r.status_code, 201)
+    dv_medium_task_id = r.json()["id"]
+    assert_eq("day view medium task priority=medium", r.json()["priority"], "medium")
 
     # A second board with its own qualifying task — must appear as its own group
     r = client.post("/boards", headers=H, json={"name": "Day view test board"})
@@ -119,6 +135,8 @@ def run(ctx):
         assert_in("HP task appears in day view", dv_hp_task_id, dv_default_task_ids)
         assert_in("normal-priority task appears in day view (all priorities, unlike focused view)",
                   dv_normal_task_id, dv_default_task_ids)
+        assert_in("medium-priority task appears in day view (all priorities, PR #72)",
+                  dv_medium_task_id, dv_default_task_ids)
         assert_true("tomorrow's task excluded from day view for reference_date=today",
                     dv_tomorrow_task_id not in dv_default_task_ids)
         assert_true("completed task excluded from day view",
@@ -138,6 +156,17 @@ def run(ctx):
         if hp_task_pos is not None and normal_task_pos is not None:
             assert_true("HP task appears before non-HP task in day view (PR #47: high-priority sorting)",
                         hp_task_pos < normal_task_pos)
+
+        # PR #72: Medium gets no special ordering precedence over Normal — only
+        # `priority == 'high'` ranks first in the ORDER BY.
+        medium_task_pos = None
+        for idx, task in enumerate(dv_default_group["tasks"]):
+            if task["id"] == dv_medium_task_id:
+                medium_task_pos = idx
+        assert_true("medium-priority task position found in day view response", medium_task_pos is not None)
+        if hp_task_pos is not None and medium_task_pos is not None:
+            assert_true("HP task appears before medium-priority task (only priority=='high' ranks first, PR #72)",
+                        hp_task_pos < medium_task_pos)
 
     # Second board group must appear, even though Focused View config's
     # board_selection=selected excludes it — day-view has no board_selection concept
@@ -185,6 +214,7 @@ def run(ctx):
     # Clean up day view test tasks and board
     client.delete(f"/tasks/{dv_hp_task_id}", headers=H)
     client.delete(f"/tasks/{dv_normal_task_id}", headers=H)
+    client.delete(f"/tasks/{dv_medium_task_id}", headers=H)
     client.delete(f"/tasks/{dv_other_board_task_id}", headers=H)
     client.delete(f"/tasks/{dv_tomorrow_task_id}", headers=H)
     client.delete(f"/tasks/{dv_done_task_id}", headers=H)

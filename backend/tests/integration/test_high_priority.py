@@ -1,14 +1,16 @@
 """High-priority field behavior, effective-date min-rule (PR #20), eligibility
-for day-after-tomorrow/Friday-only-Monday (PR #60), daily limit (PR #7), and
-the known daily-limit bypass via date-only move (xfail, tracked gap from the
-PR #60 review).
+for day-after-tomorrow/Friday-only-Monday (PR #60), daily limit (PR #7), the
+known daily-limit bypass via date-only move (xfail, tracked gap from the
+PR #60 review), and the tri-state `priority` field (High/Medium/Normal,
+PR #72) that generalizes `is_high_priority` while keeping it alive as a
+mirrored/derived column for backward compat.
 
 Self-contained aside from ctx.client/ctx.H — no cross-module state read or
 written.
 """
 from datetime import date, timedelta
 
-from .asserts import assert_eq, assert_eq_xfail, assert_true
+from .asserts import assert_eq, assert_eq_xfail, assert_in, assert_true
 
 
 def run(ctx):
@@ -347,6 +349,189 @@ def run(ctx):
 
     # Clean up all high-priority limit test tasks
     for tid in hp_limit_ids + [hp_limit_put_task_id, hp_limit_tomorrow_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
+
+    # ── Priority tiers: High/Medium/Normal (PR #72) ───────────────────────────
+    # tasks.priority (tri-state: high/medium/normal) replaces the single
+    # is_high_priority boolean as the source of truth; is_high_priority is kept
+    # as a mirrored/derived column (priority == 'high') for backward compat with
+    # mobile clients that haven't picked up the OTA update yet (this is PR 1 of
+    # a 3-PR epic — see PLAN-feat-priority-tiers.md). These tests exercise the
+    # new field through the real API/DB, complementing task_service.py's/
+    # sync.py's mocked unit-test coverage of the field-resolution rule.
+    print("\n── Tasks: Priority tiers (High/Medium/Normal, PR #72) ──")
+
+    # POST with priority=medium on an eligible date (today) persists as medium;
+    # the is_high_priority mirror stays false.
+    r = client.post("/tasks", headers=H, json={
+        "title": "Medium priority task due today",
+        "must_do_by": today_str,
+        "label_ids": [],
+        "priority": "medium",
+    })
+    assert_eq("POST task with priority=medium (today) → 201", r.status_code, 201)
+    medium_today_task = r.json()
+    medium_today_task_id = medium_today_task["id"]
+    assert_in("task response has priority field", "priority", medium_today_task)
+    assert_eq("priority persisted as medium", medium_today_task["priority"], "medium")
+    assert_eq("is_high_priority mirror is false for medium", medium_today_task["is_high_priority"], False)
+
+    # POST with priority=medium but a far-future (ineligible) date auto-resets to
+    # normal — generalizes the existing High-only auto-reset rule to Medium.
+    r = client.post("/tasks", headers=H, json={
+        "title": "Medium priority task due in far future",
+        "must_do_by": future_str,
+        "label_ids": [],
+        "priority": "medium",
+    })
+    assert_eq("POST task with priority=medium (future date) → 201", r.status_code, 201)
+    medium_future_task = r.json()
+    medium_future_task_id = medium_future_task["id"]
+    assert_eq("priority=medium auto-resets to normal for ineligible date",
+              medium_future_task["priority"], "normal")
+    assert_eq("is_high_priority mirror stays false after medium auto-reset",
+              medium_future_task["is_high_priority"], False)
+
+    # GET /tasks/:id round-trips the priority field
+    r = client.get(f"/tasks/{medium_today_task_id}", headers=H)
+    assert_eq("GET /tasks/:id includes priority field → 200", r.status_code, 200)
+    assert_eq("GET /tasks/:id priority value", r.json()["priority"], "medium")
+
+    # GET /tasks list includes priority on each task
+    r = client.get("/tasks", headers=H, params={"state": "pending"})
+    medium_in_list = next((t for t in r.json()["tasks"] if t["id"] == medium_today_task_id), None)
+    assert_true("medium task found in GET /tasks list", medium_in_list is not None)
+    if medium_in_list:
+        assert_in("task in GET /tasks list has priority field", "priority", medium_in_list)
+        assert_eq("task in GET /tasks list priority value", medium_in_list["priority"], "medium")
+
+    # Medium is NOT subject to the daily High-priority cap (locked-in product
+    # decision — only High is capped) — create well beyond the default limit
+    # (3) of medium tasks for today; all must succeed.
+    medium_uncapped_ids = []
+    for i in range(5):
+        r = client.post("/tasks", headers=H, json={
+            "title": f"Medium uncapped task {i + 1}",
+            "must_do_by": today_str,
+            "label_ids": [],
+            "priority": "medium",
+        })
+        assert_eq(f"POST medium task {i + 1}/5 (uncapped) → 201", r.status_code, 201)
+        medium_uncapped_ids.append(r.json()["id"])
+
+    # The High cap and Medium are independent: reaching the High cap for a day
+    # must not block a Medium (or a further High-cap-rejected) task the same day.
+    high_cap_ids = []
+    for i in range(3):
+        r = client.post("/tasks", headers=H, json={
+            "title": f"High cap filler {i + 1}",
+            "must_do_by": today_str,
+            "label_ids": [],
+            "priority": "high",
+        })
+        assert_eq(f"POST high cap filler {i + 1}/3 (priority field) → 201", r.status_code, 201)
+        high_cap_ids.append(r.json()["id"])
+
+    r = client.post("/tasks", headers=H, json={
+        "title": "4th priority=high task (should fail)",
+        "must_do_by": today_str,
+        "label_ids": [],
+        "priority": "high",
+    })
+    assert_eq("POST 4th priority=high task at cap → 422", r.status_code, 422)
+
+    r = client.post("/tasks", headers=H, json={
+        "title": "Medium despite high cap reached",
+        "must_do_by": today_str,
+        "label_ids": [],
+        "priority": "medium",
+    })
+    assert_eq("POST priority=medium task despite high cap reached → 201", r.status_code, 201)
+    medium_despite_cap_id = r.json()["id"]
+    assert_eq("medium task unaffected by high cap", r.json()["priority"], "medium")
+
+    for tid in high_cap_ids + [medium_despite_cap_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
+
+    # POST with an invalid priority value is rejected by Pydantic's Literal
+    # validation on the REST path (unlike /sync, which bypasses Pydantic
+    # entirely and must validate the raw string by hand — see test_sync.py).
+    r = client.post("/tasks", headers=H, json={
+        "title": "Task with invalid priority value",
+        "label_ids": [],
+        "priority": "urgent",
+    })
+    assert_eq("POST task with invalid priority value → 422", r.status_code, 422)
+
+    # ── Field-resolution rule: legacy is_high_priority must never silently
+    # demote an existing Medium task (Sneezy's Blocker fix on PR #72 — the
+    # single most important behavior in this PR). Old mobile's Edit Task
+    # screen resends is_high_priority unconditionally on *every* save, so a
+    # bare legacy write on an unrelated field must be a no-op on priority. ──
+    print("\n── Tasks: Priority tiers — medium-preserving legacy-write guard ──")
+    r = client.post("/tasks", headers=H, json={
+        "title": "Medium task for legacy-write guard test",
+        "must_do_by": today_str,
+        "label_ids": [],
+        "priority": "medium",
+    })
+    assert_eq("POST medium task for legacy-write guard test → 201", r.status_code, 201)
+    guard_task_id = r.json()["id"]
+
+    r = client.put(f"/tasks/{guard_task_id}", headers=H, json={
+        "title": "Unrelated edit", "is_high_priority": True,
+    })
+    assert_eq("PUT legacy is_high_priority=true on medium task (unrelated edit) → 200", r.status_code, 200)
+    assert_eq("legacy is_high_priority=true does not overwrite existing medium",
+              r.json()["priority"], "medium")
+    assert_eq("is_high_priority mirror stays false while priority is medium",
+              r.json()["is_high_priority"], False)
+
+    r = client.put(f"/tasks/{guard_task_id}", headers=H, json={
+        "title": "Another unrelated edit", "is_high_priority": False,
+    })
+    assert_eq("PUT legacy is_high_priority=false on medium task (unrelated edit) → 200", r.status_code, 200)
+    assert_eq("legacy is_high_priority=false also does not overwrite existing medium",
+              r.json()["priority"], "medium")
+
+    # An explicit `priority` field DOES take precedence over a simultaneously
+    # present legacy is_high_priority, and can change Medium to something else.
+    r = client.put(f"/tasks/{guard_task_id}", headers=H, json={
+        "priority": "normal", "is_high_priority": True,
+    })
+    assert_eq("PUT explicit priority=normal + legacy is_high_priority=true → 200", r.status_code, 200)
+    assert_eq("explicit priority field takes precedence over legacy field",
+              r.json()["priority"], "normal")
+    assert_eq("is_high_priority mirror follows the resolved priority, not the legacy field",
+              r.json()["is_high_priority"], False)
+
+    client.delete(f"/tasks/{guard_task_id}", headers=H)
+
+    # Legacy on/off toggle semantics are preserved for tasks that were NOT
+    # medium — this is exactly what an un-updated mobile client relies on.
+    r = client.post("/tasks", headers=H, json={
+        "title": "Normal task for legacy toggle test",
+        "must_do_by": today_str,
+        "label_ids": [],
+    })
+    assert_eq("POST normal task for legacy toggle test → 201", r.status_code, 201)
+    toggle_task_id = r.json()["id"]
+    assert_eq("new task defaults to priority=normal when omitted", r.json()["priority"], "normal")
+
+    r = client.put(f"/tasks/{toggle_task_id}", headers=H, json={"is_high_priority": True})
+    assert_eq("PUT legacy is_high_priority=true on normal task → 200", r.status_code, 200)
+    assert_eq("legacy is_high_priority=true toggles normal to high", r.json()["priority"], "high")
+    assert_eq("is_high_priority mirror true after legacy toggle to high", r.json()["is_high_priority"], True)
+
+    r = client.put(f"/tasks/{toggle_task_id}", headers=H, json={"is_high_priority": False})
+    assert_eq("PUT legacy is_high_priority=false on high task → 200", r.status_code, 200)
+    assert_eq("legacy is_high_priority=false toggles high back to normal", r.json()["priority"], "normal")
+    assert_eq("is_high_priority mirror false after legacy toggle to normal", r.json()["is_high_priority"], False)
+
+    client.delete(f"/tasks/{toggle_task_id}", headers=H)
+
+    # Clean up remaining priority-tier test tasks
+    for tid in [medium_today_task_id, medium_future_task_id] + medium_uncapped_ids:
         client.delete(f"/tasks/{tid}", headers=H)
 
     # ── HP daily limit bypass via date-only move (found during PR #60 review) ──

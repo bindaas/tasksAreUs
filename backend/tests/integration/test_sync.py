@@ -1,11 +1,12 @@
 """Sync: push/pull basics, board_id/recurrence_group_id backward-compat,
-task links (PR #39), and sort_order auto-reset on the sync push path
-(PR #61).
+task links (PR #39), sort_order auto-reset on the sync push path (PR #61),
+and the tri-state `priority` field's field-resolution rule exercised against
+a real DB row on the sync push path (PR #72).
 
 Reads ctx.test_user_id, ctx.default_board_id.
 """
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from .asserts import assert_eq, assert_eq_xfail, assert_in, assert_true
 
@@ -358,3 +359,184 @@ def run(ctx):
                 r.json()["sort_order"] != sync_so_initial)
 
     client.delete(f"/tasks/{sync_so_task_id}", headers=H)
+
+    # ── Sync: priority tiers (High/Medium/Normal, PR #72) ─────────────────────
+    # sync.py bypasses task_service entirely for the priority field too (raw
+    # dicts, hand-rolled resolution via _resolve_priority_on_create/_update), so
+    # the medium-preserving legacy-write guard (Sneezy's Blocker fix) must be
+    # verified independently against a real DB row here, not just via
+    # test_sync_router.py's mocked-session unit coverage of the same rule.
+    print("\n── Sync: priority tiers (PR #72) ─────────────────────────")
+
+    # Push a brand-new task via sync with priority=medium directly (new-client path)
+    sync_medium_task_id = str(uuid.uuid4())
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_medium_task_id,
+                "user_id": test_user_id,
+                "title": "Sync new task with priority=medium",
+                "state": "pending",
+                "must_do_by": today_str,
+                "target_date": None,
+                "notes": None,
+                "priority": "medium",
+                "is_deleted": False,
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+        },
+    })
+    assert_eq("POST /sync push new task with priority=medium → 200", r.status_code, 200)
+    r = client.get(f"/tasks/{sync_medium_task_id}", headers=H)
+    assert_eq("GET synced priority=medium task → 200", r.status_code, 200)
+    assert_eq("synced task priority persisted as medium", r.json()["priority"], "medium")
+    assert_eq("is_high_priority mirror false for synced medium task", r.json()["is_high_priority"], False)
+
+    # Push a brand-new task via sync with only the legacy is_high_priority=True
+    # field (old mobile client, pre-OTA) — must map to priority=high on create.
+    sync_legacy_new_task_id = str(uuid.uuid4())
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_legacy_new_task_id,
+                "user_id": test_user_id,
+                "title": "Sync new task from legacy client (is_high_priority only)",
+                "state": "pending",
+                "must_do_by": today_str,
+                "target_date": None,
+                "notes": None,
+                "is_high_priority": True,
+                "is_deleted": False,
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+        },
+    })
+    assert_eq("POST /sync push new legacy-client task (is_high_priority=true) → 200", r.status_code, 200)
+    r = client.get(f"/tasks/{sync_legacy_new_task_id}", headers=H)
+    assert_eq("GET synced legacy-client task → 200", r.status_code, 200)
+    assert_eq("legacy is_high_priority=true maps to priority=high on create via sync",
+              r.json()["priority"], "high")
+
+    # Medium-preserving guard, exercised via the real /sync update path: push an
+    # unrelated edit (title only) with legacy is_high_priority=True against the
+    # existing priority=medium task above — must NOT promote it to high.
+    guard_updated_at_1 = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_medium_task_id,
+                "user_id": test_user_id,
+                "title": "Sync medium task (unrelated edit via legacy is_high_priority)",
+                "state": "pending",
+                "must_do_by": today_str,
+                "target_date": None,
+                "notes": None,
+                "is_high_priority": True,
+                "is_deleted": False,
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": guard_updated_at_1,
+            }],
+            "task_labels": [],
+        },
+    })
+    assert_eq("POST /sync push legacy is_high_priority=true update on medium task → 200", r.status_code, 200)
+    r = client.get(f"/tasks/{sync_medium_task_id}", headers=H)
+    assert_eq("GET medium task after sync legacy-write → 200", r.status_code, 200)
+    assert_eq("legacy is_high_priority=true via /sync does not overwrite existing medium",
+              r.json()["priority"], "medium")
+    assert_eq("is_high_priority mirror stays false while priority is medium (sync path)",
+              r.json()["is_high_priority"], False)
+
+    # An explicit `priority` field in the same sync push DOES take precedence
+    # over a simultaneously-present legacy is_high_priority.
+    guard_updated_at_2 = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_medium_task_id,
+                "user_id": test_user_id,
+                "title": "Sync medium task (explicit priority=normal)",
+                "state": "pending",
+                "must_do_by": today_str,
+                "target_date": None,
+                "notes": None,
+                "priority": "normal",
+                "is_high_priority": True,
+                "is_deleted": False,
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": guard_updated_at_2,
+            }],
+            "task_labels": [],
+        },
+    })
+    assert_eq("POST /sync push explicit priority=normal + legacy is_high_priority=true → 200",
+              r.status_code, 200)
+    r = client.get(f"/tasks/{sync_medium_task_id}", headers=H)
+    assert_eq("GET task after explicit-priority sync push → 200", r.status_code, 200)
+    assert_eq("explicit priority field takes precedence over legacy field via sync",
+              r.json()["priority"], "normal")
+
+    # An invalid/garbage priority string in the push payload must be dropped
+    # (treated as not-sent) rather than persisted verbatim — Dopey's Must Fix on
+    # PR #72: TaskOut.priority is a strict Pydantic Literal, so writing an
+    # unvalidated string straight to the DB would 500 every subsequent read of
+    # that task (GET /tasks, GET/PUT /tasks/{id}, complete, reopen).
+    sync_bad_priority_task_id = str(uuid.uuid4())
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {
+            "tasks": [{
+                "id": sync_bad_priority_task_id,
+                "user_id": test_user_id,
+                "title": "Sync new task with garbage priority string",
+                "state": "pending",
+                "must_do_by": today_str,
+                "target_date": None,
+                "notes": None,
+                "priority": "urgent-garbage",
+                "is_high_priority": True,
+                "is_deleted": False,
+                "completed_at": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }],
+            "task_labels": [],
+        },
+    })
+    assert_eq("POST /sync push new task with garbage priority string → 200 (not rejected)",
+              r.status_code, 200)
+    r = client.get(f"/tasks/{sync_bad_priority_task_id}", headers=H)
+    assert_eq("GET task after garbage-priority sync push → 200 (no 500 from unvalidated string)",
+              r.status_code, 200)
+    assert_eq("garbage priority string dropped, falls back to legacy is_high_priority mapping",
+              r.json()["priority"], "high")
+
+    # Pull: the sync response includes the priority field for tasks updated
+    # since last_synced_at.
+    r = client.post("/sync", headers=H, json={
+        "last_synced_at": "2020-01-01T00:00:00Z",
+        "changes": {"tasks": [], "task_labels": []},
+    })
+    assert_eq("POST /sync pull after priority pushes → 200", r.status_code, 200)
+    pulled_priority_tasks = {t["id"]: t for t in r.json()["changes"]["tasks"]}
+    assert_true("sync pull includes the medium-then-normal task", sync_medium_task_id in pulled_priority_tasks)
+    if sync_medium_task_id in pulled_priority_tasks:
+        assert_in("pulled sync task has priority field", "priority", pulled_priority_tasks[sync_medium_task_id])
+        assert_eq("pulled sync task priority matches", pulled_priority_tasks[sync_medium_task_id]["priority"],
+                  "normal")
+
+    # Clean up sync priority test tasks
+    for tid in [sync_medium_task_id, sync_legacy_new_task_id, sync_bad_priority_task_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
