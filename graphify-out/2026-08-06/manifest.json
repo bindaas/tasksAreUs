@@ -30,12 +30,12 @@
     "semantic_hash": ""
   },
   "backend/app/main.py": {
-    "mtime": 1786062566.9183993,
+    "mtime": 1786058840.7498999,
     "ast_hash": "cfc1f147e95769458c47e2fc435a790e",
     "semantic_hash": ""
   },
   "backend/app/models.py": {
-    "mtime": 1786062566.9186435,
+    "mtime": 1786058845.168363,
     "ast_hash": "d791e1639bc2eac2e11cb742ab84ee6f",
     "semantic_hash": ""
   },
@@ -75,17 +75,17 @@
     "semantic_hash": "76f4cdf9de09546ed9e03a3f984deeac"
   },
   "backend/app/routers/sync.py": {
-    "mtime": 1786062566.9188228,
+    "mtime": 1786060430.9992678,
     "ast_hash": "c0f8d4ba658750e813f4dd0861523925",
     "semantic_hash": ""
   },
   "backend/app/routers/tasks.py": {
-    "mtime": 1786062566.9190178,
+    "mtime": 1786058937.3397274,
     "ast_hash": "39da12435a4def515ecf6ae711fbc99e",
     "semantic_hash": ""
   },
   "backend/app/schemas.py": {
-    "mtime": 1786062566.9192069,
+    "mtime": 1786058868.378739,
     "ast_hash": "e621a56e811ab90475079e504d667f26",
     "semantic_hash": ""
   },
@@ -100,7 +100,7 @@
     "semantic_hash": "b49cfd27452da62f5758de1e29b57344"
   },
   "backend/app/services/focused_view_service.py": {
-    "mtime": 1786062566.919719,
+    "mtime": 1786058956.4788501,
     "ast_hash": "3cf79a3f8116df8199c9ac8768d8d0cb",
     "semantic_hash": ""
   },
@@ -115,7 +115,7 @@
     "semantic_hash": "3dd955e8a5948980795375f8ae417f5d"
   },
   "backend/app/services/task_service.py": {
-    "mtime": 1786062566.919887,
+    "mtime": 1786058922.6680782,
     "ast_hash": "7fcb2c05dfdbce8ff9cb586e71fa339b",
     "semantic_hash": ""
   },
@@ -180,17 +180,17 @@
     "semantic_hash": "49b4b9756b39754fab0a7bcfb042575e"
   },
   "backend/tests/unit/test_sync_router.py": {
-    "mtime": 1786062566.9212055,
+    "mtime": 1786060446.8778288,
     "ast_hash": "951fa19d5804cca37aa68c670f88e14c",
     "semantic_hash": ""
   },
   "backend/tests/unit/test_task_service.py": {
-    "mtime": 1786062566.9214318,
+    "mtime": 1786059242.4403753,
     "ast_hash": "df9558e0875d9c520d745422d07e3542",
     "semantic_hash": ""
   },
   "backend/tests/unit/test_tasks_router.py": {
-    "mtime": 1786062566.921619,
+    "mtime": 1786060457.3658154,
     "ast_hash": "47cc62a29bbb3675561e2d2e2aa1ef16",
     "semantic_hash": ""
   },
@@ -840,8 +840,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1786062566.9171193,
-    "ast_hash": "55b88093ec8bcd469ca3f14e9179df36",
+    "mtime": 1785975469.7494226,
+    "ast_hash": "68f2b8ddc405b481b296f4804e9433f8",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -855,13 +855,13 @@
     "semantic_hash": ""
   },
   "DATA_MODEL_AND_API.MD": {
-    "mtime": 1786062566.9174497,
-    "ast_hash": "4f9490f67d9ec0f56056d0213599f7fb",
+    "mtime": 1785882863.0433342,
+    "ast_hash": "8d05ed22977e858cad4a782b5b8bb1a8",
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1786062566.918057,
-    "ast_hash": "ab647d0a5862019851bd9d24a3cfcaa3",
+    "mtime": 1785975469.750731,
+    "ast_hash": "56c85fdcb8dc1c9490c01bfce9da19a9",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1165,17 +1165,17 @@
     "semantic_hash": ""
   },
   "backend/tests/integration/test_day_view.py": {
-    "mtime": 1786062566.920399,
+    "mtime": 1786060930.2943819,
     "ast_hash": "a03c863625938014114793006ec05993",
     "semantic_hash": ""
   },
   "backend/tests/integration/test_focused_view.py": {
-    "mtime": 1786062566.9205947,
+    "mtime": 1786060939.483499,
     "ast_hash": "994636cc47d056cef9956df5ffe07ead",
     "semantic_hash": ""
   },
   "backend/tests/integration/test_high_priority.py": {
-    "mtime": 1786062566.9208117,
+    "mtime": 1786060884.3278856,
     "ast_hash": "856498f9b5cb398a7ba51f2906c886ce",
     "semantic_hash": ""
   },
@@ -1200,7 +1200,7 @@
     "semantic_hash": ""
   },
   "backend/tests/integration/test_sync.py": {
-    "mtime": 1786062566.9209998,
+    "mtime": 1786060975.5823953,
     "ast_hash": "1debc00b258c28ebbdde0207f40c5880",
     "semantic_hash": ""
   },
@@ -1244,14 +1244,14 @@
     "ast_hash": "fe85f9df3ba0b481cac0cb4c86407dcf",
     "semantic_hash": ""
   },
+  "development-plans/PLAN-feat-priority-tiers.md": {
+    "mtime": 1786059818.3687747,
+    "ast_hash": "3052e7aca93df135665eabc319548450",
+    "semantic_hash": ""
+  },
   "development-plans/PLAN-fix-tag-filter-layout-and-link-wrap.md": {
     "mtime": 1785975469.7514553,
     "ast_hash": "767abf4082b150b6b370f9cc0947359e",
-    "semantic_hash": ""
-  },
-  "development-plans/PLAN-feat-priority-tiers.md": {
-    "mtime": 1786062583.6149035,
-    "ast_hash": "d9f9067a34fadab0d28d0603341da05b",
     "semantic_hash": ""
   }
 }
