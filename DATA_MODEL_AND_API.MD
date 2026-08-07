@@ -104,7 +104,8 @@ Core entity. One-time and recurring task instances are both stored here.
 | `must_do_by` | DATE | Nullable. Hard deadline. Partial index `tasks_user_id_must_do_by_pending_idx` on `(user_id, must_do_by) WHERE is_deleted = false AND state = 'pending'` (PR #55) — added for the Overdue view's unbounded `< reference_date` scan. |
 | `target_date` | DATE | Nullable. Aspirational completion date. Partial index `tasks_user_id_target_date_pending_idx` on `(user_id, target_date) WHERE is_deleted = false AND state = 'pending'` (PR #55), same reason. |
 | `completed_at` | TIMESTAMP | Nullable. Set when state → done |
-| `is_high_priority` | BOOLEAN | Default false. Only meaningful when effective date (earliest of `must_do_by` / `target_date`) is overdue, today, tomorrow, day_after_tomorrow, or monday |
+| `is_high_priority` | BOOLEAN | Default false. **Legacy field, superseded by `priority` (PR #72)** — mirrored/derived: always written as `priority == 'high'` on every create/update. Retained (not dropped) so mobile clients that haven't picked up the OTA update referencing `priority` directly keep working unmodified. See "Priority tier rules" below. |
+| `priority` | VARCHAR | NOT NULL. Default `'normal'`. Tri-state (`high` / `medium` / `normal`), added in PR #72, generalizing the legacy `is_high_priority` boolean. Added via a single-statement `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority VARCHAR NOT NULL DEFAULT 'normal'` (a constant default is a fast metadata-only op on modern Postgres — no separate nullable→backfill→`SET NOT NULL` steps needed, unlike `sort_order`'s per-row-computed default), followed by an idempotent backfill `UPDATE tasks SET priority = 'high' WHERE is_high_priority = true AND priority = 'normal'`. No DB-level `CHECK` constraint — the three-value domain is enforced only at the Pydantic layer (`PriorityTier = Literal["high", "medium", "normal"]`); a raw value written outside the API (e.g. a manual `UPDATE`) would not be rejected by the DB. |
 | `is_deleted` | BOOLEAN | Default false. Soft delete |
 | `links` | JSONB | NOT NULL. Default `[]`. Array of up to `MAX_TASK_LINKS = 3` objects: `{"id": string, "url": string, "description": string}`. Added via `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS links JSONB NOT NULL DEFAULT '[]'::jsonb` in PR #39. |
 | `sort_order` | DOUBLE PRECISION | NOT NULL. Client-computed fractional index (Trello-style) controlling manual task order within a date-bucketed priority zone. No SQL-level `DEFAULT`; every ORM insert gets a value via the Python-side `Column(default=_sort_order_default)` callable (`models.py`), which returns `datetime.now(timezone.utc).timestamp()` — the same value used whenever the column is auto-reset (see rules below). Added via `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS sort_order DOUBLE PRECISION`, backfilled from `EXTRACT(EPOCH FROM created_at)` for existing rows, then `ALTER COLUMN sort_order SET NOT NULL`, in PR #61. |
@@ -119,13 +120,19 @@ The `recurrence_group_id` column was dropped from the `tasks` table and the `Tas
 
 **Effective date** is defined as the earliest of `must_do_by` and `target_date` when both are set; otherwise whichever one is non-null; `null` if both are null. This is computed by `getEffectiveDate()` in both `frontend/src/utils/taskDateUtils.ts` and `mobile/src/utils/taskDateUtils.ts`. (Prior to PR #20, `getEffectiveDate` incorrectly returned `target_date` when both were set, regardless of which was earlier. This was a client-side display bug only — the backend never relied on this helper.)
 
-**High-priority rules (enforced by the API):**
-- `is_high_priority = true` is only meaningful when the task's effective date (earliest of `must_do_by` / `target_date`) is overdue, today, tomorrow, day_after_tomorrow, or monday (`monday` only counts when today is Friday). The API's `_is_hp_eligible_date()` actually enforced only overdue/today/tomorrow until PR #60 extended it to match; before PR #60 a create/update with a day-after-tomorrow or Monday date silently had `is_high_priority` reset to `false`.
-- The API auto-resets `is_high_priority` to `false` on any create or update if the effective date is outside the overdue/today/tomorrow/day_after_tomorrow/monday range
-- The daily cap is user-configurable via `user_settings.high_priority_daily_limit` (default 3, min 1). The API reads this setting dynamically on each create/update check; falls back to 3 if no row or null
-- Attempting to set a task high-priority when the cap is reached raises HTTP 422. The error message includes the live limit value
-- The daily limit is checked against the effective date of the task, not `must_do_by` alone
-- Overdue tasks retain their existing priority; the cap re-engages only when the task is moved to a current or future date
+**Priority tier rules (enforced by the API; PR #72 — generalizes the legacy `is_high_priority` boolean into a tri-state field):**
+- `priority` is one of `high` / `medium` / `normal` (default `normal`). `high`/`medium` are only meaningful when the task's effective date (earliest of `must_do_by` / `target_date`) is overdue, today, tomorrow, day_after_tomorrow, or monday (`monday` only counts when today is Friday) — the same `_is_hp_eligible_date()` window that used to gate `is_high_priority` alone (extended to day_after_tomorrow/monday in PR #60). `normal` has no date restriction, exactly like today's non-high tasks.
+- The API auto-resets `priority` to `normal` on any create or update if the resolved tier is `high`/`medium` and the effective date is outside that window. `is_high_priority` is written as `priority == 'high'` on every create/update to stay mirrored.
+- Only `high` is capped. The daily cap is user-configurable via `user_settings.high_priority_daily_limit` (default 3, min 1); the API reads this setting dynamically on each create/update check, falling back to 3 if no row or null. `medium` and `normal` are uncapped — no new setting was added for Medium (explicit product decision; not planned as a follow-up).
+- Attempting to set a task's priority to `high` when the cap is reached raises HTTP 422. The error message includes the live limit value. The daily limit is checked against the effective date of the task, not `must_do_by` alone.
+- **Cap re-engagement on overdue tasks — corrected from a previously-inaccurate claim in this document:** `_is_hp_eligible_date()` treats every past (overdue) date as eligible — there is no "overdue tasks are exempt from the cap check" branch anywhere in the code, on any tier. On `PUT /tasks/{id}`, the cap check re-runs whenever a request resolves to an explicit "set to High" intent (an explicit `priority: "high"` field, or a legacy `is_high_priority: true` write that the field-resolution rule below doesn't block) — including a plain re-save of an already-overdue High task from a client that unconditionally resends its current priority/`is_high_priority` value on every save (e.g. the mobile Edit Task screen, or web's `TaskForm`). This is the actual, confirmed, intended-to-be-preserved behavior (not a regression, and not fixed as a side effect of the PR #72 migration) — pinned down by a dedicated backend unit test.
+- **Field-resolution rule** (applies identically to `POST /tasks`, `PUT /tasks/{id}`, and `/sync` push; implemented by `task_service._resolve_priority_on_create()` / `_resolve_priority_on_update()`):
+  1. If the request includes `priority`, it wins outright — the new-client path (web, an OTA-updated mobile build). Any `is_high_priority` also present in the same payload is ignored.
+  2. Else, if the request includes only the legacy `is_high_priority` and the task's *current stored* `priority` is not `medium`, map `true → high`, `false → normal` — reproducing the pre-PR #72 boolean-toggle behavior exactly for a task that was already High or Normal. (On create, there is no pre-existing stored priority to protect, so create only ever exercises this branch or branch 1 — never branch 3.)
+  3. Else (legacy `is_high_priority` present, current stored `priority` is `medium`) — `priority` is left unchanged. An old client has no way to express or intend a change to Medium, so a bare legacy write must never silently demote it; the task stays Medium until edited from a client that sends `priority` explicitly.
+  4. Whichever branch resolves the target `priority`, `is_high_priority` is written as `priority == 'high'` — including branch 3, where `priority` stays `medium` and the mirror correctly reads `false`.
+- **`/sync` push validation:** `SyncChanges.tasks` are raw dicts and bypass `TaskCreate`/`TaskUpdate`'s Pydantic `Literal["high","medium","normal"]` validation, so `routers/sync.py`'s `_validate_sync_priority()` re-validates each pushed task's raw `priority` value against the same three-value set before it reaches the field-resolution rule above — an invalid or missing value is treated as "not sent" (falls through to the legacy `is_high_priority` resolution) rather than being persisted and later crashing every subsequent read of that task (`TaskOut.priority` is a strict `Literal`, so an unvalidated garbage string in the DB would 500 `GET /tasks`, `GET/PUT /tasks/{id}`, complete, and reopen alike).
+- `POST /tasks/{task_id}/reopen` leaves `priority` (and its `is_high_priority` mirror) unchanged, regardless of which tier is set — same reasoning as before PR #72: `_is_hp_eligible_date()` can only expand eligibility as time passes while a task sits `done`, never contract it, so skipping the re-check on reopen is safe for all three tiers.
 
 **Link rules (enforced by the API):**
 - Up to `MAX_TASK_LINKS = 3` links per task. Each link has `id` (client-generated string — no server-side non-empty or uniqueness check), `url` (must start with `http://` or `https://`, max 2048 chars — other schemes such as `javascript:`, `data:`, `mailto:` are rejected), and `description` (non-empty after trim, max 200 chars)
@@ -407,6 +414,7 @@ List tasks for the current user.
         { "id": "uuid", "category": "type", "value": "child" }
       ],
       "is_high_priority": false,
+      "priority": "normal",
       "is_deleted": false,
       "links": [
         { "id": "link-uuid", "url": "https://library.example.com/account", "description": "Library account" }
@@ -433,13 +441,14 @@ Create a new task.
   "target_date": "2026-05-09",
   "label_ids": ["uuid-outdoor", "uuid-child"],
   "is_high_priority": false,
+  "priority": "normal",
   "board_id": "uuid",
   "links": [
     { "id": "link-uuid", "url": "https://library.example.com/account", "description": "Library account" }
   ]
 }
 ```
-`board_id` is optional; omitting it creates the task in the user's default board. `label_ids` must all belong to the same board as the task — cross-board label assignment returns `422`. `links` is optional and defaults to `[]` (see Link rules under Table: `tasks`); a payload with more than `MAX_TASK_LINKS` (3) items, a non-`http(s)` URL, or an empty description returns `422`.
+`board_id` is optional; omitting it creates the task in the user's default board. `label_ids` must all belong to the same board as the task — cross-board label assignment returns `422`. `links` is optional and defaults to `[]` (see Link rules under Table: `tasks`); a payload with more than `MAX_TASK_LINKS` (3) items, a non-`http(s)` URL, or an empty description returns `422`. `priority` (added PR #72, `Optional[Literal["high","medium","normal"]]`, omit/`null` = not sent) takes precedence over the legacy `is_high_priority` when both are present; see "Field-resolution rule" under Table: `tasks`. `high`/`medium` outside the eligibility window auto-reset to `normal`; `high` past the daily cap returns `422`.
 
 **Response**: the created task object (same shape as GET /tasks item, including `board_id`)
 
@@ -464,6 +473,7 @@ Update a task's fields or labels.
   "target_date": "2026-05-09",
   "label_ids": ["uuid-outdoor", "uuid-raghav", "uuid-email"],
   "is_high_priority": false,
+  "priority": "medium",
   "links": [
     { "id": "link-uuid", "url": "https://library.example.com/account", "description": "Library account" }
   ],
@@ -481,6 +491,8 @@ To clear a date field to null, include the field explicitly as `null` in the JSO
 `board_id` (added PR #40) moves the task to a different board. `None`/omitted leaves the board unchanged (not full-replace like `links`). When `board_id` is provided and differs from the task's current board: the destination board must exist, be owned by the caller, and not be soft-deleted (`404` otherwise); the task's existing labels are unconditionally cleared (labels are board-scoped and not valid across boards); if `label_ids` is also present in the same request, it is resolved against the *new* board_id and applied after the move (`422` if any id doesn't belong to the destination board). Sending `board_id` equal to the task's current board is a no-op — labels are left untouched.
 
 `sort_order` (added PR #61) is `None`/omitted by default, meaning "let the server decide": if this same request also changes the task's effective date or `board_id`, the server auto-resets `sort_order` to a fresh "bottom of list" value; otherwise it's left unchanged. Supplying an explicit float sets `sort_order` to exactly that value and always wins over the auto-reset, even when the same request also changes the date or board. See "Sort order rules" under Table: `tasks`.
+
+`priority` (added PR #72, `Optional[Literal["high","medium","normal"]]`, omit/`null` = not sent) takes precedence over `is_high_priority` when both are present in the same request; a bare legacy `is_high_priority` write cannot demote an existing `medium` task. See "Field-resolution rule" and "Priority tier rules" under Table: `tasks`.
 
 **Response**: updated task object
 
@@ -519,7 +531,7 @@ Mark a `done` task as `pending` again (added PR #64). The inverse of `POST /task
 
 - Sets `state = pending` and `completed_at = null`
 - Resets `sort_order` to a fresh "bottom of list" value (`_sort_order_default()`), the same convention `PUT /tasks/{id}` applies when a task's effective date or board changes
-- `is_high_priority` is left unchanged — reopening does not re-run the high-priority date-eligibility check (`_is_hp_eligible_date()`) or the daily high-priority cap check. This is safe because `_is_hp_eligible_date()` treats every date `<= today + 1` as eligible, so eligibility can only expand as time passes while a task sits `done`, never contract
+- `priority` (and its `is_high_priority` mirror) is left unchanged, regardless of which tier is set — reopening does not re-run the priority date-eligibility check (`_is_hp_eligible_date()`) or the daily High cap check. This is safe because `_is_hp_eligible_date()` treats every date `<= today + 1` as eligible, so eligibility can only expand as time passes while a task sits `done`, never contract
 - No request body
 
 **Response**: the updated task object (same shape as `GET /tasks/{task_id}`)
@@ -656,7 +668,7 @@ Update the user's focused view configuration.
 ---
 
 #### `GET /focused-view/tasks`
-Returns `is_high_priority = true` pending tasks that have `must_do_by` or `target_date` falling within the configured day range, grouped alphabetically by board. Overdue tasks are excluded — this view is forward-looking only.
+Returns `priority = 'high'` pending tasks (filter changed from `is_high_priority = true` in PR #72; the two stay mirrored, so no behavior change) that have `must_do_by` or `target_date` falling within the configured day range, grouped alphabetically by board. Medium tasks do not surface here (explicit product decision — Focused View shows High only). Overdue tasks are excluded — this view is forward-looking only.
 
 **Query params**
 - `reference_date=YYYY-MM-DD` (optional) — client-supplied date anchor to avoid server-timezone issues. Defaults to `date.today()` (server UTC) when omitted.
@@ -677,7 +689,7 @@ Returns `is_high_priority = true` pending tasks that have `must_do_by` or `targe
 
 - Boards with zero qualifying tasks are omitted from the response.
 - Boards are ordered by the user's custom board order (`sort_order ASC, created_at ASC` — changed PR #62, was alphabetically by name).
-- Within each board group, tasks are sorted by `is_high_priority DESC` (high-priority first), then `sort_order` ASC (changed PR #61 — the same manual position set by drag-to-reorder on the web All view's kanban board, or the `created_at` backfill for tasks that predate PR #61; was `updated_at` DESC as of PR #47). This view has no reorder UI of its own — it only reflects whatever order was last set elsewhere.
+- Within each board group, tasks are sorted by `priority == 'high'` DESC (high-priority first; expression changed from `is_high_priority DESC` in PR #72, same effective ordering since the two stay mirrored — Medium is not distinguished from Normal here), then `sort_order` ASC (changed PR #61 — the same manual position set by drag-to-reorder on the web All view's kanban board, or the `created_at` backfill for tasks that predate PR #61; was `updated_at` DESC as of PR #47). This view has no reorder UI of its own — it only reflects whatever order was last set elsewhere.
 - `board_color` is `null` when the user has not configured a color; clients should substitute a default from a fixed palette.
 
 ---
@@ -709,7 +721,7 @@ Returns pending tasks (any priority) whose `must_do_by` or `target_date` falls o
 
 - Boards with zero qualifying tasks are omitted from the response.
 - Boards are ordered by the user's custom board order (`sort_order ASC, created_at ASC` — changed PR #62, was alphabetically by name).
-- Within each board group, tasks are sorted by `is_high_priority DESC` (high-priority first), then a tiebreak that depends on `overdue` (changed PR #61): `sort_order` ASC when `overdue=false` (Today/Tomorrow — same manual position as Focused View, set by drag-to-reorder on the web All view), or `updated_at` DESC when `overdue=true` (Overdue — unchanged from PR #47, since Overdue tasks aren't reorderable).
+- Within each board group, tasks are sorted by `priority == 'high'` DESC (high-priority first; expression changed from `is_high_priority DESC` in PR #72, same effective ordering — Medium is not distinguished from Normal here), then a tiebreak that depends on `overdue` (changed PR #61): `sort_order` ASC when `overdue=false` (Today/Tomorrow — same manual position as Focused View, set by drag-to-reorder on the web All view), or `updated_at` DESC when `overdue=true` (Overdue — unchanged from PR #47, since Overdue tasks aren't reorderable).
 - Completed and soft-deleted tasks are excluded.
 
 ---
@@ -724,7 +736,7 @@ Push local changes to the server and pull server changes since last sync. Uses l
 {
   "last_synced_at": "2026-05-06T08:00:00Z",
   "changes": {
-    "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board on create, unchanged on update; present on update = move the task to that board and clear its labels); links optional (omitted = unchanged on update, present = replace, including []); sort_order not sent by any current client (mobile never writes it) but if present on an update it is not read by the sync push path — sort_order can only be set via `PUT /tasks/{id}`, not `/sync`... ],
+    "tasks": [ ...task objects with updated_at; board_id optional (stale clients may omit it; server defaults to default board on create, unchanged on update; present on update = move the task to that board and clear its labels); links optional (omitted = unchanged on update, present = replace, including []); sort_order not sent by any current client (mobile never writes it) but if present on an update it is not read by the sync push path — sort_order can only be set via `PUT /tasks/{id}`, not `/sync`; priority optional (PR #72) — validated against `{"high","medium","normal"}` server-side (`_validate_sync_priority()`); an invalid/missing value falls through to the legacy is_high_priority resolution per the field-resolution rule... ],
     "task_labels": [ ...task_label objects... ],
     "boards": []
   }
@@ -753,3 +765,5 @@ Push local changes to the server and pull server changes since last sync. Uses l
 **Link sync notes**: Task objects in the pull response always include `links`. Push payloads are raw dicts and bypass the `TaskCreate`/`TaskUpdate` Pydantic validation that `POST`/`PUT /tasks` get for free, so each pushed task's `links` array is re-validated server-side (see Link rules under Table: `tasks`) — unlike the REST endpoints, an individually invalid link (bad scheme, empty description, oversized field) is dropped rather than rejecting the whole push, and the result is capped at `MAX_TASK_LINKS`. On update, `links` follows the same full-replace convention as the REST endpoints: the key must be present in the pushed task dict to change the stored links (its absence means unchanged), not merely non-empty.
 
 **Sort order sync notes (PR #61)**: Task objects in the pull response always include `sort_order`. The push path does not accept an explicit client-supplied `sort_order` — no current client (mobile) ever sends one, and there is no reorder UI outside the web All view, which writes via `PUT /tasks/{id}` directly. `sync.py`'s "client wins" branch instead independently replicates `task_service.update_task()`'s auto-reset rule by hand (this router bypasses `task_service` and applies fields directly): it captures the task's `board_id` and effective date (via the imported `task_service._effective_date()`) before mutating, and if either changed as a result of the push, sets `server_task.sort_order` to a fresh "bottom of list" value afterward. This matters for an offline mobile date-drag queued locally and later pushed via `/sync` — without it, the synced task would land with a stale `sort_order` instead of the bottom of its new bucket, as an online drag would produce.
+
+**Priority sync notes (PR #72)**: Task objects in the pull response always include both `priority` and `is_high_priority` (kept mirrored). On push, `sync.py` imports and calls `task_service._resolve_priority_on_create()`/`_resolve_priority_on_update()` directly — the same field-resolution rule REST uses (see "Field-resolution rule" under Table: `tasks`) — rather than duplicating the logic, unlike the sort_order/board_id handling in this router, which is hand-applied. A raw pushed `priority` value is first passed through `_validate_sync_priority()` since `SyncChanges.tasks` are unvalidated dicts (bypassing `TaskCreate`/`TaskUpdate`'s Pydantic `Literal` check); an invalid/missing value is treated as "not sent," falling through to the legacy `is_high_priority` resolution. No eligibility (`_is_hp_eligible_date()`) or daily-cap re-check is performed on the sync push path for any tier — a pre-existing gap (predates PR #72, applied previously to `is_high_priority` alone) that lets a stale offline client push an unchecked High/Medium value; not fixed as part of this PR (explicitly out of scope per PLAN-feat-priority-tiers.md).
