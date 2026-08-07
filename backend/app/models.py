@@ -93,6 +93,7 @@ class Task(Base):
     target_date = Column(Date, nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     is_high_priority = Column(Boolean, default=False, nullable=False)
+    priority = Column(String, default="normal", nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
     links = Column(JSONB, nullable=False, default=list)
     sort_order = Column(DOUBLE_PRECISION, nullable=False, default=_sort_order_default)

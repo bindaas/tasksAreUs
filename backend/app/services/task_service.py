@@ -50,7 +50,7 @@ def _count_high_priority_for_date(
         return 0
     q = db.query(Task).filter(
         Task.user_id == user_id,
-        Task.is_high_priority == True,
+        Task.priority == "high",
         Task.is_deleted == False,
         Task.state == StateEnum.pending,
     )
@@ -59,6 +59,32 @@ def _count_high_priority_for_date(
         if _effective_date(t.must_do_by, t.target_date) == d
         and (exclude_task_id is None or t.id != exclude_task_id)
     )
+
+
+def _resolve_priority_on_create(
+    priority: Optional[str], is_high_priority: bool
+) -> str:
+    """New-client path uses `priority` directly; a legacy client (old mobile, sends only
+    `is_high_priority`) maps True/False to high/normal — there is no pre-existing stored
+    priority to protect on create, so the medium-preserving branch never applies here."""
+    if priority is not None:
+        return priority
+    return "high" if is_high_priority else "normal"
+
+
+def _resolve_priority_on_update(
+    priority: Optional[str], is_high_priority: Optional[bool], current_priority: str
+) -> str:
+    """Field-resolution rule (see PLAN-feat-priority-tiers.md — Sneezy Blocker fix):
+    a legacy `is_high_priority` write must never silently demote an existing `medium`
+    task, since an old client has no way to express or intend that change."""
+    if priority is not None:
+        return priority
+    if is_high_priority is not None:
+        if current_priority == "medium":
+            return current_priority
+        return "high" if is_high_priority else "normal"
+    return current_priority
 
 
 def get_task_or_404(db: Session, task_id: str, user_id: str) -> Task:
@@ -97,13 +123,21 @@ def create_task(
     target_date: Optional[date],
     label_ids: List[str],
     is_high_priority: bool = False,
+    priority: Optional[str] = None,
     high_priority_limit: int = HIGH_PRIORITY_DAILY_LIMIT,
     links: Optional[List[Dict[str, Any]]] = None,
 ) -> Task:
     labels = _resolve_labels(db, label_ids, user_id, board_id)
     effective = _effective_date(must_do_by, target_date)
-    final_priority = is_high_priority and _is_hp_eligible_date(effective)
-    if final_priority:
+
+    final_priority = _resolve_priority_on_create(priority, is_high_priority)
+    # Auto-reset: High/Medium are only valid within _is_hp_eligible_date's window; Normal
+    # has no date restriction (mirrors today's non-high-priority tasks).
+    if final_priority in ("high", "medium") and not _is_hp_eligible_date(effective):
+        final_priority = "normal"
+
+    # Cap check: only High is capped (Medium and Normal are uncapped, per product decision).
+    if final_priority == "high":
         count = _count_high_priority_for_date(db, user_id, effective)
         if count >= high_priority_limit:
             raise HTTPException(
@@ -118,7 +152,8 @@ def create_task(
         notes=notes,
         must_do_by=must_do_by,
         target_date=target_date,
-        is_high_priority=final_priority,
+        is_high_priority=(final_priority == "high"),
+        priority=final_priority,
         links=links or [],
     )
     db.add(task)
@@ -141,12 +176,14 @@ def update_task(
     clear_must_do_by: bool = False,
     clear_target_date: bool = False,
     is_high_priority: Optional[bool] = None,
+    priority: Optional[str] = None,
     high_priority_limit: int = HIGH_PRIORITY_DAILY_LIMIT,
     links: Optional[List[Dict[str, Any]]] = None,
     board_id: Optional[str] = None,
     sort_order: Optional[float] = None,
 ) -> Task:
     old_effective = _effective_date(task.must_do_by, task.target_date)
+    old_priority = task.priority
     board_changed = board_id is not None and board_id != task.board_id
 
     if board_id is not None and board_id != task.board_id:
@@ -171,24 +208,42 @@ def update_task(
     elif target_date is not None:
         task.target_date = target_date
 
-    if is_high_priority is not None:
-        task.is_high_priority = is_high_priority
+    resolved_priority = _resolve_priority_on_update(priority, is_high_priority, old_priority)
+    # "Explicit high intent" tracks today's exact `is_high_priority is True` cap-check trigger,
+    # generalized: either the new `priority` field was explicitly sent as 'high', or a legacy
+    # `is_high_priority=True` write took the high/normal-toggle branch (not the medium-preserving
+    # no-op branch) of _resolve_priority_on_update. This intentionally reproduces a pre-existing
+    # discrepancy against DATA_MODEL_AND_API.MD's documented "cap doesn't re-engage on overdue
+    # tasks until moved to a current/future date" — in the actual code, _is_hp_eligible_date()
+    # treats every past date as eligible, so resending is_high_priority=True on an already-overdue
+    # High task (e.g. any Task Form save) DOES re-run the cap check below. See
+    # PLAN-feat-priority-tiers.md's Cap check section — carried forward unchanged, not fixed here.
+    explicit_high_intent = (
+        priority == "high"
+        or (priority is None and is_high_priority is True and old_priority != "medium")
+    )
+    task.priority = resolved_priority
 
-    # Auto-reset: high priority is only valid for dates within _is_hp_eligible_date's window
-    if not _is_hp_eligible_date(_effective_date(task.must_do_by, task.target_date)):
-        task.is_high_priority = False
+    # Auto-reset: High/Medium are only valid within _is_hp_eligible_date's window; Normal has
+    # no date restriction (mirrors today's non-high-priority tasks).
+    if task.priority in ("high", "medium") and not _is_hp_eligible_date(_effective_date(task.must_do_by, task.target_date)):
+        task.priority = "normal"
 
-    # Enforce per-day high-priority limit only when priority is being explicitly set to True
-    if is_high_priority is True:
+    # Enforce per-day high-priority limit only when priority is explicitly being set to High
+    # (Medium and Normal are uncapped). Only reachable when task.priority == "high" survived
+    # the auto-reset above, which already guarantees eligibility — no separate eligibility
+    # re-check needed here (this mirrors the original code's now-redundant inner check).
+    if explicit_high_intent and task.priority == "high":
         effective = _effective_date(task.must_do_by, task.target_date)
-        if _is_hp_eligible_date(effective):
-            count = _count_high_priority_for_date(db, task.user_id, effective, exclude_task_id=task.id)
-            if count >= high_priority_limit:
-                raise HTTPException(
-                    status_code=422,
-                    detail=f"High-priority tasks are limited to {high_priority_limit} per day. "
-                           "Remove one before adding another.",
-                )
+        count = _count_high_priority_for_date(db, task.user_id, effective, exclude_task_id=task.id)
+        if count >= high_priority_limit:
+            raise HTTPException(
+                status_code=422,
+                detail=f"High-priority tasks are limited to {high_priority_limit} per day. "
+                       "Remove one before adding another.",
+            )
+
+    task.is_high_priority = (task.priority == "high")
 
     if label_ids is not None:
         db.query(TaskLabel).filter(TaskLabel.task_id == task.id).delete()

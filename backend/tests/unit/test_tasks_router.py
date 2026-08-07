@@ -18,7 +18,7 @@ def _make_task(**overrides) -> Task:
     defaults = dict(
         id="task-1", user_id="user-1", board_id="board-1", title="Test", notes=None,
         state=StateEnum.pending, must_do_by=None, target_date=None,
-        completed_at=None, is_high_priority=False, is_deleted=False,
+        completed_at=None, is_high_priority=False, priority="normal", is_deleted=False,
         links=[], sort_order=100.0, created_at=now, updated_at=now,
     )
     defaults.update(overrides)
@@ -149,6 +149,60 @@ class TestUpdateTaskSortOrderWiring:
 
         _, kwargs = mock_svc.update_task.call_args
         assert kwargs["sort_order"] is None
+
+
+class TestCreateTaskPriorityWiring:
+    @patch("app.routers.tasks._get_high_priority_limit", return_value=3)
+    @patch("app.routers.tasks.board_svc")
+    @patch("app.routers.tasks.svc")
+    def test_provided_priority_reaches_task_service(self, mock_svc, mock_board_svc, _limit):
+        mock_board_svc.resolve_board_id.return_value = "board-1"
+        mock_svc.create_task.return_value = _make_task()
+        body = TaskCreate(title="Test", priority="medium")
+
+        create_task(body=body, db=MagicMock(), user_id="user-1")
+
+        _, kwargs = mock_svc.create_task.call_args
+        assert kwargs["priority"] == "medium"
+
+    @patch("app.routers.tasks._get_high_priority_limit", return_value=3)
+    @patch("app.routers.tasks.board_svc")
+    @patch("app.routers.tasks.svc")
+    def test_omitted_priority_passes_none(self, mock_svc, mock_board_svc, _limit):
+        mock_board_svc.resolve_board_id.return_value = "board-1"
+        mock_svc.create_task.return_value = _make_task()
+        body = TaskCreate(title="Test")
+
+        create_task(body=body, db=MagicMock(), user_id="user-1")
+
+        _, kwargs = mock_svc.create_task.call_args
+        assert kwargs["priority"] is None
+
+
+class TestUpdateTaskPriorityWiring:
+    @patch("app.routers.tasks._get_high_priority_limit", return_value=3)
+    @patch("app.routers.tasks.svc")
+    def test_provided_priority_reaches_task_service(self, mock_svc, _limit):
+        mock_svc.get_task_or_404.return_value = _make_task()
+        mock_svc.update_task.return_value = _make_task()
+        body = TaskUpdate(priority="medium")
+
+        update_task(task_id="task-1", body=body, db=MagicMock(), user_id="user-1")
+
+        _, kwargs = mock_svc.update_task.call_args
+        assert kwargs["priority"] == "medium"
+
+    @patch("app.routers.tasks._get_high_priority_limit", return_value=3)
+    @patch("app.routers.tasks.svc")
+    def test_omitted_priority_passes_none(self, mock_svc, _limit):
+        mock_svc.get_task_or_404.return_value = _make_task()
+        mock_svc.update_task.return_value = _make_task()
+        body = TaskUpdate(title="New title")
+
+        update_task(task_id="task-1", body=body, db=MagicMock(), user_id="user-1")
+
+        _, kwargs = mock_svc.update_task.call_args
+        assert kwargs["priority"] is None
 
 
 # ── reopen_task ──────────────────────────────────────────────────────────────

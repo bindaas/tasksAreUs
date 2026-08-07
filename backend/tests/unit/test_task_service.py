@@ -250,12 +250,13 @@ class TestIsHpEligibleDate:
 # ── update_task high-priority auto-reset ──────────────────────────────────────
 
 class TestUpdateTaskHighPriority:
-    def _make_task(self, must_do_by=None, target_date=None, is_high_priority=False):
+    def _make_task(self, must_do_by=None, target_date=None, is_high_priority=False, priority=None):
         task = MagicMock()
         task.id = "task-1"
         task.must_do_by = must_do_by
         task.target_date = target_date
         task.is_high_priority = is_high_priority
+        task.priority = priority if priority is not None else ("high" if is_high_priority else "normal")
         task.labels = []
         return task
 
@@ -340,13 +341,14 @@ class TestUpdateTaskHighPriority:
 # ── high-priority daily limit ──────────────────────────────────────────────────
 
 class TestHighPriorityDailyLimit:
-    def _make_task(self, task_id="task-1", must_do_by=None, is_high_priority=False):
+    def _make_task(self, task_id="task-1", must_do_by=None, is_high_priority=False, priority=None):
         task = MagicMock()
         task.id = task_id
         task.user_id = "user-1"
         task.must_do_by = must_do_by
         task.target_date = None
         task.is_high_priority = is_high_priority
+        task.priority = priority if priority is not None else ("high" if is_high_priority else "normal")
         task.labels = []
         return task
 
@@ -412,6 +414,210 @@ class TestHighPriorityDailyLimit:
             update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
                         target_date=None, label_ids=None, is_high_priority=True,
                         high_priority_limit=5)
+        assert exc.value.status_code == 422
+
+
+# ── update_task priority tiers (High/Medium/Normal) ────────────────────────────
+# See PLAN-feat-priority-tiers.md for the field-resolution rule and the documented
+# pre-existing overdue+cap discrepancy this pins down rather than "fixes".
+
+class TestUpdateTaskPriorityTiers:
+    def _make_task(self, must_do_by=None, target_date=None, priority="normal"):
+        task = MagicMock()
+        task.id = "task-1"
+        task.user_id = "user-1"
+        task.must_do_by = must_do_by
+        task.target_date = target_date
+        task.priority = priority
+        task.is_high_priority = (priority == "high")
+        task.labels = []
+        return task
+
+    def _make_db(self):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.delete.return_value = None
+        db.commit.return_value = None
+        db.refresh.side_effect = lambda t: None
+        return db
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=0)
+    def test_set_medium_for_today(self, _count):
+        today = date.today()
+        task = self._make_task(must_do_by=today)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, priority="medium")
+        assert task.priority == "medium"
+        assert task.is_high_priority is False
+        _count.assert_not_called()
+
+    def test_medium_auto_resets_to_normal_when_date_moves_to_upcoming(self):
+        today = date.today()
+        future = today + timedelta(days=7)
+        task = self._make_task(must_do_by=today, priority="medium")
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=future,
+                    target_date=None, label_ids=None)
+        assert task.priority == "normal"
+
+    def test_high_auto_resets_to_normal_when_date_moves_to_upcoming(self):
+        today = date.today()
+        future = today + timedelta(days=7)
+        task = self._make_task(must_do_by=today, priority="high")
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=future,
+                    target_date=None, label_ids=None)
+        assert task.priority == "normal"
+        assert task.is_high_priority is False
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT)
+    def test_cap_check_not_applied_when_setting_medium(self, mock_count):
+        today = date.today()
+        task = self._make_task(must_do_by=today)
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, priority="medium",
+                    high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
+        mock_count.assert_not_called()
+        assert task.priority == "medium"
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT)
+    def test_cap_check_applies_when_priority_field_explicitly_set_to_high(self, mock_count):
+        today = date.today()
+        task = self._make_task(must_do_by=today)
+        with pytest.raises(HTTPException) as exc:
+            update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                        target_date=None, label_ids=None, priority="high",
+                        high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
+        assert exc.value.status_code == 422
+
+    def test_explicit_priority_field_takes_precedence_over_legacy_field(self):
+        today = date.today()
+        task = self._make_task(must_do_by=today, priority="medium")
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, priority="normal", is_high_priority=True)
+        assert task.priority == "normal"
+
+    # ── Sneezy Blocker fix: legacy is_high_priority writes must never clobber a medium ──
+
+    def test_legacy_is_high_priority_true_does_not_overwrite_existing_medium(self):
+        today = date.today()
+        task = self._make_task(must_do_by=today, priority="medium")
+        update_task(self._make_db(), task, title="Unrelated edit", notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=True)
+        assert task.priority == "medium"
+        assert task.is_high_priority is False
+
+    def test_legacy_is_high_priority_false_does_not_overwrite_existing_medium(self):
+        today = date.today()
+        task = self._make_task(must_do_by=today, priority="medium")
+        update_task(self._make_db(), task, title="Unrelated edit", notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=False)
+        assert task.priority == "medium"
+        assert task.is_high_priority is False
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=0)
+    def test_legacy_is_high_priority_true_still_toggles_normal_to_high(self, _count):
+        # Legacy on/off semantics are preserved for tasks that were NOT medium — this is
+        # the exact behavior an un-updated mobile client relies on.
+        today = date.today()
+        task = self._make_task(must_do_by=today, priority="normal")
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=True)
+        assert task.priority == "high"
+        assert task.is_high_priority is True
+
+    def test_legacy_is_high_priority_false_still_toggles_high_to_normal(self):
+        today = date.today()
+        task = self._make_task(must_do_by=today, priority="high")
+        update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                    target_date=None, label_ids=None, is_high_priority=False)
+        assert task.priority == "normal"
+        assert task.is_high_priority is False
+
+    # ── Sneezy Risk: overdue+cap discrepancy — pinned down as documented current behavior,
+    # not silently "fixed" as part of this migration (see PLAN's Cap check section) ──
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT)
+    def test_overdue_high_task_re_triggers_cap_check_on_resend(self, mock_count):
+        # _is_hp_eligible_date() treats every past date as eligible, so an explicit resend
+        # of is_high_priority=True (which web/mobile TaskForm screens do unconditionally on
+        # every save) DOES re-run the cap check even though the task is overdue and its date
+        # was never touched — this contradicts DATA_MODEL_AND_API.MD's documented "cap
+        # doesn't re-engage until moved to a current/future date", but is today's actual,
+        # pre-existing behavior, carried forward unchanged rather than fixed here.
+        yesterday = date.today() - timedelta(days=1)
+        task = self._make_task(must_do_by=yesterday, priority="high")
+        with pytest.raises(HTTPException) as exc:
+            update_task(self._make_db(), task, title=None, notes=None, must_do_by=None,
+                        target_date=None, label_ids=None, is_high_priority=True,
+                        high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
+        assert exc.value.status_code == 422
+        mock_count.assert_called_once()
+
+    @patch("app.services.task_service._count_high_priority_for_date")
+    def test_overdue_high_task_untouched_save_does_not_recheck_cap(self, mock_count):
+        # When neither priority field is sent at all, no cap re-check happens, regardless
+        # of the task being overdue and already High — distinguishes "nothing sent" from
+        # "explicitly resent" (Issue 1's exact mechanism).
+        yesterday = date.today() - timedelta(days=1)
+        task = self._make_task(must_do_by=yesterday, priority="high")
+        update_task(self._make_db(), task, title="Unrelated edit", notes=None, must_do_by=None,
+                    target_date=None, label_ids=None)
+        mock_count.assert_not_called()
+        assert task.priority == "high"
+
+
+# ── create_task priority tiers (High/Medium/Normal) ────────────────────────────
+
+class TestCreateTaskPriorityTiers:
+    def _make_db(self):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.all.return_value = []
+        db.flush.return_value = None
+        db.commit.return_value = None
+        db.refresh.side_effect = lambda t: None
+        return db
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=0)
+    def test_create_with_priority_medium_for_today(self, _count):
+        today = date.today()
+        task = create_task(self._make_db(), "user-1", "board-1", "Test", None,
+                            must_do_by=today, target_date=None, label_ids=[],
+                            priority="medium")
+        assert task.priority == "medium"
+        assert task.is_high_priority is False
+        _count.assert_not_called()
+
+    def test_create_with_priority_medium_auto_resets_for_upcoming(self):
+        future = date.today() + timedelta(days=7)
+        task = create_task(self._make_db(), "user-1", "board-1", "Test", None,
+                            must_do_by=future, target_date=None, label_ids=[],
+                            priority="medium")
+        assert task.priority == "normal"
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=0)
+    def test_create_priority_field_takes_precedence_over_legacy_field(self, _count):
+        today = date.today()
+        task = create_task(self._make_db(), "user-1", "board-1", "Test", None,
+                            must_do_by=today, target_date=None, label_ids=[],
+                            priority="normal", is_high_priority=True)
+        assert task.priority == "normal"
+        assert task.is_high_priority is False
+        _count.assert_not_called()
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=0)
+    def test_create_legacy_is_high_priority_true_maps_to_high(self, _count):
+        today = date.today()
+        task = create_task(self._make_db(), "user-1", "board-1", "Test", None,
+                            must_do_by=today, target_date=None, label_ids=[],
+                            is_high_priority=True)
+        assert task.priority == "high"
+        assert task.is_high_priority is True
+
+    @patch("app.services.task_service._count_high_priority_for_date", return_value=HIGH_PRIORITY_DAILY_LIMIT)
+    def test_create_raises_422_when_cap_reached_for_high(self, _count):
+        today = date.today()
+        with pytest.raises(HTTPException) as exc:
+            create_task(self._make_db(), "user-1", "board-1", "Test", None,
+                        must_do_by=today, target_date=None, label_ids=[],
+                        priority="high", high_priority_limit=HIGH_PRIORITY_DAILY_LIMIT)
         assert exc.value.status_code == 422
 
 

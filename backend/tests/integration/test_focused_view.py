@@ -1,5 +1,6 @@
 """Focused View: config (PR #36) and tasks (PR #36, board-order changes
-PR #62, sort_order tiebreak PR #61).
+PR #62, sort_order tiebreak PR #61); Medium tier stays excluded (High-only
+filtering unchanged, now expressed via `priority == 'high'`, PR #72).
 
 Reads ctx.default_board_id.
 """
@@ -145,6 +146,21 @@ def run(ctx):
     assert_eq("POST focused view non-HP task → 201", r.status_code, 201)
     fv_nonhp_task_id = r.json()["id"]
 
+    # Create a Medium-priority task due today — per PR #72's locked-in decision,
+    # Medium does not surface in Focused View (High-only, unchanged behavior);
+    # focused_view_service.py filters on `Task.priority == "high"` now, not the
+    # is_high_priority boolean, so this must still exclude Medium correctly.
+    r = client.post("/tasks", headers=H, json={
+        "title": "Focused view medium-priority task",
+        "must_do_by": fv_today_str,
+        "label_ids": [],
+        "priority": "medium",
+        "board_id": default_board_id,
+    })
+    assert_eq("POST focused view medium-priority task → 201", r.status_code, 201)
+    fv_medium_task_id = r.json()["id"]
+    assert_eq("focused view medium task priority=medium", r.json()["priority"], "medium")
+
     # Create a second board and set a color on it
     r = client.post("/boards", headers=H, json={"name": "Focused view test board"})
     assert_eq("POST /boards for focused view test → 201", r.status_code, 201)
@@ -187,6 +203,8 @@ def run(ctx):
         fv_default_task_ids = [t["id"] for t in fv_default_group["tasks"]]
         assert_in("HP task appears in focused view default board", fv_hp_task_id, fv_default_task_ids)
         assert_true("non-HP task excluded from focused view", fv_nonhp_task_id not in fv_default_task_ids)
+        assert_true("medium-priority task excluded from focused view (High-only, PR #72)",
+                    fv_medium_task_id not in fv_default_task_ids)
         # Task objects include full shape
         hp_task_obj = next((t for t in fv_default_group["tasks"] if t["id"] == fv_hp_task_id), None)
         assert_true("HP task object found in focused view", hp_task_obj is not None)
@@ -312,6 +330,7 @@ def run(ctx):
 
     # Clean up focused view test tasks and board
     client.delete(f"/tasks/{fv_nonhp_task_id}", headers=H)
+    client.delete(f"/tasks/{fv_medium_task_id}", headers=H)
     client.delete(f"/tasks/{fv_target_only_task_id}", headers=H)
     client.delete(f"/tasks/{fv_colored_board_task_id}", headers=H)
     client.delete(f"/boards/{fv_board_id}", headers=H)

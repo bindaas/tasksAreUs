@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import re
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+PriorityTier = Literal["high", "medium", "normal"]
 
 
 # ── Boards ────────────────────────────────────────────────────────────────────
@@ -103,7 +105,8 @@ class TaskCreate(BaseModel):
     must_do_by: Optional[date] = None
     target_date: Optional[date] = None
     label_ids: List[str] = []
-    is_high_priority: bool = False
+    is_high_priority: bool = False  # legacy field — see `priority`; kept for old mobile clients
+    priority: Optional[PriorityTier] = None  # None = not sent (legacy client); resolved server-side
     board_id: Optional[str] = None  # resolved to default board if omitted
     links: List[TaskLink] = []
 
@@ -121,7 +124,8 @@ class TaskUpdate(BaseModel):
     must_do_by: Optional[date] = None
     target_date: Optional[date] = None
     label_ids: Optional[List[str]] = None
-    is_high_priority: Optional[bool] = None
+    is_high_priority: Optional[bool] = None  # legacy field — see `priority`; kept for old mobile clients
+    priority: Optional[PriorityTier] = None  # None = not sent; resolved server-side per field-resolution rule
     links: Optional[List[TaskLink]] = None  # None = unchanged; any list (incl. []) fully replaces
     board_id: Optional[str] = None  # None = unchanged; moves the task to a different board
     sort_order: Optional[float] = None  # None = let server decide (unchanged or auto-reset); explicit float places the task at a position
@@ -145,7 +149,8 @@ class TaskOut(BaseModel):
     target_date: Optional[date] = None
     completed_at: Optional[datetime] = None
     labels: List[LabelOut] = []
-    is_high_priority: bool = False
+    is_high_priority: bool = False  # legacy field, mirrors `priority == 'high'` — see `priority`
+    priority: PriorityTier = "normal"
     is_deleted: bool
     links: List[TaskLink] = []
     sort_order: float
