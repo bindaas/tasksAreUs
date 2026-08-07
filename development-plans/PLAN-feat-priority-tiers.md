@@ -1,10 +1,10 @@
 # Development Plan: feat-priority-tiers
 
 ## Status
-**State:** In progress — PR1 (backend) implemented, tests passing; PR2 (web) and PR3 (mobile) not started.
+**State:** In progress — PR1 (backend) merged; PR2 (web) and PR3 (mobile) not started.
 **Last updated:** 2026-08-06 by Grumpy
-**Next step:** PR1 open as [#72](https://github.com/bindaas/tasksAreUs/pull/72) (branch `feat-priority-tiers-backend`): `tasks.priority` column + migration, schema changes, field-resolution rule (medium-preserving), generalized eligibility/cap logic, `focused_view_service.py`/`routers/sync.py` updated, 246/246 backend unit tests passing. Not yet merged. PR2 (web) and PR3 (mobile) not started — checkpointing here before starting PR2's larger UI rewrite.
-**Blocked on:** n/a — implementation underway.
+**Next step:** PR1 ([#72](https://github.com/bindaas/tasksAreUs/pull/72)) merged to `main` — full review chain complete (Dopey/Sleepy/Bashful/Doc all posted, one Must Fix applied — unvalidated `priority` string on the `/sync` push path — plus wiring tests and integration coverage added). `PRODUCT_REQUIREMENTS_DOCUMENT.MD`, `ARCHITECTURE.MD`, and `DATA_MODEL_AND_API.MD` are already up to date on `main`. Next: start PR2 (web) on a fresh branch off `main` — see PR2 section above for scope (3-zone kanban, all-tiers-collapsible per follow-up user direction, per-tier drop targets).
+**Blocked on:** n/a — awaiting go-ahead to start PR2.
 
 ---
 
