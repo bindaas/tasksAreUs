@@ -15,7 +15,7 @@ import { useBoard } from '../context/BoardContext';
 import { useView } from '../context/ViewContext';
 import { useColumnPriorityCollapse } from '../context/ColumnPriorityCollapseContext';
 import type { Board } from '../api/boards';
-import type { Task } from '../api/tasks';
+import type { PriorityTier, Task } from '../api/tasks';
 import { filterTasks } from '../utils/taskFilters';
 import {
   type ColumnKey,
@@ -26,12 +26,55 @@ import {
   formatDateWithDay,
   isFriday,
 } from '../utils/taskDateUtils';
-import { isHighPriorityEligible, splitByPriority, canAddHighPriority } from '../utils/taskPriority';
+import { isPriorityEligible, splitByPriority, canAddHighPriority, PRIORITY_CYCLE } from '../utils/taskPriority';
 import { computeInsertSortOrder } from '../utils/taskOrder';
 import { getBoardColor } from '../utils/boardColor';
 import { useSettings } from '../hooks/useSettings';
 import { viewLabel, type ViewMode } from '../utils/viewLabel';
 
+const TIER_RANK: Record<PriorityTier, number> = { high: 0, medium: 1, normal: 2 };
+
+const TIER_META: Record<PriorityTier, {
+  label: string;
+  headerBg: string;
+  headerBorder: string;
+  headerText: string;
+  iconColor: string;
+  zoneOverBg: string;
+  zoneOverText: string;
+  emptyLabel: string;
+}> = {
+  high: {
+    label: 'High Priority',
+    headerBg: 'bg-orange-100',
+    headerBorder: 'border-orange-200',
+    headerText: 'text-orange-700',
+    iconColor: 'text-orange-600 hover:text-orange-700',
+    zoneOverBg: 'bg-orange-50',
+    zoneOverText: 'text-orange-400',
+    emptyLabel: 'Drop for high priority ↑',
+  },
+  medium: {
+    label: 'Medium Priority',
+    headerBg: 'bg-blue-100',
+    headerBorder: 'border-blue-200',
+    headerText: 'text-blue-700',
+    iconColor: 'text-blue-600 hover:text-blue-700',
+    zoneOverBg: 'bg-blue-50',
+    zoneOverText: 'text-blue-400',
+    emptyLabel: 'Drop for medium priority',
+  },
+  normal: {
+    label: 'Normal',
+    headerBg: 'bg-gray-100',
+    headerBorder: 'border-gray-200',
+    headerText: 'text-gray-600',
+    iconColor: 'text-gray-500 hover:text-gray-600',
+    zoneOverBg: 'bg-indigo-50',
+    zoneOverText: 'text-indigo-400',
+    emptyLabel: 'Drop here',
+  },
+};
 
 export function TasksPage() {
   const navigate = useNavigate();
@@ -46,7 +89,7 @@ export function TasksPage() {
   const { isCollapsed: isPriorityCollapsed, toggleColumn: togglePriorityCollapse } = useColumnPriorityCollapse();
   const [searchQuery, setSearchQuery] = useState('');
   const [dragOverColumn, setDragOverColumn] = useState<ColumnKey | null>(null);
-  const [dragOverPriority, setDragOverPriority] = useState<'high' | 'normal' | null>(null);
+  const [dragOverPriority, setDragOverPriority] = useState<PriorityTier | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
   const [dragOverEdge, setDragOverEdge] = useState<'above' | 'below' | null>(null);
 
@@ -181,9 +224,8 @@ export function TasksPage() {
     for (const key of Object.keys(map) as ColumnKey[]) {
       if (key === 'overdue') {
         map[key].sort((a, b) => {
-          if (a.is_high_priority !== b.is_high_priority) {
-            return a.is_high_priority ? -1 : 1;
-          }
+          const rankDiff = TIER_RANK[a.priority] - TIER_RANK[b.priority];
+          if (rankDiff !== 0) return rankDiff;
           const aDate = getEffectiveDate(a);
           const bDate = getEffectiveDate(b);
           if (!aDate && !bDate) return 0;
@@ -200,9 +242,8 @@ export function TasksPage() {
         });
       } else {
         map[key].sort((a, b) => {
-          if (a.is_high_priority !== b.is_high_priority) {
-            return a.is_high_priority ? -1 : 1;
-          }
+          const rankDiff = TIER_RANK[a.priority] - TIER_RANK[b.priority];
+          if (rankDiff !== 0) return rankDiff;
           return a.sort_order - b.sort_order;
         });
       }
@@ -214,9 +255,14 @@ export function TasksPage() {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    if (!task.is_high_priority) {
+    let nextTier = PRIORITY_CYCLE[task.priority];
+    if ((nextTier === 'high' || nextTier === 'medium') && !isPriorityEligible(columnKey)) {
+      nextTier = 'normal';
+    }
+
+    if (nextTier === 'high') {
       const allHighForColumn = tasks.filter(
-        (t) => t.is_high_priority && getColumn(t, today, tomorrow) === columnKey,
+        (t) => t.priority === 'high' && getColumn(t, today, tomorrow) === columnKey,
       );
       if (!canAddHighPriority(allHighForColumn, task, highPriorityDailyLimit)) {
         setDropError(`High priority is limited to ${highPriorityDailyLimit} tasks per day.`);
@@ -225,7 +271,7 @@ export function TasksPage() {
     }
 
     try {
-      await updateTask(taskId, { is_high_priority: !task.is_high_priority });
+      await updateTask(taskId, { priority: nextTier });
       setDropError(null);
       refetch();
     } catch (err) {
@@ -233,15 +279,18 @@ export function TasksPage() {
     }
   }
 
-  async function handleDrop(taskId: string, columnKey: ColumnKey, priority: 'high' | 'normal' = 'normal') {
+  async function handleDrop(taskId: string, columnKey: ColumnKey, priority: PriorityTier = 'normal') {
     if (columnKey === 'overdue' || columnKey === 'upcoming') return;
 
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    if (priority === 'high' && isHighPriorityEligible(columnKey)) {
+    const eligible = isPriorityEligible(columnKey);
+    const resolvedPriority: PriorityTier = priority !== 'normal' && !eligible ? 'normal' : priority;
+
+    if (resolvedPriority === 'high') {
       const allHighForColumn = tasks.filter(
-        (t) => t.is_high_priority && getColumn(t, today, tomorrow) === columnKey,
+        (t) => t.priority === 'high' && getColumn(t, today, tomorrow) === columnKey,
       );
       if (!canAddHighPriority(allHighForColumn, task, highPriorityDailyLimit)) {
         setDropError(`High priority is limited to ${highPriorityDailyLimit} tasks per day.`);
@@ -250,17 +299,16 @@ export function TasksPage() {
     }
 
     const newDate = getDropDate(columnKey);
-    const isHighPriority = isHighPriorityEligible(columnKey) && priority === 'high';
 
-    const { high, normal } = splitByPriority(columnTasks[columnKey]);
-    const zoneTasks = priority === 'high' ? high : normal;
+    const { high, medium, normal } = splitByPriority(columnTasks[columnKey]);
+    const zoneTasks = resolvedPriority === 'high' ? high : resolvedPriority === 'medium' ? medium : normal;
     const sortOrder = computeInsertSortOrder(zoneTasks, taskId, dragOverTaskId, dragOverEdge);
 
     try {
       if (columnKey === 'nodate') {
-        await updateTask(taskId, { must_do_by: null, target_date: null, is_high_priority: false, sort_order: sortOrder });
+        await updateTask(taskId, { must_do_by: null, target_date: null, priority: 'normal', sort_order: sortOrder });
       } else {
-        await updateTask(taskId, { target_date: newDate, is_high_priority: isHighPriority, sort_order: sortOrder });
+        await updateTask(taskId, { target_date: newDate, priority: resolvedPriority, sort_order: sortOrder });
       }
       refetch();
     } catch (err) {
@@ -380,12 +428,75 @@ export function TasksPage() {
                 if (col.key === 'overdue' && colTasks.length === 0) return null;
                 const isOver = dragOverColumn === col.key;
                 const isOverdueCol = col.key === 'overdue';
-                const isPriorityColumn = isHighPriorityEligible(col.key) || isOverdueCol;
+                const isPriorityColumn = isPriorityEligible(col.key) || isOverdueCol;
 
                 if (isPriorityColumn) {
-                  const { high: highTasks, normal: normalTasks } = splitByPriority(colTasks);
-                  const isHighZoneOver = isOver && dragOverPriority === 'high';
-                  const isNormalZoneOver = isOver && dragOverPriority === 'normal';
+                  const { high: highTasks, medium: mediumTasks, normal: normalTasks } = splitByPriority(colTasks);
+                  const tierTasks: Record<PriorityTier, Task[]> = { high: highTasks, medium: mediumTasks, normal: normalTasks };
+
+                  // Each tier gets its own header/toggle strip (title + count + chevron) that
+                  // also carries the drag-over handler, so a collapsed zone remains a correct
+                  // drop target for its tier instead of silently falling through to the outer
+                  // column's onDrop (which defaults dragOverPriority to 'normal').
+                  const renderTierZone = (tier: PriorityTier) => {
+                    const meta = TIER_META[tier];
+                    const zTasks = tierTasks[tier];
+                    const collapsed = isPriorityCollapsed(col.key, tier);
+                    const isZoneOver = isOver && dragOverPriority === tier;
+                    const handleZoneDragOver = (e: React.DragEvent) => {
+                      e.preventDefault();
+                      setDragOverColumn(col.key);
+                      setDragOverPriority(tier);
+                    };
+                    const cornerClass = tier === 'high' ? 'rounded-t-lg' : tier === 'normal' ? 'rounded-b-lg' : '';
+
+                    return (
+                      <div key={tier}>
+                        <div
+                          onClick={() => togglePriorityCollapse(col.key, tier)}
+                          onDragOver={handleZoneDragOver}
+                          className={`px-2 py-1 flex items-center gap-1.5 border-b cursor-pointer ${meta.headerBg} ${meta.headerBorder}`}
+                          title={collapsed ? 'Expand' : 'Collapse'}
+                        >
+                          <button
+                            aria-label={collapsed ? `Expand ${meta.label.toLowerCase()} tasks` : `Collapse ${meta.label.toLowerCase()} tasks`}
+                            className={`transition-colors p-0.5 pointer-events-none ${meta.iconColor}`}
+                          >
+                            <svg className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 6l7 12H5z" />
+                            </svg>
+                          </button>
+                          <span className={`text-xs font-semibold ${meta.headerText}`}>{meta.label} ({zTasks.length})</span>
+                        </div>
+
+                        {!collapsed && (
+                          <div
+                            className={`p-2 space-y-2 min-h-[60px] transition-colors ${cornerClass} ${
+                              isZoneOver ? meta.zoneOverBg : ''
+                            }`}
+                            onDragOver={handleZoneDragOver}
+                          >
+                            {zTasks.length === 0 ? (
+                              <div className={`text-center py-4 text-xs select-none transition-colors ${
+                                isZoneOver ? meta.zoneOverText : 'text-gray-300'
+                              }`}>
+                                {isOverdueCol ? meta.label : meta.emptyLabel}
+                              </div>
+                            ) : (
+                              zTasks.map((task) => (
+                                <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
+                                  boardColor={activeBoardColor}
+                                  onTogglePriority={isPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
+                                  onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
+                                  dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
+                                />
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  };
 
                   return (
                     <div
@@ -431,93 +542,9 @@ export function TasksPage() {
                         )}
                       </div>
 
-                      {/* High-priority zone header with collapse toggle — whole strip is clickable */}
-                      <div
-                        onClick={() => togglePriorityCollapse(col.key)}
-                        className="px-2 py-1 flex items-center gap-1.5 bg-orange-100 border-b border-orange-200 cursor-pointer"
-                        title={isPriorityCollapsed(col.key) ? 'Expand' : 'Collapse'}
-                      >
-                        <button
-                          aria-label={isPriorityCollapsed(col.key) ? 'Expand high priority tasks' : 'Collapse high priority tasks'}
-                          className="text-orange-600 hover:text-orange-700 transition-colors p-0.5 pointer-events-none"
-                        >
-                          <svg className={`w-4 h-4 transition-transform ${isPriorityCollapsed(col.key) ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 6l7 12H5z" />
-                          </svg>
-                        </button>
-                        <span className="text-xs font-semibold text-orange-700">High Priority ({highTasks.length})</span>
-                      </div>
-
-                      {/* High-priority zone — onDragOver sets priority intent; onDrop is on the outer div */}
-                      {!isPriorityCollapsed(col.key) && (
-                        <div
-                          className={`p-2 space-y-2 min-h-[60px] transition-colors rounded-t-lg ${
-                            isHighZoneOver ? 'bg-orange-50' : ''
-                          }`}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            setDragOverColumn(col.key);
-                            setDragOverPriority('high');
-                          }}
-                        >
-                          {highTasks.length === 0 ? (
-                            <div className={`text-center py-4 text-xs select-none transition-colors ${
-                              isHighZoneOver ? 'text-orange-400' : 'text-gray-300'
-                            }`}>
-                              {isOverdueCol ? 'High priority' : 'Drop for high priority ↑'}
-                            </div>
-                          ) : (
-                            highTasks.map((task) => (
-                              <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
-                                boardColor={activeBoardColor}
-                                onTogglePriority={isHighPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
-                                onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
-                                dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
-                              />
-                            ))
-                          )}
-                        </div>
-                      )}
-
-                      {/* Divider */}
-                      {!isPriorityCollapsed(col.key) && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 select-none">
-                          <div className="flex-1 h-px bg-orange-200" />
-                          <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wide whitespace-nowrap">
-                            high · normal
-                          </span>
-                          <div className="flex-1 h-px bg-gray-200" />
-                        </div>
-                      )}
-
-                      {/* Normal-priority zone — onDragOver sets priority intent; onDrop is on the outer div */}
-                      <div
-                        className={`p-2 space-y-2 min-h-[60px] transition-colors rounded-b-lg ${
-                          isNormalZoneOver ? 'bg-indigo-50' : ''
-                        }`}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setDragOverColumn(col.key);
-                          setDragOverPriority('normal');
-                        }}
-                      >
-                        {normalTasks.length === 0 ? (
-                          <div className={`text-center py-4 text-xs select-none transition-colors ${
-                            isNormalZoneOver ? 'text-indigo-400' : 'text-gray-300'
-                          }`}>
-                            {isOverdueCol ? 'Normal priority' : 'Drop here'}
-                          </div>
-                        ) : (
-                          normalTasks.map((task) => (
-                            <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
-                              boardColor={activeBoardColor}
-                              onTogglePriority={isHighPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
-                              onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
-                              dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
-                            />
-                          ))
-                        )}
-                      </div>
+                      {renderTierZone('high')}
+                      {renderTierZone('medium')}
+                      {renderTierZone('normal')}
                     </div>
                   );
                 }

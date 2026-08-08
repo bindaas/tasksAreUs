@@ -9,7 +9,7 @@ import { TaskForm } from '../components/TaskForm';
 import { useFilter } from '../context/FilterContext';
 import { useBoard } from '../context/BoardContext';
 import { dateOnly, getColumn } from '../utils/taskDateUtils';
-import { isHighPriorityEligible } from '../utils/taskPriority';
+import { isPriorityEligible } from '../utils/taskPriority';
 
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -76,7 +76,7 @@ export function TaskDetailPage() {
       try {
         const t = await getTask(id!);
         if (!cancelled) setTask(t);
-        if (!cancelled && t.is_high_priority) {
+        if (!cancelled && t.priority === 'high') {
           // Scoped to the task's own board — Today/Tomorrow are cross-board, so
           // activeBoard can easily differ from where this task actually lives.
           const { tasks: pending } = await listTasks('pending', t.board_id);
@@ -105,16 +105,16 @@ export function TaskDetailPage() {
   }, [labelsBoardId]);
 
   const highPriorityWarning = useMemo(() => {
-    if (!task?.is_high_priority) return null;
+    if (task?.priority !== 'high') return null;
     const now = new Date();
     const tom = new Date(now);
     tom.setDate(tom.getDate() + 1);
     const todayStr = dateOnly(now);
     const tomorrowStr = dateOnly(tom);
     const col = getColumn(task, todayStr, tomorrowStr);
-    if (!isHighPriorityEligible(col) && col !== 'overdue') return null;
+    if (!isPriorityEligible(col) && col !== 'overdue') return null;
     const highInCol = allPendingTasks.filter(
-      (t) => t.is_high_priority && getColumn(t, todayStr, tomorrowStr) === col
+      (t) => t.priority === 'high' && getColumn(t, todayStr, tomorrowStr) === col
     );
     if (highInCol.length >= highPriorityDailyLimit) {
       return `${highInCol.length} of ${highPriorityDailyLimit} high-priority tasks for ${col === 'overdue' ? 'overdue' : col} — limit exceeded.`;
