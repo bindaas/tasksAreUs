@@ -17,6 +17,8 @@ export interface Label {
 
 export type LabelCategory = 'type';
 
+export type PriorityTier = 'high' | 'medium' | 'normal';
+
 export interface TaskLink {
   id: string;
   url: string;
@@ -33,6 +35,9 @@ export interface Task {
   target_date: string | null;
   completed_at: string | null;
   labels: Label[];
+  priority: PriorityTier;
+  // Legacy mirror of `priority === 'high'`, kept alive server-side for old
+  // (pre-OTA) mobile clients — this app reads `priority` exclusively once updated.
   is_high_priority: boolean;
   is_deleted: boolean;
   links: TaskLink[];
@@ -47,7 +52,7 @@ export interface CreateTaskBody {
   must_do_by?: string;
   target_date?: string;
   label_ids: string[];
-  is_high_priority?: boolean;
+  priority?: PriorityTier;
   links: TaskLink[];
 }
 
@@ -57,7 +62,7 @@ export interface UpdateTaskBody {
   must_do_by?: string | null;
   target_date?: string | null;
   label_ids?: string[];
-  is_high_priority?: boolean;
+  priority?: PriorityTier;
   board_id?: string;
   // Omit entirely to leave links unchanged (full-replace semantics). TaskFormScreen
   // (full save) must always include this; partial updates should omit it.

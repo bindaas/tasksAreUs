@@ -1,8 +1,9 @@
 import {
   HIGH_PRIORITY_DAILY_LIMIT,
-  isHighPriorityEligible,
-  isFormHighPriorityEligible,
-  splitByPriority,
+  PRIORITY_CYCLE,
+  isPriorityEligible,
+  isFormPriorityEligible,
+  resolveNextPriorityTier,
   canAddHighPriority,
 } from '../utils/taskPriority';
 import type { Task } from '../types';
@@ -18,6 +19,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     target_date: null,
     completed_at: null,
     labels: [],
+    priority: 'normal',
     is_high_priority: false,
     is_deleted: false,
     links: [],
@@ -34,90 +36,92 @@ describe('HIGH_PRIORITY_DAILY_LIMIT', () => {
   });
 });
 
-describe('isFormHighPriorityEligible', () => {
+describe('PRIORITY_CYCLE', () => {
+  it('cycles normal -> medium -> high -> normal', () => {
+    expect(PRIORITY_CYCLE.normal).toBe('medium');
+    expect(PRIORITY_CYCLE.medium).toBe('high');
+    expect(PRIORITY_CYCLE.high).toBe('normal');
+  });
+});
+
+describe('isFormPriorityEligible', () => {
   const today = '2026-06-09';
   const tomorrow = '2026-06-10';
   const dayAfterTomorrow = '2026-06-11';
   const beyondDayAfterTomorrow = '2026-06-12';
 
   it('returns true when must_do_by is today', () => {
-    expect(isFormHighPriorityEligible('2026-06-09', '', today, tomorrow)).toBe(true);
+    expect(isFormPriorityEligible('2026-06-09', '', today, tomorrow)).toBe(true);
   });
 
   it('returns true when must_do_by is tomorrow', () => {
-    expect(isFormHighPriorityEligible('2026-06-10', '', today, tomorrow)).toBe(true);
+    expect(isFormPriorityEligible('2026-06-10', '', today, tomorrow)).toBe(true);
   });
 
   it('returns true when target_date is today', () => {
-    expect(isFormHighPriorityEligible('', '2026-06-09', today, tomorrow)).toBe(true);
+    expect(isFormPriorityEligible('', '2026-06-09', today, tomorrow)).toBe(true);
   });
 
   it('returns true when must_do_by is the day after tomorrow', () => {
-    expect(isFormHighPriorityEligible(dayAfterTomorrow, '', today, tomorrow)).toBe(true);
+    expect(isFormPriorityEligible(dayAfterTomorrow, '', today, tomorrow)).toBe(true);
   });
 
   it('returns true when target_date is the day after tomorrow', () => {
-    expect(isFormHighPriorityEligible('', dayAfterTomorrow, today, tomorrow)).toBe(true);
+    expect(isFormPriorityEligible('', dayAfterTomorrow, today, tomorrow)).toBe(true);
   });
 
   it('returns false when must_do_by is past the day after tomorrow', () => {
-    expect(isFormHighPriorityEligible(beyondDayAfterTomorrow, '', today, tomorrow)).toBe(false);
+    expect(isFormPriorityEligible(beyondDayAfterTomorrow, '', today, tomorrow)).toBe(false);
   });
 
   it('returns false when both dates are empty', () => {
-    expect(isFormHighPriorityEligible('', '', today, tomorrow)).toBe(false);
+    expect(isFormPriorityEligible('', '', today, tomorrow)).toBe(false);
   });
 
   it('returns true when must_do_by is overdue (past today)', () => {
-    expect(isFormHighPriorityEligible('2026-06-01', '', today, tomorrow)).toBe(true);
+    expect(isFormPriorityEligible('2026-06-01', '', today, tomorrow)).toBe(true);
   });
 
   it('returns true when either date qualifies (must_do_by far but target_date today)', () => {
-    expect(isFormHighPriorityEligible('2026-07-01', '2026-06-09', today, tomorrow)).toBe(true);
+    expect(isFormPriorityEligible('2026-07-01', '2026-06-09', today, tomorrow)).toBe(true);
   });
 });
 
-describe('isHighPriorityEligible', () => {
+describe('isPriorityEligible', () => {
   it('returns true for today, tomorrow, and day_after_tomorrow', () => {
-    expect(isHighPriorityEligible('today')).toBe(true);
-    expect(isHighPriorityEligible('tomorrow')).toBe(true);
-    expect(isHighPriorityEligible('day_after_tomorrow')).toBe(true);
+    expect(isPriorityEligible('today')).toBe(true);
+    expect(isPriorityEligible('tomorrow')).toBe(true);
+    expect(isPriorityEligible('day_after_tomorrow')).toBe(true);
   });
 
   it('returns false for all other columns', () => {
-    expect(isHighPriorityEligible('overdue')).toBe(false);
-    expect(isHighPriorityEligible('upcoming')).toBe(false);
-    expect(isHighPriorityEligible('nodate')).toBe(false);
+    expect(isPriorityEligible('overdue')).toBe(false);
+    expect(isPriorityEligible('upcoming')).toBe(false);
+    expect(isPriorityEligible('nodate')).toBe(false);
   });
 });
 
-describe('splitByPriority', () => {
-  it('separates high and normal tasks', () => {
-    const high = makeTask({ id: 'h1', is_high_priority: true });
-    const normal = makeTask({ id: 'n1', is_high_priority: false });
-    const result = splitByPriority([high, normal]);
-    expect(result.high).toEqual([high]);
-    expect(result.normal).toEqual([normal]);
+describe('resolveNextPriorityTier', () => {
+  it('advances normal -> medium -> high -> normal on an eligible column', () => {
+    expect(resolveNextPriorityTier('normal', 'today')).toBe('medium');
+    expect(resolveNextPriorityTier('medium', 'today')).toBe('high');
+    expect(resolveNextPriorityTier('high', 'today')).toBe('normal');
   });
 
-  it('handles empty list', () => {
-    const result = splitByPriority([]);
-    expect(result.high).toHaveLength(0);
-    expect(result.normal).toHaveLength(0);
+  it('demotes to normal instead of promoting on an ineligible column', () => {
+    expect(resolveNextPriorityTier('normal', 'overdue')).toBe('normal');
+    expect(resolveNextPriorityTier('medium', 'nodate')).toBe('normal');
   });
 
-  it('handles all high priority', () => {
-    const tasks = [makeTask({ id: '1', is_high_priority: true }), makeTask({ id: '2', is_high_priority: true })];
-    const result = splitByPriority(tasks);
-    expect(result.high).toHaveLength(2);
-    expect(result.normal).toHaveLength(0);
+  it('always allows demoting high -> normal regardless of eligibility', () => {
+    expect(resolveNextPriorityTier('high', 'upcoming')).toBe('normal');
   });
 });
 
 describe('canAddHighPriority', () => {
   const existing = [
-    makeTask({ id: 'a', is_high_priority: true }),
-    makeTask({ id: 'b', is_high_priority: true }),
+    makeTask({ id: 'a', priority: 'high' }),
+    makeTask({ id: 'b', priority: 'high' }),
   ];
 
   it('returns true when under the limit', () => {
@@ -136,7 +140,7 @@ describe('canAddHighPriority', () => {
 
   it('uses HIGH_PRIORITY_DAILY_LIMIT as default', () => {
     const manyTasks = Array.from({ length: HIGH_PRIORITY_DAILY_LIMIT }, (_, i) =>
-      makeTask({ id: `t${i}`, is_high_priority: true })
+      makeTask({ id: `t${i}`, priority: 'high' })
     );
     expect(canAddHighPriority(manyTasks, makeTask({ id: 'new' }))).toBe(false);
   });

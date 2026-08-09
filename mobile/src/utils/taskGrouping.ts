@@ -1,5 +1,7 @@
-import type { Task } from '../types';
+import type { PriorityTier, Task } from '../types';
 import { type ColumnKey, dateOnly, getColumn } from './taskDateUtils';
+
+const TIER_RANK: Record<PriorityTier, number> = { high: 0, medium: 1, normal: 2 };
 
 export interface TaskSection {
   key: ColumnKey;
@@ -41,9 +43,15 @@ export function groupTasksForList(tasks: Task[], referenceDate: Date = new Date(
 
   for (const key of SECTION_ORDER) {
     if (key === 'overdue') {
+      // Field-name update only, per the plan: this bucket keeps its existing
+      // high-vs-not-high split and updated_at tiebreak (deliberately mirroring
+      // the backend's Overdue-vs-Today/Tomorrow distinction) — it does not get
+      // the else branch's full 3-way tier rank.
       buckets[key].sort((a, b) => {
-        if (a.is_high_priority !== b.is_high_priority) {
-          return a.is_high_priority ? -1 : 1;
+        const aHigh = a.priority === 'high';
+        const bHigh = b.priority === 'high';
+        if (aHigh !== bHigh) {
+          return aHigh ? -1 : 1;
         }
         return b.updated_at.localeCompare(a.updated_at);
       });
@@ -56,9 +64,8 @@ export function groupTasksForList(tasks: Task[], referenceDate: Date = new Date(
       });
     } else {
       buckets[key].sort((a, b) => {
-        if (a.is_high_priority !== b.is_high_priority) {
-          return a.is_high_priority ? -1 : 1;
-        }
+        const rankDiff = TIER_RANK[a.priority] - TIER_RANK[b.priority];
+        if (rankDiff !== 0) return rankDiff;
         return a.sort_order - b.sort_order;
       });
     }

@@ -29,22 +29,39 @@ export function TaskCardBody({
   onComplete,
   onDelete,
 }: TaskCardBodyProps) {
-  const priorityIndicator = task.is_high_priority ? (
-    priorityBadge === 'static' ? (
-      <View className="bg-amber-50 rounded px-1.5 py-0.5 self-start">
-        <Text className="text-xs font-semibold text-amber-600">★ High</Text>
-      </View>
-    ) : (
-      <TouchableOpacity
-        onPress={onTogglePriority}
-        className="rounded px-1.5 py-0.5 self-start"
-        style={{ backgroundColor: '#fff7ed', borderWidth: 1, borderColor: '#fed7aa' }}
-        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-      >
-        <Text className="text-[10px] font-semibold uppercase text-orange-600">High</Text>
-      </TouchableOpacity>
-    )
-  ) : null;
+  // Focused/Day View badges intentionally show High only — Medium never surfaces
+  // there (locked-in product decision), so 'static' mode ignores Medium entirely.
+  const priorityIndicator = priorityBadge === 'static'
+    ? task.priority === 'high'
+      ? (
+        <View className="bg-amber-50 rounded px-1.5 py-0.5 self-start">
+          <Text className="text-xs font-semibold text-amber-600">★ High</Text>
+        </View>
+      )
+      : null
+    : task.priority === 'high'
+      ? (
+        <TouchableOpacity
+          onPress={onTogglePriority}
+          className="rounded px-1.5 py-0.5 self-start"
+          style={{ backgroundColor: '#fff7ed', borderWidth: 1, borderColor: '#fed7aa' }}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
+          <Text className="text-[10px] font-semibold uppercase text-orange-600">High</Text>
+        </TouchableOpacity>
+      )
+      : task.priority === 'medium'
+        ? (
+          <TouchableOpacity
+            onPress={onTogglePriority}
+            className="rounded px-1.5 py-0.5 self-start"
+            style={{ backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe' }}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Text className="text-[10px] font-semibold uppercase text-blue-600">Medium</Text>
+          </TouchableOpacity>
+        )
+        : null;
 
   const titleEl = (
     <Text
@@ -123,10 +140,19 @@ export function TaskCardBody({
         <TouchableOpacity
           onPress={onTogglePriority}
           className="w-8 h-8 rounded-full items-center justify-center"
-          style={{ backgroundColor: task.is_high_priority ? '#fff7ed' : '#f9fafb' }}
+          style={{
+            backgroundColor:
+              task.priority === 'high' ? '#fff7ed' : task.priority === 'medium' ? '#eff6ff' : '#f9fafb',
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={{ color: task.is_high_priority ? '#f97316' : '#9ca3af' }}>★</Text>
+          <Text
+            style={{
+              color: task.priority === 'high' ? '#f97316' : task.priority === 'medium' ? '#3b82f6' : '#9ca3af',
+            }}
+          >
+            ★
+          </Text>
         </TouchableOpacity>
       )}
       <TouchableOpacity
