@@ -7,11 +7,24 @@ export function matchesSearch(task: Task, query: string): boolean {
   return task.title.toLowerCase().includes(q) || (task.notes?.toLowerCase().includes(q) ?? false);
 }
 
+export type FilterMode = 'SINGLE' | 'AND' | 'OR';
+
+export function toggleLabelSelection(prev: Set<string>, id: string, mode: FilterMode): Set<string> {
+  if (mode === 'SINGLE') {
+    if (prev.has(id) && prev.size === 1) return new Set();
+    return new Set([id]);
+  }
+  const next = new Set(prev);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  return next;
+}
+
 export function filterTasks(
   tasks: Task[],
   selectedLabelIds: Set<string>,
   searchQuery: string,
-  matchMode: 'AND' | 'OR' = 'AND',
+  matchMode: FilterMode = 'SINGLE',
 ): Task[] {
   let result = tasks;
   if (selectedLabelIds.size > 0) {

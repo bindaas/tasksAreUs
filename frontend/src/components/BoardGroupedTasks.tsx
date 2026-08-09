@@ -8,6 +8,9 @@ import { getBoardColor } from '../utils/boardColor';
 import { EmptyState, FolderIcon } from './EmptyState';
 import { LabelFilterChips } from './LabelFilterChips';
 import { useLabels } from '../hooks/useLabels';
+import { useFilter } from '../context/FilterContext';
+
+const EMPTY_LABEL_SET = new Set<string>();
 
 export function BoardGroupedTasks({
   boards,
@@ -26,20 +29,26 @@ export function BoardGroupedTasks({
 
   const singleVisibleBoard = findSingleVisibleBoard(filteredBoards, (id) => isCollapsed(viewKey, id));
   const { labelsByCategory } = useLabels(singleVisibleBoard?.board_id ?? '');
-  const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
-  const [matchMode, setMatchMode] = useState<'AND' | 'OR'>('AND');
+  const { matchMode, setMatchMode, getBoardLabelSelection, toggleBoardLabel, clearBoardLabelSelection } = useFilter();
+  const currentBoardId = singleVisibleBoard?.board_id ?? null;
 
-  // Resets local chip selection whenever the qualifying board changes (including
-  // when it disappears), so a stale selection never silently applies to a
-  // different board than the one the user picked labels against. Adjusted
-  // during render (React's recommended pattern for this) rather than in an
-  // effect, to avoid an extra render pass.
-  const [labelResetKey, setLabelResetKey] = useState(singleVisibleBoard?.board_id ?? null);
-  if (labelResetKey !== (singleVisibleBoard?.board_id ?? null)) {
-    setLabelResetKey(singleVisibleBoard?.board_id ?? null);
-    setSelectedLabelIds(new Set());
-    setMatchMode('AND');
+  // Reconciles the "Single mode ⇒ at most one tag selected" invariant only for
+  // the board actually visible here, only when it's actually viewed under
+  // Single mode — never touches a different, off-screen board's remembered
+  // selection (see PLAN-feat-tag-filter-single-mode.md §4 for why a global
+  // sweep on mode switch was rejected). Adjusted during render (React's
+  // recommended pattern for this) rather than in an effect, to avoid an extra
+  // render pass.
+  const reconcileKey = currentBoardId ? `${currentBoardId}:${matchMode}` : null;
+  const [reconciledFor, setReconciledFor] = useState<string | null>(null);
+  if (reconcileKey !== reconciledFor) {
+    setReconciledFor(reconcileKey);
+    if (matchMode === 'SINGLE' && currentBoardId) {
+      const current = getBoardLabelSelection(currentBoardId);
+      if (current.size > 1) clearBoardLabelSelection(currentBoardId);
+    }
   }
+  const selectedLabelIds = currentBoardId ? getBoardLabelSelection(currentBoardId) : EMPTY_LABEL_SET;
 
   // Auto-recovery for a vanished pin target: if the pinned board is no longer
   // present in this view (deleted, or its tasks rescheduled out of the date
@@ -54,12 +63,7 @@ export function BoardGroupedTasks({
   }, [viewKey, filteredBoards, getPinnedBoardId, unpinBoard]);
 
   function toggleLocalLabel(labelId: string) {
-    setSelectedLabelIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(labelId)) next.delete(labelId);
-      else next.add(labelId);
-      return next;
-    });
+    if (currentBoardId) toggleBoardLabel(currentBoardId, labelId);
   }
 
   if (boards.length > 0 && filteredBoards.length === 0) {
@@ -84,7 +88,7 @@ export function BoardGroupedTasks({
           labelsByCategory={labelsByCategory}
           selectedLabelIds={selectedLabelIds}
           onToggle={toggleLocalLabel}
-          onClear={() => setSelectedLabelIds(new Set())}
+          onClear={() => currentBoardId && clearBoardLabelSelection(currentBoardId)}
           matchMode={matchMode}
           onMatchModeChange={setMatchMode}
         />

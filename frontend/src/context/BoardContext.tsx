@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
 import { getBoards, createBoard as apiCreateBoard, updateBoard, deleteBoard as apiDeleteBoard, type Board } from '../api/boards';
-import { useFilter } from './FilterContext';
 import { useAuthContext } from './AuthContext';
 
 interface BoardContextValue {
@@ -24,7 +23,6 @@ export function BoardProvider({ children }: { children: ReactNode }) {
   const [activeBoard, setActiveBoardState] = useState<Board | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { clearLabels } = useFilter();
   const { user } = useAuthContext();
   // Guards against overlapping fetchBoards() calls (e.g. a uid change firing
   // while a create/rename/etc. triggered refetch is still in flight) so a
@@ -66,9 +64,6 @@ export function BoardProvider({ children }: { children: ReactNode }) {
   }, [user?.uid, fetchBoards]);
 
   function setActiveBoard(board: Board) {
-    if (board.id !== activeBoard?.id) {
-      clearLabels();
-    }
     setActiveBoardState(board);
   }
 

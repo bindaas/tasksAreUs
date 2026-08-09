@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterTasks, filterBoards } from '../utils/taskFilters';
+import { filterTasks, filterBoards, toggleLabelSelection } from '../utils/taskFilters';
 import type { Task } from '../api/tasks';
 import type { FocusedBoard } from '../api/focusedView';
 
@@ -88,15 +88,87 @@ describe('filterTasks — AND/OR match mode', () => {
     expect(result).toHaveLength(0);
   });
 
-  it('AND is the default mode when no 4th arg is given', () => {
+  it('SINGLE is the default mode when no 4th arg is given', () => {
     const tasks = [
       makeTask({ id: '1', labels: [labelA, labelB] }),
       makeTask({ id: '2', labels: [labelA] }),
     ];
     const withDefault = filterTasks(tasks, new Set(['label-a', 'label-b']), '');
-    const withExplicitAnd = filterTasks(tasks, new Set(['label-a', 'label-b']), '', 'AND');
-    expect(withDefault.map((t) => t.id)).toEqual(withExplicitAnd.map((t) => t.id));
-    expect(withDefault.map((t) => t.id)).toEqual(['1']);
+    const withExplicitSingle = filterTasks(tasks, new Set(['label-a', 'label-b']), '', 'SINGLE');
+    expect(withDefault.map((t) => t.id)).toEqual(withExplicitSingle.map((t) => t.id));
+    expect(withDefault.map((t) => t.id)).toEqual(['1', '2']);
+  });
+});
+
+// ── SINGLE match mode ─────────────────────────────────────────────────────────
+
+describe('filterTasks — SINGLE match mode', () => {
+  it('with 0 selected labels, SINGLE behaves identically to AND/OR (no filter applied)', () => {
+    const tasks = [makeTask({ id: '1', labels: [labelA] }), makeTask({ id: '2', labels: [] })];
+    const result = filterTasks(tasks, new Set(), '', 'SINGLE');
+    expect(result.map((t) => t.id)).toEqual(['1', '2']);
+  });
+
+  it('with exactly 1 selected label, SINGLE matches tasks that have that label — same as AND and OR would for a single-member set', () => {
+    const tasks = [
+      makeTask({ id: '1', labels: [labelA] }),
+      makeTask({ id: '2', labels: [labelB] }),
+      makeTask({ id: '3', labels: [] }),
+    ];
+    const single = filterTasks(tasks, new Set(['label-a']), '', 'SINGLE');
+    const and = filterTasks(tasks, new Set(['label-a']), '', 'AND');
+    const or = filterTasks(tasks, new Set(['label-a']), '', 'OR');
+    expect(single.map((t) => t.id)).toEqual(['1']);
+    expect(single.map((t) => t.id)).toEqual(and.map((t) => t.id));
+    expect(single.map((t) => t.id)).toEqual(or.map((t) => t.id));
+  });
+});
+
+// ── toggleLabelSelection ──────────────────────────────────────────────────────
+
+describe('toggleLabelSelection — SINGLE mode', () => {
+  it('replaces the whole selection with just the clicked tag', () => {
+    const prev = new Set(['label-a']);
+    const result = toggleLabelSelection(prev, 'label-b', 'SINGLE');
+    expect([...result]).toEqual(['label-b']);
+  });
+
+  it('replaces a multi-tag selection with just the clicked tag', () => {
+    const prev = new Set(['label-a', 'label-b']);
+    const result = toggleLabelSelection(prev, 'label-a', 'SINGLE');
+    expect([...result]).toEqual(['label-a']);
+  });
+
+  it('deselects (clears) when clicking the already-selected single tag again', () => {
+    const prev = new Set(['label-a']);
+    const result = toggleLabelSelection(prev, 'label-a', 'SINGLE');
+    expect(result.size).toBe(0);
+  });
+
+  it('selects into an empty selection', () => {
+    const prev = new Set<string>();
+    const result = toggleLabelSelection(prev, 'label-a', 'SINGLE');
+    expect([...result]).toEqual(['label-a']);
+  });
+});
+
+describe('toggleLabelSelection — AND/OR mode (unchanged toggle-in-set behavior)', () => {
+  it('adds a tag not yet in the selection', () => {
+    const prev = new Set(['label-a']);
+    const result = toggleLabelSelection(prev, 'label-b', 'AND');
+    expect([...result].sort()).toEqual(['label-a', 'label-b']);
+  });
+
+  it('removes a tag already in the selection', () => {
+    const prev = new Set(['label-a', 'label-b']);
+    const result = toggleLabelSelection(prev, 'label-a', 'OR');
+    expect([...result]).toEqual(['label-b']);
+  });
+
+  it('adding a third tag keeps all three (does not replace, unlike SINGLE)', () => {
+    const prev = new Set(['label-a', 'label-b']);
+    const result = toggleLabelSelection(prev, 'label-c', 'AND');
+    expect([...result].sort()).toEqual(['label-a', 'label-b', 'label-c']);
   });
 });
 

@@ -32,6 +32,8 @@ import { getBoardColor } from '../utils/boardColor';
 import { useSettings } from '../hooks/useSettings';
 import { viewLabel, type ViewMode } from '../utils/viewLabel';
 
+const EMPTY_LABEL_SET = new Set<string>();
+
 const TIER_RANK: Record<PriorityTier, number> = { high: 0, medium: 1, normal: 2 };
 
 const TIER_META: Record<PriorityTier, {
@@ -79,12 +81,30 @@ const TIER_META: Record<PriorityTier, {
 export function TasksPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { selectedLabelIds, toggleLabel, clearLabels, matchMode, setMatchMode } = useFilter();
+  const { matchMode, setMatchMode, getBoardLabelSelection, toggleBoardLabel, clearBoardLabelSelection } = useFilter();
   const { boards, activeBoard, setActiveBoard } = useBoard();
   const activeBoardColor = useMemo(
     () => getBoardColor(activeBoard?.color, Math.max(0, boards.findIndex((b) => b.id === activeBoard?.id))),
     [activeBoard, boards],
   );
+
+  // Reconciles the "Single mode ⇒ at most one tag selected" invariant only for
+  // the board actually visible here, only when it's actually viewed under
+  // Single mode — never touches a different, off-screen board's remembered
+  // selection (see PLAN-feat-tag-filter-single-mode.md §5 for why a global
+  // sweep on mode switch was rejected).
+  const activeBoardReconcileKey = activeBoard ? `${activeBoard.id}:${matchMode}` : null;
+  const [reconciledFor, setReconciledFor] = useState<string | null>(null);
+  if (activeBoardReconcileKey !== reconciledFor) {
+    setReconciledFor(activeBoardReconcileKey);
+    if (matchMode === 'SINGLE' && activeBoard) {
+      const current = getBoardLabelSelection(activeBoard.id);
+      if (current.size > 1) clearBoardLabelSelection(activeBoard.id);
+    }
+  }
+  const selectedLabelIds = activeBoard ? getBoardLabelSelection(activeBoard.id) : EMPTY_LABEL_SET;
+  const toggleLabel = (id: string) => activeBoard && toggleBoardLabel(activeBoard.id, id);
+  const clearLabels = () => activeBoard && clearBoardLabelSelection(activeBoard.id);
   const { viewMode, setViewMode } = useView();
   const { isCollapsed: isPriorityCollapsed, toggleColumn: togglePriorityCollapse } = useColumnPriorityCollapse();
   const [searchQuery, setSearchQuery] = useState('');
