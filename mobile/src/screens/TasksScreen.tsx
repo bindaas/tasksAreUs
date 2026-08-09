@@ -21,6 +21,7 @@ import {
   deleteTask as apiDeleteTask,
   updateTask,
 } from '../api/tasks';
+import { ApiError } from '../api/client';
 import { listLabels } from '../api/labels';
 import { useBoard } from '../context/BoardContext';
 import { getSettings } from '../api/settings';
@@ -442,9 +443,13 @@ export function TasksScreen() {
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, priority: nextTier } : t)));
     try {
       await updateTask(task.id, { priority: nextTier });
-    } catch {
+    } catch (err) {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? original : t)));
-      Alert.alert('Error', 'Could not update priority. Please try again.');
+      if (err instanceof ApiError && err.status === 422) {
+        Alert.alert('High Priority Limit', 'You already have the maximum number of high-priority tasks for today. Please try again.');
+      } else {
+        Alert.alert('Error', 'Could not update priority. Please try again.');
+      }
     }
   }
 
