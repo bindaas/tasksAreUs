@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { Task, Label } from '../api/tasks';
-import { formatDate, isOverdue } from '../utils/taskDateUtils';
+import { formatDate, isOverdue, shouldShowTargetDate, bothDatesSetAndDistinct } from '../utils/taskDateUtils';
 import { PRIORITY_CYCLE } from '../utils/taskPriority';
 
 type DateFieldName = 'must_do_by' | 'target_date';
@@ -184,7 +184,7 @@ export function TaskCardBody({
             onCancel={onDateFieldCancel}
           />
         )}
-        {task.target_date && task.target_date !== task.must_do_by && (
+        {shouldShowTargetDate(task) && (
           <DateFieldLine
             field="target_date"
             editing={editingDateField === 'target_date'}
@@ -220,7 +220,7 @@ export function TaskCardBody({
             onCancel={onDateFieldCancel}
           />
         )}
-        {task.target_date && task.target_date !== task.must_do_by && (
+        {shouldShowTargetDate(task) && (
           <DateFieldLine
             field="target_date"
             editing={editingDateField === 'target_date'}
@@ -242,8 +242,7 @@ export function TaskCardBody({
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          const bothSet = task.must_do_by && task.target_date && task.must_do_by !== task.target_date;
-          onDateFieldClick(bothSet ? 'both' : task.must_do_by ? 'must_do_by' : 'target_date');
+          onDateFieldClick(bothDatesSetAndDistinct(task) ? 'both' : task.must_do_by ? 'must_do_by' : 'target_date');
         }}
         className={`inline-block text-xs px-1.5 py-0.5 rounded underline-offset-2 hover:underline ${
           isOverdue(dateDisplay.effectiveDate) ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'

@@ -8,6 +8,8 @@ import {
   getColumn,
   getDropDate,
   isFriday,
+  shouldShowTargetDate,
+  bothDatesSetAndDistinct,
 } from '../utils/taskDateUtils';
 
 function mockNow(isoDate: string) {
@@ -220,6 +222,52 @@ describe('isFriday', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-30T12:00:00')); // Saturday
     expect(isFriday()).toBe(false);
+  });
+});
+
+// ── shouldShowTargetDate ─────────────────────────────────────────────────────
+
+describe('shouldShowTargetDate', () => {
+  it('returns false when target_date is null', () => {
+    expect(shouldShowTargetDate({ must_do_by: '2026-06-01', target_date: null })).toBe(false);
+    expect(shouldShowTargetDate({ must_do_by: null, target_date: null })).toBe(false);
+  });
+
+  it('returns true when target_date is set and must_do_by is unset', () => {
+    expect(shouldShowTargetDate({ must_do_by: null, target_date: '2026-06-01' })).toBe(true);
+  });
+
+  it('returns true when target_date is set and differs from must_do_by', () => {
+    expect(shouldShowTargetDate({ must_do_by: '2026-06-01', target_date: '2026-06-10' })).toBe(true);
+  });
+
+  it('returns false when target_date equals must_do_by', () => {
+    expect(shouldShowTargetDate({ must_do_by: '2026-06-01', target_date: '2026-06-01' })).toBe(false);
+  });
+});
+
+// ── bothDatesSetAndDistinct ───────────────────────────────────────────────────
+
+describe('bothDatesSetAndDistinct', () => {
+  it('returns false when only must_do_by is set', () => {
+    expect(bothDatesSetAndDistinct({ must_do_by: '2026-06-01', target_date: null })).toBe(false);
+  });
+
+  it('returns false when only target_date is set', () => {
+    expect(bothDatesSetAndDistinct({ must_do_by: null, target_date: '2026-06-01' })).toBe(false);
+  });
+
+  it('returns false when neither is set', () => {
+    expect(bothDatesSetAndDistinct({ must_do_by: null, target_date: null })).toBe(false);
+  });
+
+  it('returns false when both are set but equal', () => {
+    expect(bothDatesSetAndDistinct({ must_do_by: '2026-06-01', target_date: '2026-06-01' })).toBe(false);
+  });
+
+  it('returns true when both are set and distinct', () => {
+    expect(bothDatesSetAndDistinct({ must_do_by: '2026-06-01', target_date: '2026-06-10' })).toBe(true);
+    expect(bothDatesSetAndDistinct({ must_do_by: '2026-06-10', target_date: '2026-06-01' })).toBe(true);
   });
 });
 

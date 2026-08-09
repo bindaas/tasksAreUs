@@ -44,6 +44,20 @@ export function getEffectiveDate(task: Pick<Task, 'must_do_by' | 'target_date'>)
   return task.must_do_by ?? task.target_date ?? null;
 }
 
+// True when target_date is set and differs from must_do_by — the condition
+// task cards use to decide whether a "Target" date line/link renders at all
+// (must_do_by may be unset entirely, in which case target_date always qualifies).
+export function shouldShowTargetDate(task: Pick<Task, 'must_do_by' | 'target_date'>): boolean {
+  return Boolean(task.target_date && task.target_date !== task.must_do_by);
+}
+
+// True only when both must_do_by and target_date are set and distinct — used to
+// decide whether an effective-date badge should expand into two independently
+// editable date fields instead of editing a single, ambiguous effective date.
+export function bothDatesSetAndDistinct(task: Pick<Task, 'must_do_by' | 'target_date'>): boolean {
+  return Boolean(task.must_do_by) && shouldShowTargetDate(task);
+}
+
 export function getColumn(
   task: Pick<Task, 'must_do_by' | 'target_date'>,
   today: string,
