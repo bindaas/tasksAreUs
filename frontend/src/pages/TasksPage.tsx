@@ -11,6 +11,7 @@ import { EmptyState, FolderIcon } from '../components/EmptyState';
 import { updateTask } from '../api/tasks';
 import { getDayViewTasks } from '../api/dayView';
 import { useFilter } from '../context/FilterContext';
+import { useBoardLabelFilter } from '../hooks/useBoardLabelFilter';
 import { useBoard } from '../context/BoardContext';
 import { useView } from '../context/ViewContext';
 import { useColumnPriorityCollapse } from '../context/ColumnPriorityCollapseContext';
@@ -31,8 +32,6 @@ import { computeInsertSortOrder } from '../utils/taskOrder';
 import { getBoardColor } from '../utils/boardColor';
 import { useSettings } from '../hooks/useSettings';
 import { viewLabel, type ViewMode } from '../utils/viewLabel';
-
-const EMPTY_LABEL_SET = new Set<string>();
 
 const TIER_RANK: Record<PriorityTier, number> = { high: 0, medium: 1, normal: 2 };
 
@@ -81,31 +80,14 @@ const TIER_META: Record<PriorityTier, {
 export function TasksPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { matchMode, setMatchMode, getBoardLabelSelection, toggleBoardLabel, clearBoardLabelSelection } = useFilter();
+  const { matchMode, setMatchMode } = useFilter();
   const { boards, activeBoard, setActiveBoard } = useBoard();
   const activeBoardColor = useMemo(
     () => getBoardColor(activeBoard?.color, Math.max(0, boards.findIndex((b) => b.id === activeBoard?.id))),
     [activeBoard, boards],
   );
 
-  // Reconciles the "Single mode ⇒ at most one tag selected" invariant only for
-  // the board actually visible here, only when it's actually viewed under
-  // Single mode — never touches a different, off-screen board's remembered
-  // selection (see PLAN-feat-tag-filter-single-mode.md §5 for why a global
-  // sweep on mode switch was rejected). Runs as an effect, not during render,
-  // because clearBoardLabelSelection updates state owned by the ancestor
-  // FilterProvider rather than this component's own state.
-  const activeBoardReconcileKey = activeBoard ? `${activeBoard.id}:${matchMode}` : null;
-  useEffect(() => {
-    if (matchMode === 'SINGLE' && activeBoard) {
-      const current = getBoardLabelSelection(activeBoard.id);
-      if (current.size > 1) clearBoardLabelSelection(activeBoard.id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeBoardReconcileKey]);
-  const selectedLabelIds = activeBoard ? getBoardLabelSelection(activeBoard.id) : EMPTY_LABEL_SET;
-  const toggleLabel = (id: string) => activeBoard && toggleBoardLabel(activeBoard.id, id);
-  const clearLabels = () => activeBoard && clearBoardLabelSelection(activeBoard.id);
+  const { selectedLabelIds, toggleLabel, clearLabels } = useBoardLabelFilter(activeBoard?.id ?? null);
   const { viewMode, setViewMode } = useView();
   const { isCollapsed: isPriorityCollapsed, toggleColumn: togglePriorityCollapse } = useColumnPriorityCollapse();
   const [searchQuery, setSearchQuery] = useState('');

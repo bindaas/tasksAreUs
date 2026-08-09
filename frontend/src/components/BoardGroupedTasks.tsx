@@ -8,9 +8,8 @@ import { getBoardColor } from '../utils/boardColor';
 import { EmptyState, FolderIcon } from './EmptyState';
 import { LabelFilterChips } from './LabelFilterChips';
 import { useLabels } from '../hooks/useLabels';
+import { useBoardLabelFilter } from '../hooks/useBoardLabelFilter';
 import { useFilter } from '../context/FilterContext';
-
-const EMPTY_LABEL_SET = new Set<string>();
 
 export function BoardGroupedTasks({
   boards,
@@ -29,25 +28,10 @@ export function BoardGroupedTasks({
 
   const singleVisibleBoard = findSingleVisibleBoard(filteredBoards, (id) => isCollapsed(viewKey, id));
   const { labelsByCategory } = useLabels(singleVisibleBoard?.board_id ?? '');
-  const { matchMode, setMatchMode, getBoardLabelSelection, toggleBoardLabel, clearBoardLabelSelection } = useFilter();
+  const { matchMode, setMatchMode } = useFilter();
   const currentBoardId = singleVisibleBoard?.board_id ?? null;
-
-  // Reconciles the "Single mode ⇒ at most one tag selected" invariant only for
-  // the board actually visible here, only when it's actually viewed under
-  // Single mode — never touches a different, off-screen board's remembered
-  // selection (see PLAN-feat-tag-filter-single-mode.md §4 for why a global
-  // sweep on mode switch was rejected). Runs as an effect, not during render,
-  // because clearBoardLabelSelection updates state owned by the ancestor
-  // FilterProvider rather than this component's own state.
-  const reconcileKey = currentBoardId ? `${currentBoardId}:${matchMode}` : null;
-  useEffect(() => {
-    if (matchMode === 'SINGLE' && currentBoardId) {
-      const current = getBoardLabelSelection(currentBoardId);
-      if (current.size > 1) clearBoardLabelSelection(currentBoardId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reconcileKey]);
-  const selectedLabelIds = currentBoardId ? getBoardLabelSelection(currentBoardId) : EMPTY_LABEL_SET;
+  const { selectedLabelIds, toggleLabel: toggleLocalLabel, clearLabels: clearLocalLabels } =
+    useBoardLabelFilter(currentBoardId);
 
   // Auto-recovery for a vanished pin target: if the pinned board is no longer
   // present in this view (deleted, or its tasks rescheduled out of the date
@@ -60,10 +44,6 @@ export function BoardGroupedTasks({
       unpinBoard(viewKey);
     }
   }, [viewKey, filteredBoards, getPinnedBoardId, unpinBoard]);
-
-  function toggleLocalLabel(labelId: string) {
-    if (currentBoardId) toggleBoardLabel(currentBoardId, labelId);
-  }
 
   if (boards.length > 0 && filteredBoards.length === 0) {
     return <EmptyState icon={<FolderIcon />} message="No tasks match this search" />;
@@ -87,7 +67,7 @@ export function BoardGroupedTasks({
           labelsByCategory={labelsByCategory}
           selectedLabelIds={selectedLabelIds}
           onToggle={toggleLocalLabel}
-          onClear={() => currentBoardId && clearBoardLabelSelection(currentBoardId)}
+          onClear={clearLocalLabels}
           matchMode={matchMode}
           onMatchModeChange={setMatchMode}
         />
