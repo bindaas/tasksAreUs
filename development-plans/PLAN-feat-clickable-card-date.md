@@ -3,7 +3,7 @@
 ## Status
 **State:** Ready for PR
 **Last updated:** 2026-08-09 by Grumpy
-**Next step:** Commit the 3 modified files + this plan file, push branch, open PR.
+**Next step:** PR #76 open at https://github.com/bindaas/tasksAreUs/pull/76 — awaiting review (code-review/test-review/etc. as the user chooses to run them).
 **Blocked on:** n/a
 
 All 3 files implemented (`TaskCardBody.tsx`, `TaskCard.tsx`, `FocusedTaskCard.tsx`). `tsc --noEmit` passes clean. Manually verified in-browser (Docker dev stack) per the Test plan section: Board-mode "Target" link opens native picker, commits, and moves the card between columns correctly; Escape reverts without a network call (card unmoved); date-link clicks do not navigate to task detail; Focused/Day-view single badge opens directly for a one-date-set task; **both-dates-set badge now expands into independent "Must do"/"Target" links (confirmed via a real edit: set `must_do_by` past `target_date` — the edited field updated to the picked value and the untouched field stayed put, no silent flip)**, resolving the Sneezy blocker. No console errors observed.
