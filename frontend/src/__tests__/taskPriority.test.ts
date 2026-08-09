@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { isPriorityEligible, isFormPriorityEligible, splitByPriority, canAddHighPriority, HIGH_PRIORITY_DAILY_LIMIT, PRIORITY_CYCLE, resolveNextPriorityTier, resolveDropPriority } from '../utils/taskPriority';
+import { isPriorityEligible, isFormPriorityEligible, splitByPriority, canAddHighPriority, HIGH_PRIORITY_DAILY_LIMIT, shiftPriorityTier, resolveShiftedPriorityTier, resolveDropPriority, highPriorityTasksInSameColumn } from '../utils/taskPriority';
 import type { PriorityTier, Task } from '../api/tasks';
 
 function makeTask(id: string, priority: PriorityTier): Task {
@@ -21,6 +21,10 @@ function makeTask(id: string, priority: PriorityTier): Task {
     created_at: '2026-05-26T00:00:00Z',
     updated_at: '2026-05-26T00:00:00Z',
   };
+}
+
+function makeTaskWithDate(id: string, priority: PriorityTier, mustDoBy: string): Task {
+  return { ...makeTask(id, priority), must_do_by: mustDoBy };
 }
 
 describe('isPriorityEligible', () => {
@@ -199,41 +203,55 @@ describe('canAddHighPriority', () => {
   });
 });
 
-describe('PRIORITY_CYCLE', () => {
-  it('cycles normal -> medium -> high -> normal', () => {
-    expect(PRIORITY_CYCLE.normal).toBe('medium');
-    expect(PRIORITY_CYCLE.medium).toBe('high');
-    expect(PRIORITY_CYCLE.high).toBe('normal');
+describe('shiftPriorityTier', () => {
+  it('shifts up one step at a time', () => {
+    expect(shiftPriorityTier('normal', 1)).toBe('medium');
+    expect(shiftPriorityTier('medium', 1)).toBe('high');
+  });
+
+  it('shifts down one step at a time', () => {
+    expect(shiftPriorityTier('high', -1)).toBe('medium');
+    expect(shiftPriorityTier('medium', -1)).toBe('normal');
+  });
+
+  it('shifts two steps at once', () => {
+    expect(shiftPriorityTier('normal', 2)).toBe('high');
+    expect(shiftPriorityTier('high', -2)).toBe('normal');
+  });
+
+  it('clamps at the top of the ladder', () => {
+    expect(shiftPriorityTier('high', 1)).toBe('high');
+    expect(shiftPriorityTier('medium', 2)).toBe('high');
+  });
+
+  it('clamps at the bottom of the ladder', () => {
+    expect(shiftPriorityTier('normal', -1)).toBe('normal');
+    expect(shiftPriorityTier('medium', -2)).toBe('normal');
   });
 });
 
-describe('resolveNextPriorityTier', () => {
-  it('cycles normal -> medium on an eligible column', () => {
-    expect(resolveNextPriorityTier('normal', 'today')).toBe('medium');
+describe('resolveShiftedPriorityTier', () => {
+  it('allows an upward shift on an eligible column', () => {
+    expect(resolveShiftedPriorityTier('normal', 1, 'today')).toBe('medium');
+    expect(resolveShiftedPriorityTier('medium', 1, 'tomorrow')).toBe('high');
+    expect(resolveShiftedPriorityTier('normal', 2, 'day_after_tomorrow')).toBe('high');
   });
 
-  it('cycles medium -> high on an eligible column', () => {
-    expect(resolveNextPriorityTier('medium', 'tomorrow')).toBe('high');
+  it('demotes an upward shift to normal on an ineligible column', () => {
+    expect(resolveShiftedPriorityTier('normal', 1, 'upcoming')).toBe('normal');
+    expect(resolveShiftedPriorityTier('normal', 2, 'nodate')).toBe('normal');
+    expect(resolveShiftedPriorityTier('medium', 1, 'overdue')).toBe('normal');
   });
 
-  it('cycles high -> normal regardless of eligibility', () => {
-    expect(resolveNextPriorityTier('high', 'today')).toBe('normal');
-    expect(resolveNextPriorityTier('high', 'upcoming')).toBe('normal');
-  });
-
-  it('demotes to normal when the cycle would land on medium on an ineligible column', () => {
-    expect(resolveNextPriorityTier('normal', 'upcoming')).toBe('normal');
-    expect(resolveNextPriorityTier('normal', 'nodate')).toBe('normal');
-    expect(resolveNextPriorityTier('normal', 'overdue')).toBe('normal');
-  });
-
-  it('demotes to normal when the cycle would land on high on an ineligible column', () => {
-    expect(resolveNextPriorityTier('medium', 'upcoming')).toBe('normal');
+  it('never gates a downward shift, even on an ineligible column', () => {
+    expect(resolveShiftedPriorityTier('high', -1, 'upcoming')).toBe('medium');
+    expect(resolveShiftedPriorityTier('high', -2, 'overdue')).toBe('normal');
+    expect(resolveShiftedPriorityTier('medium', -1, 'upcoming')).toBe('normal');
   });
 
   it('is eligible on day_after_tomorrow and monday', () => {
-    expect(resolveNextPriorityTier('normal', 'day_after_tomorrow')).toBe('medium');
-    expect(resolveNextPriorityTier('normal', 'monday')).toBe('medium');
+    expect(resolveShiftedPriorityTier('normal', 1, 'day_after_tomorrow')).toBe('medium');
+    expect(resolveShiftedPriorityTier('normal', 1, 'monday')).toBe('medium');
   });
 });
 
@@ -258,5 +276,47 @@ describe('resolveDropPriority', () => {
   it('leaves a normal drop unchanged regardless of eligibility', () => {
     expect(resolveDropPriority('normal', 'today')).toBe('normal');
     expect(resolveDropPriority('normal', 'upcoming')).toBe('normal');
+  });
+});
+
+describe('highPriorityTasksInSameColumn', () => {
+  const TODAY = '2026-06-05';
+  const TOMORROW = '2026-06-06';
+
+  it('only counts high-priority tasks on the same date as target', () => {
+    const tasks = [
+      makeTaskWithDate('a', 'high', TODAY),
+      makeTaskWithDate('b', 'high', TOMORROW),
+      makeTaskWithDate('c', 'medium', TODAY),
+    ];
+    const target = makeTaskWithDate('target', 'medium', TODAY);
+    const result = highPriorityTasksInSameColumn(tasks, target, TODAY, TOMORROW);
+    expect(result.map((t) => t.id)).toEqual(['a']);
+  });
+
+  it('excludes high-priority tasks on a different day even if otherwise identical', () => {
+    const tasks = [makeTaskWithDate('a', 'high', TOMORROW)];
+    const target = makeTaskWithDate('target', 'normal', TODAY);
+    expect(highPriorityTasksInSameColumn(tasks, target, TODAY, TOMORROW)).toHaveLength(0);
+  });
+
+  it('returns an empty array when no tasks share the column', () => {
+    const target = makeTaskWithDate('target', 'normal', TODAY);
+    expect(highPriorityTasksInSameColumn([], target, TODAY, TOMORROW)).toHaveLength(0);
+  });
+
+  it('composes with canAddHighPriority to correctly scope a multi-day task list', () => {
+    // Regression case for the bug this function fixes: a naive unscoped count across
+    // both days would wrongly report the cap as reached for TOMORROW's target even
+    // though only TODAY is actually at the limit.
+    const tasks = [
+      makeTaskWithDate('a', 'high', TODAY),
+      makeTaskWithDate('b', 'high', TODAY),
+      makeTaskWithDate('c', 'high', TODAY),
+    ];
+    const target = makeTaskWithDate('target', 'medium', TOMORROW);
+    const scoped = highPriorityTasksInSameColumn(tasks, target, TODAY, TOMORROW);
+    expect(scoped).toHaveLength(0);
+    expect(canAddHighPriority(scoped, target, 3)).toBe(true);
   });
 });

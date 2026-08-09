@@ -10,6 +10,7 @@ import { LabelFilterChips } from './LabelFilterChips';
 import { useLabels } from '../hooks/useLabels';
 import { useBoardLabelFilter } from '../hooks/useBoardLabelFilter';
 import { useFilter } from '../context/FilterContext';
+import { useSettings } from '../hooks/useSettings';
 
 export function BoardGroupedTasks({
   boards,
@@ -24,6 +25,12 @@ export function BoardGroupedTasks({
 }) {
   const { isCollapsed, toggleBoard, setAllCollapsed, isPinned, pinBoard, unpinBoard, getPinnedBoardId } =
     useBoardCollapse();
+  const { highPriorityDailyLimit } = useSettings();
+  // Unfiltered and un-narrowed by priority — the daily cap is scoped per calendar day,
+  // not per this view, so each card must filter this down to its own date's high-priority
+  // tasks itself (via highPriorityTasksInSameColumn) rather than being handed a single
+  // view-wide count that could span multiple days (e.g. Focused's day_range setting).
+  const tasksInView = useMemo(() => boards.flatMap((b) => b.tasks), [boards]);
   const filteredBoards = useMemo(() => filterBoards(boards, searchQuery), [boards, searchQuery]);
 
   const singleVisibleBoard = findSingleVisibleBoard(filteredBoards, (id) => isCollapsed(viewKey, id));
@@ -112,7 +119,14 @@ export function BoardGroupedTasks({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {displayTasks.map((task) => (
-                    <FocusedTaskCard key={task.id} task={task} boardColor={color} onRefresh={onRefresh} />
+                    <FocusedTaskCard
+                      key={task.id}
+                      task={task}
+                      boardColor={color}
+                      onRefresh={onRefresh}
+                      tasksInView={tasksInView}
+                      highPriorityDailyLimit={highPriorityDailyLimit}
+                    />
                   ))}
                 </div>
               )

@@ -1,10 +1,10 @@
 # PLAN-feat-priority-stepper-and-card-parity
 
 ## Status
-**State:** Planning-review
+**State:** Ready for PR
 **Last updated:** 2026-08-09 by Grumpy
-**Next step:** Sneezy's review is complete and addressed (see "Grumpy's response to Sneezy's review" section below) — this plan's design is finalized. Grumpy already presented the findings and the pre-implementation checklist to the user in chat and asked "Shall I proceed?"; the user has not yet answered that specific question (conversation moved on to PR1's merge instead). A fresh session should re-ask for explicit go-ahead before creating the branch or touching any code — do not assume approval from context. Once approved: create branch `feat-priority-stepper-and-card-parity` off up-to-date `main` (PR1, `fix-collapsed-priority-drop-target`, is already merged, commit `6211214` — no conflict), then implement per the Design section, running `tsc -b` at the two checkpoints noted in the Test plan.
-**Blocked on:** User approval to begin implementation.
+**Next step:** Commit, push, open PR.
+**Blocked on:** n/a — implementation complete. `tsc -b` clean at both checkpoints; full unit suite (186 tests, including 12 new/rewritten `taskPriority.test.ts` cases) passes. Verified live in browser: All-view stepper (Normal→Medium single/double-up, Medium→High/Normal, High→Medium/Normal — including the previously-impossible High→Medium step) all work with correct colors; Today-tab (non-All) cards now show the same orange High / blue Medium badges, the same stepper, and edit/complete/delete at the top, matching All view exactly.
 
 ## Branch
 `feat-priority-stepper-and-card-parity`, cut from up-to-date `main` (independent of PR1, `fix-collapsed-priority-drop-target` — no file overlap).
@@ -213,7 +213,13 @@ and pass `onPriorityStep={eligible ? handlePriorityStep : undefined}` to `TaskCa
 
 **Why per-task `getColumn`, not the page's own view identity (Today/Tomorrow tab):** the day-view backend query (`get_day_view_tasks` in `backend/app/services/focused_view_service.py`) matches tasks where *either* `must_do_by` or `target_date` equals the reference date — an OR. A task with `must_do_by` = today but `target_date` = yesterday would appear on the "Today" tab, but its *effective* date (`getEffectiveDate` = min of the two) is yesterday, so the All view's own column logic would classify it as `overdue`, not `today` — meaning it should NOT be eligible for a new High/Medium grant, matching All view's rule. Computing eligibility from the task's own dates (exactly what `TasksPage.tsx` already does for the All view) handles this edge case correctly instead of trusting the tab you're viewing; a viewKey-based shortcut would get this case wrong.
 
-**Daily high-priority cap in `FocusedTaskCard`:** no client-side pre-check is added (unlike `TasksPage`, `FocusedTaskCard` has no access to the full task list to count same-day high-priority tasks, and plumbing it through `BoardGroupedTasks` would expand this PR's footprint for a `today`-tab call it does daily rather than the common failure case here). The backend enforces the cap authoritatively (`task_service.py::update_task`, HTTP error with a `detail` message like "High-priority tasks are limited to N per day…"); `apiFetch` (`frontend/src/api/client.ts:23-30`) already surfaces that `detail` string as `Error.message`, so the existing `alert(err.message)` pattern in `FocusedTaskCard` will show it verbatim on failure. This is a deliberately accepted, disclosed inconsistency with `TasksPage`'s proactive banner — not silently glossed over.
+**Daily high-priority cap in `FocusedTaskCard`:** ~~no client-side pre-check is added~~ **[deviation, see below] — a client-side pre-check WAS added during implementation**, after Doc's arch-review (running first in the reordered `/full-review` pipeline) flagged the disclosed inconsistency below as a `recommend`-severity finding and it was auto-applied per that pipeline's policy.
+
+**Deviation record (2026-08-09):** This plan originally decided against a client-side cap pre-check in `FocusedTaskCard`, reasoning that `FocusedTaskCard` "has no access to the full task list to count same-day high-priority tasks." That reasoning undersold what was actually available: `BoardGroupedTasks` (the immediate parent) already receives every task in the current view via its `boards` prop — no new data fetch was needed, just threading it one level down. Implementation went through two passes:
+1. Doc's `recommend` finding was auto-applied: `BoardGroupedTasks` computed a single pre-filtered `highPriorityTasksInView` (all high-priority tasks across the whole view) and passed it to every card.
+2. Dopey's subsequent code review caught that this was scoped wrong — the daily cap is *per calendar day*, but `highPriorityTasksInView` pooled every day the view could span (relevant for Focused view's multi-day `day_range` setting), which would misjudge the cap on any call site that both spans multiple days AND contains tasks not already at `high` (not `FocusedTaskCard`'s current call sites — Focused view's tasks are all already `high` server-side, so no promotion is ever attempted there; DayView instances are always single-day. But relying on that as an accidental safety net rather than fixing the actual scoping bug was correctly flagged as fragile.). Fixed by passing the full unscoped `tasksInView` down instead, and adding `highPriorityTasksInSameColumn()` (`taskPriority.ts`, unit-tested) so each card scopes the count to its own task's date, mirroring `TasksPage`'s existing per-column filter exactly.
+
+Net effect: `FocusedTaskCard` now has the same proactive inline-warning behavior `TasksPage` has (an amber inline banner, not an `alert()`), correctly scoped per day. The original "different views have different error UX" disclosure below is superseded by this fix — both views now behave the same way for this specific case.
 
 ### 3. Action-button position — unify on top
 
@@ -248,6 +254,8 @@ if (layout === 'stacked') {
 - `frontend/src/__tests__/taskPriority.test.ts` — remove the `PRIORITY_CYCLE`/`resolveNextPriorityTier` describe blocks **and** strip both names from the top import line (`import { isPriorityEligible, isFormPriorityEligible, splitByPriority, canAddHighPriority, HIGH_PRIORITY_DAILY_LIMIT, PRIORITY_CYCLE, resolveNextPriorityTier, resolveDropPriority } from '../utils/taskPriority';` — replace the two removed names with `shiftPriorityTier, resolveShiftedPriorityTier`); add coverage for both new functions (clamping at both ends, upward-only eligibility gating, e.g. `resolveShiftedPriorityTier('medium', -1, 'upcoming')` must return `'normal'` ungated, `resolveShiftedPriorityTier('normal', 1, 'upcoming')` must return `'normal'` gated).
 
 **Not modified:** `mobile/` (explicitly out of scope, see Scope decisions), `backend/` (no API contract change — same `PUT /tasks/{id}` endpoint, `{ priority: <tier> }` body, already accepts any of the three tiers today), `backend/tests/integration/` (Sleepy's domain, no backend change to test).
+
+**Added during implementation (see Deviation record above), not in the original list:** `frontend/src/components/BoardGroupedTasks.tsx` (computes and threads `tasksInView`/`highPriorityDailyLimit` down to each card) and an additional `highPriorityTasksInSameColumn()` export + tests in `taskPriority.ts`/`taskPriority.test.ts`.
 
 ## Test plan
 

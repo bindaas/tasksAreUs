@@ -3,13 +3,6 @@ import { getColumn, type ColumnKey } from './taskDateUtils';
 
 export const HIGH_PRIORITY_DAILY_LIMIT = 3;
 
-/** Click-to-cycle order for the 3-state priority toggle (TaskCardBody, TasksPage). */
-export const PRIORITY_CYCLE: Record<PriorityTier, PriorityTier> = {
-  normal: 'medium',
-  medium: 'high',
-  high: 'normal',
-};
-
 /** Date-eligibility window shared by both High and Medium — Normal has no restriction. */
 export function isPriorityEligible(columnKey: ColumnKey): boolean {
   return columnKey === 'today' || columnKey === 'tomorrow' || columnKey === 'day_after_tomorrow' || columnKey === 'monday';
@@ -21,15 +14,24 @@ export function isFormPriorityEligible(mustDoBy: string, targetDate: string, tod
   return col === 'overdue' || isPriorityEligible(col);
 }
 
+const TIER_ORDER: PriorityTier[] = ['normal', 'medium', 'high']; // ascending severity
+
+/** Shifts `current` by `steps` positions along the ordered tier ladder, clamped at both ends. */
+export function shiftPriorityTier(current: PriorityTier, steps: number): PriorityTier {
+  const idx = TIER_ORDER.indexOf(current);
+  const clamped = Math.min(TIER_ORDER.length - 1, Math.max(0, idx + steps));
+  return TIER_ORDER[clamped];
+}
+
 /**
- * Resolves the click-to-cycle toggle's target tier: advances `current` one step around
- * `PRIORITY_CYCLE`, then demotes to Normal if the resulting tier isn't eligible for
- * `columnKey`'s date (defensive — the toggle is only wired up on eligible columns today,
- * but this keeps the resolution correct if that wiring ever changes).
+ * Resolves the stepper's target tier: shifts `current` by `steps`, then — for an
+ * UPWARD shift only — demotes to Normal if the result isn't eligible for `columnKey`'s
+ * date. Downward shifts are never gated: you already held an equal-or-higher tier, so
+ * stepping down never newly requests an elevated tier that needs eligibility.
  */
-export function resolveNextPriorityTier(current: PriorityTier, columnKey: ColumnKey): PriorityTier {
-  const next = PRIORITY_CYCLE[current];
-  if ((next === 'high' || next === 'medium') && !isPriorityEligible(columnKey)) {
+export function resolveShiftedPriorityTier(current: PriorityTier, steps: number, columnKey: ColumnKey): PriorityTier {
+  const next = shiftPriorityTier(current, steps);
+  if (steps > 0 && (next === 'high' || next === 'medium') && !isPriorityEligible(columnKey)) {
     return 'normal';
   }
   return next;
@@ -66,4 +68,14 @@ export function splitByPriority(tasks: Task[]): { high: Task[]; medium: Task[]; 
 export function canAddHighPriority(highTasks: Task[], droppedTask: Task, limit: number = HIGH_PRIORITY_DAILY_LIMIT): boolean {
   if (highTasks.some((t) => t.id === droppedTask.id)) return true;
   return highTasks.length < limit;
+}
+
+/**
+ * Returns the high-priority tasks among `tasks` that share `target`'s date column —
+ * the daily cap is per calendar day, so this is the scope `canAddHighPriority` must be
+ * checked against, not every high-priority task in a possibly multi-day task list.
+ */
+export function highPriorityTasksInSameColumn(tasks: Task[], target: Task, today: string, tomorrow: string): Task[] {
+  const columnKey = getColumn(target, today, tomorrow);
+  return tasks.filter((t) => t.priority === 'high' && getColumn(t, today, tomorrow) === columnKey);
 }

@@ -15,7 +15,7 @@ interface TaskCardProps {
   onRefresh: () => void;
   boardColor: string;
   draggable?: boolean;
-  onTogglePriority?: () => void;
+  onPriorityStep?: (steps: number) => void;
   onCardDragOver?: (edge: 'above' | 'below') => void;
   dropIndicator?: 'above' | 'below' | null;
 }
@@ -23,7 +23,7 @@ interface TaskCardProps {
 const LABEL_CATEGORY_ORDER: Record<string, number> = { type: 0 };
 
 export function TaskCard({
-  task, labels, onRefresh, boardColor, draggable: isDraggable = false, onTogglePriority,
+  task, labels, onRefresh, boardColor, draggable: isDraggable = false, onPriorityStep,
   onCardDragOver, dropIndicator = null,
 }: TaskCardProps) {
   const navigate = useNavigate();
@@ -101,8 +101,7 @@ export function TaskCard({
           task={task}
           layout="inline"
           dateDisplay={{ mode: 'split', mustOverdue }}
-          priorityBadge="toggle"
-          onTogglePriority={onTogglePriority}
+          onPriorityStep={onPriorityStep}
           editingDateField={editingDateField}
           onDateFieldClick={setEditingDateField}
           onDateFieldCancel={() => setEditingDateField(null)}

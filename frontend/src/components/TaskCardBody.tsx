@@ -1,9 +1,14 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import type { Task, Label } from '../api/tasks';
+import type { Task, Label, PriorityTier } from '../api/tasks';
 import { formatDate, isOverdue, shouldShowTargetDate, bothDatesSetAndDistinct } from '../utils/taskDateUtils';
-import { PRIORITY_CYCLE } from '../utils/taskPriority';
 
 type DateFieldName = 'must_do_by' | 'target_date';
+
+const TIER_ACCENT: Record<PriorityTier, { badge: string; button: string }> = {
+  high: { badge: 'text-orange-600 bg-orange-50 border border-orange-200', button: 'bg-orange-50 hover:bg-orange-100 text-orange-600' },
+  medium: { badge: 'text-blue-600 bg-blue-50 border border-blue-200', button: 'bg-blue-50 hover:bg-blue-100 text-blue-600' },
+  normal: { badge: '', button: 'bg-gray-50 hover:bg-gray-100 text-gray-500' },
+};
 
 interface TaskCardBodyProps {
   task: Task;
@@ -11,8 +16,7 @@ interface TaskCardBodyProps {
     | { mode: 'split'; mustOverdue: boolean }
     | { mode: 'effective'; effectiveDate: string | null };
   layout: 'inline' | 'stacked';
-  priorityBadge: 'toggle' | 'static';
-  onTogglePriority?: () => void;
+  onPriorityStep?: (steps: number) => void;
   renderLabels: (labels: Label[]) => ReactNode;
   onEdit: () => void;
   onComplete: () => void;
@@ -119,8 +123,7 @@ export function TaskCardBody({
   task,
   dateDisplay,
   layout,
-  priorityBadge,
-  onTogglePriority,
+  onPriorityStep,
   renderLabels,
   onEdit,
   onComplete,
@@ -130,29 +133,13 @@ export function TaskCardBody({
   onDateFieldCancel,
   onDateChange,
 }: TaskCardBodyProps) {
-  // Focused/Day View badges intentionally show High only — Medium never surfaces
-  // there (locked-in product decision), so 'static' mode ignores Medium entirely.
-  const priorityIndicator = priorityBadge === 'static'
-    ? task.priority === 'high'
-      ? (
-        <span className="inline-block text-xs font-semibold text-amber-600 bg-amber-50 rounded px-1.5 py-0.5">
-          ★ High
-        </span>
-      )
-      : null
-    : task.priority === 'high'
-      ? (
-        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 shrink-0">
-          High
-        </span>
-      )
-      : task.priority === 'medium'
-        ? (
-          <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 shrink-0">
-            Medium
-          </span>
-        )
-        : null;
+  const priorityIndicator = task.priority === 'high' || task.priority === 'medium'
+    ? (
+      <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wide rounded px-1.5 py-0.5 shrink-0 ${TIER_ACCENT[task.priority].badge}`}>
+        {task.priority === 'high' ? 'High' : 'Medium'}
+      </span>
+    )
+    : null;
 
   const titleEl = (
     <h3
@@ -277,22 +264,34 @@ export function TaskCardBody({
   // must be revisited if that query is ever loosened to include other states.
   const actionsEl = task.state === 'pending' && (
     <div className="flex items-center gap-1 shrink-0">
-      {priorityBadge === 'toggle' && onTogglePriority && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onTogglePriority(); }}
-          className={`p-1.5 rounded-full transition-colors ${
-            task.priority === 'high'
-              ? 'bg-orange-50 hover:bg-orange-100 text-orange-500'
-              : task.priority === 'medium'
-                ? 'bg-blue-50 hover:bg-blue-100 text-blue-500'
-                : 'bg-gray-50 hover:bg-gray-100 text-gray-400'
-          }`}
-          title={`Priority: ${task.priority} — click for ${PRIORITY_CYCLE[task.priority]}`}
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill={task.priority === 'normal' ? 'none' : 'currentColor'} stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-          </svg>
-        </button>
+      {onPriorityStep && (
+        <div className="flex items-center gap-0.5 shrink-0">
+          {(task.priority === 'normal'
+            ? [{ steps: 1, dir: 'up' as const, double: false, toTier: 'medium' as const }, { steps: 2, dir: 'up' as const, double: true, toTier: 'high' as const }]
+            : task.priority === 'medium'
+              ? [{ steps: 1, dir: 'up' as const, double: false, toTier: 'high' as const }, { steps: -1, dir: 'down' as const, double: false, toTier: 'normal' as const }]
+              : [{ steps: -1, dir: 'down' as const, double: false, toTier: 'medium' as const }, { steps: -2, dir: 'down' as const, double: true, toTier: 'normal' as const }]
+          ).map(({ steps, dir, double, toTier }) => (
+            <button
+              key={steps}
+              onClick={(e) => { e.stopPropagation(); onPriorityStep(steps); }}
+              className={`p-1 rounded-full transition-colors ${TIER_ACCENT[toTier].button}`}
+              title={`Priority: ${task.priority} — ${dir === 'up' ? 'raise' : 'lower'} to ${toTier}`}
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                {dir === 'up' ? (
+                  double
+                    ? <><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 18.75l7.5-7.5 7.5 7.5" /><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l7.5-7.5 7.5 7.5" /></>
+                    : <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                ) : (
+                  double
+                    ? <><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 5.25l7.5 7.5 7.5-7.5" /><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 11.25l7.5 7.5 7.5-7.5" /></>
+                    : <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                )}
+              </svg>
+            </button>
+          ))}
+        </div>
       )}
       <button
         onClick={(e) => { e.stopPropagation(); onEdit(); }}
@@ -327,12 +326,16 @@ export function TaskCardBody({
   if (layout === 'stacked') {
     return (
       <>
-        {priorityIndicator && <div className="flex mb-1.5">{priorityIndicator}</div>}
+        {(priorityIndicator || actionsEl) && (
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <div>{priorityIndicator}</div>
+            {actionsEl}
+          </div>
+        )}
         {titleEl}
         {dateEl}
         {renderLabels(task.labels)}
         {linksEl}
-        {actionsEl && <div className="flex justify-end mt-2">{actionsEl}</div>}
       </>
     );
   }
