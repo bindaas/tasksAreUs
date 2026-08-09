@@ -454,7 +454,9 @@ export function TasksPage() {
                         <div
                           onClick={() => togglePriorityCollapse(col.key, tier)}
                           onDragOver={handleZoneDragOver}
-                          className={`px-2 py-1 flex items-center gap-1.5 border-b cursor-pointer ${meta.headerBg} ${meta.headerBorder}`}
+                          className={`px-2 py-1 flex items-center gap-1.5 border-b cursor-pointer transition-colors ${
+                            isZoneOver ? `${meta.zoneOverBg} ring-2 ring-inset ring-indigo-400` : meta.headerBg
+                          } ${meta.headerBorder}`}
                           title={collapsed ? 'Expand' : 'Collapse'}
                         >
                           <button
