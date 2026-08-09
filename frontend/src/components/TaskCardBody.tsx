@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { Task, Label } from '../api/tasks';
 import { formatDate, isOverdue } from '../utils/taskDateUtils';
 import { PRIORITY_CYCLE } from '../utils/taskPriority';
+
+type DateFieldName = 'must_do_by' | 'target_date';
 
 interface TaskCardBodyProps {
   task: Task;
@@ -15,6 +17,101 @@ interface TaskCardBodyProps {
   onEdit: () => void;
   onComplete: () => void;
   onDelete: () => void;
+  editingDateField: DateFieldName | 'both' | null;
+  onDateFieldClick: (field: DateFieldName | 'both') => void;
+  onDateFieldCancel: () => void;
+  onDateChange: (field: DateFieldName, value: string | null) => Promise<void>;
+}
+
+function DateInput({
+  field,
+  value,
+  className,
+  onDateChange,
+  onCancel,
+}: {
+  field: DateFieldName;
+  value: string | null;
+  className: string;
+  onDateChange: (field: DateFieldName, value: string | null) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (input && typeof input.showPicker === 'function') {
+      try {
+        input.showPicker();
+      } catch {
+        // Best-effort UX polish only — input still has focus and its native
+        // calendar affordance is clickable even if showPicker() throws here.
+      }
+    }
+  }, []);
+
+  return (
+    <input
+      ref={inputRef}
+      type="date"
+      autoFocus
+      defaultValue={value ?? ''}
+      className={className}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => {
+        e.stopPropagation();
+        onDateChange(field, e.target.value || null);
+      }}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Escape') onCancel();
+      }}
+      onBlur={(e) => { e.stopPropagation(); onCancel(); }}
+    />
+  );
+}
+
+function DateFieldLine({
+  field,
+  editing,
+  value,
+  label,
+  overdue,
+  buttonClassName,
+  inputClassName,
+  onFieldClick,
+  onDateChange,
+  onCancel,
+}: {
+  field: DateFieldName;
+  editing: boolean;
+  value: string;
+  label: string;
+  overdue: boolean;
+  buttonClassName: string;
+  inputClassName: string;
+  onFieldClick: (field: DateFieldName) => void;
+  onDateChange: (field: DateFieldName, value: string | null) => Promise<void>;
+  onCancel: () => void;
+}) {
+  if (editing) {
+    return (
+      <div className={inputClassName}>
+        {overdue ? `Overdue · ${label}: ` : `${label}: `}
+        <DateInput field={field} value={value} className="ml-1" onDateChange={onDateChange} onCancel={onCancel} />
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onFieldClick(field); }}
+      className={`${buttonClassName} block text-left underline-offset-2 hover:underline`}
+    >
+      {overdue ? `Overdue · ${label}: ` : `${label}: `}
+      {formatDate(value)}
+    </button>
+  );
 }
 
 export function TaskCardBody({
@@ -27,6 +124,10 @@ export function TaskCardBody({
   onEdit,
   onComplete,
   onDelete,
+  editingDateField,
+  onDateFieldClick,
+  onDateFieldCancel,
+  onDateChange,
 }: TaskCardBodyProps) {
   // Focused/Day View badges intentionally show High only — Medium never surfaces
   // there (locked-in product decision), so 'static' mode ignores Medium entirely.
@@ -64,30 +165,93 @@ export function TaskCardBody({
     </h3>
   );
 
-  const dateEl =
-    dateDisplay.mode === 'split' ? (
+  let dateEl: ReactNode;
+  if (dateDisplay.mode === 'split') {
+    dateEl = (
       <>
         {task.must_do_by && (
-          <p className={`text-xs mt-1 ${dateDisplay.mustOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-            {dateDisplay.mustOverdue ? 'Overdue · Must do: ' : 'Must do: '}
-            {formatDate(task.must_do_by)}
-          </p>
+          <DateFieldLine
+            field="must_do_by"
+            editing={editingDateField === 'must_do_by'}
+            value={task.must_do_by}
+            label="Must do"
+            overdue={dateDisplay.mustOverdue}
+            buttonClassName={`text-xs mt-1 ${dateDisplay.mustOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}
+            inputClassName={`text-xs mt-1 ${dateDisplay.mustOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}
+            onFieldClick={onDateFieldClick}
+            onDateChange={onDateChange}
+            onCancel={onDateFieldCancel}
+          />
         )}
         {task.target_date && task.target_date !== task.must_do_by && (
-          <p className="text-xs mt-0.5 text-gray-400">Target: {formatDate(task.target_date)}</p>
+          <DateFieldLine
+            field="target_date"
+            editing={editingDateField === 'target_date'}
+            value={task.target_date}
+            label="Target"
+            overdue={false}
+            buttonClassName="text-xs mt-0.5 text-gray-400"
+            inputClassName="text-xs mt-0.5 text-gray-400"
+            onFieldClick={onDateFieldClick}
+            onDateChange={onDateChange}
+            onCancel={onDateFieldCancel}
+          />
         )}
       </>
-    ) : (
-      dateDisplay.effectiveDate && (
-        <span
-          className={`inline-block text-xs px-1.5 py-0.5 rounded ${
-            isOverdue(dateDisplay.effectiveDate) ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'
-          }`}
-        >
-          {formatDate(dateDisplay.effectiveDate)}
-        </span>
-      )
     );
+  } else if (editingDateField) {
+    // Both-fields-set case (or a field already selected mid-edit): show each
+    // set field as its own line, same layout 'split' mode uses, so the user
+    // picks which field to change instead of the badge guessing for them.
+    dateEl = (
+      <>
+        {task.must_do_by && (
+          <DateFieldLine
+            field="must_do_by"
+            editing={editingDateField === 'must_do_by'}
+            value={task.must_do_by}
+            label="Must do"
+            overdue={isOverdue(task.must_do_by)}
+            buttonClassName={`text-xs mt-1 ${isOverdue(task.must_do_by) ? 'text-red-600 font-medium' : 'text-gray-500'}`}
+            inputClassName={`text-xs mt-1 ${isOverdue(task.must_do_by) ? 'text-red-600 font-medium' : 'text-gray-500'}`}
+            onFieldClick={onDateFieldClick}
+            onDateChange={onDateChange}
+            onCancel={onDateFieldCancel}
+          />
+        )}
+        {task.target_date && task.target_date !== task.must_do_by && (
+          <DateFieldLine
+            field="target_date"
+            editing={editingDateField === 'target_date'}
+            value={task.target_date}
+            label="Target"
+            overdue={false}
+            buttonClassName="text-xs mt-0.5 text-gray-400"
+            inputClassName="text-xs mt-0.5 text-gray-400"
+            onFieldClick={onDateFieldClick}
+            onDateChange={onDateChange}
+            onCancel={onDateFieldCancel}
+          />
+        )}
+      </>
+    );
+  } else {
+    dateEl = dateDisplay.effectiveDate && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          const bothSet = task.must_do_by && task.target_date;
+          onDateFieldClick(bothSet ? 'both' : task.must_do_by ? 'must_do_by' : 'target_date');
+        }}
+        className={`inline-block text-xs px-1.5 py-0.5 rounded underline-offset-2 hover:underline ${
+          isOverdue(dateDisplay.effectiveDate) ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'
+        }`}
+      >
+        {formatDate(dateDisplay.effectiveDate)}
+      </button>
+    );
+  }
 
   const linksEl = task.links.length > 0 && (
     <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
