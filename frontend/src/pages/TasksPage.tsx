@@ -26,7 +26,7 @@ import {
   formatDateWithDay,
   isFriday,
 } from '../utils/taskDateUtils';
-import { isPriorityEligible, splitByPriority, canAddHighPriority, PRIORITY_CYCLE } from '../utils/taskPriority';
+import { isPriorityEligible, splitByPriority, canAddHighPriority, resolveNextPriorityTier, resolveDropPriority } from '../utils/taskPriority';
 import { computeInsertSortOrder } from '../utils/taskOrder';
 import { getBoardColor } from '../utils/boardColor';
 import { useSettings } from '../hooks/useSettings';
@@ -255,10 +255,7 @@ export function TasksPage() {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    let nextTier = PRIORITY_CYCLE[task.priority];
-    if ((nextTier === 'high' || nextTier === 'medium') && !isPriorityEligible(columnKey)) {
-      nextTier = 'normal';
-    }
+    const nextTier = resolveNextPriorityTier(task.priority, columnKey);
 
     if (nextTier === 'high') {
       const allHighForColumn = tasks.filter(
@@ -285,8 +282,7 @@ export function TasksPage() {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    const eligible = isPriorityEligible(columnKey);
-    const resolvedPriority: PriorityTier = priority !== 'normal' && !eligible ? 'normal' : priority;
+    const resolvedPriority = resolveDropPriority(priority, columnKey);
 
     if (resolvedPriority === 'high') {
       const allHighForColumn = tasks.filter(

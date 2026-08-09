@@ -1,8 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { PriorityTier } from '../api/tasks';
 import type { ColumnKey } from '../utils/taskDateUtils';
-
-type PriorityTier = 'high' | 'medium' | 'normal';
 
 type CollapseKey = `${ColumnKey}:${PriorityTier}`;
 

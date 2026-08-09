@@ -21,6 +21,31 @@ export function isFormPriorityEligible(mustDoBy: string, targetDate: string, tod
   return col === 'overdue' || isPriorityEligible(col);
 }
 
+/**
+ * Resolves the click-to-cycle toggle's target tier: advances `current` one step around
+ * `PRIORITY_CYCLE`, then demotes to Normal if the resulting tier isn't eligible for
+ * `columnKey`'s date (defensive — the toggle is only wired up on eligible columns today,
+ * but this keeps the resolution correct if that wiring ever changes).
+ */
+export function resolveNextPriorityTier(current: PriorityTier, columnKey: ColumnKey): PriorityTier {
+  const next = PRIORITY_CYCLE[current];
+  if ((next === 'high' || next === 'medium') && !isPriorityEligible(columnKey)) {
+    return 'normal';
+  }
+  return next;
+}
+
+/**
+ * Resolves the tier a dropped task should actually land on: a High/Medium drop target
+ * only sticks if `columnKey`'s date is eligible, otherwise it's demoted to Normal.
+ */
+export function resolveDropPriority(priority: PriorityTier, columnKey: ColumnKey): PriorityTier {
+  if (priority !== 'normal' && !isPriorityEligible(columnKey)) {
+    return 'normal';
+  }
+  return priority;
+}
+
 export function splitByPriority(tasks: Task[]): { high: Task[]; medium: Task[]; normal: Task[] } {
   const high: Task[] = [];
   const medium: Task[] = [];

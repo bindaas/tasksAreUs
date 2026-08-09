@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { isPriorityEligible, isFormPriorityEligible, splitByPriority, canAddHighPriority, HIGH_PRIORITY_DAILY_LIMIT, PRIORITY_CYCLE } from '../utils/taskPriority';
+import { isPriorityEligible, isFormPriorityEligible, splitByPriority, canAddHighPriority, HIGH_PRIORITY_DAILY_LIMIT, PRIORITY_CYCLE, resolveNextPriorityTier, resolveDropPriority } from '../utils/taskPriority';
 import type { PriorityTier, Task } from '../api/tasks';
 
 function makeTask(id: string, priority: PriorityTier): Task {
@@ -204,5 +204,59 @@ describe('PRIORITY_CYCLE', () => {
     expect(PRIORITY_CYCLE.normal).toBe('medium');
     expect(PRIORITY_CYCLE.medium).toBe('high');
     expect(PRIORITY_CYCLE.high).toBe('normal');
+  });
+});
+
+describe('resolveNextPriorityTier', () => {
+  it('cycles normal -> medium on an eligible column', () => {
+    expect(resolveNextPriorityTier('normal', 'today')).toBe('medium');
+  });
+
+  it('cycles medium -> high on an eligible column', () => {
+    expect(resolveNextPriorityTier('medium', 'tomorrow')).toBe('high');
+  });
+
+  it('cycles high -> normal regardless of eligibility', () => {
+    expect(resolveNextPriorityTier('high', 'today')).toBe('normal');
+    expect(resolveNextPriorityTier('high', 'upcoming')).toBe('normal');
+  });
+
+  it('demotes to normal when the cycle would land on medium on an ineligible column', () => {
+    expect(resolveNextPriorityTier('normal', 'upcoming')).toBe('normal');
+    expect(resolveNextPriorityTier('normal', 'nodate')).toBe('normal');
+    expect(resolveNextPriorityTier('normal', 'overdue')).toBe('normal');
+  });
+
+  it('demotes to normal when the cycle would land on high on an ineligible column', () => {
+    expect(resolveNextPriorityTier('medium', 'upcoming')).toBe('normal');
+  });
+
+  it('is eligible on day_after_tomorrow and monday', () => {
+    expect(resolveNextPriorityTier('normal', 'day_after_tomorrow')).toBe('medium');
+    expect(resolveNextPriorityTier('normal', 'monday')).toBe('medium');
+  });
+});
+
+describe('resolveDropPriority', () => {
+  it('keeps a high drop on an eligible column', () => {
+    expect(resolveDropPriority('high', 'today')).toBe('high');
+  });
+
+  it('keeps a medium drop on an eligible column', () => {
+    expect(resolveDropPriority('medium', 'tomorrow')).toBe('medium');
+  });
+
+  it('demotes a high drop to normal on an ineligible column', () => {
+    expect(resolveDropPriority('high', 'upcoming')).toBe('normal');
+    expect(resolveDropPriority('high', 'nodate')).toBe('normal');
+  });
+
+  it('demotes a medium drop to normal on an ineligible column', () => {
+    expect(resolveDropPriority('medium', 'overdue')).toBe('normal');
+  });
+
+  it('leaves a normal drop unchanged regardless of eligibility', () => {
+    expect(resolveDropPriority('normal', 'today')).toBe('normal');
+    expect(resolveDropPriority('normal', 'upcoming')).toBe('normal');
   });
 });
