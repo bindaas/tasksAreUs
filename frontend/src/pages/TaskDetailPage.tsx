@@ -22,7 +22,7 @@ export function TaskDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { selectedLabelIds } = useFilter();
+  const { getBoardLabelSelection } = useFilter();
   const { highPriorityDailyLimit } = useSettings();
   const { boards } = useBoard();
   const [allPendingTasks, setAllPendingTasks] = useState<Task[]>([]);
@@ -226,7 +226,7 @@ export function TaskDetailPage() {
           <TaskForm
             initialValues={
               isNew
-                ? { labels: labels.filter((l) => selectedLabelIds.has(l.id)) }
+                ? { labels: labels.filter((l) => (labelsBoardId ? getBoardLabelSelection(labelsBoardId).has(l.id) : false)) }
                 : task ?? undefined
             }
             labels={labels}

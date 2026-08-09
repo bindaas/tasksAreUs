@@ -11,6 +11,7 @@ import { EmptyState, FolderIcon } from '../components/EmptyState';
 import { updateTask } from '../api/tasks';
 import { getDayViewTasks } from '../api/dayView';
 import { useFilter } from '../context/FilterContext';
+import { useBoardLabelFilter } from '../hooks/useBoardLabelFilter';
 import { useBoard } from '../context/BoardContext';
 import { useView } from '../context/ViewContext';
 import { useColumnPriorityCollapse } from '../context/ColumnPriorityCollapseContext';
@@ -79,12 +80,14 @@ const TIER_META: Record<PriorityTier, {
 export function TasksPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { selectedLabelIds, toggleLabel, clearLabels, matchMode, setMatchMode } = useFilter();
+  const { matchMode, setMatchMode } = useFilter();
   const { boards, activeBoard, setActiveBoard } = useBoard();
   const activeBoardColor = useMemo(
     () => getBoardColor(activeBoard?.color, Math.max(0, boards.findIndex((b) => b.id === activeBoard?.id))),
     [activeBoard, boards],
   );
+
+  const { selectedLabelIds, toggleLabel, clearLabels } = useBoardLabelFilter(activeBoard?.id ?? null);
   const { viewMode, setViewMode } = useView();
   const { isCollapsed: isPriorityCollapsed, toggleColumn: togglePriorityCollapse } = useColumnPriorityCollapse();
   const [searchQuery, setSearchQuery] = useState('');

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { FocusedBoard } from '../api/focusedView';
 import { FocusedTaskCard } from './FocusedTaskCard';
 import { useBoardCollapse, type ViewKey } from '../context/BoardCollapseContext';
@@ -8,6 +8,8 @@ import { getBoardColor } from '../utils/boardColor';
 import { EmptyState, FolderIcon } from './EmptyState';
 import { LabelFilterChips } from './LabelFilterChips';
 import { useLabels } from '../hooks/useLabels';
+import { useBoardLabelFilter } from '../hooks/useBoardLabelFilter';
+import { useFilter } from '../context/FilterContext';
 
 export function BoardGroupedTasks({
   boards,
@@ -26,20 +28,10 @@ export function BoardGroupedTasks({
 
   const singleVisibleBoard = findSingleVisibleBoard(filteredBoards, (id) => isCollapsed(viewKey, id));
   const { labelsByCategory } = useLabels(singleVisibleBoard?.board_id ?? '');
-  const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
-  const [matchMode, setMatchMode] = useState<'AND' | 'OR'>('AND');
-
-  // Resets local chip selection whenever the qualifying board changes (including
-  // when it disappears), so a stale selection never silently applies to a
-  // different board than the one the user picked labels against. Adjusted
-  // during render (React's recommended pattern for this) rather than in an
-  // effect, to avoid an extra render pass.
-  const [labelResetKey, setLabelResetKey] = useState(singleVisibleBoard?.board_id ?? null);
-  if (labelResetKey !== (singleVisibleBoard?.board_id ?? null)) {
-    setLabelResetKey(singleVisibleBoard?.board_id ?? null);
-    setSelectedLabelIds(new Set());
-    setMatchMode('AND');
-  }
+  const { matchMode, setMatchMode } = useFilter();
+  const currentBoardId = singleVisibleBoard?.board_id ?? null;
+  const { selectedLabelIds, toggleLabel: toggleLocalLabel, clearLabels: clearLocalLabels } =
+    useBoardLabelFilter(currentBoardId);
 
   // Auto-recovery for a vanished pin target: if the pinned board is no longer
   // present in this view (deleted, or its tasks rescheduled out of the date
@@ -52,15 +44,6 @@ export function BoardGroupedTasks({
       unpinBoard(viewKey);
     }
   }, [viewKey, filteredBoards, getPinnedBoardId, unpinBoard]);
-
-  function toggleLocalLabel(labelId: string) {
-    setSelectedLabelIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(labelId)) next.delete(labelId);
-      else next.add(labelId);
-      return next;
-    });
-  }
 
   if (boards.length > 0 && filteredBoards.length === 0) {
     return <EmptyState icon={<FolderIcon />} message="No tasks match this search" />;
@@ -84,7 +67,7 @@ export function BoardGroupedTasks({
           labelsByCategory={labelsByCategory}
           selectedLabelIds={selectedLabelIds}
           onToggle={toggleLocalLabel}
-          onClear={() => setSelectedLabelIds(new Set())}
+          onClear={clearLocalLabels}
           matchMode={matchMode}
           onMatchModeChange={setMatchMode}
         />

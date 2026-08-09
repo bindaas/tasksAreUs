@@ -1,43 +1,59 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuthContext } from './AuthContext';
+import { toggleLabelSelection, type FilterMode } from '../utils/taskFilters';
+
+const EMPTY_LABEL_SET = new Set<string>();
 
 interface FilterContextValue {
-  selectedLabelIds: Set<string>;
-  toggleLabel: (id: string) => void;
-  clearLabels: () => void;
-  matchMode: 'AND' | 'OR';
-  setMatchMode: (mode: 'AND' | 'OR') => void;
+  matchMode: FilterMode;
+  setMatchMode: (mode: FilterMode) => void;
+  getBoardLabelSelection: (boardId: string) => Set<string>;
+  toggleBoardLabel: (boardId: string, labelId: string) => void;
+  clearBoardLabelSelection: (boardId: string) => void;
 }
 
 const FilterContext = createContext<FilterContextValue | null>(null);
 
 export function FilterProvider({ children }: { children: ReactNode }) {
-  const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
-  const [matchMode, setMatchMode] = useState<'AND' | 'OR'>('AND');
+  const [boardLabelSelections, setBoardLabelSelections] = useState<Map<string, Set<string>>>(new Map());
+  const [matchMode, setMatchMode] = useState<FilterMode>('SINGLE');
   const { user } = useAuthContext();
 
   useEffect(() => {
-    // Clear on uid change (e.g. anon -> authenticated upgrade) so a label filter
-    // scoped to the previous identity's board doesn't leak into the new one.
-    setSelectedLabelIds(new Set());
+    // Clear on uid change (e.g. anon -> authenticated upgrade) so board-scoped
+    // label selections from the previous identity don't leak into the new one.
+    setBoardLabelSelections(new Map());
   }, [user?.uid]);
 
-  function toggleLabel(id: string) {
-    setSelectedLabelIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  function getBoardLabelSelection(boardId: string): Set<string> {
+    return boardLabelSelections.get(boardId) ?? EMPTY_LABEL_SET;
+  }
+
+  function toggleBoardLabel(boardId: string, labelId: string) {
+    setBoardLabelSelections((prev) => {
+      const current = prev.get(boardId) ?? EMPTY_LABEL_SET;
+      const next = toggleLabelSelection(current, labelId, matchMode);
+      const nextMap = new Map(prev);
+      if (next.size === 0) nextMap.delete(boardId);
+      else nextMap.set(boardId, next);
+      return nextMap;
     });
   }
 
-  function clearLabels() {
-    setSelectedLabelIds(new Set());
+  function clearBoardLabelSelection(boardId: string) {
+    setBoardLabelSelections((prev) => {
+      if (!prev.has(boardId)) return prev;
+      const nextMap = new Map(prev);
+      nextMap.delete(boardId);
+      return nextMap;
+    });
   }
 
   return (
-    <FilterContext.Provider value={{ selectedLabelIds, toggleLabel, clearLabels, matchMode, setMatchMode }}>
+    <FilterContext.Provider
+      value={{ matchMode, setMatchMode, getBoardLabelSelection, toggleBoardLabel, clearBoardLabelSelection }}
+    >
       {children}
     </FilterContext.Provider>
   );
