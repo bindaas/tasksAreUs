@@ -1,10 +1,10 @@
 # PLAN-fix-collapsed-priority-drop-target
 
 ## Status
-**State:** Ready for PR
+**State:** Merged
 **Last updated:** 2026-08-09 by Grumpy
-**Next step:** Commit, push, open PR.
-**Blocked on:** n/a — user manually verified with a real mouse that dropping a task onto a collapsed High/Medium header actually changes its priority (2026-08-09), completing the verification the visual-highlight check alone couldn't cover.
+**Next step:** n/a — shipped. PR #77 merged to main (commit `6211214`) after a clean full-review chain (Doc: 0 concerns; Dopey: approved, nits only; Sleepy: full suite passed, no test changes; Bashful: PRODUCT_REQUIREMENTS_DOCUMENT.MD updated).
+**Blocked on:** n/a
 
 ## Branch
 `fix-collapsed-priority-drop-target`, cut from up-to-date `main`.

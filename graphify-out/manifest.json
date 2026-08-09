@@ -465,8 +465,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/TasksPage.tsx": {
-    "mtime": 1786282049.8642528,
-    "ast_hash": "b8064842c6ae25a15162191b3c3c950b",
+    "mtime": 1786308569.2312334,
+    "ast_hash": "bb10752aac76697cff1929d13d0bae8e",
     "semantic_hash": ""
   },
   "frontend/src/utils/boardColor.ts": {
@@ -840,8 +840,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1786297344.443402,
-    "ast_hash": "06eb0f3f993bb657b5cc6cdc10571785",
+    "mtime": 1786308569.2305555,
+    "ast_hash": "1dab515fdf656e82a324e585b54876d6",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -860,8 +860,8 @@
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1786297344.4443643,
-    "ast_hash": "3bac6e8331f23addc91c614b624150a6",
+    "mtime": 1786308569.230872,
+    "ast_hash": "1a2ee87c0443ce0fa924f37c0d3a5aca",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1272,6 +1272,16 @@
   "development-plans/PLAN-feat-clickable-card-date.md": {
     "mtime": 1786297366.7977824,
     "ast_hash": "1214366800998d2a8d5ea8693643536b",
+    "semantic_hash": ""
+  },
+  "development-plans/PLAN-chore-split-arch-review-agent.md": {
+    "mtime": 1786299442.421592,
+    "ast_hash": "b1573b3328aec3baae54bf7417a23329",
+    "semantic_hash": ""
+  },
+  "development-plans/PLAN-feat-priority-stepper-and-card-parity.md": {
+    "mtime": 1786303044.1017373,
+    "ast_hash": "9c7e7a3a61432ce6b6b105c210ba28a0",
     "semantic_hash": ""
   }
 }
