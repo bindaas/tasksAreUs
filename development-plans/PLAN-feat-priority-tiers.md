@@ -1,10 +1,16 @@
 # Development Plan: feat-priority-tiers
 
 ## Status
-**State:** In progress — PR1 (backend) merged; PR2 (web, #73) merged to `main`; PR3 (mobile) implemented on `feat-priority-tiers-mobile`, unit tests passing, not yet PR'd.
+**State:** Ready for PR — PR1 (backend, #72) and PR2 (web, #73) merged to `main`; PR3 (mobile, [#74](https://github.com/bindaas/tasksAreUs/pull/74)) open, full review chain complete, awaiting merge.
 **Last updated:** 2026-08-08 by Grumpy
-**Next step:** Commit PR3's changes, push `feat-priority-tiers-mobile`, open the PR, and run the full review chain (Dopey/Sleepy/Bashful/Doc).
-**Blocked on:** n/a.
+**Next step:** Merge PR #74 (`gh pr merge --merge`, matching PR1/PR2's convention), then this epic is fully shipped across backend/web/mobile.
+**Blocked on:** n/a — awaiting merge go-ahead.
+
+**PR3 review chain results (2026-08-08):**
+- **Dopey (code review):** No Must-fix items. One Should-fix (generic error alert on priority-toggle failure instead of distinguishing a 422 cap-reached response) — fixed and pushed. Verified test/tsc claims directly, used `graphify query` to confirm `resolveNextPriorityTier()`'s sole caller and that `FocusedTaskCard.tsx`/`FocusedView.tsx` correctly needed no changes.
+- **Sleepy (test review):** No integration test changes needed — PR is mobile-only, and PR2's QE pass already added priority-only-PUT backend coverage ahead of mobile needing it. Flagged an unrelated, pre-existing flaky test in `test_high_priority.py` (timezone skew between local test-runner clock and the UTC Docker container) as a separate bug comment.
+- **Bashful (requirements review):** `PRODUCT_REQUIREMENTS_DOCUMENT.MD` updated — removed the last 3 aspirational markers for this epic. Zero aspirational priority-tier items remain; the epic is fully documented as shipped.
+- **Doc (arch review):** `ARCHITECTURE.MD` updated (mobile Code Structure entries, test counts, the `isFormHighPriorityEligible`→`isFormPriorityEligible` rename). `DATA_MODEL_AND_API.MD` needed no changes (no backend/API files touched). Zero architectural concerns. Flagged (but correctly left unfixed, as out of this PR's scope) that several `ARCHITECTURE.MD` "Key Implementation Patterns" paragraphs still describe backend/web priority logic in terms of the legacy `is_high_priority` boolean, pre-dating PR1/PR2 — candidate for a future doc-only cleanup pass.
 
 **PR3 implementation notes (deviations from this plan, found while implementing):**
 - **Research Basis line 65 was wrong, not just imprecise.** It claimed "priority is toggled independently via a tap on the amber star in `TaskCardBody.tsx` (same single-boolean pattern as web)." Verified false: `TaskCardBody`'s `priorityBadge="toggle"` mode existed in the component but was never actually wired up anywhere — both `TasksScreen.tsx`'s `TaskRow` and `FocusedTaskCard.tsx` always passed `priorityBadge="static"`. Priority was only ever changeable via `TaskFormScreen`'s checkbox. Asked the user how `TaskRow` (the main All-view list) should expose 3 tiers now; user chose to add a live tap-to-cycle toggle (matching web's `TaskCard.tsx` exactly: `priorityBadge="toggle"`, cycling Normal→Medium→High→Normal via `resolveNextPriorityTier`, gated to `isPriorityEligible` columns, with a client-side `canAddHighPriority` cap pre-check before the `updateTask` call, optimistic update + rollback on failure — mirrors `performDrop`'s existing pattern in the same file). `FocusedTaskCard.tsx` keeps `priorityBadge="static"` (High-only), unchanged, per the locked-in Focused/Day View decision.
