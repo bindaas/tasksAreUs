@@ -1280,8 +1280,13 @@
     "semantic_hash": ""
   },
   "development-plans/PLAN-feat-priority-stepper-and-card-parity.md": {
-    "mtime": 1786303044.1017373,
-    "ast_hash": "9c7e7a3a61432ce6b6b105c210ba28a0",
+    "mtime": 1786308711.3230195,
+    "ast_hash": "b82de96488c56729069b63c719d19c91",
+    "semantic_hash": ""
+  },
+  "development-plans/PLAN-fix-collapsed-priority-drop-target.md": {
+    "mtime": 1786308577.0866053,
+    "ast_hash": "fbd7bbaa5f7658bce3a107553dcd5611",
     "semantic_hash": ""
   }
 }
