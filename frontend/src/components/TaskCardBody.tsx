@@ -106,6 +106,7 @@ function DateFieldLine({
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onFieldClick(field); }}
+      onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onCancel(); } }}
       className={`${buttonClassName} block text-left underline-offset-2 hover:underline`}
     >
       {overdue ? `Overdue · ${label}: ` : `${label}: `}
@@ -241,7 +242,7 @@ export function TaskCardBody({
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          const bothSet = task.must_do_by && task.target_date;
+          const bothSet = task.must_do_by && task.target_date && task.must_do_by !== task.target_date;
           onDateFieldClick(bothSet ? 'both' : task.must_do_by ? 'must_do_by' : 'target_date');
         }}
         className={`inline-block text-xs px-1.5 py-0.5 rounded underline-offset-2 hover:underline ${

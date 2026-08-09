@@ -51,7 +51,7 @@ export function FocusedTaskCard({ task, boardColor, onRefresh }: { task: Task; b
 
   return (
     <div
-      onClick={() => { if (!isEditing) navigate(`/tasks/${task.id}`); }}
+      onClick={() => { if (!isEditing && !editingDateField) navigate(`/tasks/${task.id}`); }}
       className={`bg-white rounded-lg border border-gray-200 shadow-sm transition-shadow overflow-hidden ${
         isEditing ? 'border-indigo-300 shadow-md' : 'cursor-pointer hover:shadow-md'
       }`}

@@ -87,7 +87,7 @@ export function TaskCard({
             }
           : undefined
       }
-      onClick={() => { if (!isEditing) navigate(`/tasks/${task.id}`); }}
+      onClick={() => { if (!isEditing && !editingDateField) navigate(`/tasks/${task.id}`); }}
     >
       {isEditing ? (
         <TaskQuickEdit
