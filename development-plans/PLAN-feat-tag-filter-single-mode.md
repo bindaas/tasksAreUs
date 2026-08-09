@@ -3,7 +3,7 @@
 ## Status
 **State:** Ready for PR
 **Last updated:** 2026-08-09 by Grumpy
-**Next step:** Open PR on branch `feat-tag-filter-single-mode`, then run the `/full-review` chain (Dopey/Sleepy/Bashful/Doc)
+**Next step:** PR #75 opened (https://github.com/bindaas/tasksAreUs/pull/75). Next: run the `/full-review` chain (Dopey/Sleepy/Bashful/Doc) if/when requested by the user.
 **Blocked on:** n/a
 
 Implementation complete: all 7 files in Design §1-§7 done, `npx tsc --noEmit` clean, full Vitest suite passes (175/175, including 21 new tests for `toggleLabelSelection` and `filterTasks`'s SINGLE branch). Manual verification done via dev server + Chrome automation, covering every scenario in the Test plan section: mode switching (including the exactly-1-tag-survives-the-switch case), Clear button enable/disable, per-board persistence across both the All view's board tabs and a pinned view (same board_id, both views agree), and — the key fix from Sneezy's second-pass review — confirmed an off-screen board's multi-tag selection is *not* touched when switching mode while looking at a different board, and only reconciles (clears) the moment that board is actually viewed again. No console errors/warnings observed during the session.
