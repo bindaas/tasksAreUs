@@ -146,7 +146,7 @@
       "_origin": "ast",
       "id": "backend_app_config",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "config.py"
     },
     {
@@ -156,8 +156,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "backend_app_config_settings",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 119,
+      "community_name": "Settings",
       "norm_label": "settings"
     },
     {
@@ -167,8 +167,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "basesettings",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 119,
+      "community_name": "Settings",
       "norm_label": "basesettings"
     },
     {
@@ -179,7 +179,7 @@
       "_origin": "ast",
       "id": "backend_app_database",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "database.py"
     },
     {
@@ -190,7 +190,7 @@
       "_origin": "ast",
       "id": "backend_app_database_get_db",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "get_db()"
     },
     {
@@ -201,7 +201,7 @@
       "_origin": "ast",
       "id": "backend_app_dependencies",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "dependencies.py"
     },
     {
@@ -212,7 +212,7 @@
       "_origin": "ast",
       "id": "backend_app_dependencies_test_auth_bypass",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "_test_auth_bypass()"
     },
     {
@@ -223,7 +223,7 @@
       "_origin": "ast",
       "id": "backend_app_dependencies_verify_firebase_token",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "_verify_firebase_token()"
     },
     {
@@ -233,8 +233,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "backend_app_dependencies_get_firebase_claims",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": "get_firebase_claims()"
     },
     {
@@ -245,7 +245,7 @@
       "_origin": "ast",
       "id": "backend_app_dependencies_get_current_user",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "get_current_user()"
     },
     {
@@ -256,7 +256,7 @@
       "_origin": "ast",
       "id": "backend_app_dependencies_py_session",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "session"
     },
     {
@@ -267,7 +267,7 @@
       "_origin": "ast",
       "id": "backend_app_dependencies_rationale_17",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "evaluated per-request so the flag can be toggled without a server restart."
     },
     {
@@ -277,8 +277,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "backend_app_dependencies_rationale_36",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": "validate bearer token and return decoded claims. does not touch the db. used by..."
     },
     {
@@ -289,7 +289,7 @@
       "_origin": "ast",
       "id": "backend_app_dependencies_rationale_55",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "resolve caller to an internal user_id uuid via firebase bearer token. bypass:..."
     },
     {
@@ -300,7 +300,7 @@
       "_origin": "ast",
       "id": "backend_app_main",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "main.py"
     },
     {
@@ -310,8 +310,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "backend_app_main_init_firebase",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 113,
+      "community_name": "lifespan",
       "norm_label": "_init_firebase()"
     },
     {
@@ -321,8 +321,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "backend_app_main_seed_system_user",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 113,
+      "community_name": "lifespan",
       "norm_label": "_seed_system_user()"
     },
     {
@@ -332,8 +332,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_main_py_session",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 113,
+      "community_name": "lifespan",
       "norm_label": "session"
     },
     {
@@ -343,8 +343,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "backend_app_main_migrate_boards",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 113,
+      "community_name": "lifespan",
       "norm_label": "_migrate_boards()"
     },
     {
@@ -354,8 +354,8 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "backend_app_main_lifespan",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 113,
+      "community_name": "lifespan",
       "norm_label": "lifespan()"
     },
     {
@@ -366,7 +366,7 @@
       "_origin": "ast",
       "id": "fastapi",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "fastapi"
     },
     {
@@ -376,8 +376,8 @@
       "source_location": "L281",
       "_origin": "ast",
       "id": "backend_app_main_git_hash",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 113,
+      "community_name": "lifespan",
       "norm_label": "_git_hash()"
     },
     {
@@ -387,8 +387,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_main_py_get",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 113,
+      "community_name": "lifespan",
       "norm_label": "get"
     },
     {
@@ -398,8 +398,8 @@
       "source_location": "L294",
       "_origin": "ast",
       "id": "backend_app_main_health",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 113,
+      "community_name": "lifespan",
       "norm_label": "health()"
     },
     {
@@ -409,8 +409,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "backend_app_main_rationale_55",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 113,
+      "community_name": "lifespan",
       "norm_label": "create 'general tasks' board for all existing users who have none. runs after..."
     },
     {
@@ -420,7 +420,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_models",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "models.py"
     },
@@ -431,7 +431,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "backend_app_models_uuid",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "_uuid()"
     },
@@ -442,7 +442,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "backend_app_models_now",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "_now()"
     },
@@ -464,7 +464,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "backend_app_models_base",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "base"
     },
@@ -475,7 +475,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "declarativebase",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "declarativebase"
     },
@@ -520,7 +520,7 @@
       "_origin": "ast",
       "id": "backend_app_models_user",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "user"
     },
     {
@@ -530,7 +530,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "backend_app_models_board",
-      "community": 4,
+      "community": 18,
       "community_name": "Board",
       "norm_label": "board"
     },
@@ -541,7 +541,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "backend_app_models_label",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "label"
     },
@@ -563,7 +563,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "backend_app_models_task",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "task"
     },
@@ -607,7 +607,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_routers_boards",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "boards.py"
     },
@@ -618,7 +618,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_boards_py_get",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "get"
     },
@@ -629,7 +629,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "backend_app_routers_boards_list_boards",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "list_boards()"
     },
@@ -640,7 +640,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_boards_py_session",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "session"
     },
@@ -651,7 +651,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_boards_py_post",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "post"
     },
@@ -662,7 +662,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "backend_app_routers_boards_create_board",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "create_board()"
     },
@@ -673,7 +673,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_boards_py_put",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "put"
     },
@@ -684,7 +684,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "backend_app_routers_boards_update_board",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "update_board()"
     },
@@ -695,8 +695,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_boards_py_delete",
-      "community": 4,
-      "community_name": "Board",
+      "community": 20,
+      "community_name": "boards.py",
       "norm_label": "delete"
     },
     {
@@ -706,8 +706,8 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "backend_app_routers_boards_delete_board",
-      "community": 4,
-      "community_name": "Board",
+      "community": 20,
+      "community_name": "boards.py",
       "norm_label": "delete_board()"
     },
     {
@@ -718,7 +718,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_day_view",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "day_view.py"
     },
     {
@@ -772,8 +772,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_routers_focused_view",
-      "community": 116,
-      "community_name": "schemas.py",
+      "community": 2,
+      "community_name": "Task",
       "norm_label": "focused_view.py"
     },
     {
@@ -861,7 +861,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_labels",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "labels.py"
     },
     {
@@ -971,7 +971,7 @@
       "_origin": "ast",
       "id": "backend_app_routers_reports",
       "community": 2,
-      "community_name": "main.py",
+      "community_name": "Task",
       "norm_label": "reports.py"
     },
     {
@@ -1025,8 +1025,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_routers_settings",
-      "community": 116,
-      "community_name": "schemas.py",
+      "community": 118,
+      "community_name": "settings.py",
       "norm_label": "settings.py"
     },
     {
@@ -1036,8 +1036,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "backend_app_routers_settings_get_or_create_settings",
-      "community": 116,
-      "community_name": "schemas.py",
+      "community": 118,
+      "community_name": "settings.py",
       "norm_label": "_get_or_create_settings()"
     },
     {
@@ -1047,8 +1047,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_settings_py_session",
-      "community": 116,
-      "community_name": "schemas.py",
+      "community": 118,
+      "community_name": "settings.py",
       "norm_label": "session"
     },
     {
@@ -1058,8 +1058,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_settings_py_get",
-      "community": 116,
-      "community_name": "schemas.py",
+      "community": 118,
+      "community_name": "settings.py",
       "norm_label": "get"
     },
     {
@@ -1069,8 +1069,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "backend_app_routers_settings_get_settings",
-      "community": 116,
-      "community_name": "schemas.py",
+      "community": 118,
+      "community_name": "settings.py",
       "norm_label": "get_settings()"
     },
     {
@@ -1080,8 +1080,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_settings_py_put",
-      "community": 116,
-      "community_name": "schemas.py",
+      "community": 118,
+      "community_name": "settings.py",
       "norm_label": "put"
     },
     {
@@ -1091,8 +1091,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "backend_app_routers_settings_update_settings",
-      "community": 116,
-      "community_name": "schemas.py",
+      "community": 118,
+      "community_name": "settings.py",
       "norm_label": "update_settings()"
     },
     {
@@ -1102,7 +1102,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_routers_sync",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "sync.py"
     },
@@ -1168,7 +1168,7 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "backend_app_routers_sync_parse_dt",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "_parse_dt()"
     },
@@ -1179,7 +1179,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "datetime",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "datetime"
     },
@@ -1245,7 +1245,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_routers_tasks",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "tasks.py"
     },
@@ -1256,8 +1256,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_tasks_py_get",
-      "community": 111,
-      "community_name": "get_task_or_404",
+      "community": 116,
+      "community_name": "schemas.py",
       "norm_label": "get"
     },
     {
@@ -1267,8 +1267,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "backend_app_routers_tasks_list_tasks",
-      "community": 111,
-      "community_name": "get_task_or_404",
+      "community": 116,
+      "community_name": "schemas.py",
       "norm_label": "list_tasks()"
     },
     {
@@ -1278,8 +1278,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_tasks_py_date",
-      "community": 111,
-      "community_name": "get_task_or_404",
+      "community": 116,
+      "community_name": "schemas.py",
       "norm_label": "date"
     },
     {
@@ -1289,8 +1289,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_tasks_py_session",
-      "community": 111,
-      "community_name": "get_task_or_404",
+      "community": 116,
+      "community_name": "schemas.py",
       "norm_label": "session"
     },
     {
@@ -1300,8 +1300,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_tasks_py_post",
-      "community": 111,
-      "community_name": "get_task_or_404",
+      "community": 116,
+      "community_name": "schemas.py",
       "norm_label": "post"
     },
     {
@@ -1322,8 +1322,8 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "backend_app_routers_tasks_get_task",
-      "community": 111,
-      "community_name": "get_task_or_404",
+      "community": 116,
+      "community_name": "schemas.py",
       "norm_label": "get_task()"
     },
     {
@@ -1355,8 +1355,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_routers_tasks_py_delete",
-      "community": 111,
-      "community_name": "get_task_or_404",
+      "community": 116,
+      "community_name": "schemas.py",
       "norm_label": "delete"
     },
     {
@@ -1366,8 +1366,8 @@
       "source_location": "L120",
       "_origin": "ast",
       "id": "backend_app_routers_tasks_delete_task",
-      "community": 111,
-      "community_name": "get_task_or_404",
+      "community": 116,
+      "community_name": "schemas.py",
       "norm_label": "delete_task()"
     },
     {
@@ -1388,8 +1388,8 @@
       "source_location": "L148",
       "_origin": "ast",
       "id": "backend_app_routers_tasks_reopen_task",
-      "community": 111,
-      "community_name": "get_task_or_404",
+      "community": 116,
+      "community_name": "schemas.py",
       "norm_label": "reopen_task()"
     },
     {
@@ -1410,7 +1410,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "backend_app_schemas_boardout",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "boardout"
     },
@@ -1432,7 +1432,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "backend_app_schemas_boardcreate",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "boardcreate"
     },
@@ -1443,7 +1443,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "backend_app_schemas_boardupdate",
-      "community": 45,
+      "community": 20,
       "community_name": "boards.py",
       "norm_label": "boardupdate"
     },
@@ -1674,8 +1674,8 @@
       "source_location": "L194",
       "_origin": "ast",
       "id": "backend_app_schemas_settingsout",
-      "community": 116,
-      "community_name": "schemas.py",
+      "community": 118,
+      "community_name": "settings.py",
       "norm_label": "settingsout"
     },
     {
@@ -1685,8 +1685,8 @@
       "source_location": "L198",
       "_origin": "ast",
       "id": "backend_app_schemas_settingsupdate",
-      "community": 116,
-      "community_name": "schemas.py",
+      "community": 118,
+      "community_name": "settings.py",
       "norm_label": "settingsupdate"
     },
     {
@@ -1806,7 +1806,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_services_board_service",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "board_service.py"
     },
@@ -1818,7 +1818,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_get_default_board_id",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "get_default_board_id()"
     },
     {
@@ -1829,7 +1829,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_py_session",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "session"
     },
     {
@@ -1840,7 +1840,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_resolve_board_id",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "resolve_board_id()"
     },
     {
@@ -1851,7 +1851,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_ensure_board_seeded",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "ensure_board_seeded()"
     },
     {
@@ -1861,8 +1861,8 @@
       "source_location": "L93",
       "_origin": "ast",
       "id": "backend_app_services_board_service_get_board_or_404",
-      "community": 4,
-      "community_name": "Board",
+      "community": 20,
+      "community_name": "boards.py",
       "norm_label": "get_board_or_404()"
     },
     {
@@ -1873,7 +1873,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_py_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "board"
     },
     {
@@ -1884,7 +1884,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_create_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "create_board()"
     },
     {
@@ -1895,7 +1895,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_recompute_default",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "_recompute_default()"
     },
     {
@@ -1906,7 +1906,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_update_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "update_board()"
     },
     {
@@ -1917,7 +1917,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_delete_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "delete_board()"
     },
     {
@@ -1927,7 +1927,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_services_board_service_rationale_1",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "board crud, seeding, and board-cap enforcement."
     },
@@ -1939,7 +1939,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_rationale_31",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "return board_id after validating ownership, or the default board if board_id is..."
     },
     {
@@ -1950,7 +1950,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_rationale_49",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "ensure the user has a default board with seeded labels. returns the default..."
     },
     {
@@ -1961,7 +1961,7 @@
       "_origin": "ast",
       "id": "backend_app_services_board_service_rationale_127",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "ensure is_default matches whichever board is topmost in sort_order. must re-..."
     },
     {
@@ -1971,7 +1971,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_services_focused_view_service",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "focused_view_service.py"
     },
@@ -2081,7 +2081,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_services_focused_view_service_rationale_1",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "focused view config management and task filtering."
     },
@@ -2103,7 +2103,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_services_label_service",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "label_service.py"
     },
@@ -2114,7 +2114,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "backend_app_services_label_service_seed_board_labels",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "seed_board_labels()"
     },
@@ -2125,7 +2125,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "backend_app_services_label_service_py_session",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "session"
     },
@@ -2136,7 +2136,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_services_label_service_rationale_1",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "label seeding helper \u2014 called by board_service during board initialisation."
     },
@@ -2147,7 +2147,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "backend_app_services_label_service_rationale_9",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "seed all label_seed entries into a specific board. idempotent."
     },
@@ -2170,7 +2170,7 @@
       "_origin": "ast",
       "id": "backend_app_services_reports_service_completions_query",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "_completions_query()"
     },
     {
@@ -2181,7 +2181,7 @@
       "_origin": "ast",
       "id": "backend_app_services_reports_service_py_session",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "session"
     },
     {
@@ -2192,7 +2192,7 @@
       "_origin": "ast",
       "id": "backend_app_services_reports_service_py_date",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "date"
     },
     {
@@ -2225,7 +2225,7 @@
       "_origin": "ast",
       "id": "backend_app_services_reports_service_get_completions",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "get_completions()"
     },
     {
@@ -2236,7 +2236,7 @@
       "_origin": "ast",
       "id": "completionsreport",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "completionsreport"
     },
     {
@@ -2257,7 +2257,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_app_services_task_service",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "task_service.py"
     },
@@ -2334,7 +2334,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "backend_app_services_task_service_resolve_priority_on_create",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "_resolve_priority_on_create()"
     },
@@ -2345,7 +2345,7 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "backend_app_services_task_service_resolve_priority_on_update",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "_resolve_priority_on_update()"
     },
@@ -2356,8 +2356,8 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "backend_app_services_task_service_get_task_or_404",
-      "community": 111,
-      "community_name": "get_task_or_404",
+      "community": 116,
+      "community_name": "schemas.py",
       "norm_label": "get_task_or_404()"
     },
     {
@@ -2466,7 +2466,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "backend_app_services_task_service_rationale_67",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "new-client path uses `priority` directly; a legacy client (old mobile, sends..."
     },
@@ -2477,7 +2477,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "backend_app_services_task_service_rationale_78",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "field-resolution rule (see plan-feat-priority-tiers.md \u2014 sneezy blocker fix): a..."
     },
@@ -3325,7 +3325,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "test_board_service.py"
     },
     {
@@ -3336,7 +3336,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_make_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "_make_board()"
     },
     {
@@ -3347,7 +3347,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_py_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "board"
     },
     {
@@ -3358,7 +3358,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testgetdefaultboardid",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "testgetdefaultboardid"
     },
     {
@@ -3369,7 +3369,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testgetdefaultboardid_test_returns_default_board_id",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_returns_default_board_id()"
     },
     {
@@ -3380,7 +3380,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testgetdefaultboardid_test_raises_500_when_no_default",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_raises_500_when_no_default()"
     },
     {
@@ -3391,7 +3391,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testresolveboardid",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "testresolveboardid"
     },
     {
@@ -3402,7 +3402,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testresolveboardid_test_returns_default_when_none",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_returns_default_when_none()"
     },
     {
@@ -3413,7 +3413,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testresolveboardid_test_validates_provided_board_id",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_validates_provided_board_id()"
     },
     {
@@ -3424,7 +3424,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testresolveboardid_test_raises_404_for_unknown_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_raises_404_for_unknown_board()"
     },
     {
@@ -3435,7 +3435,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testensureboardseeded",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "testensureboardseeded"
     },
     {
@@ -3446,7 +3446,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testensureboardseeded_test_creates_board_and_seeds_for_new_user",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_creates_board_and_seeds_for_new_user()"
     },
     {
@@ -3457,7 +3457,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testensureboardseeded_test_skips_creation_when_board_exists",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_skips_creation_when_board_exists()"
     },
     {
@@ -3468,7 +3468,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testcreateboard",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "testcreateboard"
     },
     {
@@ -3479,7 +3479,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testcreateboard_test_creates_board_successfully",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_creates_board_successfully()"
     },
     {
@@ -3490,7 +3490,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testcreateboard_test_rejects_empty_name",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_rejects_empty_name()"
     },
     {
@@ -3501,7 +3501,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testcreateboard_test_enforces_board_cap",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_enforces_board_cap()"
     },
     {
@@ -3512,7 +3512,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testcreateboard_test_allows_creation_at_one_below_cap",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_allows_creation_at_one_below_cap()"
     },
     {
@@ -3523,7 +3523,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testupdateboard",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "testupdateboard"
     },
     {
@@ -3534,7 +3534,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testupdateboard_test_renames_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_renames_board()"
     },
     {
@@ -3545,7 +3545,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testupdateboard_test_rejects_empty_name",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_rejects_empty_name()"
     },
     {
@@ -3556,7 +3556,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testupdateboard_test_sets_color_when_provided",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_sets_color_when_provided()"
     },
     {
@@ -3567,7 +3567,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testupdateboard_test_clears_color_when_none_passed_explicitly",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_clears_color_when_none_passed_explicitly()"
     },
     {
@@ -3578,7 +3578,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testupdateboard_test_color_unchanged_when_not_provided",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_color_unchanged_when_not_provided()"
     },
     {
@@ -3589,7 +3589,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testupdateboard_test_sort_order_promotes_new_topmost_to_default",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_sort_order_promotes_new_topmost_to_default()"
     },
     {
@@ -3600,7 +3600,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testupdateboard_test_sort_order_demotes_default_dragged_away_from_top",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_sort_order_demotes_default_dragged_away_from_top()"
     },
     {
@@ -3611,7 +3611,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testupdateboard_test_sort_order_noop_when_topmost_unchanged",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_sort_order_noop_when_topmost_unchanged()"
     },
     {
@@ -3622,7 +3622,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testdeleteboard",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "testdeleteboard"
     },
     {
@@ -3633,7 +3633,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testdeleteboard_setup_db",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "._setup_db()"
     },
     {
@@ -3644,7 +3644,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testdeleteboard_test_soft_deletes_empty_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_soft_deletes_empty_board()"
     },
     {
@@ -3655,7 +3655,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testdeleteboard_test_rejects_only_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_rejects_only_board()"
     },
     {
@@ -3666,7 +3666,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testdeleteboard_test_rejects_default_board",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_rejects_default_board()"
     },
     {
@@ -3677,7 +3677,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testdeleteboard_test_rejects_board_with_tasks",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_rejects_board_with_tasks()"
     },
     {
@@ -3688,7 +3688,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_testdeleteboard_test_rejects_board_with_labels",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": ".test_rejects_board_with_labels()"
     },
     {
@@ -3699,7 +3699,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_board_service_rationale_1",
       "community": 4,
-      "community_name": "Board",
+      "community_name": "test_board_service.py",
       "norm_label": "unit tests for board_service \u2014 no database required."
     },
     {
@@ -3709,7 +3709,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_tests_unit_test_day_view_router",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "test_day_view_router.py"
     },
@@ -3797,7 +3797,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_tests_unit_test_day_view_router_rationale_1",
-      "community": 20,
+      "community": 2,
       "community_name": "Task",
       "norm_label": "unit tests for the day-view router \u2014 no database required. guards against a..."
     },
@@ -3808,8 +3808,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": "test_dependencies.py"
     },
     {
@@ -3819,8 +3819,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_make_db",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": "_make_db()"
     },
     {
@@ -3830,8 +3830,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_firebase_claims",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": "_firebase_claims()"
     },
     {
@@ -3841,8 +3841,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetfirebaseclaims",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": "testgetfirebaseclaims"
     },
     {
@@ -3852,8 +3852,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetfirebaseclaims_test_missing_header_raises_401",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_missing_header_raises_401()"
     },
     {
@@ -3863,8 +3863,8 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetfirebaseclaims_test_non_bearer_header_raises_401",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_non_bearer_header_raises_401()"
     },
     {
@@ -3874,8 +3874,8 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetfirebaseclaims_test_valid_token_returns_claims",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_valid_token_returns_claims()"
     },
     {
@@ -3885,8 +3885,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetfirebaseclaims_test_invalid_token_raises_401",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_invalid_token_raises_401()"
     },
     {
@@ -3896,8 +3896,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetcurrentuser",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": "testgetcurrentuser"
     },
     {
@@ -3907,8 +3907,8 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetcurrentuser_test_bearer_token_existing_user",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_bearer_token_existing_user()"
     },
     {
@@ -3918,8 +3918,8 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetcurrentuser_test_bearer_token_new_user_is_created",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_bearer_token_new_user_is_created()"
     },
     {
@@ -3929,8 +3929,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetcurrentuser_test_no_auth_raises_401",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_no_auth_raises_401()"
     },
     {
@@ -3940,8 +3940,8 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetcurrentuser_test_invalid_bearer_token_raises_401",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_invalid_bearer_token_raises_401()"
     },
     {
@@ -3951,8 +3951,8 @@
       "source_location": "L102",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testgetcurrentuser_test_expired_token_raises_401",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_expired_token_raises_401()"
     },
     {
@@ -3962,8 +3962,8 @@
       "source_location": "L116",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testauthbypass",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": "testauthbypass"
     },
     {
@@ -3973,8 +3973,8 @@
       "source_location": "L117",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testauthbypass_test_bypass_get_current_user_known_user",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_bypass_get_current_user_known_user()"
     },
     {
@@ -3984,8 +3984,8 @@
       "source_location": "L130",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testauthbypass_test_bypass_get_current_user_unknown_user_raises_401",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_bypass_get_current_user_unknown_user_raises_401()"
     },
     {
@@ -3995,8 +3995,8 @@
       "source_location": "L142",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testauthbypass_test_bypass_get_firebase_claims_returns_synthetic_claims",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_bypass_get_firebase_claims_returns_synthetic_claims()"
     },
     {
@@ -4006,8 +4006,8 @@
       "source_location": "L151",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_testauthbypass_test_bypass_inactive_still_requires_bearer",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": ".test_bypass_inactive_still_requires_bearer()"
     },
     {
@@ -4017,8 +4017,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_tests_unit_test_dependencies_rationale_1",
-      "community": 2,
-      "community_name": "main.py",
+      "community": 45,
+      "community_name": "get_firebase_claims",
       "norm_label": "unit tests for dependencies.py \u2014 firebase auth path."
     },
     {
@@ -4931,7 +4931,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "test_reports_service.py"
     },
     {
@@ -4942,7 +4942,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_make_board",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "_make_board()"
     },
     {
@@ -4953,7 +4953,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_py_board",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "board"
     },
     {
@@ -4964,7 +4964,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_make_task",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "_make_task()"
     },
     {
@@ -4975,7 +4975,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_py_task",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "task"
     },
     {
@@ -4986,7 +4986,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testsingleboardpath",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "testsingleboardpath"
     },
     {
@@ -4997,7 +4997,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testsingleboardpath_test_uses_explicit_board_id",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": ".test_uses_explicit_board_id()"
     },
     {
@@ -5008,7 +5008,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testsingleboardpath_test_falls_back_to_default_board_when_board_id_none",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": ".test_falls_back_to_default_board_when_board_id_none()"
     },
     {
@@ -5019,7 +5019,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testsingleboardpath_test_applies_label_filter",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": ".test_applies_label_filter()"
     },
     {
@@ -5030,7 +5030,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_py_patch",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "patch"
     },
     {
@@ -5041,7 +5041,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testallboardspath",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "testallboardspath"
     },
     {
@@ -5052,7 +5052,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testallboardspath_setup_db",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "._setup_db()"
     },
     {
@@ -5063,7 +5063,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testallboardspath_test_returns_empty_boards_when_user_has_no_boards",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": ".test_returns_empty_boards_when_user_has_no_boards()"
     },
     {
@@ -5074,7 +5074,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testallboardspath_test_groups_by_board_preserving_order",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": ".test_groups_by_board_preserving_order()"
     },
     {
@@ -5085,7 +5085,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testallboardspath_test_omits_board_with_no_matching_completions",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": ".test_omits_board_with_no_matching_completions()"
     },
     {
@@ -5096,7 +5096,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testallboardspath_test_flat_completions_stay_in_completed_at_order_across_boards",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": ".test_flat_completions_stay_in_completed_at_order_across_boards()"
     },
     {
@@ -5107,7 +5107,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testallboardspath_test_board_color_included",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": ".test_board_color_included()"
     },
     {
@@ -5118,7 +5118,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_testallboardspath_test_seeds_board_before_querying",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": ".test_seeds_board_before_querying()"
     },
     {
@@ -5129,7 +5129,7 @@
       "_origin": "ast",
       "id": "backend_tests_unit_test_reports_service_rationale_1",
       "community": 18,
-      "community_name": "get_completions",
+      "community_name": "Board",
       "norm_label": "unit tests for reports_service \u2014 no database required."
     },
     {
@@ -8403,8 +8403,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_boardcolor_test",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "boardcolor.test.ts"
     },
     {
@@ -8436,8 +8436,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_boardvisibility_test",
-      "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community": 24,
+      "community_name": "BoardCollapseContext.tsx",
       "norm_label": "boardvisibility.test.ts"
     },
     {
@@ -8447,8 +8447,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "frontend_src_tests_boardvisibility_test_makeboard",
-      "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community": 24,
+      "community_name": "BoardCollapseContext.tsx",
       "norm_label": "makeboard()"
     },
     {
@@ -8546,7 +8546,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_taskdateutils_test",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "frontend/src/__tests__/taskdateutils.test.ts"
     },
@@ -8557,7 +8557,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "frontend_src_tests_taskdateutils_test_mocknow",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "mocknow()"
     },
@@ -8569,7 +8569,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskfilters_test",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/__tests__/taskfilters.test.ts"
     },
     {
@@ -8580,7 +8580,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskfilters_test_maketask",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "maketask()"
     },
     {
@@ -8591,7 +8591,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskfilters_test_labela",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "labela"
     },
     {
@@ -8602,7 +8602,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskfilters_test_labelb",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "labelb"
     },
     {
@@ -8613,7 +8613,7 @@
       "_origin": "ast",
       "id": "frontend_src_tests_taskfilters_test_makeboard",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "makeboard()"
     },
     {
@@ -8623,7 +8623,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_tasklinks_test",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "frontend/src/__tests__/tasklinks.test.ts"
     },
@@ -8634,7 +8634,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "frontend_src_tests_tasklinks_test_makeid",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "makeid()"
     },
@@ -8645,7 +8645,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_taskorder_test",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "taskorder.test.ts"
     },
@@ -8656,7 +8656,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_tests_taskorder_test_maketask",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "maketask()"
     },
@@ -8667,8 +8667,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_taskpriority_test",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "frontend/src/__tests__/taskpriority.test.ts"
     },
     {
@@ -8678,9 +8678,20 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_tests_taskpriority_test_maketask",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "maketask()"
+    },
+    {
+      "label": "makeTaskWithDate()",
+      "file_type": "code",
+      "source_file": "frontend/src/__tests__/taskPriority.test.ts",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "frontend_src_tests_taskpriority_test_maketaskwithdate",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
+      "norm_label": "maketaskwithdate()"
     },
     {
       "label": "tasks.api.test.ts",
@@ -8689,7 +8700,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_tasks_api_test",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "tasks.api.test.ts"
     },
@@ -8700,7 +8711,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_tests_tasks_api_test_mockapifetch",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "mockapifetch"
     },
@@ -8711,7 +8722,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_tests_viewlabel_test",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "viewlabel.test.ts"
     },
@@ -8811,7 +8822,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_dayview",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/api/dayview.ts"
     },
     {
@@ -8822,7 +8833,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_dayview_getdayviewtasks",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "getdayviewtasks()"
     },
     {
@@ -8833,7 +8844,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_focusedview",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/api/focusedview.ts"
     },
     {
@@ -8844,7 +8855,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_focusedview_focusedboard",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "focusedboard"
     },
     {
@@ -8855,7 +8866,7 @@
       "_origin": "ast",
       "id": "frontend_src_api_focusedview_getfocusedviewtasks",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "getfocusedviewtasks()"
     },
     {
@@ -9041,7 +9052,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_api_tasks",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "frontend/src/api/tasks.ts"
     },
@@ -9052,7 +9063,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_label",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "label"
     },
@@ -9063,7 +9074,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_tasklink",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "tasklink"
     },
@@ -9074,8 +9085,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_prioritytier",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 120,
+      "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "prioritytier"
     },
     {
@@ -9085,7 +9096,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_task",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "task"
     },
@@ -9096,7 +9107,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_createtaskbody",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "createtaskbody"
     },
@@ -9107,7 +9118,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_updatetaskbody",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "updatetaskbody"
     },
@@ -9118,7 +9129,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_completetaskbody",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "completetaskbody"
     },
@@ -9129,7 +9140,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_completetaskresponse",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "completetaskresponse"
     },
@@ -9140,8 +9151,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_listtasks",
-      "community": 117,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "listtasks()"
     },
     {
@@ -9151,7 +9162,7 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_gettask",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "gettask()"
     },
@@ -9162,7 +9173,7 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_createtask",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "createtask()"
     },
@@ -9173,7 +9184,7 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_updatetask",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "updatetask()"
     },
@@ -9184,7 +9195,7 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_deletetask",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "deletetask()"
     },
@@ -9195,7 +9206,7 @@
       "source_location": "L109",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_completetask",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "completetask()"
     },
@@ -9206,7 +9217,7 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "frontend_src_api_tasks_reopentask",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "reopentask()"
     },
@@ -9261,8 +9272,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_archiveboardtabs",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "frontend/src/components/archiveboardtabs.tsx"
     },
     {
@@ -9272,8 +9283,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "frontend_src_components_archiveboardtabs_archiveboardtabs",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "archiveboardtabs()"
     },
     {
@@ -9284,17 +9295,17 @@
       "_origin": "ast",
       "id": "frontend_src_components_boardgroupedtasks",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/components/boardgroupedtasks.tsx"
     },
     {
       "label": "BoardGroupedTasks()",
       "file_type": "code",
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L14",
+      "source_location": "L15",
       "_origin": "ast",
       "id": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "boardgroupedtasks()"
     },
@@ -9305,8 +9316,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_boardtabs",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "frontend/src/components/boardtabs.tsx"
     },
     {
@@ -9316,8 +9327,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_components_boardtabs_boardtabs",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "boardtabs()"
     },
     {
@@ -9328,7 +9339,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_dayview",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/components/dayview.tsx"
     },
     {
@@ -9339,7 +9350,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_dayview_dayview",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "dayview()"
     },
     {
@@ -9350,7 +9361,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_emptystate",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "emptystate.tsx"
     },
     {
@@ -9361,7 +9372,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_emptystate_emptystate",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "emptystate()"
     },
     {
@@ -9372,7 +9383,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_emptystate_foldericon",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "foldericon()"
     },
     {
@@ -9383,7 +9394,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_emptystate_staricon",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "staricon()"
     },
     {
@@ -9394,40 +9405,40 @@
       "_origin": "ast",
       "id": "frontend_src_components_focusedtaskcard",
       "community": 7,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "frontend/src/components/focusedtaskcard.tsx"
     },
     {
       "label": "DateFieldName",
       "file_type": "code",
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L9",
+      "source_location": "L10",
       "_origin": "ast",
       "id": "frontend_src_components_focusedtaskcard_datefieldname",
       "community": 7,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "datefieldname"
     },
     {
       "label": "LABEL_COLORS",
       "file_type": "code",
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_components_focusedtaskcard_label_colors",
       "community": 7,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "label_colors"
     },
     {
       "label": "FocusedTaskCard()",
       "file_type": "code",
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L16",
+      "source_location": "L17",
       "_origin": "ast",
       "id": "frontend_src_components_focusedtaskcard_focusedtaskcard",
       "community": 7,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "focusedtaskcard()"
     },
     {
@@ -9438,7 +9449,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_focusedview",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/components/focusedview.tsx"
     },
     {
@@ -9449,7 +9460,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_focusedview_focusedview",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "focusedview()"
     },
     {
@@ -9459,7 +9470,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_labelbadge",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "labelbadge.tsx"
     },
@@ -9470,7 +9481,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "frontend_src_components_labelbadge_category_colors",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "category_colors"
     },
@@ -9481,7 +9492,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "frontend_src_components_labelbadge_labelbadgeprops",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "labelbadgeprops"
     },
@@ -9504,7 +9515,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "labelfilterchips.tsx"
     },
     {
@@ -9515,7 +9526,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips_labelcategory",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "labelcategory"
     },
     {
@@ -9526,7 +9537,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips_categories",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "categories"
     },
     {
@@ -9537,7 +9548,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips_category_colors",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "category_colors"
     },
     {
@@ -9548,7 +9559,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips_mode_labels",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "mode_labels"
     },
     {
@@ -9559,7 +9570,7 @@
       "_origin": "ast",
       "id": "frontend_src_components_labelfilterchips_labelfilterchips",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "labelfilterchips()"
     },
     {
@@ -9657,7 +9668,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_taskcard",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "taskcard.tsx"
     },
@@ -9668,7 +9679,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "frontend_src_components_taskcard_datefieldname",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "datefieldname"
     },
@@ -9679,7 +9690,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_components_taskcard_taskcardprops",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "taskcardprops"
     },
@@ -9690,7 +9701,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "frontend_src_components_taskcard_label_category_order",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "label_category_order"
     },
@@ -9701,7 +9712,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "frontend_src_components_taskcard_taskcard",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "taskcard()"
     },
@@ -9712,7 +9723,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_taskcardbody",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "frontend/src/components/taskcardbody.tsx"
     },
@@ -9720,21 +9731,32 @@
       "label": "DateFieldName",
       "file_type": "code",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L6",
+      "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_components_taskcardbody_datefieldname",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "datefieldname"
+    },
+    {
+      "label": "TIER_ACCENT",
+      "file_type": "code",
+      "source_file": "frontend/src/components/TaskCardBody.tsx",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "frontend_src_components_taskcardbody_tier_accent",
+      "community": 117,
+      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "norm_label": "tier_accent"
     },
     {
       "label": "TaskCardBodyProps",
       "file_type": "code",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L8",
+      "source_location": "L13",
       "_origin": "ast",
       "id": "frontend_src_components_taskcardbody_taskcardbodyprops",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "taskcardbodyprops"
     },
@@ -9742,10 +9764,10 @@
       "label": "DateInput()",
       "file_type": "code",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L26",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "frontend_src_components_taskcardbody_dateinput",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "dateinput()"
     },
@@ -9753,10 +9775,10 @@
       "label": "DateFieldLine()",
       "file_type": "code",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L74",
+      "source_location": "L78",
       "_origin": "ast",
       "id": "frontend_src_components_taskcardbody_datefieldline",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "datefieldline()"
     },
@@ -9764,10 +9786,10 @@
       "label": "TaskCardBody()",
       "file_type": "code",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L118",
+      "source_location": "L122",
       "_origin": "ast",
       "id": "frontend_src_components_taskcardbody_taskcardbody",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "taskcardbody()"
     },
@@ -9778,7 +9800,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_taskform",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "taskform.tsx"
     },
@@ -9789,7 +9811,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "frontend_src_components_taskform_newlinkid",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "newlinkid()"
     },
@@ -9800,7 +9822,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "frontend_src_components_taskform_taskformprops",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "taskformprops"
     },
@@ -9811,7 +9833,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "frontend_src_components_taskform_labelcategory",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "labelcategory"
     },
@@ -9822,7 +9844,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "frontend_src_components_taskform_category_order",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "category_order"
     },
@@ -9833,7 +9855,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "frontend_src_components_taskform_category_display_names",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "category_display_names"
     },
@@ -9844,7 +9866,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "frontend_src_components_taskform_taskform",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "taskform()"
     },
@@ -9855,7 +9877,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_components_taskquickedit",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "frontend/src/components/taskquickedit.tsx"
     },
@@ -9866,7 +9888,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "frontend_src_components_taskquickedit_edit_category_order",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "edit_category_order"
     },
@@ -9877,7 +9899,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "frontend_src_components_taskquickedit_taskquickeditprops",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "taskquickeditprops"
     },
@@ -9888,7 +9910,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "frontend_src_components_taskquickedit_taskquickedit",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "taskquickedit()"
     },
@@ -9954,8 +9976,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext",
-      "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community": 24,
+      "community_name": "BoardCollapseContext.tsx",
       "norm_label": "boardcollapsecontext.tsx"
     },
     {
@@ -9966,7 +9988,7 @@
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext_viewkey",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "viewkey"
     },
     {
@@ -9976,8 +9998,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext_boardcollapsecontextvalue",
-      "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community": 24,
+      "community_name": "BoardCollapseContext.tsx",
       "norm_label": "boardcollapsecontextvalue"
     },
     {
@@ -9987,8 +10009,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext_boardcollapsecontext",
-      "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community": 24,
+      "community_name": "BoardCollapseContext.tsx",
       "norm_label": "boardcollapsecontext"
     },
     {
@@ -9998,8 +10020,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "frontend_src_context_boardcollapsecontext_boardcollapseprovider",
-      "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community": 24,
+      "community_name": "BoardCollapseContext.tsx",
       "norm_label": "boardcollapseprovider()"
     },
     {
@@ -10064,8 +10086,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "frontend_src_context_boardcontext_useboard",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "useboard()"
     },
     {
@@ -10075,8 +10097,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 124,
+      "community_name": "ColumnPriorityCollapseContext.tsx",
       "norm_label": "columnprioritycollapsecontext.tsx"
     },
     {
@@ -10086,8 +10108,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext_collapsekey",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 124,
+      "community_name": "ColumnPriorityCollapseContext.tsx",
       "norm_label": "collapsekey"
     },
     {
@@ -10097,8 +10119,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext_columnprioritycollapsecontextvalue",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 124,
+      "community_name": "ColumnPriorityCollapseContext.tsx",
       "norm_label": "columnprioritycollapsecontextvalue"
     },
     {
@@ -10108,8 +10130,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext_columnprioritycollapsecontext",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 124,
+      "community_name": "ColumnPriorityCollapseContext.tsx",
       "norm_label": "columnprioritycollapsecontext"
     },
     {
@@ -10119,8 +10141,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext_columnprioritycollapseprovider",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 124,
+      "community_name": "ColumnPriorityCollapseContext.tsx",
       "norm_label": "columnprioritycollapseprovider()"
     },
     {
@@ -10130,8 +10152,8 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "frontend_src_context_columnprioritycollapsecontext_usecolumnprioritycollapse",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 124,
+      "community_name": "ColumnPriorityCollapseContext.tsx",
       "norm_label": "usecolumnprioritycollapse()"
     },
     {
@@ -10196,7 +10218,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "frontend_src_context_filtercontext_usefilter",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "usefilter()"
     },
@@ -10207,7 +10229,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_context_viewcontext",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "viewcontext.tsx"
     },
@@ -10218,7 +10240,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_context_viewcontext_viewcontextvalue",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "viewcontextvalue"
     },
@@ -10229,7 +10251,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "frontend_src_context_viewcontext_viewcontext",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "viewcontext"
     },
@@ -10240,7 +10262,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_context_viewcontext_viewprovider",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "viewprovider()"
     },
@@ -10251,7 +10273,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "frontend_src_context_viewcontext_useview",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "useview()"
     },
@@ -10328,7 +10350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_hooks_useboardlabelfilter",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "useboardlabelfilter.ts"
     },
@@ -10339,7 +10361,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "frontend_src_hooks_useboardlabelfilter_empty_label_set",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "empty_label_set"
     },
@@ -10350,7 +10372,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "frontend_src_hooks_useboardlabelfilter_useboardlabelfilter",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "useboardlabelfilter()"
     },
@@ -10361,8 +10383,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_hooks_uselabels",
-      "community": 115,
-      "community_name": "SettingsPage.tsx",
+      "community": 120,
+      "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "uselabels.ts"
     },
     {
@@ -10372,8 +10394,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "frontend_src_hooks_uselabels_uselabels",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 120,
+      "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "uselabels()"
     },
     {
@@ -10394,7 +10416,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "frontend_src_hooks_usesettings_usesettings",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "usesettings()"
     },
@@ -10405,8 +10427,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_hooks_usetasks",
-      "community": 117,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "usetasks.ts"
     },
     {
@@ -10416,8 +10438,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_hooks_usetasks_usetasks",
-      "community": 117,
-      "community_name": "frontend/src/api/tasks.ts",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "usetasks()"
     },
     {
@@ -10559,8 +10581,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_pages_taskdetailpage",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 120,
+      "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "taskdetailpage.tsx"
     },
     {
@@ -10570,8 +10592,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "frontend_src_pages_taskdetailpage_taskdetailpage",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 120,
+      "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "taskdetailpage()"
     },
     {
@@ -10581,7 +10603,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_pages_taskspage",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "taskspage.tsx"
     },
@@ -10592,7 +10614,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "frontend_src_pages_taskspage_tier_rank",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "tier_rank"
     },
@@ -10603,7 +10625,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "frontend_src_pages_taskspage_tier_meta",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "tier_meta"
     },
@@ -10614,7 +10636,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "frontend_src_pages_taskspage_taskspage",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "taskspage()"
     },
@@ -10625,8 +10647,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_boardcolor",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "boardcolor.ts"
     },
     {
@@ -10636,8 +10658,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_boardcolor_palette",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "palette"
     },
     {
@@ -10647,8 +10669,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "frontend_src_utils_boardcolor_getboardcolor",
-      "community": 16,
-      "community_name": "ArchivePage.tsx",
+      "community": 111,
+      "community_name": "useBoard",
       "norm_label": "getboardcolor()"
     },
     {
@@ -10680,8 +10702,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_boardvisibility",
-      "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community": 24,
+      "community_name": "BoardCollapseContext.tsx",
       "norm_label": "boardvisibility.ts"
     },
     {
@@ -10691,8 +10713,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_boardvisibility_effectivecollapsed",
-      "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community": 24,
+      "community_name": "BoardCollapseContext.tsx",
       "norm_label": "effectivecollapsed()"
     },
     {
@@ -10702,8 +10724,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "frontend_src_utils_boardvisibility_findsinglevisibleboard",
-      "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community": 24,
+      "community_name": "BoardCollapseContext.tsx",
       "norm_label": "findsinglevisibleboard()"
     },
     {
@@ -10768,7 +10790,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "frontend/src/utils/taskdateutils.ts"
     },
@@ -10779,8 +10801,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_columnkey",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 124,
+      "community_name": "ColumnPriorityCollapseContext.tsx",
       "norm_label": "columnkey"
     },
     {
@@ -10790,8 +10812,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_dateonly",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 16,
+      "community_name": "ArchivePage.tsx",
       "norm_label": "dateonly()"
     },
     {
@@ -10801,7 +10823,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_formatdate",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "formatdate()"
     },
@@ -10812,7 +10834,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_formatdatewithday",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "formatdatewithday()"
     },
@@ -10823,7 +10845,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_isfriday",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "isfriday()"
     },
@@ -10834,7 +10856,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_isoverdue",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "isoverdue()"
     },
@@ -10846,7 +10868,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_geteffectivedate",
       "community": 7,
-      "community_name": "frontend/src/utils/taskDateUtils.ts",
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "geteffectivedate()"
     },
     {
@@ -10856,7 +10878,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_shouldshowtargetdate",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "shouldshowtargetdate()"
     },
@@ -10867,7 +10889,7 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_bothdatessetanddistinct",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "bothdatessetanddistinct()"
     },
@@ -10878,8 +10900,8 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_getcolumn",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "getcolumn()"
     },
     {
@@ -10889,7 +10911,7 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "frontend_src_utils_taskdateutils_getdropdate",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "getdropdate()"
     },
@@ -10901,7 +10923,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskfilters",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "frontend/src/utils/taskfilters.ts"
     },
     {
@@ -10912,7 +10934,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskfilters_matchessearch",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "matchessearch()"
     },
     {
@@ -10934,7 +10956,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskfilters_togglelabelselection",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "togglelabelselection()"
     },
     {
@@ -10945,7 +10967,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskfilters_filtertasks",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "filtertasks()"
     },
     {
@@ -10956,7 +10978,7 @@
       "_origin": "ast",
       "id": "frontend_src_utils_taskfilters_filterboards",
       "community": 12,
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "TasksPage.tsx",
       "norm_label": "filterboards()"
     },
     {
@@ -10966,7 +10988,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_tasklinks",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "frontend/src/utils/tasklinks.ts"
     },
@@ -10977,7 +10999,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "frontend_src_utils_tasklinks_max_task_links",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "max_task_links"
     },
@@ -10988,7 +11010,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "frontend_src_utils_tasklinks_isvalidlinkurl",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "isvalidlinkurl()"
     },
@@ -10999,7 +11021,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "frontend_src_utils_tasklinks_isblanklink",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "isblanklink()"
     },
@@ -11010,7 +11032,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "frontend_src_utils_tasklinks_withreadylinkrow",
-      "community": 117,
+      "community": 120,
       "community_name": "frontend/src/api/tasks.ts",
       "norm_label": "withreadylinkrow()"
     },
@@ -11021,7 +11043,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_taskorder",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "taskorder.ts"
     },
@@ -11032,7 +11054,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "frontend_src_utils_taskorder_computeinsertsortorder",
-      "community": 7,
+      "community": 117,
       "community_name": "frontend/src/utils/taskDateUtils.ts",
       "norm_label": "computeinsertsortorder()"
     },
@@ -11043,8 +11065,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "frontend/src/utils/taskpriority.ts"
     },
     {
@@ -11054,86 +11076,108 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_high_priority_daily_limit",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "high_priority_daily_limit"
-    },
-    {
-      "label": "PRIORITY_CYCLE",
-      "file_type": "code",
-      "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L7",
-      "_origin": "ast",
-      "id": "frontend_src_utils_taskpriority_priority_cycle",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
-      "norm_label": "priority_cycle"
     },
     {
       "label": "isPriorityEligible()",
       "file_type": "code",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L14",
+      "source_location": "L7",
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_ispriorityeligible",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "ispriorityeligible()"
     },
     {
       "label": "isFormPriorityEligible()",
       "file_type": "code",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L19",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_isformpriorityeligible",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "isformpriorityeligible()"
     },
     {
-      "label": "resolveNextPriorityTier()",
+      "label": "TIER_ORDER",
       "file_type": "code",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L30",
+      "source_location": "L17",
       "_origin": "ast",
-      "id": "frontend_src_utils_taskpriority_resolvenextprioritytier",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
-      "norm_label": "resolvenextprioritytier()"
+      "id": "frontend_src_utils_taskpriority_tier_order",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
+      "norm_label": "tier_order"
+    },
+    {
+      "label": "shiftPriorityTier()",
+      "file_type": "code",
+      "source_file": "frontend/src/utils/taskPriority.ts",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "frontend_src_utils_taskpriority_shiftprioritytier",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
+      "norm_label": "shiftprioritytier()"
+    },
+    {
+      "label": "resolveShiftedPriorityTier()",
+      "file_type": "code",
+      "source_file": "frontend/src/utils/taskPriority.ts",
+      "source_location": "L32",
+      "_origin": "ast",
+      "id": "frontend_src_utils_taskpriority_resolveshiftedprioritytier",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
+      "norm_label": "resolveshiftedprioritytier()"
     },
     {
       "label": "resolveDropPriority()",
       "file_type": "code",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L42",
+      "source_location": "L44",
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_resolvedroppriority",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "resolvedroppriority()"
     },
     {
       "label": "splitByPriority()",
       "file_type": "code",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L49",
+      "source_location": "L51",
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_splitbypriority",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "splitbypriority()"
     },
     {
       "label": "canAddHighPriority()",
       "file_type": "code",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L66",
+      "source_location": "L68",
       "_origin": "ast",
       "id": "frontend_src_utils_taskpriority_canaddhighpriority",
-      "community": 24,
-      "community_name": "TasksPage.tsx",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
       "norm_label": "canaddhighpriority()"
+    },
+    {
+      "label": "highPriorityTasksInSameColumn()",
+      "file_type": "code",
+      "source_file": "frontend/src/utils/taskPriority.ts",
+      "source_location": "L78",
+      "_origin": "ast",
+      "id": "frontend_src_utils_taskpriority_highprioritytasksinsamecolumn",
+      "community": 7,
+      "community_name": "frontend/src/components/FocusedTaskCard.tsx",
+      "norm_label": "highprioritytasksinsamecolumn()"
     },
     {
       "label": "viewLabel.ts",
@@ -11142,7 +11186,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_viewlabel",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "viewlabel.ts"
     },
@@ -11153,7 +11197,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "frontend_src_utils_viewlabel_viewmode",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "viewmode"
     },
@@ -11164,7 +11208,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "frontend_src_utils_viewlabel_view_labels",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "view_labels"
     },
@@ -11175,7 +11219,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "frontend_src_utils_viewlabel_viewlabel",
-      "community": 24,
+      "community": 12,
       "community_name": "TasksPage.tsx",
       "norm_label": "viewlabel()"
     },
@@ -12360,8 +12404,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "mobile_package_dependencies_believer_react_native_markdown_display",
-      "community": 33,
-      "community_name": "dependencies",
+      "community": 126,
+      "community_name": "@believer/react-native-markdown-display",
       "norm_label": "@believer/react-native-markdown-display"
     },
     {
@@ -12371,8 +12415,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "believer_react_native_markdown_display",
-      "community": 33,
-      "community_name": "dependencies",
+      "community": 126,
+      "community_name": "@believer/react-native-markdown-display",
       "norm_label": "@believer/react-native-markdown-display"
     },
     {
@@ -12448,8 +12492,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "mobile_package_dependencies_react_navigation_native",
-      "community": 113,
-      "community_name": "@react-navigation/native",
+      "community": 33,
+      "community_name": "dependencies",
       "norm_label": "@react-navigation/native"
     },
     {
@@ -12459,8 +12503,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "react_navigation_native",
-      "community": 113,
-      "community_name": "@react-navigation/native",
+      "community": 33,
+      "community_name": "dependencies",
       "norm_label": "@react-navigation/native"
     },
     {
@@ -12999,7 +13043,7 @@
       "_origin": "ast",
       "id": "mobile_src_tests_daterangepresets_test",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "mobile/src/__tests__/daterangepresets.test.ts"
     },
     {
@@ -13065,7 +13109,7 @@
       "_origin": "ast",
       "id": "mobile_src_tests_taskfilters_test",
       "community": 125,
-      "community_name": "index.ts",
+      "community_name": "mobile/src/__tests__/taskFilters.test.ts",
       "norm_label": "mobile/src/__tests__/taskfilters.test.ts"
     },
     {
@@ -13076,7 +13120,7 @@
       "_origin": "ast",
       "id": "mobile_src_tests_taskfilters_test_maketask",
       "community": 125,
-      "community_name": "index.ts",
+      "community_name": "mobile/src/__tests__/taskFilters.test.ts",
       "norm_label": "maketask()"
     },
     {
@@ -13087,7 +13131,7 @@
       "_origin": "ast",
       "id": "mobile_src_tests_taskfilters_test_labela",
       "community": 125,
-      "community_name": "index.ts",
+      "community_name": "mobile/src/__tests__/taskFilters.test.ts",
       "norm_label": "labela"
     },
     {
@@ -13098,7 +13142,7 @@
       "_origin": "ast",
       "id": "mobile_src_tests_taskfilters_test_labelb",
       "community": 125,
-      "community_name": "index.ts",
+      "community_name": "mobile/src/__tests__/taskFilters.test.ts",
       "norm_label": "labelb"
     },
     {
@@ -13108,8 +13152,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "mobile_src_tests_taskgrouping_test",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "taskgrouping.test.ts"
     },
     {
@@ -13119,8 +13163,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "mobile_src_tests_taskgrouping_test_ref_date",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "ref_date"
     },
     {
@@ -13130,8 +13174,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "mobile_src_tests_taskgrouping_test_maketask",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "maketask()"
     },
     {
@@ -13164,7 +13208,7 @@
       "_origin": "ast",
       "id": "mobile_src_tests_taskpriority_test",
       "community": 36,
-      "community_name": "mobile/src/utils/taskPriority.ts",
+      "community_name": "Task",
       "norm_label": "mobile/src/__tests__/taskpriority.test.ts"
     },
     {
@@ -13175,7 +13219,7 @@
       "_origin": "ast",
       "id": "mobile_src_tests_taskpriority_test_maketask",
       "community": 36,
-      "community_name": "mobile/src/utils/taskPriority.ts",
+      "community_name": "Task",
       "norm_label": "maketask()"
     },
     {
@@ -13417,7 +13461,7 @@
       "_origin": "ast",
       "id": "mobile_src_api_reports",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "mobile/src/api/reports.ts"
     },
     {
@@ -13428,7 +13472,7 @@
       "_origin": "ast",
       "id": "mobile_src_api_reports_getcompletionsoptions",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "getcompletionsoptions"
     },
     {
@@ -13439,7 +13483,7 @@
       "_origin": "ast",
       "id": "mobile_src_api_reports_getcompletions",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "getcompletions()"
     },
     {
@@ -13482,8 +13526,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "mobile_src_api_tasks",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "mobile/src/api/tasks.ts"
     },
     {
@@ -13504,8 +13548,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "mobile_src_api_tasks_gettask",
-      "community": 26,
-      "community_name": "TaskFormScreen.tsx",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "gettask()"
     },
     {
@@ -13515,8 +13559,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "mobile_src_api_tasks_createtask",
-      "community": 26,
-      "community_name": "TaskFormScreen.tsx",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "createtask()"
     },
     {
@@ -13526,8 +13570,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "mobile_src_api_tasks_updatetask",
-      "community": 26,
-      "community_name": "TaskFormScreen.tsx",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "updatetask()"
     },
     {
@@ -13537,8 +13581,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "mobile_src_api_tasks_deletetask",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "deletetask()"
     },
     {
@@ -13548,8 +13592,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "mobile_src_api_tasks_completetask",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "completetask()"
     },
     {
@@ -13560,7 +13604,7 @@
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardgroups",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "mobile/src/components/archiveboardgroups.tsx"
     },
     {
@@ -13571,7 +13615,7 @@
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardgroups_palette",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "palette"
     },
     {
@@ -13582,7 +13626,7 @@
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardgroups_boardcolor",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "boardcolor()"
     },
     {
@@ -13593,7 +13637,7 @@
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardgroups_formatcompletedat",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "formatcompletedat()"
     },
     {
@@ -13604,7 +13648,7 @@
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardgroups_label_category_order",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "label_category_order"
     },
     {
@@ -13615,7 +13659,7 @@
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardgroups_completioncard",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "completioncard()"
     },
     {
@@ -13626,7 +13670,7 @@
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardgroups_archiveboardgroups",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "archiveboardgroups()"
     },
     {
@@ -13636,8 +13680,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardtabs",
-      "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community": 28,
+      "community_name": "mobile/src/context/BoardContext.tsx",
       "norm_label": "mobile/src/components/archiveboardtabs.tsx"
     },
     {
@@ -13647,8 +13691,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardtabs_palette",
-      "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community": 28,
+      "community_name": "mobile/src/context/BoardContext.tsx",
       "norm_label": "palette"
     },
     {
@@ -13658,8 +13702,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardtabs_boardcolor",
-      "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community": 28,
+      "community_name": "mobile/src/context/BoardContext.tsx",
       "norm_label": "boardcolor()"
     },
     {
@@ -13669,8 +13713,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "mobile_src_components_archiveboardtabs_archiveboardtabs",
-      "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community": 28,
+      "community_name": "mobile/src/context/BoardContext.tsx",
       "norm_label": "archiveboardtabs()"
     },
     {
@@ -13724,8 +13768,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "mobile_src_components_boardtabs",
-      "community": 46,
-      "community_name": "apiFetch",
+      "community": 28,
+      "community_name": "mobile/src/context/BoardContext.tsx",
       "norm_label": "mobile/src/components/boardtabs.tsx"
     },
     {
@@ -13735,8 +13779,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "mobile_src_components_boardtabs_boardtabs",
-      "community": 46,
-      "community_name": "apiFetch",
+      "community": 28,
+      "community_name": "mobile/src/context/BoardContext.tsx",
       "norm_label": "boardtabs()"
     },
     {
@@ -13757,8 +13801,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "mobile_src_components_dayview_dayview",
-      "community": 30,
-      "community_name": "mobile/src/api/focusedView.ts",
+      "community": 21,
+      "community_name": "TasksScreen.tsx",
       "norm_label": "dayview()"
     },
     {
@@ -13768,8 +13812,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "mobile_src_components_focusedtaskcard",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 21,
+      "community_name": "TasksScreen.tsx",
       "norm_label": "mobile/src/components/focusedtaskcard.tsx"
     },
     {
@@ -13779,8 +13823,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "mobile_src_components_focusedtaskcard_focusedtaskcard",
-      "community": 30,
-      "community_name": "mobile/src/api/focusedView.ts",
+      "community": 21,
+      "community_name": "TasksScreen.tsx",
       "norm_label": "focusedtaskcard()"
     },
     {
@@ -13801,8 +13845,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "mobile_src_components_focusedview_focusedview",
-      "community": 30,
-      "community_name": "mobile/src/api/focusedView.ts",
+      "community": 21,
+      "community_name": "TasksScreen.tsx",
       "norm_label": "focusedview()"
     },
     {
@@ -13823,8 +13867,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "mobile_src_components_taskcardbody_taskcardbodyprops",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "taskcardbodyprops"
     },
     {
@@ -13856,8 +13900,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "mobile_src_components_taskquickedit",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "mobile/src/components/taskquickedit.tsx"
     },
     {
@@ -13867,8 +13911,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "mobile_src_components_taskquickedit_edit_category_order",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "edit_category_order"
     },
     {
@@ -13878,8 +13922,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "mobile_src_components_taskquickedit_label_bg",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "label_bg"
     },
     {
@@ -13889,8 +13933,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "mobile_src_components_taskquickedit_label_text",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "label_text"
     },
     {
@@ -13900,8 +13944,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "mobile_src_components_taskquickedit_taskquickeditprops",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "taskquickeditprops"
     },
     {
@@ -13911,8 +13955,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "mobile_src_components_taskquickedit_taskquickedit",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 46,
+      "community_name": "apiFetch",
       "norm_label": "taskquickedit()"
     },
     {
@@ -14021,8 +14065,8 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "mobile_src_context_boardcontext_useboard",
-      "community": 46,
-      "community_name": "apiFetch",
+      "community": 28,
+      "community_name": "mobile/src/context/BoardContext.tsx",
       "norm_label": "useboard()"
     },
     {
@@ -14143,7 +14187,7 @@
       "_origin": "ast",
       "id": "mobile_src_screens_archivescreen",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "archivescreen.tsx"
     },
     {
@@ -14154,7 +14198,7 @@
       "_origin": "ast",
       "id": "mobile_src_screens_archivescreen_todayiso",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "todayiso()"
     },
     {
@@ -14165,7 +14209,7 @@
       "_origin": "ast",
       "id": "mobile_src_screens_archivescreen_thirtydaysagoiso",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "thirtydaysagoiso()"
     },
     {
@@ -14176,7 +14220,7 @@
       "_origin": "ast",
       "id": "mobile_src_screens_archivescreen_formatcompletedat",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "formatcompletedat()"
     },
     {
@@ -14187,7 +14231,7 @@
       "_origin": "ast",
       "id": "mobile_src_screens_archivescreen_label_category_order",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "label_category_order"
     },
     {
@@ -14198,7 +14242,7 @@
       "_origin": "ast",
       "id": "mobile_src_screens_archivescreen_completionrow",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "completionrow()"
     },
     {
@@ -14209,7 +14253,7 @@
       "_origin": "ast",
       "id": "mobile_src_screens_archivescreen_presets",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "presets"
     },
     {
@@ -14220,7 +14264,7 @@
       "_origin": "ast",
       "id": "mobile_src_screens_archivescreen_archivescreen",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "archivescreen()"
     },
     {
@@ -14274,8 +14318,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "mobile_src_screens_settingsscreen_boardsection",
-      "community": 46,
-      "community_name": "apiFetch",
+      "community": 28,
+      "community_name": "mobile/src/context/BoardContext.tsx",
       "norm_label": "boardsection()"
     },
     {
@@ -14527,7 +14571,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "mobile_src_types_index",
-      "community": 125,
+      "community": 17,
       "community_name": "index.ts",
       "norm_label": "index.ts"
     },
@@ -14549,8 +14593,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "mobile_src_types_index_label",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "label"
     },
     {
@@ -14571,8 +14615,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "mobile_src_types_index_prioritytier",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "prioritytier"
     },
     {
@@ -14593,8 +14637,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "mobile_src_types_index_task",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "task"
     },
     {
@@ -14604,8 +14648,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "mobile_src_types_index_createtaskbody",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 26,
+      "community_name": "TaskFormScreen.tsx",
       "norm_label": "createtaskbody"
     },
     {
@@ -14615,7 +14659,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "mobile_src_types_index_updatetaskbody",
-      "community": 125,
+      "community": 17,
       "community_name": "index.ts",
       "norm_label": "updatetaskbody"
     },
@@ -14626,7 +14670,7 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "mobile_src_types_index_completetaskbody",
-      "community": 125,
+      "community": 17,
       "community_name": "index.ts",
       "norm_label": "completetaskbody"
     },
@@ -14637,7 +14681,7 @@
       "source_location": "L76",
       "_origin": "ast",
       "id": "mobile_src_types_index_completetaskresponse",
-      "community": 125,
+      "community": 17,
       "community_name": "index.ts",
       "norm_label": "completetaskresponse"
     },
@@ -14671,7 +14715,7 @@
       "_origin": "ast",
       "id": "mobile_src_types_index_completionrecord",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "completionrecord"
     },
     {
@@ -14682,7 +14726,7 @@
       "_origin": "ast",
       "id": "mobile_src_types_index_boardcompletions",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "boardcompletions"
     },
     {
@@ -14693,7 +14737,7 @@
       "_origin": "ast",
       "id": "mobile_src_types_index_completionsreport",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "completionsreport"
     },
     {
@@ -14737,7 +14781,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_daterangepresets",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "mobile/src/utils/daterangepresets.ts"
     },
     {
@@ -14748,7 +14792,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_daterangepresets_presetkey",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "presetkey"
     },
     {
@@ -14759,7 +14803,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_daterangepresets_daterange",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "daterange"
     },
     {
@@ -14770,7 +14814,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_daterangepresets_preset_labels",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "preset_labels"
     },
     {
@@ -14781,7 +14825,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_daterangepresets_getpresetrange",
       "community": 17,
-      "community_name": "ArchiveScreen.tsx",
+      "community_name": "index.ts",
       "norm_label": "getpresetrange()"
     },
     {
@@ -14791,8 +14835,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "mobile_src_utils_labelcolors",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 21,
+      "community_name": "TasksScreen.tsx",
       "norm_label": "labelcolors.ts"
     },
     {
@@ -14802,8 +14846,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "mobile_src_utils_labelcolors_label_bg",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 21,
+      "community_name": "TasksScreen.tsx",
       "norm_label": "label_bg"
     },
     {
@@ -14813,8 +14857,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "mobile_src_utils_labelcolors_label_text",
-      "community": 125,
-      "community_name": "index.ts",
+      "community": 21,
+      "community_name": "TasksScreen.tsx",
       "norm_label": "label_text"
     },
     {
@@ -14835,8 +14879,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "mobile_src_utils_taskdateutils_columnkey",
-      "community": 21,
-      "community_name": "TasksScreen.tsx",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "columnkey"
     },
     {
@@ -14846,8 +14890,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "mobile_src_utils_taskdateutils_dateonly",
-      "community": 21,
-      "community_name": "TasksScreen.tsx",
+      "community": 17,
+      "community_name": "index.ts",
       "norm_label": "dateonly()"
     },
     {
@@ -14901,8 +14945,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "mobile_src_utils_taskdateutils_getcolumn",
-      "community": 21,
-      "community_name": "TasksScreen.tsx",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "getcolumn()"
     },
     {
@@ -14913,7 +14957,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_taskfilters",
       "community": 125,
-      "community_name": "index.ts",
+      "community_name": "mobile/src/__tests__/taskFilters.test.ts",
       "norm_label": "mobile/src/utils/taskfilters.ts"
     },
     {
@@ -14924,7 +14968,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_taskfilters_filtertasks",
       "community": 125,
-      "community_name": "index.ts",
+      "community_name": "mobile/src/__tests__/taskFilters.test.ts",
       "norm_label": "filtertasks()"
     },
     {
@@ -14934,8 +14978,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "mobile_src_utils_taskgrouping",
-      "community": 21,
-      "community_name": "TasksScreen.tsx",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "taskgrouping.ts"
     },
     {
@@ -14945,8 +14989,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "mobile_src_utils_taskgrouping_tier_rank",
-      "community": 21,
-      "community_name": "TasksScreen.tsx",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "tier_rank"
     },
     {
@@ -14956,8 +15000,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "mobile_src_utils_taskgrouping_tasksection",
-      "community": 21,
-      "community_name": "TasksScreen.tsx",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "tasksection"
     },
     {
@@ -14967,8 +15011,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "mobile_src_utils_taskgrouping_section_order",
-      "community": 21,
-      "community_name": "TasksScreen.tsx",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "section_order"
     },
     {
@@ -14978,8 +15022,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "mobile_src_utils_taskgrouping_section_titles",
-      "community": 21,
-      "community_name": "TasksScreen.tsx",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "section_titles"
     },
     {
@@ -14989,8 +15033,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "mobile_src_utils_taskgrouping_grouptasksforlist",
-      "community": 21,
-      "community_name": "TasksScreen.tsx",
+      "community": 36,
+      "community_name": "Task",
       "norm_label": "grouptasksforlist()"
     },
     {
@@ -15067,7 +15111,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_taskpriority",
       "community": 36,
-      "community_name": "mobile/src/utils/taskPriority.ts",
+      "community_name": "Task",
       "norm_label": "mobile/src/utils/taskpriority.ts"
     },
     {
@@ -15078,7 +15122,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_taskpriority_high_priority_daily_limit",
       "community": 36,
-      "community_name": "mobile/src/utils/taskPriority.ts",
+      "community_name": "Task",
       "norm_label": "high_priority_daily_limit"
     },
     {
@@ -15089,7 +15133,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_taskpriority_priority_cycle",
       "community": 36,
-      "community_name": "mobile/src/utils/taskPriority.ts",
+      "community_name": "Task",
       "norm_label": "priority_cycle"
     },
     {
@@ -15100,7 +15144,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_taskpriority_ispriorityeligible",
       "community": 36,
-      "community_name": "mobile/src/utils/taskPriority.ts",
+      "community_name": "Task",
       "norm_label": "ispriorityeligible()"
     },
     {
@@ -15111,7 +15155,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_taskpriority_isformpriorityeligible",
       "community": 36,
-      "community_name": "mobile/src/utils/taskPriority.ts",
+      "community_name": "Task",
       "norm_label": "isformpriorityeligible()"
     },
     {
@@ -15122,7 +15166,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_taskpriority_resolvenextprioritytier",
       "community": 36,
-      "community_name": "mobile/src/utils/taskPriority.ts",
+      "community_name": "Task",
       "norm_label": "resolvenextprioritytier()"
     },
     {
@@ -15133,7 +15177,7 @@
       "_origin": "ast",
       "id": "mobile_src_utils_taskpriority_canaddhighpriority",
       "community": 36,
-      "community_name": "mobile/src/utils/taskPriority.ts",
+      "community_name": "Task",
       "norm_label": "canaddhighpriority()"
     },
     {
@@ -16660,7 +16704,7 @@
       "label": "3. Action-button position \u2014 unify on top",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L218",
+      "source_location": "L224",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_3_action_button_position_unify_on_top",
       "community": 15,
@@ -16671,7 +16715,7 @@
       "label": "Files to modify",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L241",
+      "source_location": "L247",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_files_to_modify",
       "community": 15,
@@ -16682,7 +16726,7 @@
       "label": "Test plan",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L252",
+      "source_location": "L260",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_test_plan",
       "community": 15,
@@ -16693,7 +16737,7 @@
       "label": "Deployment order",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L265",
+      "source_location": "L273",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_deployment_order",
       "community": 15,
@@ -16704,7 +16748,7 @@
       "label": "Data model changes",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L269",
+      "source_location": "L277",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_data_model_changes",
       "community": 15,
@@ -16715,7 +16759,7 @@
       "label": "Mobile update type",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L273",
+      "source_location": "L281",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_mobile_update_type",
       "community": 15,
@@ -16726,7 +16770,7 @@
       "label": "Sneezy's Review \u2014 2026-08-09",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L279",
+      "source_location": "L287",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_sneezy_s_review_2026_08_09",
       "community": 15,
@@ -16737,7 +16781,7 @@
       "label": "Issues",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L285",
+      "source_location": "L293",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_issues",
       "community": 15,
@@ -16748,7 +16792,7 @@
       "label": "Unverified assumptions",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L299",
+      "source_location": "L307",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_unverified_assumptions",
       "community": 15,
@@ -16759,7 +16803,7 @@
       "label": "Suggestions",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L311",
+      "source_location": "L319",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_suggestions",
       "community": 15,
@@ -16770,7 +16814,7 @@
       "label": "Grumpy's response to Sneezy's review \u2014 2026-08-09",
       "file_type": "document",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L320",
+      "source_location": "L328",
       "_origin": "ast",
       "id": "development_plans_plan_feat_priority_stepper_and_card_parity_grumpy_s_response_to_sneezy_s_review_2026_08_09",
       "community": 15,
@@ -19212,7 +19256,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 2,
       "norm_label": "plan: remove mode labels completely",
       "_origin": "semantic",
       "community_name": "Task",
@@ -19227,7 +19271,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 2,
       "norm_label": "mode label removal",
       "_origin": "semantic",
       "community_name": "Task",
@@ -19242,10 +19286,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 115,
+      "community": 117,
       "norm_label": "ui naming change: type \u2192 tags",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "frontend/src/utils/taskDateUtils.ts",
       "id": "development_plans_plan_chore_remove_mode_labels_type_to_tags_rename"
     },
     {
@@ -19257,10 +19301,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 115,
+      "community": 117,
       "norm_label": "mobile/src/screens/reportsscreen.tsx",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "frontend/src/utils/taskDateUtils.ts",
       "id": "mobile_src_screens_reportsscreen"
     },
     {
@@ -19272,7 +19316,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 2,
       "norm_label": "plan: remove frequency label logic from backend (pr 2 of 3)",
       "_origin": "semantic",
       "community_name": "Task",
@@ -19287,7 +19331,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 2,
       "norm_label": "recurring task logic removal (complete_task always returns none)",
       "_origin": "semantic",
       "community_name": "Task",
@@ -19302,7 +19346,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 2,
       "norm_label": "ensure_seeded() sentinel swap (frequency\u2192mode)",
       "_origin": "semantic",
       "community_name": "Task",
@@ -19317,10 +19361,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 16,
+      "community": 111,
       "norm_label": "plan: rename reports \u2192 archive, add date-range presets and board filtering",
       "_origin": "semantic",
-      "community_name": "ArchivePage.tsx",
+      "community_name": "useBoard",
       "id": "development_plans_plan_feat_archive_view_doc"
     },
     {
@@ -19332,10 +19376,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 16,
+      "community": 111,
       "norm_label": "all_boards additive query param design",
       "_origin": "semantic",
-      "community_name": "ArchivePage.tsx",
+      "community_name": "useBoard",
       "id": "development_plans_plan_feat_archive_view_all_boards_param"
     },
     {
@@ -19347,10 +19391,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 16,
+      "community": 111,
       "norm_label": "board-grouped collapsible rendering (mirrors today view)",
       "_origin": "semantic",
-      "community_name": "ArchivePage.tsx",
+      "community_name": "useBoard",
       "id": "development_plans_plan_feat_archive_view_board_grouped_rendering"
     },
     {
@@ -19362,10 +19406,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 12,
+      "community": 30,
       "norm_label": "plan: feat-board-collapse-mobile \u2014 collapsible boards (mobile)",
       "_origin": "semantic",
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "mobile/src/api/focusedView.ts",
       "id": "development_plans_plan_feat_board_collapse_mobile_doc"
     },
     {
@@ -19392,10 +19436,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 12,
+      "community": 24,
       "norm_label": "plan: feat-board-collapse-web \u2014 collapsible boards (web)",
       "_origin": "semantic",
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "BoardCollapseContext.tsx",
       "id": "development_plans_plan_feat_board_collapse_web_doc"
     },
     {
@@ -19407,10 +19451,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 12,
+      "community": 24,
       "norm_label": "boardcollapsecontext (modeled on filtercontext)",
       "_origin": "semantic",
-      "community_name": "frontend/src/components/BoardGroupedTasks.tsx",
+      "community_name": "BoardCollapseContext.tsx",
       "id": "development_plans_plan_feat_board_collapse_web_boardcollapsecontext"
     },
     {
@@ -19422,10 +19466,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 115,
+      "community": 111,
       "norm_label": "plan: custom board order + board-color styling + alphabetical tags",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "useBoard",
       "id": "development_plans_plan_feat_board_order_and_color_doc"
     },
     {
@@ -19440,7 +19484,7 @@
       "community": 20,
       "norm_label": "custom board order (sort_order, order-driven default board)",
       "_origin": "semantic",
-      "community_name": "Task",
+      "community_name": "boards.py",
       "id": "development_plans_plan_feat_board_order_and_color_custom_order"
     },
     {
@@ -19452,10 +19496,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 16,
+      "community": 111,
       "norm_label": "board color everywhere (taskcard/boardtabs accents)",
       "_origin": "semantic",
-      "community_name": "ArchivePage.tsx",
+      "community_name": "useBoard",
       "id": "development_plans_plan_feat_board_order_and_color_board_color"
     },
     {
@@ -19470,7 +19514,7 @@
       "community": 20,
       "norm_label": "tasks.sort_order fractional-index precedent (pr #61)",
       "_origin": "semantic",
-      "community_name": "Task",
+      "community_name": "boards.py",
       "id": "development_plans_plan_feat_board_order_and_color_tasks_sort_order_precedent"
     },
     {
@@ -19482,7 +19526,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 2,
       "norm_label": "plan: drop frequency labels \u2014 pr 3: db migration",
       "_origin": "semantic",
       "community_name": "Task",
@@ -19497,7 +19541,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 2,
       "norm_label": "sql migration: purge frequency data + drop enum value + drop recurrence_group_id",
       "_origin": "semantic",
       "community_name": "Task",
@@ -19512,7 +19556,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 2,
       "norm_label": "backend/scripts/migrate_drop_frequency_labels.sql",
       "_origin": "semantic",
       "community_name": "Task",
@@ -19530,7 +19574,7 @@
       "community": 24,
       "norm_label": "development plan: enhance all view with priority collapse & date display",
       "_origin": "semantic",
-      "community_name": "TasksPage.tsx",
+      "community_name": "BoardCollapseContext.tsx",
       "id": "development_plans_plan_feat_enhance_day_views_with_priority_collapse_doc"
     },
     {
@@ -19545,7 +19589,7 @@
       "community": 24,
       "norm_label": "monday column (friday-only) + priority split/collapse",
       "_origin": "semantic",
-      "community_name": "TasksPage.tsx",
+      "community_name": "BoardCollapseContext.tsx",
       "id": "development_plans_plan_feat_enhance_day_views_with_priority_collapse_monday_column"
     },
     {
@@ -19617,10 +19661,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 116,
+      "community": 2,
       "norm_label": "development plan: feat-focused-view (backend, pr 1 of 3)",
       "_origin": "semantic",
-      "community_name": "schemas.py",
+      "community_name": "Task",
       "id": "development_plans_plan_feat_focused_view_doc"
     },
     {
@@ -19632,10 +19676,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 116,
+      "community": 2,
       "norm_label": "focused_view_configs table + unique(user_id) upsert design",
       "_origin": "semantic",
-      "community_name": "schemas.py",
+      "community_name": "Task",
       "id": "development_plans_plan_feat_focused_view_config_table"
     },
     {
@@ -19647,10 +19691,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 117,
       "norm_label": "plan: frontend & mobile type cleanup (pr 4, follow-up)",
       "_origin": "semantic",
-      "community_name": "Task",
+      "community_name": "frontend/src/utils/taskDateUtils.ts",
       "id": "development_plans_plan_feat_frontend_mobile_type_cleanup_doc"
     },
     {
@@ -19662,10 +19706,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 117,
       "norm_label": "narrow label.category union / remove dead recurrence_group_id type",
       "_origin": "semantic",
-      "community_name": "Task",
+      "community_name": "frontend/src/utils/taskDateUtils.ts",
       "id": "development_plans_plan_feat_frontend_mobile_type_cleanup_type_narrowing"
     },
     {
@@ -19677,10 +19721,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 115,
+      "community": 120,
       "norm_label": "plan-feat-inline-tag-add",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "frontend/src/api/tasks.ts",
       "id": "development_plans_plan_feat_inline_tag_add_doc"
     },
     {
@@ -19692,10 +19736,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 115,
+      "community": 120,
       "norm_label": "inline tag creation from taskform (avoid settings trip)",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "frontend/src/api/tasks.ts",
       "id": "development_plans_plan_feat_inline_tag_add_inline_create"
     },
     {
@@ -19707,10 +19751,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 115,
+      "community": 111,
       "norm_label": "plan: feat-multi-board-frontend (pr 2/3)",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "useBoard",
       "id": "development_plans_plan_feat_multi_board_frontend_doc"
     },
     {
@@ -19722,10 +19766,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 115,
+      "community": 111,
       "norm_label": "boardcontext + boardswitcher ui design",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "useBoard",
       "id": "development_plans_plan_feat_multi_board_frontend_boardcontext_design"
     },
     {
@@ -19737,10 +19781,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 115,
+      "community": 111,
       "norm_label": "frontend/src/components/boardswitcher.tsx",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "useBoard",
       "id": "frontend_src_components_boardswitcher"
     },
     {
@@ -19752,10 +19796,10 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 115,
+      "community": 111,
       "norm_label": "plan-feat-multi-board-backend (pr #33, external, merged)",
       "_origin": "semantic",
-      "community_name": "SettingsPage.tsx",
+      "community_name": "useBoard",
       "id": "development_plans_plan_feat_multi_board_backend_doc"
     },
     {
@@ -47290,6 +47334,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/__tests__/taskPriority.test.ts",
+      "source_location": "L26",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_tests_taskpriority_test",
+      "target": "frontend_src_tests_taskpriority_test_maketaskwithdate",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -47334,6 +47389,18 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_tests_taskpriority_test",
+      "target": "frontend_src_utils_taskpriority_highprioritytasksinsamecolumn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/__tests__/taskPriority.test.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_tests_taskpriority_test",
       "target": "frontend_src_utils_taskpriority_isformpriorityeligible",
       "confidence_score": 1.0
     },
@@ -47358,18 +47425,6 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_tests_taskpriority_test",
-      "target": "frontend_src_utils_taskpriority_priority_cycle",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "frontend/src/__tests__/taskPriority.test.ts",
-      "source_location": "L2",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "frontend_src_tests_taskpriority_test",
       "target": "frontend_src_utils_taskpriority_resolvedroppriority",
       "confidence_score": 1.0
     },
@@ -47382,7 +47437,19 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_tests_taskpriority_test",
-      "target": "frontend_src_utils_taskpriority_resolvenextprioritytier",
+      "target": "frontend_src_utils_taskpriority_resolveshiftedprioritytier",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/__tests__/taskPriority.test.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_tests_taskpriority_test",
+      "target": "frontend_src_utils_taskpriority_shiftprioritytier",
       "confidence_score": 1.0
     },
     {
@@ -47395,6 +47462,18 @@
       "_origin": "ast",
       "source": "frontend_src_tests_taskpriority_test",
       "target": "frontend_src_utils_taskpriority_splitbypriority",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/__tests__/taskPriority.test.ts",
+      "source_location": "L27",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_tests_taskpriority_test_maketaskwithdate",
+      "target": "frontend_src_tests_taskpriority_test_maketask",
       "confidence_score": 1.0
     },
     {
@@ -49451,7 +49530,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L16",
+      "source_location": "L20",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody_taskcardbodyprops",
@@ -49570,6 +49649,18 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/TaskCardBody.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_taskcardbody",
+      "target": "frontend_src_api_tasks_prioritytier",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/TaskForm.tsx",
       "source_location": "L4",
       "weight": 1.0,
@@ -49679,7 +49770,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L9",
+      "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody_taskcardbodyprops",
@@ -50403,7 +50494,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks",
@@ -50607,6 +50698,30 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_boardgroupedtasks",
+      "target": "frontend_src_hooks_usesettings",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_boardgroupedtasks",
+      "target": "frontend_src_hooks_usesettings_usesettings",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
       "source_location": "L7",
       "weight": 1.0,
       "_origin": "ast",
@@ -50716,7 +50831,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L26",
+      "source_location": "L27",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
@@ -50728,7 +50843,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L31",
+      "source_location": "L38",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
@@ -50740,7 +50855,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L34",
+      "source_location": "L41",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
@@ -50752,7 +50867,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L30",
+      "source_location": "L37",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
@@ -50764,7 +50879,19 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L76",
+      "source_location": "L28",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
+      "target": "frontend_src_hooks_usesettings_usesettings"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
+      "source_location": "L83",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
@@ -50776,7 +50903,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L29",
+      "source_location": "L36",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
@@ -50788,7 +50915,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L27",
+      "source_location": "L34",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
@@ -50800,7 +50927,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/BoardGroupedTasks.tsx",
-      "source_location": "L81",
+      "source_location": "L88",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_boardgroupedtasks_boardgroupedtasks",
@@ -51163,7 +51290,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L9",
+      "source_location": "L10",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_focusedtaskcard",
@@ -51174,7 +51301,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L16",
+      "source_location": "L17",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_focusedtaskcard",
@@ -51185,7 +51312,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_focusedtaskcard",
@@ -51197,7 +51324,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_focusedtaskcard",
@@ -51209,7 +51336,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_focusedtaskcard",
@@ -51221,7 +51348,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_focusedtaskcard",
@@ -51233,7 +51360,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_focusedtaskcard",
@@ -51261,7 +51388,91 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_focusedtaskcard",
+      "target": "frontend_src_utils_taskdateutils_dateonly",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/FocusedTaskCard.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_focusedtaskcard",
+      "target": "frontend_src_utils_taskdateutils_getcolumn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/FocusedTaskCard.tsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_focusedtaskcard",
       "target": "frontend_src_utils_taskdateutils_geteffectivedate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/FocusedTaskCard.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_focusedtaskcard",
+      "target": "frontend_src_utils_taskpriority",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/FocusedTaskCard.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_focusedtaskcard",
+      "target": "frontend_src_utils_taskpriority_canaddhighpriority",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/FocusedTaskCard.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_focusedtaskcard",
+      "target": "frontend_src_utils_taskpriority_highprioritytasksinsamecolumn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/FocusedTaskCard.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_focusedtaskcard",
+      "target": "frontend_src_utils_taskpriority_ispriorityeligible",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/FocusedTaskCard.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_focusedtaskcard",
+      "target": "frontend_src_utils_taskpriority_resolveshiftedprioritytier",
       "confidence_score": 1.0
     },
     {
@@ -51270,11 +51481,47 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/FocusedTaskCard.tsx",
-      "source_location": "L18",
+      "source_location": "L40",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_focusedtaskcard_focusedtaskcard",
+      "target": "frontend_src_utils_taskdateutils_dateonly"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/src/components/FocusedTaskCard.tsx",
+      "source_location": "L42",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_focusedtaskcard_focusedtaskcard",
+      "target": "frontend_src_utils_taskdateutils_getcolumn"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/src/components/FocusedTaskCard.tsx",
+      "source_location": "L31",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_focusedtaskcard_focusedtaskcard",
       "target": "frontend_src_utils_taskdateutils_geteffectivedate"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/src/components/FocusedTaskCard.tsx",
+      "source_location": "L43",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_focusedtaskcard_focusedtaskcard",
+      "target": "frontend_src_utils_taskpriority_ispriorityeligible"
     },
     {
       "relation": "references",
@@ -51807,7 +52054,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L74",
+      "source_location": "L78",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody",
@@ -51818,7 +52065,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L6",
+      "source_location": "L5",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody",
@@ -51829,7 +52076,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L26",
+      "source_location": "L30",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody",
@@ -51840,7 +52087,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L118",
+      "source_location": "L122",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody",
@@ -51851,11 +52098,22 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L8",
+      "source_location": "L13",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody",
       "target": "frontend_src_components_taskcardbody_taskcardbodyprops",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/TaskCardBody.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_components_taskcardbody",
+      "target": "frontend_src_components_taskcardbody_tier_accent",
       "confidence_score": 1.0
     },
     {
@@ -51919,35 +52177,11 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L4",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "frontend_src_components_taskcardbody",
-      "target": "frontend_src_utils_taskpriority",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L4",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "frontend_src_components_taskcardbody",
-      "target": "frontend_src_utils_taskpriority_priority_cycle",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L113",
+      "source_location": "L117",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody_datefieldline",
@@ -51960,7 +52194,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L245",
+      "source_location": "L232",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody_taskcardbody",
@@ -51972,7 +52206,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L251",
+      "source_location": "L238",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody_taskcardbody",
@@ -51984,7 +52218,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L215",
+      "source_location": "L202",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody_taskcardbody",
@@ -51996,7 +52230,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/components/TaskCardBody.tsx",
-      "source_location": "L187",
+      "source_location": "L174",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_components_taskcardbody_taskcardbody",
@@ -54351,7 +54585,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_pages_taskspage",
-      "target": "frontend_src_utils_taskpriority_resolvenextprioritytier",
+      "target": "frontend_src_utils_taskpriority_resolveshiftedprioritytier",
       "confidence_score": 1.0
     },
     {
@@ -54492,7 +54726,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/pages/TasksPage.tsx",
-      "source_location": "L430",
+      "source_location": "L431",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_pages_taskspage_taskspage",
@@ -54504,7 +54738,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/pages/TasksPage.tsx",
-      "source_location": "L433",
+      "source_location": "L434",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_pages_taskspage_taskspage",
@@ -54516,7 +54750,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/pages/TasksPage.tsx",
-      "source_location": "L346",
+      "source_location": "L347",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_pages_taskspage_taskspage",
@@ -54924,7 +55158,19 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L20",
+      "source_location": "L79",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_utils_taskpriority_highprioritytasksinsamecolumn",
+      "target": "frontend_src_utils_taskdateutils_getcolumn"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/src/utils/taskPriority.ts",
+      "source_location": "L13",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskpriority_isformpriorityeligible",
@@ -55091,7 +55337,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L66",
+      "source_location": "L68",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskpriority",
@@ -55113,7 +55359,18 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L19",
+      "source_location": "L78",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_utils_taskpriority",
+      "target": "frontend_src_utils_taskpriority_highprioritytasksinsamecolumn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/utils/taskPriority.ts",
+      "source_location": "L12",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskpriority",
@@ -55124,7 +55381,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L14",
+      "source_location": "L7",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskpriority",
@@ -55135,18 +55392,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L7",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "frontend_src_utils_taskpriority",
-      "target": "frontend_src_utils_taskpriority_priority_cycle",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L42",
+      "source_location": "L44",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskpriority",
@@ -55157,18 +55403,29 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L30",
+      "source_location": "L32",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskpriority",
-      "target": "frontend_src_utils_taskpriority_resolvenextprioritytier",
+      "target": "frontend_src_utils_taskpriority_resolveshiftedprioritytier",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L49",
+      "source_location": "L20",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_utils_taskpriority",
+      "target": "frontend_src_utils_taskpriority_shiftprioritytier",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/utils/taskPriority.ts",
+      "source_location": "L51",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskpriority",
@@ -55176,11 +55433,22 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/utils/taskPriority.ts",
+      "source_location": "L17",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_utils_taskpriority",
+      "target": "frontend_src_utils_taskpriority_tier_order",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L21",
+      "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskpriority_isformpriorityeligible",
@@ -55192,7 +55460,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L43",
+      "source_location": "L45",
       "weight": 1.0,
       "_origin": "ast",
       "source": "frontend_src_utils_taskpriority_resolvedroppriority",
@@ -55204,11 +55472,35 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/utils/taskPriority.ts",
-      "source_location": "L32",
+      "source_location": "L34",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "frontend_src_utils_taskpriority_resolvenextprioritytier",
+      "source": "frontend_src_utils_taskpriority_resolveshiftedprioritytier",
       "target": "frontend_src_utils_taskpriority_ispriorityeligible",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/src/utils/taskPriority.ts",
+      "source_location": "L21",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_utils_taskpriority_shiftprioritytier",
+      "target": "frontend_src_utils_taskpriority_tier_order"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/utils/taskPriority.ts",
+      "source_location": "L33",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "frontend_src_utils_taskpriority_resolveshiftedprioritytier",
+      "target": "frontend_src_utils_taskpriority_shiftprioritytier",
       "confidence_score": 1.0
     },
     {
@@ -64452,7 +64744,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L269",
+      "source_location": "L277",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_plan_feat_priority_stepper_and_card_parity",
@@ -64463,7 +64755,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L265",
+      "source_location": "L273",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_plan_feat_priority_stepper_and_card_parity",
@@ -64485,7 +64777,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L241",
+      "source_location": "L247",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_plan_feat_priority_stepper_and_card_parity",
@@ -64496,7 +64788,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L320",
+      "source_location": "L328",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_plan_feat_priority_stepper_and_card_parity",
@@ -64507,7 +64799,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L273",
+      "source_location": "L281",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_plan_feat_priority_stepper_and_card_parity",
@@ -64529,7 +64821,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L279",
+      "source_location": "L287",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_plan_feat_priority_stepper_and_card_parity",
@@ -64551,7 +64843,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L252",
+      "source_location": "L260",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_plan_feat_priority_stepper_and_card_parity",
@@ -64584,7 +64876,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L218",
+      "source_location": "L224",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_design",
@@ -64595,7 +64887,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L285",
+      "source_location": "L293",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_sneezy_s_review_2026_08_09",
@@ -64606,7 +64898,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L311",
+      "source_location": "L319",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_sneezy_s_review_2026_08_09",
@@ -64617,7 +64909,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "development-plans/PLAN-feat-priority-stepper-and-card-parity.md",
-      "source_location": "L299",
+      "source_location": "L307",
       "weight": 1.0,
       "_origin": "ast",
       "source": "development_plans_plan_feat_priority_stepper_and_card_parity_sneezy_s_review_2026_08_09",
@@ -68532,5 +68824,5 @@
       "source_file": "development-plans/PLAN-fix-focused-card-parity-and-notes-bug.md"
     }
   ],
-  "built_at_commit": "116899af98b34d95f86c399145cef49cc4483b53"
+  "built_at_commit": "cd2da341a50d3e7fa2702f4159887ca24be6d885"
 }

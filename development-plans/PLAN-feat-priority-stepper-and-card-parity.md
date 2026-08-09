@@ -1,10 +1,10 @@
 # PLAN-feat-priority-stepper-and-card-parity
 
 ## Status
-**State:** Ready for PR
+**State:** Merged
 **Last updated:** 2026-08-09 by Grumpy
-**Next step:** Commit, push, open PR.
-**Blocked on:** n/a — implementation complete. `tsc -b` clean at both checkpoints; full unit suite (186 tests, including 12 new/rewritten `taskPriority.test.ts` cases) passes. Verified live in browser: All-view stepper (Normal→Medium single/double-up, Medium→High/Normal, High→Medium/Normal — including the previously-impossible High→Medium step) all work with correct colors; Today-tab (non-All) cards now show the same orange High / blue Medium badges, the same stepper, and edit/complete/delete at the top, matching All view exactly.
+**Next step:** n/a — shipped. PR #78 merged to main (commit `408d211`) after a full-review chain that caught and fixed two real issues before merge — see the Deviation record above for both (the missing daily-cap pre-check in `FocusedTaskCard`, then the per-day scoping bug in the fix for that). Final: `tsc -b` clean, 190 unit tests passing, Sleepy's integration suite green, Bashful's PRODUCT_REQUIREMENTS_DOCUMENT.MD update landed.
+**Blocked on:** n/a
 
 ## Branch
 `feat-priority-stepper-and-card-parity`, cut from up-to-date `main` (independent of PR1, `fix-collapsed-priority-drop-target` — no file overlap).

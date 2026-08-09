@@ -260,8 +260,8 @@
     "semantic_hash": ""
   },
   "frontend/src/__tests__/taskPriority.test.ts": {
-    "mtime": 1786237517.9643538,
-    "ast_hash": "89caa360cea6704d760cf86ccfc895a8",
+    "mtime": 1786313723.644094,
+    "ast_hash": "def6835ff74ba345a8d0bdc7655b6dac",
     "semantic_hash": ""
   },
   "frontend/src/__tests__/tasks.api.test.ts": {
@@ -325,8 +325,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/BoardGroupedTasks.tsx": {
-    "mtime": 1786282049.8625505,
-    "ast_hash": "266b43cd0c17255dfeedf74535570cb1",
+    "mtime": 1786313723.6443534,
+    "ast_hash": "aa9a2068e5b434e0bdbcdeb395f5e03b",
     "semantic_hash": ""
   },
   "frontend/src/components/BoardTabs.tsx": {
@@ -345,8 +345,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/FocusedTaskCard.tsx": {
-    "mtime": 1786297344.4456403,
-    "ast_hash": "cedca84986805de81184d0d12d702b29",
+    "mtime": 1786313723.6446528,
+    "ast_hash": "ab35358560da761c74329235e1a83908",
     "semantic_hash": ""
   },
   "frontend/src/components/FocusedView.tsx": {
@@ -365,13 +365,13 @@
     "semantic_hash": "cff15b8f62cce919dda3d22b98480995"
   },
   "frontend/src/components/TaskCard.tsx": {
-    "mtime": 1786297344.4460263,
-    "ast_hash": "0ed1b5d065dc1d00f56690728d819521",
+    "mtime": 1786313723.644887,
+    "ast_hash": "db03d6c343aa0666bbb2991a6d0ba317",
     "semantic_hash": ""
   },
   "frontend/src/components/TaskCardBody.tsx": {
-    "mtime": 1786297344.4462454,
-    "ast_hash": "acff99e0eb3993de22e6cc26e30ac8bc",
+    "mtime": 1786313723.6451771,
+    "ast_hash": "250bb0c72f851637afaae767f820a10f",
     "semantic_hash": ""
   },
   "frontend/src/components/TaskForm.tsx": {
@@ -465,8 +465,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/TasksPage.tsx": {
-    "mtime": 1786308569.2312334,
-    "ast_hash": "bb10752aac76697cff1929d13d0bae8e",
+    "mtime": 1786313723.6453776,
+    "ast_hash": "8bfde789b7061bed4084e1d77916ec58",
     "semantic_hash": ""
   },
   "frontend/src/utils/boardColor.ts": {
@@ -505,8 +505,8 @@
     "semantic_hash": "e7f608c5b146c76a3d20144e09f447c9"
   },
   "frontend/src/utils/taskPriority.ts": {
-    "mtime": 1786237517.9659588,
-    "ast_hash": "c4eb0515676c8cd46342c96e32759fc8",
+    "mtime": 1786313723.645592,
+    "ast_hash": "b85a765fd3eb06becc2722a9a4ede7f0",
     "semantic_hash": ""
   },
   "frontend/src/utils/viewLabel.ts": {
@@ -840,8 +840,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1786308569.2305555,
-    "ast_hash": "1dab515fdf656e82a324e585b54876d6",
+    "mtime": 1786313723.6432128,
+    "ast_hash": "f17fa733ba0adb49c2b1ff34a6d19744",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -860,8 +860,8 @@
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1786308569.230872,
-    "ast_hash": "1a2ee87c0443ce0fa924f37c0d3a5aca",
+    "mtime": 1786313723.6435225,
+    "ast_hash": "9d69dbf5a0df984cb1eb951e33a8ee77",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1280,8 +1280,8 @@
     "semantic_hash": ""
   },
   "development-plans/PLAN-feat-priority-stepper-and-card-parity.md": {
-    "mtime": 1786308711.3230195,
-    "ast_hash": "b82de96488c56729069b63c719d19c91",
+    "mtime": 1786313723.6438024,
+    "ast_hash": "beba72e1a758d64f224b13cc2c883af4",
     "semantic_hash": ""
   },
   "development-plans/PLAN-fix-collapsed-priority-drop-target.md": {
