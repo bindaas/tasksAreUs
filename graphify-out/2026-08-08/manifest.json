@@ -245,7 +245,7 @@
     "semantic_hash": "e16e6d88fab2037aa37132c2227d0a2f"
   },
   "frontend/src/__tests__/taskFilters.test.ts": {
-    "mtime": 1786150728.4340649,
+    "mtime": 1786237517.9639738,
     "ast_hash": "4e75bb85b4e1b80489668090087a0fd4",
     "semantic_hash": ""
   },
@@ -255,12 +255,12 @@
     "semantic_hash": "7063809b471575b01ca8f144efd97c25"
   },
   "frontend/src/__tests__/taskOrder.test.ts": {
-    "mtime": 1786150728.4341676,
+    "mtime": 1786237517.9641888,
     "ast_hash": "5462adb9dc79c7215fe19b5da98d196d",
     "semantic_hash": ""
   },
   "frontend/src/__tests__/taskPriority.test.ts": {
-    "mtime": 1786237401.9294367,
+    "mtime": 1786237517.9643538,
     "ast_hash": "89caa360cea6704d760cf86ccfc895a8",
     "semantic_hash": ""
   },
@@ -310,7 +310,7 @@
     "semantic_hash": "208d15951d6937be6a620b85d0432968"
   },
   "frontend/src/api/tasks.ts": {
-    "mtime": 1786150728.4343522,
+    "mtime": 1786237517.9647713,
     "ast_hash": "3c9ab76df971ed505025d721135e9b15",
     "semantic_hash": ""
   },
@@ -370,12 +370,12 @@
     "semantic_hash": ""
   },
   "frontend/src/components/TaskCardBody.tsx": {
-    "mtime": 1786150728.4344568,
+    "mtime": 1786237517.9650097,
     "ast_hash": "58500a42741a61fafe1f505ac873a096",
     "semantic_hash": ""
   },
   "frontend/src/components/TaskForm.tsx": {
-    "mtime": 1786150728.43457,
+    "mtime": 1786237517.9653723,
     "ast_hash": "ed7904c4c5c2b5947dee2d0dfe7ac7b8",
     "semantic_hash": ""
   },
@@ -400,7 +400,7 @@
     "semantic_hash": "fd388bb6b0737853db39484a1c070069"
   },
   "frontend/src/context/ColumnPriorityCollapseContext.tsx": {
-    "mtime": 1786237377.6630123,
+    "mtime": 1786237517.9655123,
     "ast_hash": "d1bb402a40e4da0754604dbc0b4f49e6",
     "semantic_hash": ""
   },
@@ -460,12 +460,12 @@
     "semantic_hash": "84f364beb89b50a31627b348c00ab6a7"
   },
   "frontend/src/pages/TaskDetailPage.tsx": {
-    "mtime": 1786150728.4348054,
+    "mtime": 1786237517.965712,
     "ast_hash": "0c613b4855c55fb0a05ada4801a6181d",
     "semantic_hash": ""
   },
   "frontend/src/pages/TasksPage.tsx": {
-    "mtime": 1786237365.3264182,
+    "mtime": 1786237517.9658434,
     "ast_hash": "71620e63c8408301ddd23bdf856efe78",
     "semantic_hash": ""
   },
@@ -505,7 +505,7 @@
     "semantic_hash": "e7f608c5b146c76a3d20144e09f447c9"
   },
   "frontend/src/utils/taskPriority.ts": {
-    "mtime": 1786237352.957557,
+    "mtime": 1786237517.9659588,
     "ast_hash": "c4eb0515676c8cd46342c96e32759fc8",
     "semantic_hash": ""
   },
@@ -610,14 +610,14 @@
     "semantic_hash": "562fb92c0b34d8a9353803d15937b156"
   },
   "mobile/src/__tests__/taskFilters.test.ts": {
-    "mtime": 1785677814.8744934,
-    "ast_hash": "08203e224e6b547073ece06b345b0776",
-    "semantic_hash": "08203e224e6b547073ece06b345b0776"
+    "mtime": 1786241124.2242382,
+    "ast_hash": "c533a2c9d3d6100d0664909d1f1cb3e5",
+    "semantic_hash": ""
   },
   "mobile/src/__tests__/taskGrouping.test.ts": {
-    "mtime": 1785677814.874695,
-    "ast_hash": "0d4036ad93437bd0548ebd9dc3621793",
-    "semantic_hash": "0d4036ad93437bd0548ebd9dc3621793"
+    "mtime": 1786241121.216385,
+    "ast_hash": "53273f05c16f5c20c7b950829fef5621",
+    "semantic_hash": ""
   },
   "mobile/src/__tests__/taskLinks.test.ts": {
     "mtime": 1784074092.3788369,
@@ -625,9 +625,9 @@
     "semantic_hash": "3e6b52ed8b17ca9b10e46d2b16f11e68"
   },
   "mobile/src/__tests__/taskPriority.test.ts": {
-    "mtime": 1785677814.8748834,
-    "ast_hash": "4007107287b010d73f172a0d344be3de",
-    "semantic_hash": "4007107287b010d73f172a0d344be3de"
+    "mtime": 1786241099.2705646,
+    "ast_hash": "fc30bf743250f0552d76b08d70debef1",
+    "semantic_hash": ""
   },
   "mobile/src/api/boards.ts": {
     "mtime": 1785691424.844017,
@@ -705,9 +705,9 @@
     "semantic_hash": "aae2d6393b9feba02537e3f77a83894c"
   },
   "mobile/src/components/TaskCardBody.tsx": {
-    "mtime": 1784074092.379158,
-    "ast_hash": "fefdfad73b8bbf5540e8a4531ae9f5e8",
-    "semantic_hash": "fefdfad73b8bbf5540e8a4531ae9f5e8"
+    "mtime": 1786240916.7587805,
+    "ast_hash": "7cea43f530e6b3de2ca6df251d424ced",
+    "semantic_hash": ""
   },
   "mobile/src/components/TaskQuickEdit.tsx": {
     "mtime": 1783985112.9685543,
@@ -755,19 +755,19 @@
     "semantic_hash": "6dfd141edf222e7355db0c116189d6bf"
   },
   "mobile/src/screens/TaskFormScreen.tsx": {
-    "mtime": 1785620372.252744,
-    "ast_hash": "5f93e89636be32c3b4bc2389fc5b8d73",
-    "semantic_hash": "5f93e89636be32c3b4bc2389fc5b8d73"
+    "mtime": 1786241075.6566842,
+    "ast_hash": "5ecc9613c04604a91664ce11f35896e9",
+    "semantic_hash": ""
   },
   "mobile/src/screens/TasksScreen.tsx": {
-    "mtime": 1785372916.8303258,
-    "ast_hash": "fef4495b1536656357b59575f8613fab",
-    "semantic_hash": "fef4495b1536656357b59575f8613fab"
+    "mtime": 1786241578.0221114,
+    "ast_hash": "e8cb489c660e7a1a02b2381277a5cced",
+    "semantic_hash": ""
   },
   "mobile/src/types/index.ts": {
-    "mtime": 1785706677.5212843,
-    "ast_hash": "c8feb208874004e622f3e29ade452cc5",
-    "semantic_hash": "c8feb208874004e622f3e29ade452cc5"
+    "mtime": 1786240357.0520463,
+    "ast_hash": "b2f05bc6530ced2649c4d46047804b6a",
+    "semantic_hash": ""
   },
   "mobile/src/types/markdown-it-task-lists.d.ts": {
     "mtime": 1785620372.2530959,
@@ -795,9 +795,9 @@
     "semantic_hash": "940311df8bf49a882fce6d39678a59d3"
   },
   "mobile/src/utils/taskGrouping.ts": {
-    "mtime": 1785677814.8751202,
-    "ast_hash": "06691164f325755ba0f50e66580678e5",
-    "semantic_hash": "06691164f325755ba0f50e66580678e5"
+    "mtime": 1786240384.9512897,
+    "ast_hash": "d49a83c8181ded19c22480b67f079fc7",
+    "semantic_hash": ""
   },
   "mobile/src/utils/taskLinks.ts": {
     "mtime": 1784074092.379561,
@@ -805,9 +805,9 @@
     "semantic_hash": "5ccb6b8a60136ba96848929e896a56e9"
   },
   "mobile/src/utils/taskPriority.ts": {
-    "mtime": 1785626198.1948586,
-    "ast_hash": "88ce5e7f6846b4036561f12f2f9eb269",
-    "semantic_hash": "88ce5e7f6846b4036561f12f2f9eb269"
+    "mtime": 1786240368.1997287,
+    "ast_hash": "df5f4448aa7f70666d007bf3d06338b0",
+    "semantic_hash": ""
   },
   "mobile/tailwind.config.js": {
     "mtime": 1780871469.169236,
@@ -840,8 +840,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1786237177.6194067,
-    "ast_hash": "8390be6e09e0df65b1c8d202c0eb5a13",
+    "mtime": 1786242451.4059792,
+    "ast_hash": "fecfd70ff546553d43c874f14bd45a7a",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -860,8 +860,8 @@
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1786236201.0524871,
-    "ast_hash": "0892aede34b84c3097db547887b1e367",
+    "mtime": 1786241938.2142303,
+    "ast_hash": "4353265b80482006006f2af5e1456539",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1175,7 +1175,7 @@
     "semantic_hash": ""
   },
   "backend/tests/integration/test_high_priority.py": {
-    "mtime": 1786190349.8278737,
+    "mtime": 1786237517.9632823,
     "ast_hash": "36f8990003db24eca2ac91d40422636b",
     "semantic_hash": ""
   },
@@ -1250,8 +1250,8 @@
     "semantic_hash": ""
   },
   "development-plans/PLAN-feat-priority-tiers.md": {
-    "mtime": 1786151024.7001426,
-    "ast_hash": "b35de0a4f43df6fed4240ef6213c864d",
+    "mtime": 1786242564.9809387,
+    "ast_hash": "6b671d3c1fbe1be05bb4aa6d763fe092",
     "semantic_hash": ""
   }
 }
