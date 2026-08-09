@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Task, Label } from '../api/tasks';
-import { completeTask, deleteTask } from '../api/tasks';
+import { completeTask, deleteTask, updateTask } from '../api/tasks';
 import { LabelBadge } from './LabelBadge';
 import { TaskQuickEdit } from './TaskQuickEdit';
 import { TaskCardBody } from './TaskCardBody';
 import { isOverdue } from '../utils/taskDateUtils';
+
+type DateFieldName = 'must_do_by' | 'target_date';
 
 interface TaskCardProps {
   task: Task;
@@ -28,6 +30,18 @@ export function TaskCard({
   const mustOverdue = isOverdue(task.must_do_by);
   const [dragging, setDragging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [editingDateField, setEditingDateField] = useState<DateFieldName | 'both' | null>(null);
+
+  async function handleDateChange(field: DateFieldName, value: string | null) {
+    try {
+      await updateTask(task.id, { [field]: value });
+      onRefresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update date');
+    } finally {
+      setEditingDateField(null);
+    }
+  }
 
   async function handleComplete() {
     try {
@@ -56,7 +70,7 @@ export function TaskCard({
         dropIndicator === 'above' ? 'border-t-2 border-t-indigo-500' : ''
       } ${dropIndicator === 'below' ? 'border-b-2 border-b-indigo-500' : ''}`}
       style={{ borderLeftColor: boardColor, borderLeftWidth: 4 }}
-      draggable={!isEditing && isDraggable && task.state === 'pending'}
+      draggable={!isEditing && !editingDateField && isDraggable && task.state === 'pending'}
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', task.id);
         e.dataTransfer.effectAllowed = 'move';
@@ -73,14 +87,14 @@ export function TaskCard({
             }
           : undefined
       }
-      onClick={() => { if (!isEditing) navigate(`/tasks/${task.id}`); }}
+      onClick={() => { if (!isEditing && !editingDateField) navigate(`/tasks/${task.id}`); }}
     >
       {isEditing ? (
         <TaskQuickEdit
           task={task}
           labels={labels}
-          onSaved={() => { onRefresh(); setIsEditing(false); }}
-          onCancel={() => setIsEditing(false)}
+          onSaved={() => { onRefresh(); setIsEditing(false); setEditingDateField(null); }}
+          onCancel={() => { setIsEditing(false); setEditingDateField(null); }}
         />
       ) : (
         <TaskCardBody
@@ -89,6 +103,10 @@ export function TaskCard({
           dateDisplay={{ mode: 'split', mustOverdue }}
           priorityBadge="toggle"
           onTogglePriority={onTogglePriority}
+          editingDateField={editingDateField}
+          onDateFieldClick={setEditingDateField}
+          onDateFieldCancel={() => setEditingDateField(null)}
+          onDateChange={handleDateChange}
           renderLabels={(taskLabels) => {
             const sorted = [...taskLabels].sort((a, b) => {
               const catDiff = (LABEL_CATEGORY_ORDER[a.category] ?? 3) - (LABEL_CATEGORY_ORDER[b.category] ?? 3);
@@ -102,7 +120,7 @@ export function TaskCard({
               </div>
             );
           }}
-          onEdit={() => setIsEditing(true)}
+          onEdit={() => { setEditingDateField(null); setIsEditing(true); }}
           onComplete={handleComplete}
           onDelete={handleDelete}
         />

@@ -1,7 +1,8 @@
-"""Drag-drop target_date-only contract (PR #11), board_id scoping on GET
-/tasks (PR #35), move-between-boards (PR #40), column ordering / sort_order
-(PR #61), sort_order driving real Day View ordering (PR #61), and due-date
-filter params.
+"""Drag-drop target_date-only contract (PR #11), inline card must_do_by-only
+edit contract (PR #76), board_id scoping on GET /tasks (PR #35),
+move-between-boards (PR #40), column ordering / sort_order (PR #61),
+sort_order driving real Day View ordering (PR #61), and due-date filter
+params.
 
 Reads ctx.task_id, ctx.default_board_id.
 """
@@ -66,6 +67,46 @@ def run(ctx):
 
     # Clean up drag-drop test task.
     client.delete(f"/tasks/{dd_task_id}", headers=H)
+
+    # ── Inline card must_do_by-only edit contract (PR #76) ─────────────────────
+    # PR #76 makes the "Must do" line on a task card independently click-to-edit
+    # (Board split-mode, and the Focused/Day-mode both-dates-set badge expansion),
+    # PUTting only `must_do_by`. The target_date-only direction of this contract
+    # is exercised above (drag-drop); this locks in the mirror direction, which
+    # is new client behaviour as of this PR — previously the frontend only ever
+    # PUT target_date on its own (drag-drop), never must_do_by alone against a
+    # task that already has a target_date set. This also pins down the exact
+    # scenario Sneezy's plan review flagged as a blocker risk during design: a
+    # both-dates-set task where the user edits "Must do" to a date LATER than
+    # "Target" must update only must_do_by — no silent flip/clear/swap of the
+    # untouched target_date.
+    print("\n── Tasks: Inline card must_do_by-only edit contract (PR #76) ─")
+    r = client.post("/tasks", headers=H, json={
+        "title": "Inline date-edit contract task",
+        "must_do_by": tomorrow,
+        "target_date": next_week,
+        "label_ids": [],
+    })
+    assert_eq("POST inline date-edit task → 201", r.status_code, 201)
+    inline_task_id = r.json()["id"]
+
+    far_future_inline = (date.today() + timedelta(days=90)).isoformat()
+    r = client.put(f"/tasks/{inline_task_id}", headers=H, json={"must_do_by": far_future_inline})
+    assert_eq("PUT must_do_by only, past target_date → 200", r.status_code, 200)
+    inline_result = r.json()
+    assert_eq("must_do_by updated to picked value (PR #76)", inline_result["must_do_by"], far_future_inline)
+    assert_eq("target_date untouched when must_do_by edited past it (PR #76)",
+              inline_result["target_date"], next_week)
+
+    # A follow-up, independent target_date-only edit must likewise leave the
+    # just-edited must_do_by alone.
+    r = client.put(f"/tasks/{inline_task_id}", headers=H, json={"target_date": tomorrow})
+    assert_eq("PUT target_date only, independent follow-up edit → 200", r.status_code, 200)
+    assert_eq("must_do_by untouched by independent target_date edit (PR #76)",
+              r.json()["must_do_by"], far_future_inline)
+    assert_eq("target_date updated by independent edit (PR #76)", r.json()["target_date"], tomorrow)
+
+    client.delete(f"/tasks/{inline_task_id}", headers=H)
 
     r = client.get("/tasks", headers=H, params={"state": "pending"})
     assert_eq("GET /tasks?state=pending → 200", r.status_code, 200)

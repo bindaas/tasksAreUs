@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Task } from '../api/tasks';
-import { completeTask, deleteTask } from '../api/tasks';
+import { completeTask, deleteTask, updateTask } from '../api/tasks';
 import { getEffectiveDate } from '../utils/taskDateUtils';
 import { TaskQuickEdit } from './TaskQuickEdit';
 import { TaskCardBody } from './TaskCardBody';
+
+type DateFieldName = 'must_do_by' | 'target_date';
 
 const LABEL_COLORS: Record<string, string> = {
   mode: 'bg-green-100 text-green-700',
@@ -15,6 +17,18 @@ export function FocusedTaskCard({ task, boardColor, onRefresh }: { task: Task; b
   const navigate = useNavigate();
   const effectiveDate = getEffectiveDate(task);
   const [isEditing, setIsEditing] = useState(false);
+  const [editingDateField, setEditingDateField] = useState<DateFieldName | 'both' | null>(null);
+
+  async function handleDateChange(field: DateFieldName, value: string | null) {
+    try {
+      await updateTask(task.id, { [field]: value });
+      onRefresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update date');
+    } finally {
+      setEditingDateField(null);
+    }
+  }
 
   async function handleComplete() {
     try {
@@ -37,7 +51,7 @@ export function FocusedTaskCard({ task, boardColor, onRefresh }: { task: Task; b
 
   return (
     <div
-      onClick={() => { if (!isEditing) navigate(`/tasks/${task.id}`); }}
+      onClick={() => { if (!isEditing && !editingDateField) navigate(`/tasks/${task.id}`); }}
       className={`bg-white rounded-lg border border-gray-200 shadow-sm transition-shadow overflow-hidden ${
         isEditing ? 'border-indigo-300 shadow-md' : 'cursor-pointer hover:shadow-md'
       }`}
@@ -47,8 +61,8 @@ export function FocusedTaskCard({ task, boardColor, onRefresh }: { task: Task; b
         {isEditing ? (
           <TaskQuickEdit
             task={task}
-            onSaved={() => { onRefresh(); setIsEditing(false); }}
-            onCancel={() => setIsEditing(false)}
+            onSaved={() => { onRefresh(); setIsEditing(false); setEditingDateField(null); }}
+            onCancel={() => { setIsEditing(false); setEditingDateField(null); }}
           />
         ) : (
           <TaskCardBody
@@ -56,6 +70,10 @@ export function FocusedTaskCard({ task, boardColor, onRefresh }: { task: Task; b
             layout="stacked"
             dateDisplay={{ mode: 'effective', effectiveDate }}
             priorityBadge="static"
+            editingDateField={editingDateField}
+            onDateFieldClick={setEditingDateField}
+            onDateFieldCancel={() => setEditingDateField(null)}
+            onDateChange={handleDateChange}
             renderLabels={(labels) => {
               const sorted = [...labels].sort((a, b) => a.value.localeCompare(b.value));
               return sorted.length > 0 ? (
@@ -71,7 +89,7 @@ export function FocusedTaskCard({ task, boardColor, onRefresh }: { task: Task; b
                 </div>
               ) : null;
             }}
-            onEdit={() => setIsEditing(true)}
+            onEdit={() => { setEditingDateField(null); setIsEditing(true); }}
             onComplete={handleComplete}
             onDelete={handleDelete}
           />
