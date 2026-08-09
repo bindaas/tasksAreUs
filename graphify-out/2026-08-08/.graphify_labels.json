@@ -1,12 +1,12 @@
 {
   "0": "._make_db",
   "1": "test_focused_view_service.py",
-  "2": "Layout.tsx",
+  "2": "src/App.tsx",
   "3": "DATA_MODEL_AND_API.MD — data model & API definitions",
   "4": "board_service.py",
   "5": "PLAN: Remove Beliefs Feature and All LLM/Anthropic Integration",
   "6": "PLAN-feat-tasks-view-redesign-mobile.md (external)",
-  "7": "src/App.tsx",
+  "7": "SettingsPage.tsx",
   "8": "_effective_date",
   "9": "TasksScreen.tsx",
   "10": "Task",
@@ -21,7 +21,6 @@
   "19": "ViewContext.tsx",
   "20": "get_completions",
   "21": "frontend/src/utils/taskDateUtils.ts",
-  "22": "frontend/src/api/client.ts",
   "23": "compilerOptions",
   "24": "frontend/src/utils/taskPriority.ts",
   "25": "main.py",
@@ -113,6 +112,7 @@
   "111": "mobile/src/utils/taskPriority.ts",
   "112": "StateEnum",
   "113": "settings.py",
+  "114": "useBoard",
   "115": "@react-navigation/native",
   "116": "boards.py"
 }
