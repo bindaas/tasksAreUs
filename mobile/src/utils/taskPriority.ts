@@ -1,34 +1,43 @@
-import type { Task } from '../types';
+import type { PriorityTier, Task } from '../types';
 import { getColumn, type ColumnKey } from './taskDateUtils';
 
 export const HIGH_PRIORITY_DAILY_LIMIT = 3;
 
-export function isHighPriorityEligible(columnKey: ColumnKey): boolean {
+/** Click-to-cycle order for the 3-state priority toggle (TaskCardBody). Mirrors web's cycle. */
+export const PRIORITY_CYCLE: Record<PriorityTier, PriorityTier> = {
+  normal: 'medium',
+  medium: 'high',
+  high: 'normal',
+};
+
+/** Date-eligibility window shared by both High and Medium — Normal has no restriction. */
+export function isPriorityEligible(columnKey: ColumnKey): boolean {
   return columnKey === 'today' || columnKey === 'tomorrow' || columnKey === 'day_after_tomorrow';
 }
 
-/** Returns true if the form should offer the High priority checkbox given the current date fields. */
-export function isFormHighPriorityEligible(
+/** Returns true if the form should offer the High/Medium tier options given the current date fields. */
+export function isFormPriorityEligible(
   mustDoBy: string,
   targetDate: string,
   todayStr: string,
   tomorrowStr: string
 ): boolean {
   const col = getColumn({ must_do_by: mustDoBy || null, target_date: targetDate || null }, todayStr, tomorrowStr);
-  return col === 'overdue' || isHighPriorityEligible(col);
+  return col === 'overdue' || isPriorityEligible(col);
 }
 
-export function splitByPriority(tasks: Task[]): { high: Task[]; normal: Task[] } {
-  const high: Task[] = [];
-  const normal: Task[] = [];
-  for (const task of tasks) {
-    if (task.is_high_priority) {
-      high.push(task);
-    } else {
-      normal.push(task);
-    }
+/**
+ * Resolves the click-to-cycle toggle's target tier: advances `current` one step around
+ * `PRIORITY_CYCLE`, then demotes to Normal if the resulting tier isn't eligible for
+ * `columnKey`'s date (defensive — the toggle is only wired up on eligible columns today,
+ * but this keeps the resolution correct if that wiring ever changes).
+ */
+export function resolveNextPriorityTier(current: PriorityTier, columnKey: ColumnKey): PriorityTier {
+  const next = PRIORITY_CYCLE[current];
+  if ((next === 'high' || next === 'medium') && !isPriorityEligible(columnKey)) {
+    return 'normal';
   }
-  return { high, normal };
+  return next;
 }
 
 export function canAddHighPriority(

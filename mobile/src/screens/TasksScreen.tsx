@@ -26,6 +26,7 @@ import { useBoard } from '../context/BoardContext';
 import { getSettings } from '../api/settings';
 import { groupTasksForList, type TaskSection } from '../utils/taskGrouping';
 import { filterTasks } from '../utils/taskFilters';
+import { resolveNextPriorityTier, isPriorityEligible, canAddHighPriority } from '../utils/taskPriority';
 import {
   formatDate,
   getEffectiveDate,
@@ -72,11 +73,13 @@ function TaskRow({
   onComplete,
   onDeletePress,
   onEditPress,
+  onTogglePriority,
 }: {
   task: Task;
   onComplete: (id: string) => void;
   onDeletePress: (id: string, title: string) => void;
   onEditPress: (id: string) => void;
+  onTogglePriority?: () => void;
 }) {
   const effectiveDate = getEffectiveDate(task);
   const isDone = task.state === 'done';
@@ -92,7 +95,8 @@ function TaskRow({
           task={task}
           layout="inline"
           dateDisplay={{ mode: 'effective', effectiveDate }}
-          priorityBadge="static"
+          priorityBadge="toggle"
+          onTogglePriority={onTogglePriority}
           renderLabels={(labels) =>
             labels.length > 0 ? (
               <View className="flex-row flex-wrap mt-1">
@@ -113,6 +117,8 @@ function TaskRow({
 
 function TaskGhost({ task }: { task: Task }) {
   const effectiveDate = getEffectiveDate(task);
+  const barColor = task.priority === 'high' ? '#fbbf24' : task.priority === 'medium' ? '#60a5fa' : undefined;
+  const starColor = task.priority === 'high' ? '#f59e0b' : task.priority === 'medium' ? '#3b82f6' : undefined;
   return (
     <View
       className="bg-white mx-4 rounded-xl border border-indigo-300 overflow-hidden"
@@ -124,10 +130,10 @@ function TaskGhost({ task }: { task: Task }) {
         elevation: 8,
       }}
     >
-      {task.is_high_priority && <View className="h-1 bg-amber-400" />}
+      {barColor && <View className="h-1" style={{ backgroundColor: barColor }} />}
       <View className="p-4">
-        {task.is_high_priority && (
-          <Text className="text-amber-500 text-sm mb-0.5">★</Text>
+        {starColor && (
+          <Text className="text-sm mb-0.5" style={{ color: starColor }}>★</Text>
         )}
         <Text className="text-gray-900 text-base font-medium" numberOfLines={2}>
           {task.title}
@@ -151,6 +157,7 @@ function DraggableTaskRow({
   onComplete,
   onDeletePress,
   onEditPress,
+  onTogglePriority,
 }: {
   task: Task;
   isBeingDragged: boolean;
@@ -162,6 +169,7 @@ function DraggableTaskRow({
   onComplete: (id: string) => void;
   onDeletePress: (id: string, title: string) => void;
   onEditPress: (id: string) => void;
+  onTogglePriority?: () => void;
 }) {
   const panGesture = Gesture.Pan()
     .activateAfterLongPress(500)
@@ -198,6 +206,7 @@ function DraggableTaskRow({
           onComplete={onComplete}
           onDeletePress={onDeletePress}
           onEditPress={onEditPress}
+          onTogglePriority={onTogglePriority}
         />
       </Animated.View>
     </GestureDetector>
@@ -404,6 +413,41 @@ export function TasksScreen() {
     ]);
   }
 
+  async function handleTogglePriority(task: Task, columnKey: ColumnKey) {
+    const nextTier = resolveNextPriorityTier(task.priority, columnKey);
+
+    if (nextTier === 'high') {
+      const freshLimit = await getSettings()
+        .then((s) => s.high_priority_daily_limit)
+        .catch(() => highPriorityLimit);
+      const todayStr = dateOnly(new Date());
+      const tomDate = new Date();
+      tomDate.setDate(tomDate.getDate() + 1);
+      const tomStr = dateOnly(tomDate);
+      const allHighForColumn = tasks.filter(
+        (t) => t.priority === 'high' && t.state === 'pending' && getColumn(t, todayStr, tomStr) === columnKey,
+      );
+      if (!canAddHighPriority(allHighForColumn, task, freshLimit)) {
+        Alert.alert(
+          'High Priority Limit',
+          `You already have ${freshLimit} high-priority tasks for ${
+            columnKey === 'today' ? 'Today' : columnKey === 'tomorrow' ? 'Tomorrow' : 'this day'
+          }.`,
+        );
+        return;
+      }
+    }
+
+    const original = task;
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, priority: nextTier } : t)));
+    try {
+      await updateTask(task.id, { priority: nextTier });
+    } catch {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? original : t)));
+      Alert.alert('Error', 'Could not update priority. Please try again.');
+    }
+  }
+
   function toggleSection(key: string) {
     setExpandedSections((prev) => {
       const next = new Set(prev);
@@ -565,8 +609,9 @@ export function TasksScreen() {
 
     // HP check: only fires for already-HP tasks. Mobile has no HP zone, so a drag
     // cannot promote a non-HP task — the limit only matters when moving an existing
-    // HP task into a section that may already be at capacity.
-    if (task.is_high_priority && (targetSection === 'today' || targetSection === 'tomorrow')) {
+    // HP task into a section that may already be at capacity. Medium is uncapped
+    // (locked-in decision), so this check stays High-specific.
+    if (task.priority === 'high' && (targetSection === 'today' || targetSection === 'tomorrow')) {
       // Fetch fresh HP limit to ensure Settings changes are reflected
       const freshLimit = await getSettings()
         .then((s) => s.high_priority_daily_limit)
@@ -579,7 +624,7 @@ export function TasksScreen() {
       const hpCount = tasks.filter(
         (t) =>
           t.id !== task.id &&
-          t.is_high_priority &&
+          t.priority === 'high' &&
           t.state === 'pending' &&
           getColumn(t, todayStr, tomStr) === targetSection,
       ).length;
@@ -594,7 +639,7 @@ export function TasksScreen() {
       }
     }
 
-    // Only target_date is cleared on a no-date drop; must_do_by and is_high_priority
+    // Only target_date is cleared on a no-date drop; must_do_by and priority
     // are left untouched (matches web behaviour and architecture spec).
     const newDate = getDropDate(targetSection);
     const body: UpdateTaskBody = { target_date: newDate };
@@ -841,7 +886,7 @@ export function TasksScreen() {
             scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
           }}
           scrollEventThrottle={16}
-          renderItem={({ item }) => (
+          renderItem={({ item, section }) => (
             <DraggableTaskRow
               task={item}
               isBeingDragged={item.id === draggingTaskId}
@@ -853,6 +898,9 @@ export function TasksScreen() {
               onComplete={handleComplete}
               onDeletePress={handleDeletePress}
               onEditPress={handleEditPress}
+              onTogglePriority={
+                isPriorityEligible(section.key) ? () => handleTogglePriority(item, section.key) : undefined
+              }
             />
           )}
           renderSectionHeader={({ section }) => {

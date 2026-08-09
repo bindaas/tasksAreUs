@@ -18,10 +18,10 @@ import { ApiError } from '../api/client';
 import { listLabels } from '../api/labels';
 import { useBoard } from '../context/BoardContext';
 import { dateOnly } from '../utils/taskDateUtils';
-import { isFormHighPriorityEligible } from '../utils/taskPriority';
+import { isFormPriorityEligible } from '../utils/taskPriority';
 import { isValidLinkUrl, openTaskLink, withReadyLinkRow } from '../utils/taskLinks';
 import { LABEL_BG, LABEL_TEXT } from '../utils/labelColors';
-import type { Task, Label, TaskLink, CreateTaskBody, UpdateTaskBody } from '../types';
+import type { Task, Label, TaskLink, CreateTaskBody, UpdateTaskBody, PriorityTier } from '../types';
 
 function newLinkId(): string {
   return `link-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -97,7 +97,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
   const [notes, setNotes] = useState('');
   const [mustDoBy, setMustDoBy] = useState('');
   const [targetDate, setTargetDate] = useState('');
-  const [isHighPriority, setIsHighPriority] = useState(false);
+  const [priority, setPriority] = useState<PriorityTier>('normal');
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
   const [allLabels, setAllLabels] = useState<Label[]>([]);
   const [links, setLinks] = useState<TaskLink[]>([]);
@@ -113,7 +113,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
   const _tom = new Date();
   _tom.setDate(_tom.getDate() + 1);
   const tomorrowStr = dateOnly(_tom);
-  const highPriorityEligible = isFormHighPriorityEligible(mustDoBy, targetDate, todayStr, tomorrowStr);
+  const priorityEligible = isFormPriorityEligible(mustDoBy, targetDate, todayStr, tomorrowStr);
   const movingBoard = isEditMode && !!initialBoardIdRef.current && boardId !== initialBoardIdRef.current;
 
   const loadData = useCallback(async () => {
@@ -124,7 +124,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
         setNotes(task.notes ?? '');
         setMustDoBy(task.must_do_by ?? '');
         setTargetDate(task.target_date ?? '');
-        setIsHighPriority(task.is_high_priority);
+        setPriority(task.priority);
         setSelectedLabelIds(new Set(task.labels.map((l) => l.id)));
         setLinks(task.links ?? []);
         initialBoardIdRef.current = task.board_id;
@@ -227,7 +227,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
           title: title.trim(),
           notes: notes.trim(),
           label_ids: Array.from(selectedLabelIds),
-          is_high_priority: highPriorityEligible && isHighPriority,
+          priority: priorityEligible ? priority : 'normal',
           must_do_by: mustDoBy || null,
           target_date: targetDate || null,
           links: validLinks,
@@ -239,7 +239,7 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
           title: title.trim(),
           notes: notes.trim(),
           label_ids: Array.from(selectedLabelIds),
-          is_high_priority: highPriorityEligible && isHighPriority,
+          priority: priorityEligible ? priority : 'normal',
           links: validLinks,
         };
         if (mustDoBy) body.must_do_by = mustDoBy;
@@ -249,8 +249,8 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
       onSave();
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 422) {
-        Alert.alert('High priority limit reached', 'You already have the maximum number of high-priority tasks for today. Uncheck high priority and try again.');
-        setIsHighPriority(false);
+        Alert.alert('High priority limit reached', 'You already have the maximum number of high-priority tasks for today. Change the priority and try again.');
+        setPriority('normal');
       } else {
         setError('Could not save task. Please try again.');
       }
@@ -495,23 +495,47 @@ export function TaskFormScreen({ taskId, onSave, onCancel, initialLabelIds, defa
           />
         )}
 
-        {/* High priority */}
-        {highPriorityEligible && (
-          <TouchableOpacity
-            onPress={() => setIsHighPriority((v) => !v)}
-            className="flex-row items-center gap-3 mb-5 py-1"
-            activeOpacity={0.7}
-          >
-            <View
-              className={`w-5 h-5 rounded border-2 items-center justify-center ${
-                isHighPriority ? 'bg-amber-500 border-amber-500' : 'border-gray-300 bg-white'
-              }`}
-            >
-              {isHighPriority && <Text className="text-white text-xs font-bold">✓</Text>}
+        {/* Priority */}
+        {priorityEligible && (
+          <View className="mb-5">
+            <View className="flex-row items-center gap-3 py-1 flex-wrap">
+              <Text className="text-sm font-medium text-gray-700">Priority</Text>
+              <View className="flex-row rounded-lg border border-gray-300 overflow-hidden">
+                {(['normal', 'medium', 'high'] as const).map((tier, idx) => {
+                  const selected = priority === tier;
+                  const bg = selected
+                    ? tier === 'high'
+                      ? '#f97316'
+                      : tier === 'medium'
+                        ? '#3b82f6'
+                        : '#4b5563'
+                    : '#ffffff';
+                  return (
+                    <TouchableOpacity
+                      key={tier}
+                      onPress={() => setPriority(tier)}
+                      className="px-3 py-1.5"
+                      style={{
+                        backgroundColor: bg,
+                        borderLeftWidth: idx > 0 ? 1 : 0,
+                        borderLeftColor: '#d1d5db',
+                      }}
+                    >
+                      <Text
+                        className="text-xs font-medium capitalize"
+                        style={{ color: selected ? '#ffffff' : '#4b5563' }}
+                      >
+                        {tier}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-            <Text className="text-sm font-medium text-gray-700">High priority</Text>
-            <Text className="text-xs text-amber-500 font-medium">★ today / tomorrow</Text>
-          </TouchableOpacity>
+            <Text className="text-xs text-amber-500 font-medium mt-1">
+              ★ High/Medium shown above the line in Overdue / Today / Tomorrow / Day After Tomorrow
+            </Text>
+          </View>
         )}
 
         {/* Board */}

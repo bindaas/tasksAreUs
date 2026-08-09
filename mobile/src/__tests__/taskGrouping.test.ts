@@ -1,9 +1,9 @@
 import { groupTasksForList } from '../utils/taskGrouping';
-import type { Task } from '../types';
+import type { PriorityTier, Task } from '../types';
 
 const REF_DATE = new Date('2026-06-07T12:00:00');
 
-function makeTask(overrides: Partial<Pick<Task, 'id' | 'target_date' | 'must_do_by' | 'is_high_priority' | 'sort_order' | 'updated_at'>> = {}): Task {
+function makeTask(overrides: Partial<Pick<Task, 'id' | 'target_date' | 'must_do_by' | 'priority' | 'sort_order' | 'updated_at'>> = {}): Task {
   return {
     id: 'task-' + Math.random(),
     board_id: 'board-1',
@@ -14,6 +14,7 @@ function makeTask(overrides: Partial<Pick<Task, 'id' | 'target_date' | 'must_do_
     target_date: null,
     completed_at: null,
     labels: [],
+    priority: 'normal',
     is_high_priority: false,
     is_deleted: false,
     links: [],
@@ -113,11 +114,19 @@ describe('groupTasksForList', () => {
     expect(section.data).toEqual([first, second, third]);
   });
 
-  it('orders today section by is_high_priority before sort_order', () => {
-    const normalFirst = makeTask({ target_date: '2026-06-07', sort_order: 1, is_high_priority: false });
-    const highSecond = makeTask({ target_date: '2026-06-07', sort_order: 2, is_high_priority: true });
+  it('orders today section by priority tier before sort_order', () => {
+    const normalFirst = makeTask({ target_date: '2026-06-07', sort_order: 1, priority: 'normal' });
+    const highSecond = makeTask({ target_date: '2026-06-07', sort_order: 2, priority: 'high' });
     const [section] = groupTasksForList([normalFirst, highSecond], REF_DATE);
     expect(section.data).toEqual([highSecond, normalFirst]);
+  });
+
+  it('ranks today section high < medium < normal, then by sort_order within a tier', () => {
+    const normal = makeTask({ id: 'n', target_date: '2026-06-07', sort_order: 1, priority: 'normal' });
+    const medium = makeTask({ id: 'm', target_date: '2026-06-07', sort_order: 2, priority: 'medium' });
+    const high = makeTask({ id: 'h', target_date: '2026-06-07', sort_order: 3, priority: 'high' });
+    const [section] = groupTasksForList([normal, medium, high], REF_DATE);
+    expect(section.data).toEqual([high, medium, normal]);
   });
 
   it('orders upcoming section by target_date ascending, nulls last', () => {
@@ -134,5 +143,30 @@ describe('groupTasksForList', () => {
     const [section] = groupTasksForList([older, newer], REF_DATE);
     expect(section.key).toBe('overdue');
     expect(section.data).toEqual([newer, older]);
+  });
+
+  it('overdue section still puts high above non-high, tiebroken by updated_at (not the 3-way tier rank)', () => {
+    const high = makeTask({
+      id: 'h', target_date: '2026-01-01', priority: 'high', updated_at: '2026-01-01T00:00:00',
+    });
+    const normal = makeTask({
+      id: 'n', target_date: '2026-01-01', priority: 'normal', updated_at: '2026-01-05T00:00:00',
+    });
+    const [section] = groupTasksForList([normal, high], REF_DATE);
+    expect(section.key).toBe('overdue');
+    expect(section.data).toEqual([high, normal]);
+  });
+
+  it('overdue section does not distinguish medium from normal — both tiebreak by updated_at only', () => {
+    const medium = makeTask({
+      id: 'm', target_date: '2026-01-01', priority: 'medium' as PriorityTier, updated_at: '2026-01-01T00:00:00',
+    });
+    const normal = makeTask({
+      id: 'n', target_date: '2026-01-01', priority: 'normal', updated_at: '2026-01-05T00:00:00',
+    });
+    const [section] = groupTasksForList([medium, normal], REF_DATE);
+    expect(section.key).toBe('overdue');
+    // Newer updated_at wins regardless of medium vs normal — no tier rank applied here.
+    expect(section.data).toEqual([normal, medium]);
   });
 });
