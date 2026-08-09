@@ -1,10 +1,10 @@
 # Development Plan: feat-priority-tiers
 
 ## Status
-**State:** In progress — PR1 (backend) merged; PR2 (web) and PR3 (mobile) not started.
-**Last updated:** 2026-08-06 by Grumpy
-**Next step:** PR1 ([#72](https://github.com/bindaas/tasksAreUs/pull/72)) merged to `main` — full review chain complete (Dopey/Sleepy/Bashful/Doc all posted, one Must Fix applied — unvalidated `priority` string on the `/sync` push path — plus wiring tests and integration coverage added). `PRODUCT_REQUIREMENTS_DOCUMENT.MD`, `ARCHITECTURE.MD`, and `DATA_MODEL_AND_API.MD` are already up to date on `main`. Next: start PR2 (web) on a fresh branch off `main` — see PR2 section above for scope (3-zone kanban, all-tiers-collapsible per follow-up user direction, per-tier drop targets).
-**Blocked on:** n/a — awaiting go-ahead to start PR2.
+**State:** In progress — PR1 (backend) merged; PR2 (web) implemented on `feat-priority-tiers-web`, not yet reviewed/PR'd; PR3 (mobile) not started.
+**Last updated:** 2026-08-07 by Grumpy
+**Next step:** PR2 implemented per the PR2 section above: `taskPriority.ts` generalized (`isPriorityEligible`, `isFormPriorityEligible`, 3-way `splitByPriority`, shared `PRIORITY_CYCLE`); `ColumnPriorityCollapseContext` widened to `(columnKey, tier)`; `TasksPage.tsx` renders 3 independently-collapsible zones per eligible column with the collapsed-zone drop-target fix (each tier header now carries its own `onDragOver`); `TaskCardBody`/`TaskCard` 3-state click-cycle toggle (Normal → Medium → High → Normal); `TaskForm.tsx` 3-way segmented Normal/Medium/High selector; `api/tasks.ts` `Task.priority` field added, `is_high_priority` dropped from create/update body types (kept on the read model as the backend's mirror). `TaskDetailPage.tsx` also updated (consequential rename of `isHighPriorityEligible`→`isPriorityEligible` and `is_high_priority`→`priority==='high'`) — not in the original PR2 file list but required for the rename to compile; verified via grep this was the only other file referencing the field. Frontend unit tests rewritten/updated (`taskPriority.test.ts`, `taskOrder.test.ts`, `taskFilters.test.ts`) — all pass. `tsc -b && vite build` clean. Manually verified end-to-end against the live PR1 backend via `/run` + browser automation: task creation with Medium priority lands in the correct zone, click-to-cycle Medium→High works (with live re-sort), zone collapse/expand persists count while hidden. One pre-existing, date-flaky test (`taskDateUtils.test.ts` — "assigns to upcoming when effective date is three or more days from now") fails on both `main` and this branch identically (depends on real system clock's day-of-week via `isFriday()`, unrelated to this feature) — confirmed via `git stash` comparison, not introduced by this PR. Next: open the PR2 (web) pull request against `main`, then run the full review chain (Dopey/Sleepy/Bashful/Doc).
+**Blocked on:** n/a — ready to commit, push, and open PR2.
 
 ---
 

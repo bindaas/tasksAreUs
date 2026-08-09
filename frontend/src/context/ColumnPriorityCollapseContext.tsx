@@ -1,23 +1,31 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { PriorityTier } from '../api/tasks';
 import type { ColumnKey } from '../utils/taskDateUtils';
 
+type CollapseKey = `${ColumnKey}:${PriorityTier}`;
+
+function collapseKey(columnKey: ColumnKey, tier: PriorityTier): CollapseKey {
+  return `${columnKey}:${tier}`;
+}
+
 interface ColumnPriorityCollapseContextValue {
-  isCollapsed: (columnKey: ColumnKey) => boolean;
-  toggleColumn: (columnKey: ColumnKey) => void;
+  isCollapsed: (columnKey: ColumnKey, tier: PriorityTier) => boolean;
+  toggleColumn: (columnKey: ColumnKey, tier: PriorityTier) => void;
 }
 
 const ColumnPriorityCollapseContext = createContext<ColumnPriorityCollapseContextValue | null>(null);
 
 export function ColumnPriorityCollapseProvider({ children }: { children: ReactNode }) {
-  const [collapsed, setCollapsed] = useState<Partial<Record<ColumnKey, boolean>>>({});
+  const [collapsed, setCollapsed] = useState<Partial<Record<CollapseKey, boolean>>>({});
 
-  function isCollapsed(columnKey: ColumnKey) {
-    return collapsed[columnKey] ?? false;
+  function isCollapsed(columnKey: ColumnKey, tier: PriorityTier) {
+    return collapsed[collapseKey(columnKey, tier)] ?? false;
   }
 
-  function toggleColumn(columnKey: ColumnKey) {
-    setCollapsed((prev) => ({ ...prev, [columnKey]: !prev[columnKey] }));
+  function toggleColumn(columnKey: ColumnKey, tier: PriorityTier) {
+    const key = collapseKey(columnKey, tier);
+    setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
   return (

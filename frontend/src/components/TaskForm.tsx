@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { Task, CreateTaskBody, UpdateTaskBody } from '../api/tasks';
+import type { Task, CreateTaskBody, UpdateTaskBody, PriorityTier } from '../api/tasks';
 import type { Label, TaskLink } from '../api/tasks';
 import type { Board } from '../api/boards';
 import { dateOnly } from '../utils/taskDateUtils';
-import { isFormHighPriorityEligible } from '../utils/taskPriority';
+import { isFormPriorityEligible } from '../utils/taskPriority';
 import { isValidLinkUrl, withReadyLinkRow } from '../utils/taskLinks';
 
 function newLinkId(): string {
@@ -52,7 +52,7 @@ export function TaskForm({
   const [notes, setNotes] = useState(initialValues?.notes ?? '');
   const [mustDoBy, setMustDoBy] = useState(initialValues?.must_do_by ?? '');
   const [targetDate, setTargetDate] = useState(initialValues?.target_date ?? '');
-  const [isHighPriority, setIsHighPriority] = useState(initialValues?.is_high_priority ?? false);
+  const [priority, setPriority] = useState<PriorityTier>(initialValues?.priority ?? 'normal');
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(
     new Set(initialValues?.labels?.map((l) => l.id) ?? [])
   );
@@ -116,7 +116,7 @@ export function TaskForm({
   const _tom = new Date(_today);
   _tom.setDate(_tom.getDate() + 1);
   const tomorrowStr = dateOnly(_tom);
-  const highPriorityEligible = isFormHighPriorityEligible(mustDoBy, targetDate, todayStr, tomorrowStr);
+  const priorityEligible = isFormPriorityEligible(mustDoBy, targetDate, todayStr, tomorrowStr);
 
   const labelsByCategory = labels.reduce<Record<LabelCategory, Label[]>>(
     (acc, label) => {
@@ -191,7 +191,7 @@ export function TaskForm({
     const data: CreateTaskBody | UpdateTaskBody = {
       title: title.trim(),
       label_ids: Array.from(selectedLabelIds),
-      is_high_priority: highPriorityEligible && isHighPriority,
+      priority: priorityEligible ? priority : 'normal',
       links: validLinks,
     };
     if (boardId) data.board_id = boardId;
@@ -360,19 +360,31 @@ export function TaskForm({
         </div>
       </div>
 
-      {highPriorityEligible && (
-        <div className="flex items-center gap-3 py-1">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={isHighPriority}
-              onChange={(e) => setIsHighPriority(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400 cursor-pointer"
-            />
-            <span className="text-sm font-medium text-gray-700">High priority</span>
-          </label>
+      {priorityEligible && (
+        <div className="flex items-center gap-3 py-1 flex-wrap">
+          <span className="text-sm font-medium text-gray-700">Priority</span>
+          <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden text-xs font-medium">
+            {(['normal', 'medium', 'high'] as const).map((tier, idx) => (
+              <button
+                key={tier}
+                type="button"
+                onClick={() => setPriority(tier)}
+                className={`px-3 py-1.5 capitalize transition-colors ${idx > 0 ? 'border-l border-gray-300' : ''} ${
+                  priority === tier
+                    ? tier === 'high'
+                      ? 'bg-orange-500 text-white'
+                      : tier === 'medium'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-600 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {tier}
+              </button>
+            ))}
+          </div>
           <span className="text-xs text-orange-500 font-medium">
-            ↑ shown above the line in Overdue / Today / Tomorrow / Day After Tomorrow / Monday
+            ↑ High/Medium shown above the line in Overdue / Today / Tomorrow / Day After Tomorrow / Monday
           </span>
         </div>
       )}

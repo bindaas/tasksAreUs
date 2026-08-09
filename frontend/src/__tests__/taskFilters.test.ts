@@ -14,6 +14,7 @@ function makeTask(overrides: Partial<Task>): Task {
     target_date: null,
     completed_at: null,
     labels: [],
+    priority: 'normal',
     is_high_priority: false,
     is_deleted: false,
     links: [],

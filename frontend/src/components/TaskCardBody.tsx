@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Task, Label } from '../api/tasks';
 import { formatDate, isOverdue } from '../utils/taskDateUtils';
+import { PRIORITY_CYCLE } from '../utils/taskPriority';
 
 interface TaskCardBodyProps {
   task: Task;
@@ -27,19 +28,29 @@ export function TaskCardBody({
   onComplete,
   onDelete,
 }: TaskCardBodyProps) {
-  const priorityIndicator = task.is_high_priority
-    ? priorityBadge === 'static'
+  // Focused/Day View badges intentionally show High only — Medium never surfaces
+  // there (locked-in product decision), so 'static' mode ignores Medium entirely.
+  const priorityIndicator = priorityBadge === 'static'
+    ? task.priority === 'high'
       ? (
         <span className="inline-block text-xs font-semibold text-amber-600 bg-amber-50 rounded px-1.5 py-0.5">
           ★ High
         </span>
       )
-      : (
+      : null
+    : task.priority === 'high'
+      ? (
         <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 shrink-0">
           High
         </span>
       )
-    : null;
+      : task.priority === 'medium'
+        ? (
+          <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 shrink-0">
+            Medium
+          </span>
+        )
+        : null;
 
   const titleEl = (
     <h3
@@ -106,13 +117,15 @@ export function TaskCardBody({
         <button
           onClick={(e) => { e.stopPropagation(); onTogglePriority(); }}
           className={`p-1.5 rounded-full transition-colors ${
-            task.is_high_priority
+            task.priority === 'high'
               ? 'bg-orange-50 hover:bg-orange-100 text-orange-500'
-              : 'bg-gray-50 hover:bg-gray-100 text-gray-400'
+              : task.priority === 'medium'
+                ? 'bg-blue-50 hover:bg-blue-100 text-blue-500'
+                : 'bg-gray-50 hover:bg-gray-100 text-gray-400'
           }`}
-          title={task.is_high_priority ? 'Remove high priority' : 'Set high priority'}
+          title={`Priority: ${task.priority} — click for ${PRIORITY_CYCLE[task.priority]}`}
         >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill={task.is_high_priority ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill={task.priority === 'normal' ? 'none' : 'currentColor'} stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
           </svg>
         </button>

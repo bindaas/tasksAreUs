@@ -3,7 +3,11 @@ for day-after-tomorrow/Friday-only-Monday (PR #60), daily limit (PR #7), the
 known daily-limit bypass via date-only move (xfail, tracked gap from the
 PR #60 review), and the tri-state `priority` field (High/Medium/Normal,
 PR #72) that generalizes `is_high_priority` while keeping it alive as a
-mirrored/derived column for backward compat.
+mirrored/derived column for backward compat. Also covers PUT payloads
+containing `priority` only, with no `is_high_priority` key at all (PR #73 —
+web's exclusive payload shape once `is_high_priority` was dropped from
+CreateTaskBody/UpdateTaskBody), including the cap-check's `priority == "high"`
+branch of `explicit_high_intent`.
 
 Self-contained aside from ctx.client/ctx.H — no cross-module state read or
 written.
@@ -530,19 +534,107 @@ def run(ctx):
 
     client.delete(f"/tasks/{toggle_task_id}", headers=H)
 
+    # ── PUT priority-only payloads (no is_high_priority key at all) ───────────
+    # PR #73 (web) drops `is_high_priority` entirely from CreateTaskBody/
+    # UpdateTaskBody — TaskForm's 3-way selector and TaskCardBody's
+    # click-to-cycle tier control now send `priority` exclusively on every
+    # create/update. Every PUT test above either sends legacy `is_high_priority`
+    # alone, or sends `priority` *alongside* `is_high_priority` (to prove
+    # precedence) — none exercise a PUT body containing `priority` and nothing
+    # else, which is the exact shape web now always sends. Functionally
+    # `_resolve_priority_on_update()` should behave identically (`is_high_priority`
+    # is ignored whenever `priority` is present), but `explicit_high_intent`'s
+    # cap-check trigger (`priority == "high"`) is a genuinely separate branch
+    # from the legacy-write branch, and was previously reachable via REST only
+    # through POST (create) — this closes the PUT (update) gap end to end
+    # against the real API/DB.
+    print("\n── Tasks: Priority tiers — PUT priority-only payloads (PR #73) ──")
+
+    r = client.post("/tasks", headers=H, json={
+        "title": "Priority-only cycle test task",
+        "must_do_by": today_str,
+        "label_ids": [],
+    })
+    assert_eq("POST task for priority-only PUT cycle test → 201", r.status_code, 201)
+    cycle_task_id = r.json()["id"]
+    assert_eq("cycle task starts at normal", r.json()["priority"], "normal")
+
+    # normal → medium (priority-only, no is_high_priority key in the body)
+    r = client.put(f"/tasks/{cycle_task_id}", headers=H, json={"priority": "medium"})
+    assert_eq("PUT priority-only normal→medium → 200", r.status_code, 200)
+    assert_eq("priority-only PUT persists medium", r.json()["priority"], "medium")
+    assert_eq("is_high_priority mirror false after priority-only medium PUT",
+              r.json()["is_high_priority"], False)
+
+    # medium → high (priority-only)
+    r = client.put(f"/tasks/{cycle_task_id}", headers=H, json={"priority": "high"})
+    assert_eq("PUT priority-only medium→high → 200", r.status_code, 200)
+    assert_eq("priority-only PUT persists high", r.json()["priority"], "high")
+    assert_eq("is_high_priority mirror true after priority-only high PUT",
+              r.json()["is_high_priority"], True)
+
+    # high → normal (priority-only, full cycle back to start — mirrors web's
+    # PRIORITY_CYCLE constant: Normal → Medium → High → Normal)
+    r = client.put(f"/tasks/{cycle_task_id}", headers=H, json={"priority": "normal"})
+    assert_eq("PUT priority-only high→normal → 200", r.status_code, 200)
+    assert_eq("priority-only PUT persists normal", r.json()["priority"], "normal")
+    assert_eq("is_high_priority mirror false after priority-only normal PUT",
+              r.json()["is_high_priority"], False)
+
+    client.delete(f"/tasks/{cycle_task_id}", headers=H)
+
+    # Daily High cap must still be enforced when the PUT body contains ONLY
+    # `priority: "high"` — this is `explicit_high_intent`'s `priority == "high"`
+    # branch, distinct from its legacy `is_high_priority is True` branch (already
+    # covered above by the "PUT is_high_priority=true when limit reached" case).
+    priority_only_cap_fill_ids = []
+    for i in range(3):
+        r = client.post("/tasks", headers=H, json={
+            "title": f"Priority-only cap fill {i + 1}",
+            "must_do_by": today_str,
+            "label_ids": [],
+            "priority": "high",
+        })
+        assert_eq(f"POST priority-only cap fill {i + 1}/3 → 201", r.status_code, 201)
+        priority_only_cap_fill_ids.append(r.json()["id"])
+
+    r = client.post("/tasks", headers=H, json={
+        "title": "Priority-only cap PUT target",
+        "must_do_by": today_str,
+        "label_ids": [],
+    })
+    assert_eq("POST normal task for priority-only cap PUT test → 201", r.status_code, 201)
+    priority_only_cap_target_id = r.json()["id"]
+
+    r = client.put(f"/tasks/{priority_only_cap_target_id}", headers=H, json={"priority": "high"})
+    assert_eq("PUT priority-only high at cap (no is_high_priority key) → 422", r.status_code, 422)
+    assert_true("priority-only cap PUT 422 detail mentions limit",
+                "limited" in r.json().get("detail", "").lower())
+
+    # Task must remain at its pre-PUT priority (rejected update, not persisted)
+    r = client.get(f"/tasks/{priority_only_cap_target_id}", headers=H)
+    assert_eq("rejected priority-only cap PUT leaves task at normal",
+              r.json()["priority"], "normal")
+
+    for tid in priority_only_cap_fill_ids + [priority_only_cap_target_id]:
+        client.delete(f"/tasks/{tid}", headers=H)
+
     # Clean up remaining priority-tier test tasks
     for tid in [medium_today_task_id, medium_future_task_id] + medium_uncapped_ids:
         client.delete(f"/tasks/{tid}", headers=H)
 
     # ── HP daily limit bypass via date-only move (found during PR #60 review) ──
-    # update_task() only re-checks the per-day HP cap when is_high_priority=True
-    # is explicitly present in the PUT body (task_service.py line ~178). Moving
-    # an already-high-priority task's date onto a day that is already at the cap
-    # — without re-sending is_high_priority — skips the check entirely, silently
-    # violating the "at most N high-priority tasks per day" invariant documented
-    # in DATA_MODEL_AND_API.MD. Not reachable through the web UI today (TaskForm
-    # and the kanban drag handler both always send is_high_priority explicitly),
-    # but reachable directly via the API/mobile/sync and newly more relevant now
+    # update_task() only re-checks the per-day HP cap when `priority: "high"` (or,
+    # pre-PR #72/#73, legacy `is_high_priority=True`) is explicitly present in the
+    # PUT body (task_service.py's `explicit_high_intent`). Moving an already-high
+    # task's date onto a day that is already at the cap — without re-sending
+    # priority — skips the check entirely, silently violating the "at most N
+    # high-priority tasks per day" invariant documented in DATA_MODEL_AND_API.MD.
+    # Not reachable through the web UI today (verified against PR #73's
+    # TasksPage.tsx: TaskForm and the kanban drag handler's `handleDrop` both
+    # still always resend the task's current `priority` explicitly on every
+    # date-changing PUT — was `is_high_priority` pre-PR #73, same shape), but
+    # reachable directly via the API/mobile/sync and newly more relevant now
     # that day-after-tomorrow/Monday are real drop targets.
     #
     # KNOWN, TRACKED GAP — marked xfail, not fixed here:
