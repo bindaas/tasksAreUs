@@ -1,10 +1,12 @@
 # PLAN: feat-clickable-card-date — Make the due-date text on task cards an inline edit link
 
 ## Status
-**State:** Ready for PR
+**State:** Merged
 **Last updated:** 2026-08-09 by Grumpy
-**Next step:** PR #76 open at https://github.com/bindaas/tasksAreUs/pull/76 — awaiting review (code-review/test-review/etc. as the user chooses to run them).
+**Next step:** n/a — shipped. Frontend-only, no mobile files touched, so no mobile update (OTA or rebuild) is needed for this change.
 **Blocked on:** n/a
+
+Merged to `main` via PR #76 (merge commit `08ef145`). Full review chain ran: Dopey (code review) found one Must-fix bug — the card's navigate-on-click handler wasn't gated on the new `editingDateField` state the way `draggable` was, so a stray click while a date input was open could navigate away — fixed, plus two Should-fix items (redundant extra click when `must_do_by === target_date`; no keyboard path to collapse the both-dates expanded view). Sleepy (test review) added integration coverage for the independent must_do_by/target_date partial-update contract this feature relies on. Bashful (requirements) and Doc (architecture) updated `PRODUCT_REQUIREMENTS_DOCUMENT.MD` and `ARCHITECTURE.MD` respectively. Doc also flagged the "both dates set and distinct" predicate being duplicated 3x inline in `TaskCardBody.tsx` — extracted into `shouldShowTargetDate()`/`bothDatesSetAndDistinct()` in `taskDateUtils.ts` with unit tests as a follow-up commit.
 
 All 3 files implemented (`TaskCardBody.tsx`, `TaskCard.tsx`, `FocusedTaskCard.tsx`). `tsc --noEmit` passes clean. Manually verified in-browser (Docker dev stack) per the Test plan section: Board-mode "Target" link opens native picker, commits, and moves the card between columns correctly; Escape reverts without a network call (card unmoved); date-link clicks do not navigate to task detail; Focused/Day-view single badge opens directly for a one-date-set task; **both-dates-set badge now expands into independent "Must do"/"Target" links (confirmed via a real edit: set `must_do_by` past `target_date` — the edited field updated to the picked value and the untouched field stayed put, no silent flip)**, resolving the Sneezy blocker. No console errors observed.
 
