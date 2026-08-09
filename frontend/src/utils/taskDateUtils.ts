@@ -47,7 +47,11 @@ export function getEffectiveDate(task: Pick<Task, 'must_do_by' | 'target_date'>)
 // True when target_date is set and differs from must_do_by — the condition
 // task cards use to decide whether a "Target" date line/link renders at all
 // (must_do_by may be unset entirely, in which case target_date always qualifies).
-export function shouldShowTargetDate(task: Pick<Task, 'must_do_by' | 'target_date'>): boolean {
+// Declared as a type predicate (not plain boolean) so `task.target_date` narrows
+// from `string | null` to `string` at call sites gated by `shouldShowTargetDate(task) && ...`.
+export function shouldShowTargetDate<T extends Pick<Task, 'must_do_by' | 'target_date'>>(
+  task: T
+): task is T & { target_date: string } {
   return Boolean(task.target_date && task.target_date !== task.must_do_by);
 }
 
