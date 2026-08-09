@@ -10,6 +10,7 @@ import { LabelFilterChips } from './LabelFilterChips';
 import { useLabels } from '../hooks/useLabels';
 import { useBoardLabelFilter } from '../hooks/useBoardLabelFilter';
 import { useFilter } from '../context/FilterContext';
+import { useSettings } from '../hooks/useSettings';
 
 export function BoardGroupedTasks({
   boards,
@@ -24,6 +25,14 @@ export function BoardGroupedTasks({
 }) {
   const { isCollapsed, toggleBoard, setAllCollapsed, isPinned, pinBoard, unpinBoard, getPinnedBoardId } =
     useBoardCollapse();
+  const { highPriorityDailyLimit } = useSettings();
+  // Unfiltered — the daily cap applies regardless of what the user currently has
+  // filtered/searched into view, so this must reflect every task actually in this
+  // view, not just what's currently visible on screen.
+  const highPriorityTasksInView = useMemo(
+    () => boards.flatMap((b) => b.tasks).filter((t) => t.priority === 'high'),
+    [boards],
+  );
   const filteredBoards = useMemo(() => filterBoards(boards, searchQuery), [boards, searchQuery]);
 
   const singleVisibleBoard = findSingleVisibleBoard(filteredBoards, (id) => isCollapsed(viewKey, id));
@@ -112,7 +121,14 @@ export function BoardGroupedTasks({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {displayTasks.map((task) => (
-                    <FocusedTaskCard key={task.id} task={task} boardColor={color} onRefresh={onRefresh} />
+                    <FocusedTaskCard
+                      key={task.id}
+                      task={task}
+                      boardColor={color}
+                      onRefresh={onRefresh}
+                      highPriorityTasksInView={highPriorityTasksInView}
+                      highPriorityDailyLimit={highPriorityDailyLimit}
+                    />
                   ))}
                 </div>
               )
