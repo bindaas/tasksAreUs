@@ -69,3 +69,13 @@ export function canAddHighPriority(highTasks: Task[], droppedTask: Task, limit: 
   if (highTasks.some((t) => t.id === droppedTask.id)) return true;
   return highTasks.length < limit;
 }
+
+/**
+ * Returns the high-priority tasks among `tasks` that share `target`'s date column —
+ * the daily cap is per calendar day, so this is the scope `canAddHighPriority` must be
+ * checked against, not every high-priority task in a possibly multi-day task list.
+ */
+export function highPriorityTasksInSameColumn(tasks: Task[], target: Task, today: string, tomorrow: string): Task[] {
+  const columnKey = getColumn(target, today, tomorrow);
+  return tasks.filter((t) => t.priority === 'high' && getColumn(t, today, tomorrow) === columnKey);
+}

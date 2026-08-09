@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Task } from '../api/tasks';
 import { completeTask, deleteTask, updateTask } from '../api/tasks';
 import { getEffectiveDate, getColumn, dateOnly } from '../utils/taskDateUtils';
-import { isPriorityEligible, resolveShiftedPriorityTier, canAddHighPriority } from '../utils/taskPriority';
+import { isPriorityEligible, resolveShiftedPriorityTier, canAddHighPriority, highPriorityTasksInSameColumn } from '../utils/taskPriority';
 import { TaskQuickEdit } from './TaskQuickEdit';
 import { TaskCardBody } from './TaskCardBody';
 
@@ -18,13 +18,13 @@ export function FocusedTaskCard({
   task,
   boardColor,
   onRefresh,
-  highPriorityTasksInView,
+  tasksInView,
   highPriorityDailyLimit,
 }: {
   task: Task;
   boardColor: string;
   onRefresh: () => void;
-  highPriorityTasksInView: Task[];
+  tasksInView: Task[];
   highPriorityDailyLimit: number;
 }) {
   const navigate = useNavigate();
@@ -46,9 +46,12 @@ export function FocusedTaskCard({
     const nextTier = resolveShiftedPriorityTier(task.priority, steps, columnKey);
     if (nextTier === task.priority) return;
 
-    if (nextTier === 'high' && !canAddHighPriority(highPriorityTasksInView, task, highPriorityDailyLimit)) {
-      setPriorityError(`High priority is limited to ${highPriorityDailyLimit} tasks per day.`);
-      return;
+    if (nextTier === 'high') {
+      const highTasksSameColumn = highPriorityTasksInSameColumn(tasksInView, task, today, tomorrow);
+      if (!canAddHighPriority(highTasksSameColumn, task, highPriorityDailyLimit)) {
+        setPriorityError(`High priority is limited to ${highPriorityDailyLimit} tasks per day.`);
+        return;
+      }
     }
 
     try {

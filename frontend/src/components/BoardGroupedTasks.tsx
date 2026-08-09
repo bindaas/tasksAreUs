@@ -26,13 +26,11 @@ export function BoardGroupedTasks({
   const { isCollapsed, toggleBoard, setAllCollapsed, isPinned, pinBoard, unpinBoard, getPinnedBoardId } =
     useBoardCollapse();
   const { highPriorityDailyLimit } = useSettings();
-  // Unfiltered — the daily cap applies regardless of what the user currently has
-  // filtered/searched into view, so this must reflect every task actually in this
-  // view, not just what's currently visible on screen.
-  const highPriorityTasksInView = useMemo(
-    () => boards.flatMap((b) => b.tasks).filter((t) => t.priority === 'high'),
-    [boards],
-  );
+  // Unfiltered and un-narrowed by priority — the daily cap is scoped per calendar day,
+  // not per this view, so each card must filter this down to its own date's high-priority
+  // tasks itself (via highPriorityTasksInSameColumn) rather than being handed a single
+  // view-wide count that could span multiple days (e.g. Focused's day_range setting).
+  const tasksInView = useMemo(() => boards.flatMap((b) => b.tasks), [boards]);
   const filteredBoards = useMemo(() => filterBoards(boards, searchQuery), [boards, searchQuery]);
 
   const singleVisibleBoard = findSingleVisibleBoard(filteredBoards, (id) => isCollapsed(viewKey, id));
@@ -126,7 +124,7 @@ export function BoardGroupedTasks({
                       task={task}
                       boardColor={color}
                       onRefresh={onRefresh}
-                      highPriorityTasksInView={highPriorityTasksInView}
+                      tasksInView={tasksInView}
                       highPriorityDailyLimit={highPriorityDailyLimit}
                     />
                   ))}

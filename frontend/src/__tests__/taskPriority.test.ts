@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { isPriorityEligible, isFormPriorityEligible, splitByPriority, canAddHighPriority, HIGH_PRIORITY_DAILY_LIMIT, shiftPriorityTier, resolveShiftedPriorityTier, resolveDropPriority } from '../utils/taskPriority';
+import { isPriorityEligible, isFormPriorityEligible, splitByPriority, canAddHighPriority, HIGH_PRIORITY_DAILY_LIMIT, shiftPriorityTier, resolveShiftedPriorityTier, resolveDropPriority, highPriorityTasksInSameColumn } from '../utils/taskPriority';
 import type { PriorityTier, Task } from '../api/tasks';
 
 function makeTask(id: string, priority: PriorityTier): Task {
@@ -21,6 +21,10 @@ function makeTask(id: string, priority: PriorityTier): Task {
     created_at: '2026-05-26T00:00:00Z',
     updated_at: '2026-05-26T00:00:00Z',
   };
+}
+
+function makeTaskWithDate(id: string, priority: PriorityTier, mustDoBy: string): Task {
+  return { ...makeTask(id, priority), must_do_by: mustDoBy };
 }
 
 describe('isPriorityEligible', () => {
@@ -272,5 +276,47 @@ describe('resolveDropPriority', () => {
   it('leaves a normal drop unchanged regardless of eligibility', () => {
     expect(resolveDropPriority('normal', 'today')).toBe('normal');
     expect(resolveDropPriority('normal', 'upcoming')).toBe('normal');
+  });
+});
+
+describe('highPriorityTasksInSameColumn', () => {
+  const TODAY = '2026-06-05';
+  const TOMORROW = '2026-06-06';
+
+  it('only counts high-priority tasks on the same date as target', () => {
+    const tasks = [
+      makeTaskWithDate('a', 'high', TODAY),
+      makeTaskWithDate('b', 'high', TOMORROW),
+      makeTaskWithDate('c', 'medium', TODAY),
+    ];
+    const target = makeTaskWithDate('target', 'medium', TODAY);
+    const result = highPriorityTasksInSameColumn(tasks, target, TODAY, TOMORROW);
+    expect(result.map((t) => t.id)).toEqual(['a']);
+  });
+
+  it('excludes high-priority tasks on a different day even if otherwise identical', () => {
+    const tasks = [makeTaskWithDate('a', 'high', TOMORROW)];
+    const target = makeTaskWithDate('target', 'normal', TODAY);
+    expect(highPriorityTasksInSameColumn(tasks, target, TODAY, TOMORROW)).toHaveLength(0);
+  });
+
+  it('returns an empty array when no tasks share the column', () => {
+    const target = makeTaskWithDate('target', 'normal', TODAY);
+    expect(highPriorityTasksInSameColumn([], target, TODAY, TOMORROW)).toHaveLength(0);
+  });
+
+  it('composes with canAddHighPriority to correctly scope a multi-day task list', () => {
+    // Regression case for the bug this function fixes: a naive unscoped count across
+    // both days would wrongly report the cap as reached for TOMORROW's target even
+    // though only TODAY is actually at the limit.
+    const tasks = [
+      makeTaskWithDate('a', 'high', TODAY),
+      makeTaskWithDate('b', 'high', TODAY),
+      makeTaskWithDate('c', 'high', TODAY),
+    ];
+    const target = makeTaskWithDate('target', 'medium', TOMORROW);
+    const scoped = highPriorityTasksInSameColumn(tasks, target, TODAY, TOMORROW);
+    expect(scoped).toHaveLength(0);
+    expect(canAddHighPriority(scoped, target, 3)).toBe(true);
   });
 });
