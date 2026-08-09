@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Task } from '../api/tasks';
 import { completeTask, deleteTask, updateTask } from '../api/tasks';
-import { getEffectiveDate } from '../utils/taskDateUtils';
+import { getEffectiveDate, getColumn, dateOnly } from '../utils/taskDateUtils';
+import { isPriorityEligible, resolveShiftedPriorityTier } from '../utils/taskPriority';
 import { TaskQuickEdit } from './TaskQuickEdit';
 import { TaskCardBody } from './TaskCardBody';
 
@@ -18,6 +19,26 @@ export function FocusedTaskCard({ task, boardColor, onRefresh }: { task: Task; b
   const effectiveDate = getEffectiveDate(task);
   const [isEditing, setIsEditing] = useState(false);
   const [editingDateField, setEditingDateField] = useState<DateFieldName | 'both' | null>(null);
+
+  const { today, tomorrow } = useMemo(() => {
+    const now = new Date();
+    const tom = new Date(now);
+    tom.setDate(tom.getDate() + 1);
+    return { today: dateOnly(now), tomorrow: dateOnly(tom) };
+  }, []);
+  const columnKey = useMemo(() => getColumn(task, today, tomorrow), [task, today, tomorrow]);
+  const eligible = isPriorityEligible(columnKey);
+
+  async function handlePriorityStep(steps: number) {
+    const nextTier = resolveShiftedPriorityTier(task.priority, steps, columnKey);
+    if (nextTier === task.priority) return;
+    try {
+      await updateTask(task.id, { priority: nextTier });
+      onRefresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update priority');
+    }
+  }
 
   async function handleDateChange(field: DateFieldName, value: string | null) {
     try {
@@ -69,7 +90,7 @@ export function FocusedTaskCard({ task, boardColor, onRefresh }: { task: Task; b
             task={task}
             layout="stacked"
             dateDisplay={{ mode: 'effective', effectiveDate }}
-            priorityBadge="static"
+            onPriorityStep={eligible ? handlePriorityStep : undefined}
             editingDateField={editingDateField}
             onDateFieldClick={setEditingDateField}
             onDateFieldCancel={() => setEditingDateField(null)}

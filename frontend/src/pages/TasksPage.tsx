@@ -27,7 +27,7 @@ import {
   formatDateWithDay,
   isFriday,
 } from '../utils/taskDateUtils';
-import { isPriorityEligible, splitByPriority, canAddHighPriority, resolveNextPriorityTier, resolveDropPriority } from '../utils/taskPriority';
+import { isPriorityEligible, splitByPriority, canAddHighPriority, resolveShiftedPriorityTier, resolveDropPriority } from '../utils/taskPriority';
 import { computeInsertSortOrder } from '../utils/taskOrder';
 import { getBoardColor } from '../utils/boardColor';
 import { useSettings } from '../hooks/useSettings';
@@ -254,11 +254,12 @@ export function TasksPage() {
     return map;
   }, [filteredTasks, today, tomorrow]);
 
-  async function handleTogglePriority(taskId: string, columnKey: ColumnKey) {
+  async function handlePriorityStep(taskId: string, columnKey: ColumnKey, steps: number) {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    const nextTier = resolveNextPriorityTier(task.priority, columnKey);
+    const nextTier = resolveShiftedPriorityTier(task.priority, steps, columnKey);
+    if (nextTier === task.priority) return; // clamped at the ladder's end, no-op
 
     if (nextTier === 'high') {
       const allHighForColumn = tasks.filter(
@@ -487,7 +488,7 @@ export function TasksPage() {
                               zTasks.map((task) => (
                                 <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
                                   boardColor={activeBoardColor}
-                                  onTogglePriority={isPriorityEligible(col.key) ? () => handleTogglePriority(task.id, col.key) : undefined}
+                                  onPriorityStep={isPriorityEligible(col.key) ? (steps: number) => handlePriorityStep(task.id, col.key, steps) : undefined}
                                   onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
                                   dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
                                 />

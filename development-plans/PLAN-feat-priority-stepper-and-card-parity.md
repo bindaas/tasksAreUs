@@ -1,10 +1,10 @@
 # PLAN-feat-priority-stepper-and-card-parity
 
 ## Status
-**State:** Planning-review
+**State:** Ready for PR
 **Last updated:** 2026-08-09 by Grumpy
-**Next step:** Sneezy's review is complete and addressed (see "Grumpy's response to Sneezy's review" section below) — this plan's design is finalized. Grumpy already presented the findings and the pre-implementation checklist to the user in chat and asked "Shall I proceed?"; the user has not yet answered that specific question (conversation moved on to PR1's merge instead). A fresh session should re-ask for explicit go-ahead before creating the branch or touching any code — do not assume approval from context. Once approved: create branch `feat-priority-stepper-and-card-parity` off up-to-date `main` (PR1, `fix-collapsed-priority-drop-target`, is already merged, commit `6211214` — no conflict), then implement per the Design section, running `tsc -b` at the two checkpoints noted in the Test plan.
-**Blocked on:** User approval to begin implementation.
+**Next step:** Commit, push, open PR.
+**Blocked on:** n/a — implementation complete. `tsc -b` clean at both checkpoints; full unit suite (186 tests, including 12 new/rewritten `taskPriority.test.ts` cases) passes. Verified live in browser: All-view stepper (Normal→Medium single/double-up, Medium→High/Normal, High→Medium/Normal — including the previously-impossible High→Medium step) all work with correct colors; Today-tab (non-All) cards now show the same orange High / blue Medium badges, the same stepper, and edit/complete/delete at the top, matching All view exactly.
 
 ## Branch
 `feat-priority-stepper-and-card-parity`, cut from up-to-date `main` (independent of PR1, `fix-collapsed-priority-drop-target` — no file overlap).
