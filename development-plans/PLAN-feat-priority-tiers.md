@@ -1,10 +1,10 @@
 # Development Plan: feat-priority-tiers
 
 ## Status
-**State:** Ready for PR — PR1 (backend, #72) and PR2 (web, #73) merged to `main`; PR3 (mobile, [#74](https://github.com/bindaas/tasksAreUs/pull/74)) open, full review chain complete, awaiting merge.
-**Last updated:** 2026-08-08 by Grumpy
-**Next step:** Merge PR #74 (`gh pr merge --merge`, matching PR1/PR2's convention), then this epic is fully shipped across backend/web/mobile.
-**Blocked on:** n/a — awaiting merge go-ahead.
+**State:** Merged — PR1 (backend, #72), PR2 (web, #73), and PR3 (mobile, [#74](https://github.com/bindaas/tasksAreUs/pull/74)) all merged to `main`. Epic complete.
+**Last updated:** 2026-08-09 by Grumpy
+**Next step:** None — epic shipped across backend, web, and mobile. Any further work (e.g. dropping the `is_high_priority` mirror column, see "Out of Scope / Explicit Follow-Ups" above) needs its own future plan.
+**Blocked on:** n/a.
 
 **PR3 review chain results (2026-08-08):**
 - **Dopey (code review):** No Must-fix items. One Should-fix (generic error alert on priority-toggle failure instead of distinguishing a 422 cap-reached response) — fixed and pushed. Verified test/tsc claims directly, used `graphify query` to confirm `resolveNextPriorityTier()`'s sole caller and that `FocusedTaskCard.tsx`/`FocusedView.tsx` correctly needed no changes.
