@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { FocusedBoard } from '../api/focusedView';
 import { FocusedTaskCard } from './FocusedTaskCard';
 import { useBoardCollapse, type ViewKey } from '../context/BoardCollapseContext';
@@ -36,18 +36,17 @@ export function BoardGroupedTasks({
   // the board actually visible here, only when it's actually viewed under
   // Single mode — never touches a different, off-screen board's remembered
   // selection (see PLAN-feat-tag-filter-single-mode.md §4 for why a global
-  // sweep on mode switch was rejected). Adjusted during render (React's
-  // recommended pattern for this) rather than in an effect, to avoid an extra
-  // render pass.
+  // sweep on mode switch was rejected). Runs as an effect, not during render,
+  // because clearBoardLabelSelection updates state owned by the ancestor
+  // FilterProvider rather than this component's own state.
   const reconcileKey = currentBoardId ? `${currentBoardId}:${matchMode}` : null;
-  const [reconciledFor, setReconciledFor] = useState<string | null>(null);
-  if (reconcileKey !== reconciledFor) {
-    setReconciledFor(reconcileKey);
+  useEffect(() => {
     if (matchMode === 'SINGLE' && currentBoardId) {
       const current = getBoardLabelSelection(currentBoardId);
       if (current.size > 1) clearBoardLabelSelection(currentBoardId);
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reconcileKey]);
   const selectedLabelIds = currentBoardId ? getBoardLabelSelection(currentBoardId) : EMPTY_LABEL_SET;
 
   // Auto-recovery for a vanished pin target: if the pinned board is no longer

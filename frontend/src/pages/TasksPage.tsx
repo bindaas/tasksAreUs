@@ -92,16 +92,17 @@ export function TasksPage() {
   // the board actually visible here, only when it's actually viewed under
   // Single mode — never touches a different, off-screen board's remembered
   // selection (see PLAN-feat-tag-filter-single-mode.md §5 for why a global
-  // sweep on mode switch was rejected).
+  // sweep on mode switch was rejected). Runs as an effect, not during render,
+  // because clearBoardLabelSelection updates state owned by the ancestor
+  // FilterProvider rather than this component's own state.
   const activeBoardReconcileKey = activeBoard ? `${activeBoard.id}:${matchMode}` : null;
-  const [reconciledFor, setReconciledFor] = useState<string | null>(null);
-  if (activeBoardReconcileKey !== reconciledFor) {
-    setReconciledFor(activeBoardReconcileKey);
+  useEffect(() => {
     if (matchMode === 'SINGLE' && activeBoard) {
       const current = getBoardLabelSelection(activeBoard.id);
       if (current.size > 1) clearBoardLabelSelection(activeBoard.id);
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBoardReconcileKey]);
   const selectedLabelIds = activeBoard ? getBoardLabelSelection(activeBoard.id) : EMPTY_LABEL_SET;
   const toggleLabel = (id: string) => activeBoard && toggleBoardLabel(activeBoard.id, id);
   const clearLabels = () => activeBoard && clearBoardLabelSelection(activeBoard.id);
