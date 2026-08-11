@@ -244,8 +244,8 @@ export function TaskCardBody({
 
   // Focused/Today/Tomorrow's backend queries (get_boards_with_tasks, shared by
   // focused_view_service.py and day_view.py) currently only ever return pending
-  // tasks, so this gate is presently redundant for the 'stacked' layout — but
-  // must be revisited if that query is ever loosened to include other states.
+  // tasks, so this gate is presently redundant — but must be revisited if that
+  // query is ever loosened to include other states.
   const actionsEl = task.state === 'pending' && (
     <div className="flex items-center gap-1 shrink-0">
       {onPriorityStep && (
@@ -288,7 +288,7 @@ export function TaskCardBody({
       </button>
       <button
         onClick={(e) => { e.stopPropagation(); onComplete(); }}
-        className="p-1.5 rounded-full bg-green-50 hover:bg-green-100 text-green-600 transition-colors"
+        className="p-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors"
         title="Complete"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
