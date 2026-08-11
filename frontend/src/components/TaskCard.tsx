@@ -6,6 +6,7 @@ import { LabelBadge } from './LabelBadge';
 import { TaskQuickEdit } from './TaskQuickEdit';
 import { TaskCardBody } from './TaskCardBody';
 import { isOverdue } from '../utils/taskDateUtils';
+import { PRIORITY_CARD_BG } from '../utils/priorityColor';
 
 type DateFieldName = 'must_do_by' | 'target_date';
 
@@ -64,7 +65,7 @@ export function TaskCard({
 
   return (
     <div
-      className={`bg-white border border-gray-200 rounded-lg p-3 transition-shadow select-none ${
+      className={`${isEditing ? 'bg-white' : PRIORITY_CARD_BG[task.priority]} border border-gray-200 rounded-lg p-3 transition-shadow select-none ${
         isEditing ? 'border-indigo-300 shadow-md' : 'cursor-pointer hover:shadow-md'
       } ${dragging ? 'opacity-40' : ''} ${
         dropIndicator === 'above' ? 'border-t-2 border-t-indigo-500' : ''
@@ -99,7 +100,6 @@ export function TaskCard({
       ) : (
         <TaskCardBody
           task={task}
-          layout="inline"
           dateDisplay={{ mode: 'split', mustOverdue }}
           onPriorityStep={onPriorityStep}
           editingDateField={editingDateField}
