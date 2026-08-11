@@ -4,10 +4,10 @@ import { formatDate, isOverdue, shouldShowTargetDate, bothDatesSetAndDistinct } 
 
 type DateFieldName = 'must_do_by' | 'target_date';
 
-const TIER_ACCENT: Record<PriorityTier, { badge: string; button: string }> = {
-  high: { badge: 'text-orange-600 bg-orange-50 border border-orange-200', button: 'bg-orange-50 hover:bg-orange-100 text-orange-600' },
-  medium: { badge: 'text-blue-600 bg-blue-50 border border-blue-200', button: 'bg-blue-50 hover:bg-blue-100 text-blue-600' },
-  normal: { badge: '', button: 'bg-gray-50 hover:bg-gray-100 text-gray-500' },
+const TIER_ACCENT: Record<PriorityTier, { button: string }> = {
+  high: { button: 'bg-orange-50 hover:bg-orange-100 text-orange-600' },
+  medium: { button: 'bg-blue-50 hover:bg-blue-100 text-blue-600' },
+  normal: { button: 'bg-gray-50 hover:bg-gray-100 text-gray-500' },
 };
 
 interface TaskCardBodyProps {
@@ -15,7 +15,6 @@ interface TaskCardBodyProps {
   dateDisplay:
     | { mode: 'split'; mustOverdue: boolean }
     | { mode: 'effective'; effectiveDate: string | null };
-  layout: 'inline' | 'stacked';
   onPriorityStep?: (steps: number) => void;
   renderLabels: (labels: Label[]) => ReactNode;
   onEdit: () => void;
@@ -122,7 +121,6 @@ function DateFieldLine({
 export function TaskCardBody({
   task,
   dateDisplay,
-  layout,
   onPriorityStep,
   renderLabels,
   onEdit,
@@ -133,22 +131,8 @@ export function TaskCardBody({
   onDateFieldCancel,
   onDateChange,
 }: TaskCardBodyProps) {
-  const priorityIndicator = task.priority === 'high' || task.priority === 'medium'
-    ? (
-      <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wide rounded px-1.5 py-0.5 shrink-0 ${TIER_ACCENT[task.priority].badge}`}>
-        {task.priority === 'high' ? 'High' : 'Medium'}
-      </span>
-    )
-    : null;
-
   const titleEl = (
-    <h3
-      className={
-        layout === 'stacked'
-          ? 'text-sm font-medium text-gray-800 line-clamp-2 leading-snug mb-2'
-          : 'text-gray-900 font-medium text-sm leading-snug'
-      }
-    >
+    <h3 className="text-sm font-medium text-gray-800 line-clamp-2 leading-snug mb-2">
       {task.title}
     </h3>
   );
@@ -260,8 +244,8 @@ export function TaskCardBody({
 
   // Focused/Today/Tomorrow's backend queries (get_boards_with_tasks, shared by
   // focused_view_service.py and day_view.py) currently only ever return pending
-  // tasks, so this gate is presently redundant for the 'stacked' layout — but
-  // must be revisited if that query is ever loosened to include other states.
+  // tasks, so this gate is presently redundant — but must be revisited if that
+  // query is ever loosened to include other states.
   const actionsEl = task.state === 'pending' && (
     <div className="flex items-center gap-1 shrink-0">
       {onPriorityStep && (
@@ -304,7 +288,7 @@ export function TaskCardBody({
       </button>
       <button
         onClick={(e) => { e.stopPropagation(); onComplete(); }}
-        className="p-1.5 rounded-full bg-green-50 hover:bg-green-100 text-green-600 transition-colors"
+        className="p-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors"
         title="Complete"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -323,32 +307,10 @@ export function TaskCardBody({
     </div>
   );
 
-  if (layout === 'stacked') {
-    return (
-      <>
-        {(priorityIndicator || actionsEl) && (
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <div>{priorityIndicator}</div>
-            {actionsEl}
-          </div>
-        )}
-        {titleEl}
-        {dateEl}
-        {renderLabels(task.labels)}
-        {linksEl}
-      </>
-    );
-  }
-
   return (
     <>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
-          {priorityIndicator}
-          {titleEl}
-        </div>
-        {actionsEl}
-      </div>
+      {actionsEl && <div className="flex justify-end mb-1.5">{actionsEl}</div>}
+      {titleEl}
       {dateEl}
       {renderLabels(task.labels)}
       {linksEl}

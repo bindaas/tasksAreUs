@@ -33,28 +33,7 @@ export function LabelFilterChips({
   onMatchModeChange: (mode: FilterMode) => void;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-1.5">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {CATEGORIES.map((cat) => {
-          const catLabels = ((labelsByCategory[cat] ?? []) as Label[]).slice().sort((a, b) => a.value.localeCompare(b.value));
-          if (catLabels.length === 0) return null;
-          const colors = CATEGORY_COLORS[cat];
-          return catLabels.map((label) => {
-            const active = selectedLabelIds.has(label.id);
-            return (
-              <button
-                key={label.id}
-                onClick={() => onToggle(label.id)}
-                className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors ${
-                  active ? colors.active : colors.inactive
-                }`}
-              >
-                {label.value}
-              </button>
-            );
-          });
-        })}
-      </div>
+    <div className="mb-4 flex items-center justify-between gap-3">
       <div className="flex items-center gap-1.5 shrink-0">
         <div className="flex rounded-full border border-gray-200 overflow-hidden text-xs font-medium">
           {(['SINGLE', 'AND', 'OR'] as const).map((mode) => (
@@ -76,6 +55,29 @@ export function LabelFilterChips({
         >
           Clear filters
         </button>
+      </div>
+      <div className="overflow-x-auto min-w-0 flex-1 -mx-1 px-1">
+        <div className="flex justify-end gap-1.5 min-w-full w-max">
+          {CATEGORIES.map((cat) => {
+            const catLabels = ((labelsByCategory[cat] ?? []) as Label[]).slice().sort((a, b) => a.value.localeCompare(b.value));
+            if (catLabels.length === 0) return null;
+            const colors = CATEGORY_COLORS[cat];
+            return catLabels.map((label) => {
+              const active = selectedLabelIds.has(label.id);
+              return (
+                <button
+                  key={label.id}
+                  onClick={() => onToggle(label.id)}
+                  className={`shrink-0 text-xs px-2.5 py-1 rounded-full border font-medium transition-colors ${
+                    active ? colors.active : colors.inactive
+                  }`}
+                >
+                  {label.value}
+                </button>
+              );
+            });
+          })}
+        </div>
       </div>
     </div>
   );

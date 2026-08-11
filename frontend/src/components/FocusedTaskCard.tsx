@@ -6,6 +6,7 @@ import { getEffectiveDate, getColumn, dateOnly } from '../utils/taskDateUtils';
 import { isPriorityEligible, resolveShiftedPriorityTier, canAddHighPriority, highPriorityTasksInSameColumn } from '../utils/taskPriority';
 import { TaskQuickEdit } from './TaskQuickEdit';
 import { TaskCardBody } from './TaskCardBody';
+import { PRIORITY_CARD_BG } from '../utils/priorityColor';
 
 type DateFieldName = 'must_do_by' | 'target_date';
 
@@ -96,7 +97,7 @@ export function FocusedTaskCard({
   return (
     <div
       onClick={() => { if (!isEditing && !editingDateField) navigate(`/tasks/${task.id}`); }}
-      className={`bg-white rounded-lg border border-gray-200 shadow-sm transition-shadow overflow-hidden ${
+      className={`${isEditing ? 'bg-white' : PRIORITY_CARD_BG[task.priority]} rounded-lg border border-gray-200 shadow-sm transition-shadow overflow-hidden ${
         isEditing ? 'border-indigo-300 shadow-md' : 'cursor-pointer hover:shadow-md'
       }`}
       style={{ borderLeftColor: boardColor, borderLeftWidth: 4 }}
@@ -120,7 +121,6 @@ export function FocusedTaskCard({
             )}
             <TaskCardBody
               task={task}
-              layout="stacked"
               dateDisplay={{ mode: 'effective', effectiveDate }}
               onPriorityStep={eligible ? handlePriorityStep : undefined}
               editingDateField={editingDateField}
