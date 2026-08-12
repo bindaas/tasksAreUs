@@ -7,6 +7,7 @@ import type { Board } from '../api/boards';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormPriorityEligible } from '../utils/taskPriority';
 import { isValidLinkUrl, withReadyLinkRow } from '../utils/taskLinks';
+import { computeSyncedScrollTop } from '../utils/scrollSync';
 
 function newLinkId(): string {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -70,12 +71,17 @@ export function TaskForm({
 
   function syncScroll(source: HTMLElement, target: HTMLElement) {
     if (syncingScrollRef.current) return;
-    const sourceRange = source.scrollHeight - source.clientHeight;
-    if (sourceRange <= 0) return;
-    const ratio = source.scrollTop / sourceRange;
+    const scrollTop = computeSyncedScrollTop(source, target);
+    if (scrollTop === null) return;
     syncingScrollRef.current = true;
-    target.scrollTop = ratio * (target.scrollHeight - target.clientHeight);
-    syncingScrollRef.current = false;
+    target.scrollTop = scrollTop;
+    // The scrollTop write above dispatches target's own `scroll` event
+    // asynchronously, not inline — resetting the guard on the next frame
+    // (rather than synchronously here) keeps it set until that reciprocal
+    // event fires, so it actually suppresses the reciprocal syncScroll call.
+    requestAnimationFrame(() => {
+      syncingScrollRef.current = false;
+    });
   }
 
   const isEditMode = !!initialValues;
