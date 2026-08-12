@@ -7,6 +7,7 @@ import type { Board } from '../api/boards';
 import { dateOnly } from '../utils/taskDateUtils';
 import { isFormPriorityEligible } from '../utils/taskPriority';
 import { isValidLinkUrl, withReadyLinkRow } from '../utils/taskLinks';
+import { computeSyncedScrollTop, shouldApplySync } from '../utils/scrollSync';
 
 function newLinkId(): string {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -63,6 +64,15 @@ export function TaskForm({
   const [newTagValue, setNewTagValue] = useState('');
   const [addTagBusy, setAddTagBusy] = useState(false);
   const [addTagError, setAddTagError] = useState<string | null>(null);
+
+  const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const notesPreviewRef = useRef<HTMLDivElement>(null);
+
+  function syncScroll(source: HTMLElement, target: HTMLElement) {
+    const scrollTop = computeSyncedScrollTop(source, target);
+    if (scrollTop === null || !shouldApplySync(target.scrollTop, scrollTop)) return;
+    target.scrollTop = scrollTop;
+  }
 
   const isEditMode = !!initialValues;
   const movingBoard = isEditMode && !!initialValues?.board_id && boardId !== initialValues.board_id;
@@ -238,13 +248,27 @@ export function TaskForm({
         <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
           <textarea
+            ref={notesTextareaRef}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
+            onScroll={(e) => {
+              if (notesPreviewRef.current) {
+                syncScroll(e.currentTarget, notesPreviewRef.current);
+              }
+            }}
             rows={7}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
             placeholder="Any additional details..."
           />
-          <div className="h-full max-h-80 overflow-y-auto border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+          <div
+            ref={notesPreviewRef}
+            onScroll={(e) => {
+              if (notesTextareaRef.current) {
+                syncScroll(e.currentTarget, notesTextareaRef.current);
+              }
+            }}
+            className="h-full max-h-80 overflow-y-auto border border-gray-200 rounded-lg px-3 py-2 bg-gray-50"
+          >
             {notes.trim() === '' ? (
               <p className="text-sm text-gray-400 italic">Nothing to preview yet</p>
             ) : (
