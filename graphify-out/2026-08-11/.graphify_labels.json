@@ -44,7 +44,7 @@
   "42": "PLAN-fix-board-tag-ux-polish",
   "43": "devDependencies",
   "44": "patch",
-  "45": "@react-navigation/native",
+  "45": "@believer/react-native-markdown-display",
   "46": "apiFetch",
   "47": "_is_hp_eligible_date",
   "48": "TestCompleteTask",

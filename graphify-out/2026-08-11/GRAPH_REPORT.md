@@ -5,7 +5,7 @@
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1828 nodes · 4190 edges · 124 communities (77 shown, 47 thin omitted)
+- 1828 nodes · 4181 edges · 124 communities (77 shown, 47 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 217 edges (avg confidence: 0.54)
 - Token cost: 0 input · 0 output
 
@@ -60,7 +60,7 @@
 - PLAN-fix-board-tag-ux-polish
 - devDependencies
 - patch
-- @react-navigation/native
+- @believer/react-native-markdown-display
 - apiFetch
 - _is_hp_eligible_date
 - TestCompleteTask
@@ -267,8 +267,8 @@ Cohesion: 0.09
 Nodes (22): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, jsx, lib, module, moduleDetection, moduleResolution (+14 more)
 
 ### Community 24 - "TaskForm.tsx"
-Cohesion: 0.19
-Nodes (13): TaskLink, CATEGORY_DISPLAY_NAMES, CATEGORY_ORDER, LabelCategory, newLinkId(), TaskForm(), computeSyncedScrollTop(), ScrollMetrics (+5 more)
+Cohesion: 0.16
+Nodes (14): TaskLink, CATEGORY_DISPLAY_NAMES, CATEGORY_ORDER, LabelCategory, newLinkId(), TaskForm(), TaskFormProps, computeSyncedScrollTop() (+6 more)
 
 ### Community 25 - "PLAN-fix-collapsed-priority-drop-target"
 Cohesion: 0.11
@@ -304,7 +304,7 @@ Nodes (7): useView(), ViewContext, ViewContextValue, ViewProvider(), VIEW_LABELS
 
 ### Community 33 - "dependencies"
 Cohesion: 0.13
-Nodes (15): @believer/react-native-markdown-display, expo, expo-auth-session, expo-crypto, dependencies, @believer/react-native-markdown-display, expo, expo-auth-session (+7 more)
+Nodes (15): expo, expo-auth-session, expo-crypto, dependencies, expo, expo-auth-session, expo-crypto, @react-native-async-storage/async-storage (+7 more)
 
 ### Community 34 - "dependencies"
 Cohesion: 0.13
@@ -412,7 +412,7 @@ Nodes (32): create_board(), list_boards(), get, post, put, Session, update_board
 
 ### Community 117 - "frontend/src/api/tasks.ts"
 Cohesion: 0.09
-Nodes (30): PLAN: Frontend & Mobile Type Cleanup (PR 4, follow-up), Narrow Label.category Union / Remove Dead recurrence_group_id Type, completeTask(), CompleteTaskBody, CompleteTaskResponse, createTask(), CreateTaskBody, deleteTask() (+22 more)
+Nodes (29): PLAN: Frontend & Mobile Type Cleanup (PR 4, follow-up), Narrow Label.category Union / Remove Dead recurrence_group_id Type, completeTask(), CompleteTaskBody, CompleteTaskResponse, createTask(), CreateTaskBody, deleteTask() (+21 more)
 
 ### Community 118 - "settings.py"
 Cohesion: 0.42
@@ -443,7 +443,7 @@ Nodes (3): labelA, labelB, filterTasks()
   archive/PLAN-feat-overdue-view-colors-actions.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **491 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+486 more)
+- **492 isolated node(s):** `TaskFormProps`, `LabelCategory`, `CATEGORY_ORDER`, `CATEGORY_DISPLAY_NAMES`, `ScrollMetrics` (+487 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **47 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -455,9 +455,9 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `Development Plan: feat-focused-view (backend, PR 1 of 3)` connect `Task` to `schemas.py`, `TasksPage.tsx`, `mobile/src/api/focusedView.ts`?**
   _High betweenness centrality (0.128) - this node is a cross-community bridge._
 - **Why does `Plan: feat-focused-view-mobile (PR 3 of 3)` connect `mobile/src/api/focusedView.ts` to `TasksScreen.tsx`, `Task`, `TasksPage.tsx`, `apiFetch`?**
-  _High betweenness centrality (0.127) - this node is a cross-community bridge._
+  _High betweenness centrality (0.123) - this node is a cross-community bridge._
 - **Why does `Task` connect `Task` to `._make_db`, `test_focused_view_service.py`, `main.py`, `test_board_service.py`, `test_task_service.py`, `sync`, `StateEnum`, `patch`, `_is_hp_eligible_date`, `TestCompleteTask`, `get_completions`, `create_task`, `_get_high_priority_limit`, `reopen_task`?**
-  _High betweenness centrality (0.066) - this node is a cross-community bridge._
+  _High betweenness centrality (0.065) - this node is a cross-community bridge._
 - **Are the 44 inferred relationships involving `Task` (e.g. with `TestCreateBoard` and `TestDeleteBoard`) actually correct?**
   _`Task` has 44 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 36 inferred relationships involving `StateEnum` (e.g. with `TestDateWindow` and `TestGetDayViewTasks`) actually correct?**

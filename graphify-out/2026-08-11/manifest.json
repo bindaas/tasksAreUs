@@ -375,7 +375,7 @@
     "semantic_hash": ""
   },
   "frontend/src/components/TaskForm.tsx": {
-    "mtime": 1786494365.8844187,
+    "mtime": 1786494052.1393352,
     "ast_hash": "56fabeaa915861e560d63dbf8d5d8eda",
     "semantic_hash": ""
   },
@@ -840,7 +840,7 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1786494365.8837192,
+    "mtime": 1786493721.4209526,
     "ast_hash": "682b61dbbb6bacc47dcc1151007b0b97",
     "semantic_hash": ""
   },
@@ -860,8 +860,8 @@
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1786494365.884029,
-    "ast_hash": "33e1742077629ccca40fb4c640994cc9",
+    "mtime": 1786493478.8469944,
+    "ast_hash": "a3ee8949bd690e3db786abe54d210809",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1305,12 +1305,12 @@
     "semantic_hash": ""
   },
   "frontend/src/__tests__/scrollSync.test.ts": {
-    "mtime": 1786494365.8842096,
+    "mtime": 1786494063.9853466,
     "ast_hash": "8ef370a8c01130f7084b92850a011e75",
     "semantic_hash": ""
   },
   "frontend/src/utils/scrollSync.ts": {
-    "mtime": 1786494365.8845801,
+    "mtime": 1786494041.4951627,
     "ast_hash": "9eb7d51270baa8f13eaf6989ef649f23",
     "semantic_hash": ""
   }
