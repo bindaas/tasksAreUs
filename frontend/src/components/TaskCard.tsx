@@ -5,8 +5,8 @@ import { completeTask, deleteTask, updateTask } from '../api/tasks';
 import { LabelBadge } from './LabelBadge';
 import { TaskQuickEdit } from './TaskQuickEdit';
 import { TaskCardBody } from './TaskCardBody';
-import { isOverdue } from '../utils/taskDateUtils';
-import { PRIORITY_CARD_BG } from '../utils/priorityColor';
+import { isOverdue, type ColumnKey } from '../utils/taskDateUtils';
+import { taskCardBg } from '../utils/priorityColor';
 
 type DateFieldName = 'must_do_by' | 'target_date';
 
@@ -15,6 +15,7 @@ interface TaskCardProps {
   labels: Label[];
   onRefresh: () => void;
   boardColor: string;
+  columnKey: ColumnKey;
   draggable?: boolean;
   onPriorityStep?: (steps: number) => void;
   onCardDragOver?: (edge: 'above' | 'below') => void;
@@ -24,7 +25,7 @@ interface TaskCardProps {
 const LABEL_CATEGORY_ORDER: Record<string, number> = { type: 0 };
 
 export function TaskCard({
-  task, labels, onRefresh, boardColor, draggable: isDraggable = false, onPriorityStep,
+  task, labels, onRefresh, boardColor, columnKey, draggable: isDraggable = false, onPriorityStep,
   onCardDragOver, dropIndicator = null,
 }: TaskCardProps) {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ export function TaskCard({
 
   return (
     <div
-      className={`${isEditing ? 'bg-white' : PRIORITY_CARD_BG[task.priority]} border border-gray-200 rounded-lg p-3 transition-shadow select-none ${
+      className={`${isEditing ? 'bg-white' : taskCardBg(columnKey, task.priority)} border border-gray-200 rounded-lg p-3 transition-shadow select-none ${
         isEditing ? 'border-indigo-300 shadow-md' : 'cursor-pointer hover:shadow-md'
       } ${dragging ? 'opacity-40' : ''} ${
         dropIndicator === 'above' ? 'border-t-2 border-t-indigo-500' : ''

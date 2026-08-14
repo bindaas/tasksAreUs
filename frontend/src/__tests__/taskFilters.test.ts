@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterTasks, filterBoards, toggleLabelSelection } from '../utils/taskFilters';
+import { filterTasks, filterBoards, toggleLabelSelection, sortLabelsForFilter } from '../utils/taskFilters';
 import type { Task } from '../api/tasks';
 import type { FocusedBoard } from '../api/focusedView';
 
@@ -213,6 +213,36 @@ describe('filterTasks — label AND search', () => {
     ];
     const result = filterTasks(tasks, new Set(['label-a']), 'buy');
     expect(result.map((t) => t.id)).toEqual(['1']);
+  });
+});
+
+// ── sortLabelsForFilter ───────────────────────────────────────────────────────
+
+describe('sortLabelsForFilter', () => {
+  it('sorts alphabetically when nothing is selected', () => {
+    const result = sortLabelsForFilter([labelA, labelB], new Set());
+    expect(result.map((l) => l.value)).toEqual(['Deep', 'Work']);
+  });
+
+  it('puts a selected label first even if it sorts later alphabetically', () => {
+    const result = sortLabelsForFilter([labelA, labelB], new Set(['label-a']));
+    expect(result.map((l) => l.id)).toEqual(['label-a', 'label-b']);
+  });
+
+  it('sorts alphabetically within the selected group and within the unselected group', () => {
+    const labelC = { id: 'label-c', category: 'type' as const, value: 'Ate' };
+    const labelD = { id: 'label-d', category: 'type' as const, value: 'Zoo' };
+    const result = sortLabelsForFilter(
+      [labelA, labelB, labelC, labelD],
+      new Set(['label-d', 'label-a']),
+    );
+    expect(result.map((l) => l.id)).toEqual(['label-a', 'label-d', 'label-c', 'label-b']);
+  });
+
+  it('does not mutate the input array', () => {
+    const input = [labelA, labelB];
+    sortLabelsForFilter(input, new Set(['label-b']));
+    expect(input).toEqual([labelA, labelB]);
   });
 });
 
