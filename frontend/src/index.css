@@ -12,3 +12,14 @@ body {
 #root {
   min-height: 100vh;
 }
+
+.scrollbar-thin-x {
+  scrollbar-width: thin; /* Firefox */
+}
+.scrollbar-thin-x::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-thin-x::-webkit-scrollbar-thumb {
+  background-color: rgb(209 213 219); /* tailwind gray-300 */
+  border-radius: 9999px;
+}

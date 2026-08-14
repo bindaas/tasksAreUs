@@ -488,6 +488,7 @@ export function TasksPage() {
                               zTasks.map((task) => (
                                 <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
                                   boardColor={activeBoardColor}
+                                  columnKey={col.key}
                                   onPriorityStep={isPriorityEligible(col.key) ? (steps: number) => handlePriorityStep(task.id, col.key, steps) : undefined}
                                   onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
                                   dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
@@ -599,6 +600,7 @@ export function TasksPage() {
                         colTasks.map((task) => (
                           <TaskCard key={task.id} task={task} labels={labels} onRefresh={refetch} draggable
                             boardColor={activeBoardColor}
+                            columnKey={col.key}
                             onCardDragOver={(edge) => { setDragOverTaskId(task.id); setDragOverEdge(edge); }}
                             dropIndicator={dragOverTaskId === task.id ? dragOverEdge : null}
                           />

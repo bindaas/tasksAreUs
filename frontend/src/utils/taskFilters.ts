@@ -1,4 +1,4 @@
-import type { Task } from '../api/tasks';
+import type { Task, Label } from '../api/tasks';
 import type { FocusedBoard } from '../api/focusedView';
 
 export function matchesSearch(task: Task, query: string): boolean {
@@ -38,6 +38,16 @@ export function filterTasks(
     result = result.filter((task) => matchesSearch(task, searchQuery));
   }
   return result;
+}
+
+/** Selected labels sort first (left side of the filter row), each group alphabetical. */
+export function sortLabelsForFilter(labels: Label[], selectedLabelIds: Set<string>): Label[] {
+  return labels.slice().sort((a, b) => {
+    const aSel = selectedLabelIds.has(a.id) ? 0 : 1;
+    const bSel = selectedLabelIds.has(b.id) ? 0 : 1;
+    if (aSel !== bSel) return aSel - bSel;
+    return a.value.localeCompare(b.value);
+  });
 }
 
 export function filterBoards(boards: FocusedBoard[], searchQuery: string): FocusedBoard[] {

@@ -1,5 +1,6 @@
 import type { Label } from '../api/tasks';
 import type { FilterMode } from '../utils/taskFilters';
+import { sortLabelsForFilter } from '../utils/taskFilters';
 
 type LabelCategory = 'type';
 const CATEGORIES: LabelCategory[] = ['type'];
@@ -56,10 +57,10 @@ export function LabelFilterChips({
           Clear filters
         </button>
       </div>
-      <div className="overflow-x-auto min-w-0 flex-1 -mx-1 px-1">
-        <div className="flex justify-end gap-1.5 min-w-full w-max">
+      <div className="overflow-x-auto scrollbar-thin-x min-w-0 flex-1 -mx-1 px-1 pb-2 -mb-2">
+        <div className="flex justify-start gap-1.5 min-w-full w-max">
           {CATEGORIES.map((cat) => {
-            const catLabels = ((labelsByCategory[cat] ?? []) as Label[]).slice().sort((a, b) => a.value.localeCompare(b.value));
+            const catLabels = sortLabelsForFilter((labelsByCategory[cat] ?? []) as Label[], selectedLabelIds);
             if (catLabels.length === 0) return null;
             const colors = CATEGORY_COLORS[cat];
             return catLabels.map((label) => {
