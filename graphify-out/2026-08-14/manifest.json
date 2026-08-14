@@ -245,7 +245,7 @@
     "semantic_hash": ""
   },
   "frontend/src/__tests__/taskFilters.test.ts": {
-    "mtime": 1786749264.4149117,
+    "mtime": 1786748073.2494116,
     "ast_hash": "df6c5e3af547c90e141d3e0d610713b3",
     "semantic_hash": ""
   },
@@ -345,7 +345,7 @@
     "semantic_hash": ""
   },
   "frontend/src/components/FocusedTaskCard.tsx": {
-    "mtime": 1786749264.41551,
+    "mtime": 1786748073.249546,
     "ast_hash": "a40658c1ae15043195d184eac588476b",
     "semantic_hash": ""
   },
@@ -365,7 +365,7 @@
     "semantic_hash": "cff15b8f62cce919dda3d22b98480995"
   },
   "frontend/src/components/TaskCard.tsx": {
-    "mtime": 1786749264.4158058,
+    "mtime": 1786748073.2497733,
     "ast_hash": "a311470e9322891deb28fe00d71304c5",
     "semantic_hash": ""
   },
@@ -465,7 +465,7 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/TasksPage.tsx": {
-    "mtime": 1786749264.4161084,
+    "mtime": 1786748073.2499814,
     "ast_hash": "dd3178fcd1ec292e6205b1fbd510a0a7",
     "semantic_hash": ""
   },
@@ -490,7 +490,7 @@
     "semantic_hash": ""
   },
   "frontend/src/utils/taskFilters.ts": {
-    "mtime": 1786749264.4163425,
+    "mtime": 1786748073.2501986,
     "ast_hash": "2c26bdada52fd1b8cbed58fa28541015",
     "semantic_hash": ""
   },
@@ -840,8 +840,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1786749264.4137037,
-    "ast_hash": "f46f6047f803206bdc85d3334595985c",
+    "mtime": 1786494365.8837192,
+    "ast_hash": "682b61dbbb6bacc47dcc1151007b0b97",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -860,8 +860,8 @@
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1786749264.4143047,
-    "ast_hash": "7dfe5f8a3d9a029cc839464ceb8c38f7",
+    "mtime": 1786494365.884029,
+    "ast_hash": "33e1742077629ccca40fb4c640994cc9",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1225,7 +1225,7 @@
     "semantic_hash": ""
   },
   "frontend/src/components/LabelFilterChips.tsx": {
-    "mtime": 1786749264.415657,
+    "mtime": 1786748073.2496471,
     "ast_hash": "e6544d47a7507ee4baa146874c81a38d",
     "semantic_hash": ""
   },
@@ -1290,12 +1290,12 @@
     "semantic_hash": ""
   },
   "frontend/src/__tests__/priorityColor.test.ts": {
-    "mtime": 1786749264.4146986,
+    "mtime": 1786748073.2492929,
     "ast_hash": "35942ed9994c60dc3385c2bc3058029b",
     "semantic_hash": ""
   },
   "frontend/src/utils/priorityColor.ts": {
-    "mtime": 1786749264.4162362,
+    "mtime": 1786748073.250107,
     "ast_hash": "6d388e8b44da50ac6e5884bced26cff1",
     "semantic_hash": ""
   },
@@ -1315,7 +1315,7 @@
     "semantic_hash": ""
   },
   "development-plans/PLAN-fix-overdue-shading-and-tag-filter-scrollbar.md": {
-    "mtime": 1786749264.4145062,
+    "mtime": 1786748171.9384284,
     "ast_hash": "4d092a4b72585ca783c3827707814904",
     "semantic_hash": ""
   }
