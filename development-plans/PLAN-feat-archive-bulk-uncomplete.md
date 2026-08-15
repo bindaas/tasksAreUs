@@ -1,9 +1,9 @@
 # PLAN: feat-archive-bulk-uncomplete — Bulk un-complete/delete on the Archive page, plus an "All" date filter and checkmark removal
 
 ## Status
-**State:** Ready for PR
+**State:** Merged
 **Last updated:** 2026-08-15 by Grumpy
-**Next step:** `/full-review` complete on PR #82 (https://github.com/bindaas/tasksAreUs/pull/82) — awaiting user merge decision.
+**Next step:** n/a — shipped. Merged to `main` via PR #82 (merge commit `e782503`). Frontend-only, no mobile files touched.
 **Blocked on:** n/a
 
 **Full review chain results (2026-08-15):**
