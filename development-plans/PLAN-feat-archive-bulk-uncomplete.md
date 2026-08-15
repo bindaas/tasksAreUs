@@ -3,8 +3,14 @@
 ## Status
 **State:** Ready for PR
 **Last updated:** 2026-08-15 by Grumpy
-**Next step:** `/full-review` in progress on PR #82 (https://github.com/bindaas/tasksAreUs/pull/82) — Doc (architecture) has run and its 3 recommend items are applied and pushed; code review (Dopey), test review (Sleepy), and requirements review (Bashful) still to run.
+**Next step:** `/full-review` complete on PR #82 (https://github.com/bindaas/tasksAreUs/pull/82) — awaiting user merge decision.
 **Blocked on:** n/a
+
+**Full review chain results (2026-08-15):**
+- **Doc (architecture):** 3 recommend items, all applied (per-card `bulkActionLoading` gating, batched bulk requests, Delete path manually verified) — see above.
+- **Dopey (code review):** approved with 1 Should-fix (stale `ARCHITECTURE.MD` text describing the already-fixed gating gap as still present) — fixed, plus a stale test-file-count nit fixed opportunistically. No Must-fix items.
+- **Sleepy (test review):** integration suite run against this branch, all sections pass; no test changes needed — this PR reuses `POST /tasks/{id}/reopen` and `DELETE /tasks/{id}`, both already exhaustively covered, and adds no backend/data-model surface.
+- **Bashful (requirements):** `PRODUCT_REQUIREMENTS_DOCUMENT.MD` updated to document the bulk selection UI, "All" preset, auto-expand-on-select-all, and checkmark removal.
 
 Implemented on branch `feat-archive-bulk-uncomplete`. `tsc -b` clean, all 211 frontend unit tests pass (including the new `'all'` preset case). Manually verified in-browser (Docker dev stack): "All" preset sets `from=2000-01-01`; checkmark removed from both card layouts; per-card checkbox toggles independently without navigating (stopPropagation confirmed) and without a React console warning; "Select all" while a board group was collapsed correctly auto-expanded it and selected every loaded task (confirmed the Sneezy-flagged Gap is resolved); per-card un-complete button reopened the task, removed it from Archive, and confirmed it reappeared pending on its board's "No Date" column in the Board view; single-board (flat-list) layout renders via the same shared `CompletionCard`, correctly without a color accent stripe, matching prior behavior.
 
