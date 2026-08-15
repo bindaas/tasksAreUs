@@ -22,9 +22,10 @@ interface CompletionCardProps {
   onToggleSelect: (taskId: string) => void;
   onUncomplete: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  actionsDisabled?: boolean;
 }
 
-export function CompletionCard({ item, color, selected, onToggleSelect, onUncomplete, onDelete }: CompletionCardProps) {
+export function CompletionCard({ item, color, selected, onToggleSelect, onUncomplete, onDelete, actionsDisabled = false }: CompletionCardProps) {
   const navigate = useNavigate();
   const sortedLabels = [...item.labels].sort((a, b) => a.value.localeCompare(b.value));
   return (
@@ -49,7 +50,8 @@ export function CompletionCard({ item, color, selected, onToggleSelect, onUncomp
           <div className="shrink-0 flex items-center gap-1.5">
             <button
               onClick={(e) => { e.stopPropagation(); onUncomplete(item.task_id); }}
-              className="p-1.5 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors"
+              disabled={actionsDisabled}
+              className="p-1.5 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               title="Mark as incomplete"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -58,7 +60,8 @@ export function CompletionCard({ item, color, selected, onToggleSelect, onUncomp
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(item.task_id); }}
-              className="p-1.5 rounded-full bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+              disabled={actionsDisabled}
+              className="p-1.5 rounded-full bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               title="Delete"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -85,9 +88,10 @@ interface ArchiveBoardGroupsProps {
   onToggleSelect: (taskId: string) => void;
   onUncomplete: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  actionsDisabled?: boolean;
 }
 
-export function ArchiveBoardGroups({ boards, selectedIds, onToggleSelect, onUncomplete, onDelete }: ArchiveBoardGroupsProps) {
+export function ArchiveBoardGroups({ boards, selectedIds, onToggleSelect, onUncomplete, onDelete, actionsDisabled = false }: ArchiveBoardGroupsProps) {
   const { isCollapsed, toggleBoard, setAllCollapsed } = useBoardCollapse();
 
   const allCollapsed = boards.length > 0 && boards.every((b) => isCollapsed('archive', b.board_id));
@@ -131,6 +135,7 @@ export function ArchiveBoardGroups({ boards, selectedIds, onToggleSelect, onUnco
                     onToggleSelect={onToggleSelect}
                     onUncomplete={onUncomplete}
                     onDelete={onDelete}
+                    actionsDisabled={actionsDisabled}
                   />
                 ))}
               </div>

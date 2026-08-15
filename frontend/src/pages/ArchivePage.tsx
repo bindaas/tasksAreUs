@@ -79,13 +79,26 @@ export function ArchivePage() {
     }
   }
 
+  const BATCH_SIZE = 10;
+
+  async function runBatched(ids: string[], fn: (id: string) => Promise<unknown>): Promise<number> {
+    let failures = 0;
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const chunk = ids.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(chunk.map(fn));
+      failures += results.filter((r) => r.status === 'rejected').length;
+    }
+    return failures;
+  }
+
   async function handleReopenIds(ids: string[]) {
     setBulkActionLoading(true);
     try {
-      await Promise.all(ids.map((id) => reopenTask(id)));
+      const failures = await runBatched(ids, reopenTask);
       await fetchReport();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update task(s)');
+      if (failures > 0) {
+        setError(`Failed to update ${failures} of ${ids.length} task(s)`);
+      }
     } finally {
       setBulkActionLoading(false);
     }
@@ -96,10 +109,11 @@ export function ArchivePage() {
     if (!confirmed) return;
     setBulkActionLoading(true);
     try {
-      await Promise.all(ids.map((id) => deleteTask(id)));
+      const failures = await runBatched(ids, deleteTask);
       await fetchReport();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete task(s)');
+      if (failures > 0) {
+        setError(`Failed to delete ${failures} of ${ids.length} task(s)`);
+      }
     } finally {
       setBulkActionLoading(false);
     }
@@ -209,6 +223,7 @@ export function ArchivePage() {
                 onToggleSelect={toggleSelect}
                 onUncomplete={(id) => handleReopenIds([id])}
                 onDelete={(id) => handleDeleteIds([id])}
+                actionsDisabled={bulkActionLoading}
               />
             )
           ) : completions.length === 0 ? (
@@ -225,6 +240,7 @@ export function ArchivePage() {
                   onToggleSelect={toggleSelect}
                   onUncomplete={(id) => handleReopenIds([id])}
                   onDelete={(id) => handleDeleteIds([id])}
+                  actionsDisabled={bulkActionLoading}
                 />
               ))}
             </div>
