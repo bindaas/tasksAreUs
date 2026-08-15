@@ -235,7 +235,7 @@
     "semantic_hash": "310a7f937edad65b08ddf77ad0041221"
   },
   "frontend/src/__tests__/dateRangePresets.test.ts": {
-    "mtime": 1786807414.3176517,
+    "mtime": 1786804944.3875327,
     "ast_hash": "7782450ba1915fe4f9c255d7c5dd5d5d",
     "semantic_hash": ""
   },
@@ -315,7 +315,7 @@
     "semantic_hash": ""
   },
   "frontend/src/components/ArchiveBoardGroups.tsx": {
-    "mtime": 1786807414.3179383,
+    "mtime": 1786806661.2482424,
     "ast_hash": "4b2a83d6e0ecf12a6c6b05208a112289",
     "semantic_hash": ""
   },
@@ -445,7 +445,7 @@
     "semantic_hash": "787e5a07efeb2bf6209d5937195f2f68"
   },
   "frontend/src/pages/ArchivePage.tsx": {
-    "mtime": 1786807414.3182163,
+    "mtime": 1786806674.1152248,
     "ast_hash": "b286f5eb9a744ed9ee74f0592da23183",
     "semantic_hash": ""
   },
@@ -480,7 +480,7 @@
     "semantic_hash": "65b90f8a430c3014476d2800a5754ca0"
   },
   "frontend/src/utils/dateRangePresets.ts": {
-    "mtime": 1786807414.319061,
+    "mtime": 1786804940.6744504,
     "ast_hash": "497eee1f0793edbc028a3f2a6c2c42ca",
     "semantic_hash": ""
   },
@@ -840,7 +840,7 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1786807414.3167503,
+    "mtime": 1786807097.4313266,
     "ast_hash": "b8ba8f313637cd7f02f1a6a9fabe0f18",
     "semantic_hash": ""
   },
@@ -860,8 +860,8 @@
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1786807414.3170826,
-    "ast_hash": "7f44c411a868e774f734f37a6f429c32",
+    "mtime": 1786749264.4143047,
+    "ast_hash": "7dfe5f8a3d9a029cc839464ceb8c38f7",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1320,8 +1320,8 @@
     "semantic_hash": ""
   },
   "development-plans/PLAN-feat-archive-bulk-uncomplete.md": {
-    "mtime": 1786807420.2419612,
-    "ast_hash": "c37565e3c2c1f7a196d41060ab4c86e7",
+    "mtime": 1786806859.0065343,
+    "ast_hash": "d6415b9933de5ef8653250dafda87a36",
     "semantic_hash": ""
   }
 }
