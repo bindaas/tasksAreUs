@@ -1,27 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getCompletions, type CompletionRecord, type BoardCompletions } from '../api/reports';
-import { LabelBadge } from '../components/LabelBadge';
+import { reopenTask, deleteTask } from '../api/tasks';
 import { ArchiveBoardTabs } from '../components/ArchiveBoardTabs';
-import { ArchiveBoardGroups } from '../components/ArchiveBoardGroups';
+import { ArchiveBoardGroups, CompletionCard } from '../components/ArchiveBoardGroups';
+import { useBoardCollapse } from '../context/BoardCollapseContext';
 import { dateOnly } from '../utils/taskDateUtils';
 import { getPresetRange, PRESET_LABELS, type PresetKey } from '../utils/dateRangePresets';
 
-function formatDateTime(isoStr: string): string {
-  const d = new Date(isoStr);
-  return d.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-const PRESETS: PresetKey[] = ['this_month', 'last_month', 'last_three_months'];
+const PRESETS: PresetKey[] = ['this_month', 'last_month', 'last_three_months', 'all'];
 
 export function ArchivePage() {
-  const navigate = useNavigate();
+  const { setAllCollapsed } = useBoardCollapse();
   const today = new Date();
   const thirtyDaysAgo = new Date(today);
   thirtyDaysAgo.setDate(today.getDate() - 30);
@@ -34,6 +23,8 @@ export function ArchivePage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   const fetchReport = useCallback(async () => {
     if (!from || !to) return;
@@ -56,10 +47,76 @@ export function ArchivePage() {
     fetchReport();
   }, [fetchReport]);
 
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [completions]);
+
   function applyPreset(preset: PresetKey) {
     const range = getPresetRange(preset);
     setFrom(range.from);
     setTo(range.to);
+  }
+
+  function toggleSelect(taskId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }
+
+  const allSelected = completions.length > 0 && selectedIds.size === completions.length;
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectedIds(new Set(completions.map((c) => c.task_id)));
+    if (boards) {
+      setAllCollapsed('archive', boards.map((b) => b.board_id), false);
+    }
+  }
+
+  const BATCH_SIZE = 10;
+
+  async function runBatched(ids: string[], fn: (id: string) => Promise<unknown>): Promise<number> {
+    let failures = 0;
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const chunk = ids.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(chunk.map(fn));
+      failures += results.filter((r) => r.status === 'rejected').length;
+    }
+    return failures;
+  }
+
+  async function handleReopenIds(ids: string[]) {
+    setBulkActionLoading(true);
+    try {
+      const failures = await runBatched(ids, reopenTask);
+      await fetchReport();
+      if (failures > 0) {
+        setError(`Failed to update ${failures} of ${ids.length} task(s)`);
+      }
+    } finally {
+      setBulkActionLoading(false);
+    }
+  }
+
+  async function handleDeleteIds(ids: string[]) {
+    const confirmed = confirm(ids.length === 1 ? 'Delete this task?' : `Delete ${ids.length} tasks?`);
+    if (!confirmed) return;
+    setBulkActionLoading(true);
+    try {
+      const failures = await runBatched(ids, deleteTask);
+      await fetchReport();
+      if (failures > 0) {
+        setError(`Failed to delete ${failures} of ${ids.length} task(s)`);
+      }
+    } finally {
+      setBulkActionLoading(false);
+    }
   }
 
   return (
@@ -121,13 +178,53 @@ export function ArchivePage() {
             <span className="text-2xl font-bold text-indigo-700">{total}</span>
           </div>
 
+          {completions.length > 0 && (
+            <div className="flex items-center justify-between mb-3">
+              <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                Select all
+              </label>
+              {selectedIds.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">{selectedIds.size} selected</span>
+                  <button
+                    onClick={() => handleReopenIds([...selectedIds])}
+                    disabled={bulkActionLoading}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Un-complete
+                  </button>
+                  <button
+                    onClick={() => handleDeleteIds([...selectedIds])}
+                    disabled={bulkActionLoading}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {boards ? (
             boards.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
                 <p className="text-sm">No tasks completed in this date range</p>
               </div>
             ) : (
-              <ArchiveBoardGroups boards={boards} />
+              <ArchiveBoardGroups
+                boards={boards}
+                selectedIds={selectedIds}
+                onToggleSelect={toggleSelect}
+                onUncomplete={(id) => handleReopenIds([id])}
+                onDelete={(id) => handleDeleteIds([id])}
+                actionsDisabled={bulkActionLoading}
+              />
             )
           ) : completions.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
@@ -135,37 +232,17 @@ export function ArchivePage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {completions.map((item) => {
-                const sortedLabels = [...item.labels].sort((a, b) => a.value.localeCompare(b.value));
-                return (
-                  <div
-                    key={item.task_id}
-                    onClick={() => navigate(`/tasks/${item.task_id}`)}
-                    className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          Completed {formatDateTime(item.completed_at)}
-                        </p>
-                      </div>
-                      <div className="shrink-0">
-                        <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    </div>
-                    {sortedLabels.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {sortedLabels.map((label) => (
-                          <LabelBadge key={label.id} label={label} small />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {completions.map((item) => (
+                <CompletionCard
+                  key={item.task_id}
+                  item={item}
+                  selected={selectedIds.has(item.task_id)}
+                  onToggleSelect={toggleSelect}
+                  onUncomplete={(id) => handleReopenIds([id])}
+                  onDelete={(id) => handleDeleteIds([id])}
+                  actionsDisabled={bulkActionLoading}
+                />
+              ))}
             </div>
           )}
         </>

@@ -48,4 +48,11 @@ describe('getPresetRange', () => {
       to: '2026-02-05',
     });
   });
+
+  it('all spans a fixed early anchor through the reference date', () => {
+    expect(getPresetRange('all', REFERENCE)).toEqual({
+      from: '2000-01-01',
+      to: '2026-06-15',
+    });
+  });
 });
