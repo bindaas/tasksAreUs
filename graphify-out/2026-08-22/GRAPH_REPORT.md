@@ -1,7 +1,7 @@
 # Graph Report - tasksAreUs  (2026-08-22)
 
 ## Corpus Check
-- 254 files · ~325,238 words
+- 254 files · ~324,493 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6bb7b660`
+- Built from commit: `77bd946c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -449,7 +449,7 @@ Nodes (21): completeTask(), deleteTask(), TaskCardBodyProps, EDIT_CATEGORY_ORDER
   archive/PLAN-feat-overdue-view-colors-actions.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **538 isolated node(s):** `Status`, `Overview`, `Current state (confirmed by reading code)`, `1. Hidden-column state`, `2. Per-column "hide" button` (+533 more)
+- **538 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+533 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **48 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -459,11 +459,11 @@ _Questions this graph is uniquely positioned to answer:_
 - **What is the exact relationship between `Day View` and `Overdue View proposal (archived plan; proposed separate /overdue-view/tasks endpoint)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **Why does `Development Plan: feat-focused-view (backend, PR 1 of 3)` connect `SettingsPage.tsx` to `Task`, `mobile/src/api/focusedView.ts`, `schemas.py`?**
-  _High betweenness centrality (0.115) - this node is a cross-community bridge._
+  _High betweenness centrality (0.107) - this node is a cross-community bridge._
 - **Why does `Plan: feat-focused-view-mobile (PR 3 of 3)` connect `mobile/src/api/focusedView.ts` to `TasksScreen.tsx`, `SettingsPage.tsx`, `index.ts`, `apiFetch`?**
-  _High betweenness centrality (0.109) - this node is a cross-community bridge._
+  _High betweenness centrality (0.101) - this node is a cross-community bridge._
 - **Why does `Task` connect `Task` to `._make_db`, `test_focused_view_service.py`, `StateEnum`, `reopen_task`, `models.py`, `tasks.py`, `get_completions`, `patch`, `_is_hp_eligible_date`, `schemas.py`, `create_task`, `_get_high_priority_limit`, `main.py`, `TestUpdateTaskLinks`?**
-  _High betweenness centrality (0.057) - this node is a cross-community bridge._
+  _High betweenness centrality (0.061) - this node is a cross-community bridge._
 - **Are the 44 inferred relationships involving `Task` (e.g. with `TestCreateBoard` and `TestDeleteBoard`) actually correct?**
   _`Task` has 44 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 36 inferred relationships involving `StateEnum` (e.g. with `TestDateWindow` and `TestGetDayViewTasks`) actually correct?**

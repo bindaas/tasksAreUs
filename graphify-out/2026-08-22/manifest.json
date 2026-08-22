@@ -1323,10 +1323,5 @@
     "mtime": 1786807420.2419612,
     "ast_hash": "c37565e3c2c1f7a196d41060ab4c86e7",
     "semantic_hash": ""
-  },
-  "development-plans/PLAN-feat-hide-unhide-columns.md": {
-    "mtime": 1787435066.8097317,
-    "ast_hash": "81c3a75d45b20053076d688104d217ad",
-    "semantic_hash": ""
   }
 }
