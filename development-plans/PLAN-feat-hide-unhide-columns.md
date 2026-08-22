@@ -1,10 +1,16 @@
 # PLAN: feat-hide-unhide-columns — Per-column hide/unhide toggle on the "All" kanban board, plus neutral Overdue column background
 
 ## Status
-**State:** Ready for PR
+**State:** Merged
 **Last updated:** 2026-08-22 by Grumpy
-**Next step:** Awaiting review chain (Dopey/Sleepy/Bashful/Doc) and merge of PR #83.
-**Blocked on:** n/a — PR opened: https://github.com/bindaas/tasksAreUs/pull/83
+**Next step:** n/a — shipped. Merged to `main` via PR #83 (merge commit `66944f4`). Frontend-only, no mobile files touched.
+**Blocked on:** n/a
+
+**Full review chain results (2026-08-22):**
+- **Doc (architecture):** 0 concerns — clean single-file frontend change, matched the resolved plan exactly. Updated `ARCHITECTURE.MD`.
+- **Dopey (code review):** approved, no Must-fix/Should-fix items. One doc-staleness note (PRD still said Overdue had a "red accent") handed to the requirements pass.
+- **Sleepy (test review):** no test changes needed — pure session-scoped UI state/rendering, no backend/API surface. Backend integration suite, 211 frontend unit tests, and `tsc -b` all clean.
+- **Bashful (requirements):** corrected the stale "red accent" line at `PRODUCT_REQUIREMENTS_DOCUMENT.MD:268` and documented the hide/unhide feature. No aspirational items.
 
 **Implementation notes:** All 5 design sections implemented in `frontend/src/pages/TasksPage.tsx` exactly as planned, including the `ml-auto` wrapper fix, `aria-label`s, and shared `EyeSlashIcon` (colocated in `TasksPage.tsx` itself since both call sites live there). `tsc -b` clean; all 211 frontend unit tests pass (no new tests needed, per plan). Manually verified in the Docker dev stack via browser automation:
 - Hiding "Today" removed its column, remaining columns kept their fixed width (`w-52 sm:w-60`, confirmed via screenshot — no growth), a chip labeled "Today" appeared next to the view-toggle row.
