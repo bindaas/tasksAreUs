@@ -136,6 +136,9 @@ export function TaskForm({
   // is — reuses the form's own submit path (validation included) rather than
   // duplicating it, and always preventDefaults so the browser's native
   // "Save Page" dialog never shows, even while a save is already in flight.
+  // Intentionally also matches Cmd/Ctrl+Shift+S ("Save Page As…") — the goal
+  // is suppressing any native save dialog while this form is open, not just
+  // the exact Cmd+S chord.
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
