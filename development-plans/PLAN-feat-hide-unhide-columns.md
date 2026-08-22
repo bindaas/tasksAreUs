@@ -3,8 +3,8 @@
 ## Status
 **State:** Ready for PR
 **Last updated:** 2026-08-22 by Grumpy
-**Next step:** Open PR from `feat-hide-unhide-columns` to `main`.
-**Blocked on:** n/a
+**Next step:** Awaiting review chain (Dopey/Sleepy/Bashful/Doc) and merge of PR #83.
+**Blocked on:** n/a — PR opened: https://github.com/bindaas/tasksAreUs/pull/83
 
 **Implementation notes:** All 5 design sections implemented in `frontend/src/pages/TasksPage.tsx` exactly as planned, including the `ml-auto` wrapper fix, `aria-label`s, and shared `EyeSlashIcon` (colocated in `TasksPage.tsx` itself since both call sites live there). `tsc -b` clean; all 211 frontend unit tests pass (no new tests needed, per plan). Manually verified in the Docker dev stack via browser automation:
 - Hiding "Today" removed its column, remaining columns kept their fixed width (`w-52 sm:w-60`, confirmed via screenshot — no growth), a chip labeled "Today" appeared next to the view-toggle row.
