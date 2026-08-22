@@ -67,6 +67,8 @@ export function TaskForm({
 
   const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
   const notesPreviewRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [notesCopied, setNotesCopied] = useState(false);
 
   function syncScroll(source: HTMLElement, target: HTMLElement) {
     const scrollTop = computeSyncedScrollTop(source, target);
@@ -74,8 +76,25 @@ export function TaskForm({
     target.scrollTop = scrollTop;
   }
 
+  async function handleCopyNotes() {
+    try {
+      await navigator.clipboard.writeText(notes);
+      setNotesCopied(true);
+      setTimeout(() => setNotesCopied(false), 1500);
+    } catch {
+      // Clipboard permission denied, insecure context, or API unavailable —
+      // nothing actionable to show the user here, so fail silently.
+    }
+  }
+
   const isEditMode = !!initialValues;
   const movingBoard = isEditMode && !!initialValues?.board_id && boardId !== initialValues.board_id;
+
+  // initialValues is always a truthy object for new tasks too (TaskDetailPage
+  // seeds it with `{ labels: [...] }`), so `id` presence — not `isEditMode`
+  // above — is what actually distinguishes editing an existing task from
+  // creating a new one.
+  const isEditingExistingTask = !!initialValues?.id;
 
   // defaultBoardId can arrive after mount (BoardContext loads asynchronously) —
   // pick it up once it's available if the form hasn't already been given a
@@ -112,6 +131,21 @@ export function TaskForm({
   useEffect(() => {
     setLinks((prev) => withReadyLinkRow(prev, newLinkId));
   }, [links]);
+
+  // Cmd+S (Mac) / Ctrl+S (Windows) saves the form, wherever focus currently
+  // is — reuses the form's own submit path (validation included) rather than
+  // duplicating it, and always preventDefaults so the browser's native
+  // "Save Page" dialog never shows, even while a save is already in flight.
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (!loading) formRef.current?.requestSubmit();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [loading]);
 
   function removeLinkRow(id: string) {
     setLinks((prev) => prev.filter((l) => l.id !== id));
@@ -223,7 +257,7 @@ export function TaskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
           {error}
@@ -240,6 +274,7 @@ export function TaskForm({
           onChange={(e) => setTitle(e.target.value)}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           placeholder="What needs to be done?"
+          autoFocus={!isEditingExistingTask}
           required
         />
       </div>
@@ -259,33 +294,54 @@ export function TaskForm({
             rows={7}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
             placeholder="Any additional details..."
+            autoFocus={isEditingExistingTask}
           />
-          <div
-            ref={notesPreviewRef}
-            onScroll={(e) => {
-              if (notesTextareaRef.current) {
-                syncScroll(e.currentTarget, notesTextareaRef.current);
-              }
-            }}
-            className="h-full max-h-80 overflow-y-auto border border-gray-200 rounded-lg px-3 py-2 bg-gray-50"
-          >
-            {notes.trim() === '' ? (
-              <p className="text-sm text-gray-400 italic">Nothing to preview yet</p>
-            ) : (
-              <div className="prose prose-sm max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    a: ({ ...props }) => (
-                      <a {...props} target="_blank" rel="noopener noreferrer" />
-                    ),
-                    input: ({ ...props }) => <input {...props} disabled />,
-                  }}
-                >
-                  {notes}
-                </ReactMarkdown>
-              </div>
-            )}
+          <div className="relative h-full">
+            <button
+              type="button"
+              onClick={handleCopyNotes}
+              disabled={notes.trim() === ''}
+              className="absolute top-1.5 right-1.5 z-10 p-1.5 rounded-full bg-white/80 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-0 disabled:pointer-events-none transition-colors"
+              aria-label="Copy notes to clipboard"
+              title="Copy to clipboard"
+            >
+              {notesCopied ? (
+                <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              )}
+            </button>
+            <div
+              ref={notesPreviewRef}
+              onScroll={(e) => {
+                if (notesTextareaRef.current) {
+                  syncScroll(e.currentTarget, notesTextareaRef.current);
+                }
+              }}
+              className="h-full max-h-80 overflow-y-auto border border-gray-200 rounded-lg px-3 py-2 bg-gray-50"
+            >
+              {notes.trim() === '' ? (
+                <p className="text-sm text-gray-400 italic">Nothing to preview yet</p>
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      a: ({ ...props }) => (
+                        <a {...props} target="_blank" rel="noopener noreferrer" />
+                      ),
+                      input: ({ ...props }) => <input {...props} disabled />,
+                    }}
+                  >
+                    {notes}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
