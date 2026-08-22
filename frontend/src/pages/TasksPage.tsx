@@ -33,6 +33,14 @@ import { getBoardColor } from '../utils/boardColor';
 import { useSettings } from '../hooks/useSettings';
 import { viewLabel, type ViewMode } from '../utils/viewLabel';
 
+function EyeSlashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+    </svg>
+  );
+}
+
 const TIER_RANK: Record<PriorityTier, number> = { high: 0, medium: 1, normal: 2 };
 
 const TIER_META: Record<PriorityTier, {
@@ -95,6 +103,16 @@ export function TasksPage() {
   const [dragOverPriority, setDragOverPriority] = useState<PriorityTier | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
   const [dragOverEdge, setDragOverEdge] = useState<'above' | 'below' | null>(null);
+  const [hiddenColumns, setHiddenColumns] = useState<Set<ColumnKey>>(new Set());
+
+  function toggleColumnHidden(key: ColumnKey) {
+    setHiddenColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   const { tasks, loading, error, refetch } = useTasks('pending');
   const { labels, labelsByCategory } = useLabels();
@@ -364,6 +382,22 @@ export function TasksPage() {
                 </button>
               ))}
             </div>
+
+            {viewMode === 'all' && hiddenColumns.size > 0 && (
+              <div className="flex items-center gap-1">
+                {COLUMNS.filter((c) => hiddenColumns.has(c.key)).map((c) => (
+                  <button
+                    key={c.key}
+                    onClick={() => toggleColumnHidden(c.key)}
+                    title={c.title}
+                    aria-label={`Show ${c.title} column`}
+                    className="p-1 rounded border border-gray-200 bg-white text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                  >
+                    <EyeSlashIcon className="w-3.5 h-3.5" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -426,6 +460,7 @@ export function TasksPage() {
               {COLUMNS.map((col) => {
                 const colTasks = columnTasks[col.key];
                 if (col.key === 'overdue' && colTasks.length === 0) return null;
+                if (hiddenColumns.has(col.key)) return null;
                 const isOver = dragOverColumn === col.key;
                 const isOverdueCol = col.key === 'overdue';
                 const isPriorityColumn = isPriorityEligible(col.key) || isOverdueCol;
@@ -505,11 +540,7 @@ export function TasksPage() {
                     <div
                       key={col.key}
                       className={`w-52 sm:w-60 flex-shrink-0 rounded-xl border-2 transition-colors ${
-                        isOver
-                          ? 'border-indigo-400 bg-indigo-50'
-                          : isOverdueCol
-                          ? 'border-red-200 bg-red-50'
-                          : 'border-gray-200 bg-gray-50'
+                        isOver ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50'
                       }`}
                       onDragOver={(e) => {
                         e.preventDefault();
@@ -529,7 +560,7 @@ export function TasksPage() {
                       }}
                     >
                       <div className="px-3 py-2.5 border-b border-gray-200 flex items-center gap-2">
-                        <span className={`text-sm font-semibold ${isOverdueCol ? 'text-red-700' : 'text-gray-700'}`}>
+                        <span className="text-sm font-semibold text-gray-700">
                           {col.title}
                           {col.dateLabel && (
                             <span className="block text-xs text-gray-400 font-normal">{col.dateLabel}</span>
@@ -538,11 +569,21 @@ export function TasksPage() {
                         <span className="text-xs text-gray-400 font-medium bg-gray-200 rounded-full px-1.5 py-0.5">
                           {colTasks.length}
                         </span>
-                        {highTasks.length >= highPriorityDailyLimit && (
-                          <span className="ml-auto text-xs text-amber-600 font-medium flex items-center gap-1" title="High-priority limit exceeded">
-                            ⚠ {highTasks.length}/{highPriorityDailyLimit} high
-                          </span>
-                        )}
+                        <span className="ml-auto flex items-center gap-2">
+                          {highTasks.length >= highPriorityDailyLimit && (
+                            <span className="text-xs text-amber-600 font-medium flex items-center gap-1" title="High-priority limit exceeded">
+                              ⚠ {highTasks.length}/{highPriorityDailyLimit} high
+                            </span>
+                          )}
+                          <button
+                            onClick={() => toggleColumnHidden(col.key)}
+                            title={`Hide ${col.title}`}
+                            aria-label={`Hide ${col.title} column`}
+                            className="text-gray-400 hover:text-gray-600 p-0.5"
+                          >
+                            <EyeSlashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
                       </div>
 
                       {renderTierZone('high')}
@@ -590,6 +631,14 @@ export function TasksPage() {
                       <span className="text-xs text-gray-400 font-medium bg-gray-200 rounded-full px-1.5 py-0.5">
                         {colTasks.length}
                       </span>
+                      <button
+                        onClick={() => toggleColumnHidden(col.key)}
+                        title={`Hide ${col.title}`}
+                        aria-label={`Hide ${col.title} column`}
+                        className="ml-auto text-gray-400 hover:text-gray-600 p-0.5"
+                      >
+                        <EyeSlashIcon className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                     <div className="p-2 space-y-2 min-h-[120px]">
                       {colTasks.length === 0 ? (
