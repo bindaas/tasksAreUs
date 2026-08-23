@@ -375,8 +375,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/TaskForm.tsx": {
-    "mtime": 1786494365.8844187,
-    "ast_hash": "56fabeaa915861e560d63dbf8d5d8eda",
+    "mtime": 1787443019.0991013,
+    "ast_hash": "273260e71670fe5288f959143b9898d4",
     "semantic_hash": ""
   },
   "frontend/src/components/TaskQuickEdit.tsx": {
@@ -840,8 +840,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1787435056.9515998,
-    "ast_hash": "08e0402f3a6ec3ce0602c5c9000a062a",
+    "mtime": 1787442719.52378,
+    "ast_hash": "5f2f423d65bf211bb573ecd7568e02c9",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -1322,6 +1322,16 @@
   "development-plans/PLAN-feat-archive-bulk-uncomplete.md": {
     "mtime": 1786807420.2419612,
     "ast_hash": "c37565e3c2c1f7a196d41060ab4c86e7",
+    "semantic_hash": ""
+  },
+  "development-plans/PLAN-feat-hide-unhide-columns.md": {
+    "mtime": 1787435066.8097317,
+    "ast_hash": "81c3a75d45b20053076d688104d217ad",
+    "semantic_hash": ""
+  },
+  "development-plans/PLAN-fix-task-form-ux-polish.md": {
+    "mtime": 1787436933.9206405,
+    "ast_hash": "652a6403a84892d77e031f861e22dbce",
     "semantic_hash": ""
   }
 }

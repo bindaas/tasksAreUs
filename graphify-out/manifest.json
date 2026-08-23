@@ -375,8 +375,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/TaskForm.tsx": {
-    "mtime": 1786494365.8844187,
-    "ast_hash": "56fabeaa915861e560d63dbf8d5d8eda",
+    "mtime": 1787443601.171155,
+    "ast_hash": "273260e71670fe5288f959143b9898d4",
     "semantic_hash": ""
   },
   "frontend/src/components/TaskQuickEdit.tsx": {
@@ -840,8 +840,8 @@
     "semantic_hash": "812b9179d31ca07ed962259e69731847"
   },
   "ARCHITECTURE.MD": {
-    "mtime": 1787435056.9515998,
-    "ast_hash": "08e0402f3a6ec3ce0602c5c9000a062a",
+    "mtime": 1787443601.1699257,
+    "ast_hash": "5f2f423d65bf211bb573ecd7568e02c9",
     "semantic_hash": ""
   },
   "BUG_OR_FEATURE_HUMAN.MD": {
@@ -860,8 +860,8 @@
     "semantic_hash": ""
   },
   "PRODUCT_REQUIREMENTS_DOCUMENT.MD": {
-    "mtime": 1787435056.9520257,
-    "ast_hash": "2ec7581c3a29eed03986b978408ba8c9",
+    "mtime": 1787443601.1704154,
+    "ast_hash": "064d54cc5b403dddfa9c90e4401c1219",
     "semantic_hash": ""
   },
   "README.md": {
